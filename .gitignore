@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build outputs and caches
+dist/
+build/
+release/
+out/
+.turbo/
+.vite/
+.cache/
+
+# Runtime data
+data/
+uploads/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Logs and reports
+coverage/
+*.log
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package managers
+package-lock.json
+yarn.lock
+bun.lockb
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

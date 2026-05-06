@@ -1,0 +1,70 @@
+import { useState, type FormEvent } from "react";
+import { Priority, TaskStatus, type User } from "shared";
+import { useCreateTask } from "../../hooks/useTasks";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Select } from "../ui/select";
+import { Textarea } from "../ui/textarea";
+
+interface TaskFormProps {
+  projectId: string;
+  disciplineId: string;
+  users: User[];
+}
+
+export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
+  const createTask = useCreateTask(projectId, disciplineId);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
+  const [assigneeId, setAssigneeId] = useState("");
+  const [dueDate, setDueDate] = useState("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await createTask.mutateAsync({
+      title,
+      description: description || null,
+      status: TaskStatus.BACKLOG,
+      priority,
+      assigneeId: assigneeId || null,
+      dueDate: dueDate || null
+    });
+    setTitle("");
+    setDescription("");
+    setAssigneeId("");
+    setDueDate("");
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-3 rounded-md border border-border bg-surface-card p-4">
+      <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Titulo da tarefa" required />
+      <Textarea
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        placeholder="Descricao"
+      />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+          {Object.values(Priority).map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </Select>
+        <Select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>
+          <option value="">Sem responsavel</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </Select>
+        <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+      </div>
+      <Button type="submit" disabled={createTask.isPending}>
+        Criar tarefa
+      </Button>
+    </form>
+  );
+}

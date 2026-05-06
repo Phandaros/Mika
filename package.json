@@ -1,0 +1,22 @@
+{
+  "name": "mk-projetos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "turbo run dev --filter=server --filter=client",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:push": "pnpm --filter server prisma db push",
+    "db:migrate": "pnpm --filter server tsx prisma/migrate.ts",
+    "db:studio": "pnpm --filter server prisma studio",
+    "db:seed": "pnpm --filter server tsx prisma/seed.ts",
+    "desktop:dev": "pnpm --filter desktop dev",
+    "desktop:build": "pnpm --filter desktop build"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "appId": "br.eng.mk.mkprojetos",
+  "productName": "MK Projetos",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "../client/dist",
+      "to": "client"
+    }
+  ],
+  "win": {
+    "target": "nsis",
+    "signAndEditExecutable": false,
+    "forceCodeSigning": false
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}

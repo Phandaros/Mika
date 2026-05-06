@@ -1,0 +1,59 @@
+export enum Role {
+  ADMIN = "ADMIN",
+  COORDINATOR = "COORDINATOR",
+  DESIGNER = "DESIGNER",
+  INTERN = "INTERN"
+}
+
+export enum ProjectStatus {
+  ACTIVE = "ACTIVE",
+  ON_HOLD = "ON_HOLD",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED"
+}
+
+export enum DisciplineType {
+  HYDRAULIC = "HYDRAULIC",
+  SANITARY = "SANITARY",
+  FIRE_PROTECTION = "FIRE_PROTECTION",
+  SPRINKLER = "SPRINKLER",
+  PRESSURIZED_STAIR = "PRESSURIZED_STAIR",
+  ELECTRICAL = "ELECTRICAL",
+  SPDA = "SPDA",
+  TELECOM = "TELECOM",
+  HVAC = "HVAC",
+  GAS = "GAS",
+  AUTOMATION = "AUTOMATION",
+  EXHAUST = "EXHAUST",
+  VACUUM = "VACUUM",
+  OTHER = "OTHER"
+}
+
+export enum DisciplineStatus {
+  NOT_STARTED = "NOT_STARTED",
+  IN_PROGRESS = "IN_PROGRESS",
+  IN_REVIEW = "IN_REVIEW",
+  COMPLETED = "COMPLETED"
+}
+
+export enum TaskStatus {
+  BACKLOG = "BACKLOG",
+  TODO = "TODO",
+  IN_PROGRESS = "IN_PROGRESS",
+  IN_REVIEW = "IN_REVIEW",
+  DONE = "DONE"
+}
+
+export enum Priority {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  URGENT = "URGENT"
+}
+
+export enum NotificationType {
+  TASK_ASSIGNED = "TASK_ASSIGNED",
+  TASK_UPDATED = "TASK_UPDATED",
+  COMMENT_ADDED = "COMMENT_ADDED",
+  DUE_SOON = "DUE_SOON"
+}

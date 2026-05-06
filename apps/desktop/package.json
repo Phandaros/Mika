@@ -1,0 +1,23 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "predev": "tsc -p tsconfig.json",
+    "dev": "electron .",
+    "build": "tsc -p tsconfig.json && electron-builder",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "electron": "^42.0.0",
+    "electron-builder": "^26.0.12",
+    "eslint": "^8.57.1",
+    "typescript": "^5.8.3"
+  }
+}
