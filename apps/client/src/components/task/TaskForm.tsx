@@ -18,6 +18,7 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
   const [assigneeId, setAssigneeId] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -28,11 +29,13 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
       status: TaskStatus.BACKLOG,
       priority,
       assigneeId: assigneeId || null,
+      startDate: startDate || null,
       dueDate: dueDate || null
     });
     setTitle("");
     setDescription("");
     setAssigneeId("");
+    setStartDate("");
     setDueDate("");
   }
 
@@ -60,8 +63,14 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
             </option>
           ))}
         </Select>
-        <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
       </div>
+      <fieldset className="grid gap-3 rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-semibold text-text-secondary">Data de conclusao</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+          <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+        </div>
+      </fieldset>
       <Button type="submit" disabled={createTask.isPending}>
         Criar tarefa
       </Button>

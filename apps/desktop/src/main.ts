@@ -1,10 +1,62 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, nativeTheme, shell } from "electron";
+import { app, BrowserWindow, ipcMain, nativeTheme, shell } from "electron";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const devServerUrl = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:5173";
 const appName = process.env.ELECTRON_APP_NAME ?? "MK Projetos";
+const defaultServerUrl = "http://DESKTOP-TP1SBGH:3001";
+const configFileName = "mk-projetos.ini";
+
+app.setName(appName);
+
+function configFilePath(): string {
+  return path.join(app.getPath("userData"), configFileName);
+}
+
+function normalizeServerUrl(serverUrl: string): string {
+  const withProtocol = /^https?:\/\//i.test(serverUrl) ? serverUrl : `http://${serverUrl}`;
+  const parsedUrl = new URL(withProtocol);
+  parsedUrl.pathname = "";
+  parsedUrl.search = "";
+  parsedUrl.hash = "";
+
+  if (!parsedUrl.port) {
+    parsedUrl.port = "3001";
+  }
+
+  return parsedUrl.toString().replace(/\/+$/, "");
+}
+
+function parseServerUrlConfig(contents: string): string | null {
+  const line = contents
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .find((item) => item.startsWith("serverUrl="));
+
+  if (!line) {
+    return null;
+  }
+
+  return line.slice("serverUrl=".length).trim() || null;
+}
+
+async function readServerUrlConfig(): Promise<string> {
+  try {
+    const contents = await fs.readFile(configFilePath(), "utf8");
+    return normalizeServerUrl(parseServerUrlConfig(contents) ?? defaultServerUrl);
+  } catch {
+    return defaultServerUrl;
+  }
+}
+
+async function writeServerUrlConfig(serverUrl: string): Promise<string> {
+  const normalizedServerUrl = normalizeServerUrl(serverUrl);
+  await fs.mkdir(path.dirname(configFilePath()), { recursive: true });
+  await fs.writeFile(configFilePath(), `serverUrl=${normalizedServerUrl}\n`, "utf8");
+  return normalizedServerUrl;
+}
 
 function isSafeExternalUrl(url: string): boolean {
   try {
@@ -21,6 +73,11 @@ function clientIndexPath(): string {
   }
 
   return path.resolve(__dirname, "..", "..", "client", "dist", "index.html");
+}
+
+function registerIpcHandlers(): void {
+  ipcMain.handle("mk-projetos:get-server-url", async () => readServerUrlConfig());
+  ipcMain.handle("mk-projetos:set-server-url", async (_event, serverUrl: string) => writeServerUrlConfig(serverUrl));
 }
 
 async function createWindow(): Promise<void> {
@@ -67,6 +124,7 @@ async function createWindow(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  registerIpcHandlers();
   await createWindow();
 
   app.on("activate", () => {

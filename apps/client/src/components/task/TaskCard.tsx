@@ -1,14 +1,14 @@
 import { format } from "date-fns";
-import type { Task } from "shared";
+import { getDefaultDiscipline, type DisciplineType, type Task } from "shared";
 import { Avatar } from "../shared/Avatar";
 import { PriorityBadge } from "../shared/PriorityBadge";
-import { Badge } from "../ui/badge";
 
 export type TaskCardTask = Task & {
   discipline?: {
     id: string;
     name: string;
     projectId: string;
+    type?: DisciplineType;
   };
 };
 
@@ -19,6 +19,8 @@ interface TaskCardProps<TTask extends TaskCardTask> {
 }
 
 export function TaskCard<TTask extends TaskCardTask>({ task, disciplineName, onOpen }: TaskCardProps<TTask>) {
+  const disciplineColor = task.discipline?.type ? getDefaultDiscipline(task.discipline.type).color : undefined;
+
   return (
     <button
       type="button"
@@ -31,7 +33,14 @@ export function TaskCard<TTask extends TaskCardTask>({ task, disciplineName, onO
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <PriorityBadge priority={task.priority} />
-        {disciplineName ? <Badge tone="default">{disciplineName}</Badge> : null}
+        {disciplineName ? (
+          <span
+            className="inline-flex h-6 items-center rounded-md border border-border px-2 text-xs font-semibold text-text-primary"
+            style={disciplineColor ? { borderColor: `${disciplineColor}66`, backgroundColor: `${disciplineColor}22` } : undefined}
+          >
+            {disciplineName}
+          </span>
+        ) : null}
       </div>
       {task.dueDate ? (
         <p className="mt-3 text-xs text-text-secondary">Entrega {format(new Date(task.dueDate), "dd/MM/yyyy")}</p>

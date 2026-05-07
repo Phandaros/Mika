@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import type { Notification } from "shared";
+import { getSocketBaseUrl } from "./runtimeConfig";
 
 interface ServerToClientEvents {
   "notification:new": (notification: Notification) => void;
@@ -13,7 +14,7 @@ let notificationSocket: Socket<ServerToClientEvents, ClientToServerEvents> | nul
 
 export function getNotificationSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
   if (!notificationSocket) {
-    notificationSocket = io(`${import.meta.env.VITE_SOCKET_URL}/notifications`, {
+    notificationSocket = io(`${getSocketBaseUrl()}/notifications`, {
       autoConnect: false,
       withCredentials: true
     });

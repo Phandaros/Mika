@@ -5,6 +5,7 @@ import {
   connectNotificationSocket,
   disconnectNotificationSocket
 } from "../lib/socket";
+import { getApiBaseUrl } from "../lib/runtimeConfig";
 
 interface AuthState {
   user: AuthUser | null;
@@ -16,8 +17,6 @@ interface AuthState {
   refreshSession: () => Promise<boolean>;
 }
 
-const apiUrl = import.meta.env.VITE_API_URL;
-
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
@@ -28,7 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   login: async (email, password) => {
     const response = await axios.post<AuthResponse>(
-      `${apiUrl}/auth/login`,
+      `${getApiBaseUrl()}/auth/login`,
       { email, password },
       { withCredentials: true }
     );
@@ -38,7 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   logout: async () => {
     try {
-      await axios.post(`${apiUrl}/auth/logout`, {}, { withCredentials: true });
+      await axios.post(`${getApiBaseUrl()}/auth/logout`, {}, { withCredentials: true });
     } catch {
       // The local session must still be cleared if the server is unreachable.
     }
@@ -51,7 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const response = await axios.post<AuthResponse>(
-        `${apiUrl}/auth/refresh`,
+        `${getApiBaseUrl()}/auth/refresh`,
         {},
         { withCredentials: true }
       );

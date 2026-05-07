@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import type { RequestHandler } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { env } from "../config/env.js";
+import { makeLocalAsanaGid, toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { prisma } from "../lib/prisma.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
@@ -26,28 +27,6 @@ function createAccessToken(user: { id: string; email: string; name: string; role
 
 function createRefreshToken(userId: string): string {
   return jwt.sign({ id: userId }, env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
-}
-
-function publicUser(user: {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatarUrl: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    avatarUrl: user.avatarUrl,
-    isActive: user.isActive,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt
-  };
 }
 
 function readCookie(header: string | undefined, name: string): string | null {
@@ -78,7 +57,7 @@ export const login: RequestHandler = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user?.isActive) {
+    if (!user?.isActive || !user.passwordHash) {
       throw new AppError(401, "Invalid credentials");
     }
 
@@ -90,6 +69,7 @@ export const login: RequestHandler = async (req, res, next) => {
 
     const accessToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user.id);
+    const publicRecord = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: userSelect });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -99,7 +79,7 @@ export const login: RequestHandler = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    res.json({ user: publicUser(user), accessToken });
+    res.json({ user: toPublicUser(publicRecord), accessToken });
   } catch (error) {
     next(error);
   }
@@ -118,14 +98,15 @@ export const me: RequestHandler = async (req, res, next) => {
   try {
     const authUser = getAuthUser(req);
     const user = await prisma.user.findUnique({
-      where: { id: authUser.id }
+      where: { id: authUser.id },
+      select: userSelect
     });
 
     if (!user?.isActive) {
       throw new AppError(401, "Inactive or missing user");
     }
 
-    res.json({ user: publicUser(user) });
+    res.json({ user: toPublicUser(user) });
   } catch (error) {
     next(error);
   }
@@ -145,15 +126,37 @@ export const refresh: RequestHandler = async (req, res, next) => {
       throw new AppError(401, "Invalid refresh token");
     }
 
-    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: userSelect
+    });
 
     if (!user?.isActive) {
       throw new AppError(401, "Inactive or missing user");
     }
 
     const accessToken = createAccessToken(user);
-    res.json({ user: publicUser(user), accessToken });
-  } catch (error) {
+    res.json({ user: toPublicUser(user), accessToken });
+  } catch {
     next(new AppError(401, "Invalid refresh token"));
   }
+};
+
+export const createInitialAdmin = async (): Promise<void> => {
+  const email = "admin@mkengenharia.eng.br";
+  const existingAdmin = await prisma.user.findUnique({ where: { email } });
+
+  if (existingAdmin) {
+    return;
+  }
+
+  await prisma.user.create({
+    data: {
+      asanaGid: makeLocalAsanaGid("user"),
+      email,
+      name: "Admin MK",
+      passwordHash: await bcrypt.hash("admin123", 10),
+      role: "ADMIN"
+    }
+  });
 };

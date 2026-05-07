@@ -2,6 +2,7 @@ import http from "node:http";
 import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
+import { createCorsOptions } from "./lib/cors.js";
 import { prisma } from "./lib/prisma.js";
 import { initSocket } from "./lib/socket.js";
 import apiRoutes from "./routes/index.js";
@@ -12,12 +13,7 @@ const server = http.createServer(app);
 
 initSocket(server, env.CLIENT_URL);
 
-app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true
-  })
-);
+app.use(cors(createCorsOptions(env.CLIENT_URL)));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 

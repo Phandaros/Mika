@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { Notification } from "shared";
 import { api } from "../lib/api";
@@ -50,4 +50,31 @@ export function useNotifications() {
 export function useUnreadNotificationCount(): number {
   const { data = [] } = useNotifications();
   return data.filter((notification) => !notification.read).length;
+}
+
+export function useMarkNotificationRead() {
+  return useMutation({
+    mutationFn: async (notificationId: string) => {
+      const response = await api.patch<{ notification: Notification }>(`/notifications/${notificationId}/read`);
+      return response.data.notification;
+    },
+    onSuccess: (notification) => {
+      queryClient.setQueryData<Notification[]>(["notifications"], (current = []) =>
+        current.map((item) => (item.id === notification.id ? notification : item))
+      );
+    }
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  return useMutation({
+    mutationFn: async () => {
+      await api.patch("/notifications/read-all");
+    },
+    onSuccess: () => {
+      queryClient.setQueryData<Notification[]>(["notifications"], (current = []) =>
+        current.map((notification) => ({ ...notification, read: true }))
+      );
+    }
+  });
 }

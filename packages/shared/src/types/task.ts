@@ -1,4 +1,5 @@
-import { Priority, TaskStatus } from "./enums.js";
+import { DisciplineType, Priority, TaskStatus } from "./enums.js";
+import { Comment } from "./comment.js";
 import { User } from "./user.js";
 
 export interface Task {
@@ -17,10 +18,12 @@ export interface Task {
   updatedAt: string;
   assignee?: User | null;
   creator?: User;
+  comments?: Comment[];
   discipline?: {
     id: string;
     name: string;
     projectId: string;
+    type?: DisciplineType;
   };
 }
 

@@ -6,7 +6,7 @@ import { cn } from "../../lib/utils";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: Home },
-  { to: "/projects", label: "Projetos", icon: FolderKanban },
+  { to: "/projects", label: "Projetos Ativos", icon: FolderKanban },
   { to: "/my-tasks", label: "Minhas tarefas", icon: UserSquare2 },
   { to: "/users", label: "Usuarios", icon: Users }
 ];

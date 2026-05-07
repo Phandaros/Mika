@@ -1,115 +1,379 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
+/// Usuários do app e usuários importados do Asana.
+/// Para usuários vindos do Asana, `passwordHash` pode ficar nulo.
 model User {
   id           String   @id @default(cuid())
-  name         String
+  asanaGid     String?  @unique
   email        String   @unique
-  passwordHash String
-  role         String   @default("DESIGNER")
-  avatarUrl    String?
+  name         String
+  passwordHash String?
+  role         String   @default("MEMBER")
   isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 
-  assignedTasks    Task[]       @relation("TaskAssignee")
-  createdTasks     Task[]       @relation("TaskCreator")
-  comments         Comment[]
-  notifications    Notification[]
-  responsibleDisciplines Discipline[] @relation("DisciplineResponsible")
-}
+  photo21x21   String?
+  photo27x27   String?
+  photo36x36   String?
+  photo60x60   String?
+  photo128x128 String?
+  photoOriginal String?
 
-model Project {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  client      String?
-  status      String   @default("ACTIVE")
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  disciplines Discipline[]
-}
-
-model Discipline {
-  id            String           @id @default(cuid())
-  projectId     String
-  name          String
-  type          String
-  status        String           @default("NOT_STARTED")
-  responsibleId String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  responsible User?   @relation("DisciplineResponsible", fields: [responsibleId], references: [id])
-  tasks       Task[]
-}
-
-model Task {
-  id           String     @id @default(cuid())
-  disciplineId String
-  title        String
-  description  String?
-  status       String     @default("BACKLOG")
-  priority     String     @default("MEDIUM")
-  assigneeId   String?
-  creatorId    String
-  startDate    DateTime?
-  dueDate      DateTime?
-  completedAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-  assignee     User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  creator      User       @relation("TaskCreator", fields: [creatorId], references: [id])
-  comments     Comment[]
-  attachments  Attachment[]
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  taskId    String
-  authorId  String
-  content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id])
+  ownedProjects       Project[]             @relation("ProjectOwner")
+  assignedTasks       Task[]                @relation("TaskAssignee")
+  createdCustomFields AsanaCustomField[]    @relation("CustomFieldCreatedBy")
+  projectFollowers    ProjectFollower[]
+  projectMembers      ProjectMember[]
+  taskFollowers       TaskFollower[]
+  taskLikes           TaskLike[]
+
+  @@index([asanaGid])
+  @@index([email])
 }
 
-model Attachment {
+model AsanaWorkspace {
   id           String   @id @default(cuid())
-  taskId       String
-  filename     String
-  originalName String
-  mimeType     String
-  size         Int
-  uploadedById String
-  createdAt    DateTime @default(now())
+  asanaGid     String   @unique
+  resourceType String?
+  name         String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams    Team[]
+  projects Project[]
+}
+
+model Team {
+  id          String  @id @default(cuid())
+  asanaGid    String  @unique
+  name        String
+  description String?
+  workspaceGid String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace AsanaWorkspace? @relation(fields: [workspaceGid], references: [asanaGid])
+  projects  Project[]
+
+  @@index([workspaceGid])
+}
+
+model Project {
+  id        String @id @default(cuid())
+  asanaGid  String @unique
+
+  name         String
+  notes        String?
+  htmlNotes    String?
+  permalinkUrl String?
+
+  archived    Boolean @default(false)
+  color       String?
+  public      Boolean @default(false)
+  defaultView String?
+
+  /// Status atual do projeto no Asana, quando existir.
+  currentStatusGid   String?
+  currentStatusColor String?
+  currentStatusText  String?
+  statusUpdateGid    String?
+
+  /// Campos date-only do Asana são mantidos como String para preservar YYYY-MM-DD.
+  startOn String?
+  dueOn   String?
+  dueDate String?
+
+  asanaCreatedAt  DateTime?
+  asanaModifiedAt DateTime?
+
+  ownerGid    String?
+  teamGid     String?
+  workspaceGid String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User?          @relation("ProjectOwner", fields: [ownerGid], references: [asanaGid])
+  team      Team?          @relation(fields: [teamGid], references: [asanaGid])
+  workspace AsanaWorkspace @relation(fields: [workspaceGid], references: [asanaGid])
+
+  sections            Section[]
+  memberships         TaskMembership[]
+  followers           ProjectFollower[]
+  members             ProjectMember[]
+  customFieldSettings ProjectCustomFieldSetting[]
+
+  @@index([name])
+  @@index([ownerGid])
+  @@index([teamGid])
+  @@index([workspaceGid])
+  @@index([archived])
+}
+
+model ProjectFollower {
+  id        String @id @default(cuid())
+  projectId String
+  userGid   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userGid], references: [asanaGid], onDelete: Cascade)
+
+  @@unique([projectId, userGid])
+  @@index([userGid])
+}
+
+model ProjectMember {
+  id        String @id @default(cuid())
+  projectId String
+  userGid   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userGid], references: [asanaGid], onDelete: Cascade)
+
+  @@unique([projectId, userGid])
+  @@index([userGid])
+}
+
+model Section {
+  id       String @id @default(cuid())
+  asanaGid String @unique
+  name     String
+
+  projectGid     String
+  asanaCreatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project     Project          @relation(fields: [projectGid], references: [asanaGid], onDelete: Cascade)
+  memberships TaskMembership[]
+
+  @@index([projectGid])
+  @@index([name])
+}
+
+model Task {
+  id       String @id @default(cuid())
+  asanaGid String @unique
+
+  name         String
+  notes        String?
+  htmlNotes    String?
+  resourceType String?
+
+  assigneeStatus String?
+  completed      Boolean  @default(false)
+  liked          Boolean  @default(false)
+  numLikes       Int      @default(0)
+  numSubtasks    Int      @default(0)
+
+  /// Campo local opcional para sua aplicação, sem depender do Asana.
+  localStatus String?
+  priority    String?
+
+  /// Datas completas do Asana.
+  dueAt           DateTime?
+  completedAtAsana DateTime?
+  asanaCreatedAt  DateTime?
+  asanaModifiedAt DateTime?
+
+  /// Campos date-only do Asana são mantidos como String para preservar YYYY-MM-DD.
+  dueOn   String?
+  startOn String?
+
+  assigneeGid String?
+
+  /// `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
+  parentAsanaGid String?
+  parentName     String?
+  parentId       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignee User? @relation("TaskAssignee", fields: [assigneeGid], references: [asanaGid])
+  parent   Task? @relation("TaskSubtasks", fields: [parentId], references: [id])
+  subtasks Task[] @relation("TaskSubtasks")
+
+  memberships       TaskMembership[]
+  followers         TaskFollower[]
+  likes             TaskLike[]
+  tags              TaskTag[]
+  customFieldValues TaskCustomFieldValue[]
+
+  @@index([name])
+  @@index([assigneeGid])
+  @@index([parentAsanaGid])
+  @@index([parentId])
+  @@index([completed])
+  @@index([dueOn])
+}
+
+model TaskMembership {
+  id     String @id @default(cuid())
+  taskId String
+
+  projectGid  String?
+  projectName String?
+  sectionGid  String?
+  sectionName String?
+
+  task    Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectGid], references: [asanaGid])
+  section Section? @relation(fields: [sectionGid], references: [asanaGid])
+
+  @@unique([taskId, projectGid, sectionGid])
+  @@index([projectGid])
+  @@index([sectionGid])
+}
+
+model TaskFollower {
+  id      String @id @default(cuid())
+  taskId  String
+  userGid String
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userGid], references: [asanaGid], onDelete: Cascade)
+
+  @@unique([taskId, userGid])
+  @@index([userGid])
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  taskId    String?
-  createdAt DateTime @default(now())
+model TaskLike {
+  id      String @id @default(cuid())
+  taskId  String
+  userGid String
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userGid], references: [asanaGid], onDelete: Cascade)
+
+  @@unique([taskId, userGid])
+  @@index([userGid])
+}
+
+model Tag {
+  id            String   @id @default(cuid())
+  asanaGid      String   @unique
+  name          String
+  color         String?
+  asanaCreatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks TaskTag[]
+
+  @@index([name])
+}
+
+model TaskTag {
+  id     String @id @default(cuid())
+  taskId String
+  tagGid String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagGid], references: [asanaGid], onDelete: Cascade)
+
+  @@unique([taskId, tagGid])
+  @@index([tagGid])
+}
+
+model AsanaCustomField {
+  id       String @id @default(cuid())
+  asanaGid String @unique
+
+  name                String
+  description         String?
+  type                String
+  precision           Int?
+  format              String?
+  currencyCode        String?
+  isGlobalToWorkspace Boolean @default(false)
+  createdByGid        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy       User?                       @relation("CustomFieldCreatedBy", fields: [createdByGid], references: [asanaGid])
+  enumOptions     AsanaCustomFieldEnumOption[]
+  projectSettings ProjectCustomFieldSetting[]
+  taskValues      TaskCustomFieldValue[]
+
+  @@index([name])
+  @@index([type])
+  @@index([createdByGid])
+}
+
+model AsanaCustomFieldEnumOption {
+  id       String @id @default(cuid())
+  asanaGid String @unique
+
+  customFieldId  String
+  name           String
+  color          String?
+  enabled        Boolean @default(true)
+  sortOrder      Int?
+
+  customField AsanaCustomField      @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  taskValues  TaskCustomFieldValue[]
+
+  @@index([customFieldId])
+  @@index([name])
+}
+
+model ProjectCustomFieldSetting {
+  id       String @id @default(cuid())
+  asanaGid String @unique
+
+  projectId     String
+  customFieldId String
+  isImportant   Boolean @default(false)
+
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customField AsanaCustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, customFieldId])
+  @@index([customFieldId])
+}
+
+model TaskCustomFieldValue {
+  id     String @id @default(cuid())
+  taskId String
+
+  /// Estes campos preservam o payload do Asana mesmo se a definição não tiver sido importada ainda.
+  customFieldGid  String
+  customFieldName String?
+  type            String
+  displayValue    String?
+  precision       Int?
+
+  numberValue Float?
+
+  enumOptionGid   String?
+  enumOptionName  String?
+  enumOptionColor String?
+
+  customFieldId String?
+  enumOptionId  String?
+
+  task        Task                         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  customField AsanaCustomField?            @relation(fields: [customFieldId], references: [id])
+  enumOption  AsanaCustomFieldEnumOption?  @relation(fields: [enumOptionId], references: [id])
+
+  @@unique([taskId, customFieldGid])
+  @@index([customFieldGid])
+  @@index([customFieldId])
+  @@index([enumOptionGid])
+  @@index([enumOptionId])
 }

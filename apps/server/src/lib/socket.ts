@@ -1,12 +1,15 @@
 import type { Server as HttpServer } from "node:http";
 import { Server, type Namespace } from "socket.io";
+import { isAllowedCorsOrigin } from "./cors.js";
 
 let notificationsNamespace: Namespace | null = null;
 
 export function initSocket(server: HttpServer, clientUrl: string): Server {
   const io = new Server(server, {
     cors: {
-      origin: clientUrl,
+      origin(origin, callback) {
+        callback(null, isAllowedCorsOrigin(origin, clientUrl));
+      },
       credentials: true
     }
   });

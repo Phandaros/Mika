@@ -1,20 +1,10 @@
 import bcrypt from "bcrypt";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
 import { Role, type Role as RoleValue } from "../lib/enums.js";
+import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
-
-const userSelect = {
-  id: true,
-  name: true,
-  email: true,
-  role: true,
-  avatarUrl: true,
-  isActive: true,
-  createdAt: true,
-  updatedAt: true
-} satisfies Prisma.UserSelect;
 
 interface CreateUserBody {
   name: string;
@@ -40,7 +30,7 @@ export const listUsers: RequestHandler = async (_req, res, next) => {
       select: userSelect
     });
 
-    res.json({ users });
+    res.json({ users: users.map(toPublicUser).filter(Boolean) });
   } catch (error) {
     next(error);
   }
@@ -57,7 +47,7 @@ export const getUserById: RequestHandler = async (req, res, next) => {
       throw new AppError(404, "User not found");
     }
 
-    res.json({ user });
+    res.json({ user: toPublicUser(user) });
   } catch (error) {
     next(error);
   }
@@ -74,12 +64,12 @@ export const createUser: RequestHandler = async (req, res, next) => {
         email: body.email,
         passwordHash,
         role: body.role ?? Role.DESIGNER,
-        avatarUrl: body.avatarUrl
+        photo128x128: body.avatarUrl
       },
       select: userSelect
     });
 
-    res.status(201).json({ user });
+    res.status(201).json({ user: toPublicUser(user) });
   } catch (error) {
     next(error);
   }
@@ -92,7 +82,7 @@ export const updateUser: RequestHandler = async (req, res, next) => {
       name: body.name,
       email: body.email,
       role: body.role,
-      avatarUrl: body.avatarUrl,
+      photo128x128: body.avatarUrl,
       isActive: body.isActive
     };
 
@@ -106,7 +96,7 @@ export const updateUser: RequestHandler = async (req, res, next) => {
       select: userSelect
     });
 
-    res.json({ user });
+    res.json({ user: toPublicUser(user) });
   } catch (error) {
     next(error);
   }
@@ -120,7 +110,7 @@ export const deleteUser: RequestHandler = async (req, res, next) => {
       select: userSelect
     });
 
-    res.json({ user });
+    res.json({ user: toPublicUser(user) });
   } catch (error) {
     next(error);
   }

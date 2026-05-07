@@ -1,17 +1,19 @@
 import axios, { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../store/authStore";
+import { getApiBaseUrl } from "./runtimeConfig";
 
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: getApiBaseUrl(),
   withCredentials: true
 });
 
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
+  config.baseURL = getApiBaseUrl();
 
   if (token) {
     const headers = AxiosHeaders.from(config.headers);
