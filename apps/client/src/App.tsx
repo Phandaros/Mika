@@ -5,6 +5,7 @@ import { LoadingSpinner } from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MyTasksPage } from "./pages/MyTasksPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
@@ -64,7 +65,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-            <Route path="/my-tasks" element={<Navigate to="/" replace />} />
+            <Route path="/my-tasks" element={<MyTasksPage />} />
             <Route element={<CoordinatorRoute />}>
               <Route path="/users" element={<UsersPage />} />
             </Route>

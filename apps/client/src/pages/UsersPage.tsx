@@ -1,5 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Plus, RotateCcw, X } from "lucide-react";
 import { Role, type CreateUserRequest } from "shared";
@@ -12,10 +12,17 @@ import { useCreateUser, useDeactivateUser, useResetUserPassword, useUsers } from
 
 export function UsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: users = [], isLoading } = useUsers();
   const createUser = useCreateUser();
   const deactivateUser = useDeactivateUser();
   const resetPassword = useResetUserPassword();
+
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setShowCreateModal(true);
+    }
+  }, [searchParams]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -23,7 +30,7 @@ export function UsersPage() {
 
   async function handleCreate(payload: CreateUserRequest) {
     await createUser.mutateAsync(payload);
-    setShowCreateModal(false);
+    closeCreateModal(searchParams, setSearchParams, setShowCreateModal);
     toast.success("Usuário criado");
   }
 
@@ -46,7 +53,7 @@ export function UsersPage() {
       </div>
 
       {showCreateModal ? (
-        <UserModal title="Criar usuário" onClose={() => setShowCreateModal(false)}>
+        <UserModal title="Criar usuário" onClose={() => closeCreateModal(searchParams, setSearchParams, setShowCreateModal)}>
           <CreateUserForm onSubmit={handleCreate} loading={createUser.isPending} />
         </UserModal>
       ) : null}
@@ -159,4 +166,15 @@ function roleLabel(role: Role): string {
   };
 
   return labels[role];
+}
+
+function closeCreateModal(
+  searchParams: URLSearchParams,
+  setSearchParams: (params: URLSearchParams, options?: { replace?: boolean }) => void,
+  setShowCreateModal: (value: boolean) => void
+) {
+  const nextParams = new URLSearchParams(searchParams);
+  nextParams.delete("new");
+  setSearchParams(nextParams, { replace: true });
+  setShowCreateModal(false);
 }

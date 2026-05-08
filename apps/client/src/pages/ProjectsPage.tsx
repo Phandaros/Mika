@@ -1,7 +1,7 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
 import { ExternalLink, FolderKanban, ListFilter, Plus, SlidersHorizontal, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getDefaultDiscipline, ProjectStatus, type Project } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
@@ -13,12 +13,19 @@ import { useProjects } from "../hooks/useProjects";
 
 export function ProjectsPage() {
   const { data: projects = [], isLoading } = useProjects();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [builderFilter, setBuilderFilter] = useState("all");
   const [sortMode, setSortMode] = useState("updatedAt-desc");
+
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setShowCreateModal(true);
+    }
+  }, [searchParams]);
 
   const builderSuggestions = useMemo(
     () =>
@@ -117,11 +124,11 @@ export function ProjectsPage() {
       </div>
 
       {showCreateModal ? (
-        <ProjectModal title="Adicionar projeto" onClose={() => setShowCreateModal(false)}>
+        <ProjectModal title="Adicionar projeto" onClose={() => closeCreateModal(searchParams, setSearchParams, setShowCreateModal)}>
           <ProjectForm
             builderSuggestions={builderSuggestions}
-            onCancel={() => setShowCreateModal(false)}
-            onCreated={() => setShowCreateModal(false)}
+            onCancel={() => closeCreateModal(searchParams, setSearchParams, setShowCreateModal)}
+            onCreated={() => closeCreateModal(searchParams, setSearchParams, setShowCreateModal)}
           />
         </ProjectModal>
       ) : null}
@@ -252,4 +259,15 @@ function ProjectModal({ title, children, onClose }: { title: string; children: R
 
 function projectBuilder(project: Project): string | null {
   return project.builder ?? project.client ?? null;
+}
+
+function closeCreateModal(
+  searchParams: URLSearchParams,
+  setSearchParams: (params: URLSearchParams, options?: { replace?: boolean }) => void,
+  setShowCreateModal: (value: boolean) => void
+) {
+  const nextParams = new URLSearchParams(searchParams);
+  nextParams.delete("new");
+  setSearchParams(nextParams, { replace: true });
+  setShowCreateModal(false);
 }

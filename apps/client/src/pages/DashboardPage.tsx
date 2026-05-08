@@ -1,19 +1,14 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
-import { CalendarDays, Inbox, KanbanSquare, List, UserRound } from "lucide-react";
+import { useMemo, useState } from "react";
+import { format, isBefore, isToday } from "date-fns";
+import { FolderKanban, MessageSquare, Target, UserRound } from "lucide-react";
+import { Link } from "react-router-dom";
 import { TaskStatus, type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
-import { TaskCard } from "../components/task/TaskCard";
 import { TaskDetail } from "../components/task/TaskDetail";
-import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
-import { useUpdateTaskStatus } from "../hooks/useTasks";
 import { cn } from "../lib/utils";
-
-type DashboardView = "list" | "kanban" | "calendar";
 
 type TaskWithProject = Task & {
   discipline: {
@@ -24,20 +19,11 @@ type TaskWithProject = Task & {
   };
 };
 
-const columns: Array<{ status: TaskStatus; label: string }> = [
-  { status: TaskStatus.BACKLOG, label: "Backlog" },
-  { status: TaskStatus.TODO, label: "A fazer" },
-  { status: TaskStatus.IN_PROGRESS, label: "Em andamento" },
-  { status: TaskStatus.IN_REVIEW, label: "Em revisão" },
-  { status: TaskStatus.DONE, label: "Concluído" }
-];
-
 export function DashboardPage() {
   const { user } = useAuth();
   const { data: projects = [], isLoading } = useProjects();
-  const [view, setView] = useState<DashboardView>("list");
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
-  const updateTaskStatus = useUpdateTaskStatus(selectedTask?.discipline.projectId ?? "");
+  const [homeTaskTab, setHomeTaskTab] = useState<"next" | "overdue" | "done">("overdue");
 
   const myTasks = useMemo(
     () =>
@@ -59,160 +45,176 @@ export function DashboardPage() {
     [projects, user?.id]
   );
 
+  const overdueTasks = myTasks.filter((task) => task.dueDate && task.status !== TaskStatus.DONE && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
+  const nextTasks = myTasks.filter((task) => task.status !== TaskStatus.DONE && !overdueTasks.some((item) => item.id === task.id)).slice(0, 7);
+  const completedTasks = myTasks.filter((task) => task.status === TaskStatus.DONE);
+  const completedCount = completedTasks.length;
+  const collaboratorCount = new Set(myTasks.map((task) => task.creatorId).filter(Boolean)).size;
+  const homeTasks = homeTaskTab === "overdue" ? overdueTasks.slice(0, 7) : homeTaskTab === "done" ? completedTasks.slice(0, 7) : nextTasks;
+  const activeProjects = projects.filter((project) => project.status === "ACTIVE").slice(0, 3);
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  function handleDragEnd(result: DropResult) {
-    if (!result.destination || result.destination.droppableId === result.source.droppableId) {
-      return;
-    }
-
-    void updateTaskStatus.mutateAsync({ id: result.draggableId, status: result.destination.droppableId as TaskStatus });
-  }
-
   return (
-    <div className="grid gap-6">
-      <section className="flex flex-col justify-between gap-4 border-b border-border pb-4 lg:flex-row lg:items-center">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-orange text-brand-white">
-            <UserRound size={20} />
-          </span>
+    <div className="mx-auto grid max-w-[1200px] gap-4">
+      <section className="rounded-md border border-border bg-[radial-gradient(circle_at_20%_0%,rgba(255,102,0,0.20),transparent_30%),linear-gradient(135deg,#2a2020,#151515_58%,#101010)] p-6">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase text-brand-orange">Home do usuário</p>
-            <h1 className="text-2xl font-bold text-text-primary">Minhas tarefas</h1>
+            <p className="text-sm font-bold text-text-primary">{format(new Date(), "EEEE, d 'de' MMMM")}</p>
+            <h1 className="mt-2 text-3xl font-semibold text-text-primary">Boa tarde, {firstName(user?.name ?? "usuario")}</h1>
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <ViewButton active={view === "list"} icon={<List size={16} />} label="Lista" onClick={() => setView("list")} />
-          <ViewButton active={view === "kanban"} icon={<KanbanSquare size={16} />} label="Kanban" onClick={() => setView("kanban")} />
-          <ViewButton active={view === "calendar"} icon={<CalendarDays size={16} />} label="Calendário" onClick={() => setView("calendar")} />
+          <div className="flex flex-wrap gap-2">
+            <MetricPill label="Meu mes" value="" />
+            <MetricPill label="tarefas concluidas" value={String(completedCount)} />
+            <MetricPill label="colaboradores" value={String(collaboratorCount)} />
+          </div>
         </div>
       </section>
 
-      {myTasks.length === 0 ? <EmptyState icon={<Inbox size={28} />} title="Você não possui tarefas atribuídas" /> : null}
-      {view === "list" ? <ListView tasks={myTasks} onOpenTask={setSelectedTask} /> : null}
-      {view === "kanban" ? <KanbanView tasks={myTasks} onDragEnd={handleDragEnd} onOpenTask={setSelectedTask} /> : null}
-      {view === "calendar" ? <CalendarView tasks={myTasks} onOpenTask={setSelectedTask} /> : null}
+      <section className="grid gap-4 xl:grid-cols-2">
+        <HomeCard title="Minhas tarefas" icon={<UserRound size={16} />}>
+          <div className="mb-3 flex gap-5 border-b border-border text-sm font-bold text-text-secondary">
+            <HomeTaskTab active={homeTaskTab === "next"} onClick={() => setHomeTaskTab("next")}>Proximas</HomeTaskTab>
+            <HomeTaskTab active={homeTaskTab === "overdue"} onClick={() => setHomeTaskTab("overdue")}>Atrasadas ({overdueTasks.length})</HomeTaskTab>
+            <HomeTaskTab active={homeTaskTab === "done"} onClick={() => setHomeTaskTab("done")}>Concluidas</HomeTaskTab>
+          </div>
+          <TaskMiniList tasks={homeTasks} onOpenTask={setSelectedTask} />
+          <Link to="/my-tasks" className="mt-3 inline-flex text-sm font-semibold text-brand-orange hover:text-orange-400">
+            Abrir minhas tarefas
+          </Link>
+        </HomeCard>
+
+        <HomeCard title="Comentarios que me mencionam" icon={<MessageSquare size={16} />}>
+          <div className="flex min-h-64 flex-col items-center justify-center text-center text-text-secondary">
+            <MessageSquare size={48} className="mb-4 text-text-muted" />
+            <p className="max-w-sm text-sm">As mencoes feitas a voce nos comentarios serao exibidas aqui.</p>
+          </div>
+        </HomeCard>
+
+        <HomeCard title="Atualizacoes de status" icon={<FolderKanban size={16} />}>
+          <div className="flex min-h-64 flex-col items-center justify-center text-center text-text-secondary">
+            <FolderKanban size={48} className="mb-4 text-text-muted" />
+            <p className="max-w-md text-sm">As atualizacoes de status ajudam a acompanhar o progresso dos projetos.</p>
+          </div>
+        </HomeCard>
+
+        <HomeCard title="Projetos ativos" icon={<Target size={16} />}>
+          <div className="mb-3 flex gap-5 border-b border-border text-sm font-bold text-text-secondary">
+            <span className="border-b-2 border-text-primary pb-2 text-text-primary">Empresa</span>
+            <Link to="/projects" className="pb-2 hover:text-text-primary">Ver todos</Link>
+          </div>
+          {activeProjects.map((project) => {
+            const tasks = project.disciplines?.flatMap((discipline) => discipline.tasks ?? []) ?? [];
+            const done = tasks.filter((task) => task.status === TaskStatus.DONE).length;
+            const progress = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+
+            return <GoalRow key={project.id} title={project.name} href={`/projects/${project.id}`} progress={progress} />;
+          })}
+          {!activeProjects.length ? <EmptyState title="Nenhum projeto ativo" /> : null}
+        </HomeCard>
+      </section>
       <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
   );
 }
 
-function ViewButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
+function HomeCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <Button variant={active ? "primary" : "secondary"} className="h-9" onClick={onClick}>
-      {icon}
-      {label}
-    </Button>
+    <section className="min-h-[402px] rounded-md border border-border bg-surface-card p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-xl font-bold text-text-primary">
+          {title}
+          <span className="text-text-secondary">{icon}</span>
+        </h2>
+      </div>
+      {children}
+    </section>
   );
 }
 
-function ListView({ tasks, onOpenTask }: { tasks: TaskWithProject[]; onOpenTask: (task: TaskWithProject) => void }) {
+function HomeTaskTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <div className="overflow-auto rounded-md border border-border">
-      <table className="w-full min-w-[900px] border-collapse bg-surface-card text-sm">
-        <thead className="bg-surface text-left text-text-secondary">
-          <tr>
-            <th className="p-3">Tarefa</th>
-            <th className="p-3">Projeto</th>
-            <th className="p-3">Disciplina</th>
-            <th className="p-3">Status</th>
-            <th className="p-3">Entrega</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task) => (
-            <tr key={task.id} className="border-t border-border hover:bg-surface-hover">
-              <td className="p-3">
-                <button type="button" onClick={() => onOpenTask(task)} className="font-semibold text-text-primary hover:text-brand-orange">
-                  {task.title}
-                </button>
-              </td>
-              <td className="p-3 text-text-secondary">{task.discipline.projectName}</td>
-              <td className="p-3 text-text-secondary">{task.discipline.name}</td>
-              <td className="p-3 text-text-secondary">{statusLabel(task.status)}</td>
-              <td className="p-3 text-text-secondary">{task.dueDate ? format(new Date(task.dueDate), "dd/MM/yyyy") : "-"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <button
+      type="button"
+      onClick={onClick}
+      className={active ? "border-b-2 border-text-primary pb-2 text-text-primary" : "pb-2 hover:text-text-primary"}
+    >
+      {children}
+    </button>
+  );
+}
+
+function TaskMiniList({ tasks, onOpenTask }: { tasks: TaskWithProject[]; onOpenTask: (task: TaskWithProject) => void }) {
+  if (!tasks.length) {
+    return <EmptyState title="Nenhuma tarefa para mostrar" />;
+  }
+
+  return (
+    <div className="max-h-[290px] overflow-y-auto pr-1">
+      {tasks.map((task) => (
+        <button
+          key={task.id}
+          type="button"
+          onClick={() => onOpenTask(task)}
+          className="grid w-full grid-cols-[18px_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-border py-2 text-left text-sm hover:bg-surface-hover"
+        >
+          <span className={cn("h-4 w-4 rounded-full border", task.status === TaskStatus.DONE ? "border-green-400 bg-green-400" : "border-text-secondary")} />
+          <span className="truncate font-semibold text-text-primary">{task.title}</span>
+          <span className="max-w-32 truncate rounded bg-surface-hover px-2 py-1 text-xs font-semibold text-text-primary">{task.discipline.projectName}</span>
+          <span className={cn("text-xs font-semibold", isOverdue(task) ? "text-red-300" : "text-text-secondary")}>{dateLabel(task.dueDate)}</span>
+        </button>
+      ))}
     </div>
   );
 }
 
-function KanbanView({ tasks, onDragEnd, onOpenTask }: { tasks: TaskWithProject[]; onDragEnd: (result: DropResult) => void; onOpenTask: (task: TaskWithProject) => void }) {
+function GoalRow({ title, href, progress }: { title: string; href: string; progress: number }) {
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="overflow-x-auto pb-3">
-        <div className="flex min-w-max gap-4">
-          {columns.map((column) => {
-            const columnTasks = tasks.filter((task) => task.status === column.status);
-            return (
-              <Droppable key={column.status} droppableId={column.status}>
-                {(provided, snapshot) => (
-                  <section
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={cn(
-                      "flex min-h-[520px] w-72 flex-none flex-col rounded-md border border-border bg-surface p-3 transition",
-                      snapshot.isDraggingOver ? "border-brand-orange" : ""
-                    )}
-                  >
-                    <div className="mb-3 flex items-center justify-between">
-                      <h2 className="text-sm font-bold text-text-primary">{column.label}</h2>
-                      <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{columnTasks.length}</span>
-                    </div>
-                    <div className="grid flex-1 content-start gap-3">
-                      {columnTasks.map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(dragProvided) => (
-                            <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                              <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {columnTasks.length === 0 ? <EmptyState title="Nenhuma tarefa aqui" /> : null}
-                      {provided.placeholder}
-                    </div>
-                  </section>
-                )}
-              </Droppable>
-            );
-          })}
+    <Link to={href} className="mb-2 block rounded-md border border-border px-4 py-3 hover:bg-surface-hover">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-bold text-text-primary">{title}</p>
+          <p className="mt-1 text-xs text-text-secondary">mkengenharia.eng.br</p>
+        </div>
+        <div className="w-36">
+          <div className="h-1.5 rounded-full bg-surface-hover">
+            <div className="h-1.5 rounded-full bg-text-secondary" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="mt-1 text-xs text-text-secondary">{progress}%</p>
         </div>
       </div>
-    </DragDropContext>
+    </Link>
   );
 }
 
-function CalendarView({ tasks, onOpenTask }: { tasks: TaskWithProject[]; onOpenTask: (task: TaskWithProject) => void }) {
-  const month = new Date();
-  const days = eachDayOfInterval({ start: startOfWeek(startOfMonth(month)), end: endOfWeek(endOfMonth(month)) });
-
+function MetricPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-7 overflow-hidden rounded-md border border-border bg-surface-card text-sm">
-      {days.map((day) => {
-        const dayTasks = tasks.filter((task) => task.dueDate && isSameDay(parseISO(String(task.dueDate).slice(0, 10)), day));
-        return (
-          <div key={day.toISOString()} className="min-h-32 border-r border-t border-border p-2">
-            <p className="text-xs font-semibold text-text-muted">{format(day, "dd/MM")}</p>
-            <div className="mt-2 grid gap-1">
-              {dayTasks.map((task) => (
-                <button key={task.id} type="button" onClick={() => onOpenTask(task)} className="rounded-md bg-brand-orange/15 px-2 py-1 text-left text-xs font-semibold text-text-primary hover:bg-brand-orange/25">
-                  {task.title}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <span className="inline-flex h-8 items-center gap-2 rounded-md bg-brand-black/75 px-3 text-xs font-bold text-text-secondary">
+      {value ? <strong className="text-text-primary">{value}</strong> : null}
+      {label}
+    </span>
   );
 }
 
-function statusLabel(status: TaskStatus): string {
-  const item = columns.find((column) => column.status === status);
-  return item?.label ?? status;
+function firstName(name: string): string {
+  return name.split(" ")[0] ?? name;
+}
+
+function isOverdue(task: Task): boolean {
+  return Boolean(task.dueDate && task.status !== TaskStatus.DONE && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
+}
+
+function dateLabel(date: string | null): string {
+  if (!date) {
+    return "Sem data";
+  }
+
+  const parsed = new Date(date);
+  if (isToday(parsed)) {
+    return "Hoje";
+  }
+
+  return format(parsed, "d MMM");
 }

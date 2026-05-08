@@ -8,7 +8,7 @@ export function AppShell() {
       <Sidebar />
       <div className="min-w-0 flex-1">
         <Header />
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
+        <main className="w-full px-3 py-4 sm:px-6 lg:px-6">
           <Outlet />
         </main>
       </div>
