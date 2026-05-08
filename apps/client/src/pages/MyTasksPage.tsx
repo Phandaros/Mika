@@ -23,7 +23,7 @@ export function MyTasksPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <p className="text-sm font-semibold uppercase text-brand-orange">Execucao</p>
+        <p className="text-sm font-semibold uppercase text-brand-orange">Execução</p>
         <h1 className="mt-1 text-3xl font-bold text-text-primary">Minhas tarefas</h1>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
@@ -31,7 +31,7 @@ export function MyTasksPage() {
           <TaskCard key={task.id} task={task} disciplineName={task.discipline.name} />
         ))}
       </div>
-      {myTasks.length === 0 ? <EmptyState title="Voce nao possui tarefas atribuidas" /> : null}
+      {myTasks.length === 0 ? <EmptyState title="Você não possui tarefas atribuídas" /> : null}
     </div>
   );
 }

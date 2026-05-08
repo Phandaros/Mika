@@ -1,18 +1,26 @@
-import { FolderKanban, Home, Users, UserSquare2 } from "lucide-react";
+import { FolderKanban, Home, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { Role } from "shared";
 import logoUrl from "../../assets/logo.svg";
 import { useUiStore } from "../../store/uiStore";
 import { cn } from "../../lib/utils";
+import { useAuth } from "../../hooks/useAuth";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: Home },
+  { to: "/", label: "Minhas tarefas", icon: Home },
   { to: "/projects", label: "Projetos Ativos", icon: FolderKanban },
-  { to: "/my-tasks", label: "Minhas tarefas", icon: UserSquare2 },
-  { to: "/users", label: "Usuarios", icon: Users }
+  { to: "/users", label: "Usuários", icon: Users, minRole: Role.COORDINATOR }
 ];
 
 export function Sidebar() {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
+  const { user } = useAuth();
+  const roleWeight: Record<Role, number> = {
+    [Role.INTERN]: 0,
+    [Role.DESIGNER]: 1,
+    [Role.COORDINATOR]: 2,
+    [Role.ADMIN]: 3
+  };
 
   return (
     <aside
@@ -25,7 +33,7 @@ export function Sidebar() {
         <img src={logoUrl} alt="MK Projetos" className="h-12 w-auto" />
       </div>
       <nav className="grid gap-1 p-4">
-        {navItems.map((item) => {
+        {navItems.filter((item) => !item.minRole || (user && roleWeight[user.role] >= roleWeight[item.minRole])).map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

@@ -58,6 +58,18 @@ export const projectInclude = {
         include: taskInclude
       }
     }
+  },
+  customFieldSettings: {
+    include: {
+      customField: {
+        include: {
+          enumOptions: {
+            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
+          }
+        }
+      }
+    },
+    orderBy: { isImportant: "desc" as const }
   }
 } satisfies Prisma.ProjectInclude;
 
@@ -197,7 +209,7 @@ export function toProjectDto(project: ProjectRecord) {
   if (looseMemberships.length > 0) {
     disciplines.push({
       id: `project-${project.id}-uncategorized`,
-      asanaGid: null,
+      asanaGid: `local:section:uncategorized:${project.id}`,
       projectId: project.id,
       name: "Sem secao",
       type: DisciplineType.OTHER,
@@ -233,6 +245,21 @@ export function toProjectDto(project: ProjectRecord) {
     color: project.color,
     defaultView: project.defaultView,
     owner: toPublicUser(project.owner),
+    customFields: project.customFieldSettings.map((setting) => ({
+      id: setting.id,
+      asanaGid: setting.asanaGid,
+      isImportant: setting.isImportant,
+      name: setting.customField.name,
+      description: setting.customField.description,
+      type: setting.customField.type,
+      enumOptions: setting.customField.enumOptions.map((option) => ({
+        id: option.id,
+        asanaGid: option.asanaGid,
+        name: option.name,
+        color: option.color,
+        enabled: option.enabled
+      }))
+    })),
     createdAt: project.asanaCreatedAt ?? project.createdAt,
     updatedAt: project.asanaModifiedAt ?? project.updatedAt,
     disciplines

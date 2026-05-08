@@ -21,7 +21,11 @@ const taskSchema = z.object({
   priority: z.nativeEnum(Priority).optional(),
   assigneeId: z.string().nullable().optional(),
   startDate: z.string().nullable().optional(),
-  dueDate: z.string().nullable().optional()
+  dueDate: z.string().nullable().optional(),
+  customFieldValues: z.array(z.object({
+    id: z.string(),
+    value: z.union([z.string(), z.number()]).nullable()
+  })).optional()
 });
 
 const updateTaskSchema = taskSchema.partial();

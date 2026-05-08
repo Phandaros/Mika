@@ -25,7 +25,7 @@ export function UserProfilePage() {
   }
 
   if (!user) {
-    return <div className="text-text-secondary">Usuario nao encontrado.</div>;
+    return <div className="text-text-secondary">Usuário não encontrado.</div>;
   }
 
   return (

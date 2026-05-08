@@ -4,18 +4,35 @@ import { User } from "./user.js";
 
 export interface Task {
   id: string;
+  asanaGid?: string;
   disciplineId: string;
   title: string;
   description: string | null;
+  htmlDescription?: string | null;
   status: TaskStatus;
   priority: Priority;
   assigneeId: string | null;
+  assigneeGid?: string | null;
   creatorId: string;
   startDate: string | null;
   dueDate: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  customFieldValues?: Array<{
+    id: string;
+    customFieldName: string | null;
+    type?: string;
+    displayValue: string | null;
+    enumOptionName: string | null;
+    numberValue: number | null;
+    enumOptionColor?: string | null;
+  }>;
+  tags?: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
   assignee?: User | null;
   creator?: User;
   comments?: Comment[];
@@ -45,6 +62,10 @@ export interface UpdateTaskRequest {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  customFieldValues?: Array<{
+    id: string;
+    value: string | number | null;
+  }>;
 }
 
 export interface UpdateTaskStatusRequest {

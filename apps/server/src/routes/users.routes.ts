@@ -5,6 +5,7 @@ import {
   deleteUser,
   getUserById,
   listUsers,
+  resetUserPassword,
   updateUser
 } from "../controllers/users.controller.js";
 import { auth } from "../middleware/auth.js";
@@ -34,8 +35,9 @@ const updateUserSchema = z.object({
 router.use(auth);
 router.get("/users", listUsers);
 router.get("/users/:id", getUserById);
-router.post("/users", requireRole(Role.ADMIN), validateBody(createUserSchema), createUser);
+router.post("/users", requireRole(Role.COORDINATOR), validateBody(createUserSchema), createUser);
 router.patch("/users/:id", validateBody(updateUserSchema), updateUser);
-router.delete("/users/:id", requireRole(Role.ADMIN), deleteUser);
+router.patch("/users/:id/reset-password", requireRole(Role.COORDINATOR), resetUserPassword);
+router.delete("/users/:id", requireRole(Role.COORDINATOR), deleteUser);
 
 export default router;

@@ -2,6 +2,7 @@ import { Role } from "./enums.js";
 
 export interface User {
   id: string;
+  asanaGid?: string | null;
   name: string;
   email: string;
   role: Role;

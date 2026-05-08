@@ -46,7 +46,7 @@ export function LoginPage() {
           <h1 className="text-2xl font-bold text-text-primary">Entrar no MK Projetos</h1>
           <p className="mt-2 text-sm text-text-secondary">Acesse projetos, disciplinas e tarefas da equipe.</p>
         </div>
-        <form onSubmit={handleSubmit} className="mt-8 grid gap-4" autoComplete="off">
+        <form onSubmit={handleSubmit} className="mt-8 grid gap-4" autoComplete="on">
           {isDesktop ? (
             <label className="grid gap-2 text-sm font-semibold text-text-secondary">
               Servidor
@@ -61,15 +61,23 @@ export function LoginPage() {
           ) : null}
           <label className="grid gap-2 text-sm font-semibold text-text-secondary">
             Email
-            <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="off" required />
+            <Input
+              type="email"
+              name="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="username email"
+              required
+            />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-text-secondary">
             Senha
             <Input
               type="password"
+              name="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
+              autoComplete="current-password"
               required
             />
           </label>

@@ -1,4 +1,4 @@
-import { FolderKanban } from "lucide-react";
+import { ExternalLink, FolderKanban } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Project } from "shared";
 import { Badge } from "../ui/badge";
@@ -22,14 +22,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </span>
           <div>
             <h3 className="font-semibold text-text-primary">{project.name}</h3>
-            <p className="mt-1 text-sm text-text-secondary">{project.client ?? "Sem cliente"}</p>
+            <p className="mt-1 text-sm text-text-secondary">{project.client ?? project.owner?.name ?? "Sem equipe"}</p>
           </div>
         </div>
         <Badge tone="orange">{project.status}</Badge>
       </div>
       <div className="mt-4 flex items-center gap-4 text-sm text-text-secondary">
-        <span>{project.disciplines?.length ?? 0} disciplinas</span>
+        <span>{project.disciplines?.length ?? 0} secoes</span>
         <span>{taskCount} tarefas</span>
+        {project.permalinkUrl ? (
+          <span className="inline-flex items-center gap-1 text-brand-orange">
+            <ExternalLink size={14} />
+            Asana
+          </span>
+        ) : null}
       </div>
     </Link>
   );

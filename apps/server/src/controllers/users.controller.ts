@@ -115,3 +115,18 @@ export const deleteUser: RequestHandler = async (req, res, next) => {
     next(error);
   }
 };
+
+export const resetUserPassword: RequestHandler = async (req, res, next) => {
+  try {
+    const temporaryPassword = `mk${Math.random().toString(36).slice(2, 8)}`;
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { passwordHash: await bcrypt.hash(temporaryPassword, 10) },
+      select: userSelect
+    });
+
+    res.json({ user: toPublicUser(user), temporaryPassword });
+  } catch (error) {
+    next(error);
+  }
+};

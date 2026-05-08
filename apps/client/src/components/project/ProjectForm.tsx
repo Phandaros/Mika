@@ -62,7 +62,7 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
     const parsedArea = areaM2 ? Number(areaM2.replace(",", ".")) : null;
 
     if (parsedArea !== null && Number.isNaN(parsedArea)) {
-      toast.error("Informe uma area valida");
+      toast.error("Informe uma área válida");
       return;
     }
 
@@ -94,7 +94,7 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
       setSelectedDisciplineTypes([]);
       onCreated?.();
     } catch {
-      toast.error(project ? "Nao foi possivel salvar o projeto" : "Nao foi possivel criar o projeto");
+      toast.error(project ? "Não foi possível salvar o projeto" : "Não foi possível criar o projeto");
     }
   }
 
@@ -135,7 +135,7 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
       <Textarea
         value={description}
         onChange={(event) => setDescription(event.target.value)}
-        placeholder="Descricao"
+        placeholder="Descrição"
       />
       <Select value={status} onChange={(event) => setStatus(event.target.value as ProjectStatus)}>
         {Object.values(ProjectStatus).map((option) => (
@@ -174,6 +174,36 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
           })}
         </div>
       </fieldset>
+      {project?.customFields?.length ? (
+        <section className="grid gap-3 rounded-md border border-border bg-brand-black p-4">
+          <div>
+            <h3 className="text-sm font-bold text-text-primary">Campos customizados do Asana</h3>
+            <p className="mt-1 text-xs text-text-muted">Campos importados e disponíveis nas tarefas deste projeto.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {project.customFields.map((field) => (
+              <div key={field.id} className="rounded-md border border-border bg-surface-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-text-primary">{field.name}</p>
+                    <p className="mt-1 text-xs text-text-muted">{field.type}</p>
+                  </div>
+                  {field.isImportant ? <span className="rounded-md bg-brand-orange/15 px-2 py-1 text-xs font-semibold text-brand-orange">Importante</span> : null}
+                </div>
+                {field.enumOptions.length ? (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {field.enumOptions.filter((option) => option.enabled).map((option) => (
+                      <span key={option.id} className="rounded-md border border-border px-2 py-1 text-xs text-text-secondary">
+                        {option.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <Button type="submit" disabled={createProject.isPending || updateProject.isPending}>
         {project ? "Salvar projeto" : "Criar projeto"}
       </Button>

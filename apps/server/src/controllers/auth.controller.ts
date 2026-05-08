@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import type { RequestHandler } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { env } from "../config/env.js";
-import { makeLocalAsanaGid, toPublicUser, userSelect } from "../lib/asanaDto.js";
+import { makeLocalAsanaGid, normalizeRole, toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { prisma } from "../lib/prisma.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
@@ -18,7 +18,7 @@ function createAccessToken(user: { id: string; email: string; name: string; role
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: normalizeRole(user.role)
     },
     env.JWT_ACCESS_SECRET,
     { expiresIn: "15m" }
@@ -28,6 +28,14 @@ function createAccessToken(user: { id: string; email: string; name: string; role
 function createRefreshToken(userId: string): string {
   return jwt.sign({ id: userId }, env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
 }
+
+const refreshCookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: false,
+  path: "/api/v1/auth",
+  maxAge: 7 * 24 * 60 * 60 * 1000
+};
 
 function readCookie(header: string | undefined, name: string): string | null {
   if (!header) {
@@ -71,13 +79,7 @@ export const login: RequestHandler = async (req, res, next) => {
     const refreshToken = createRefreshToken(user.id);
     const publicRecord = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: userSelect });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      path: "/api/v1/auth",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
     res.json({ user: toPublicUser(publicRecord), accessToken });
   } catch (error) {
@@ -87,7 +89,7 @@ export const login: RequestHandler = async (req, res, next) => {
 
 export const logout: RequestHandler = async (_req, res, next) => {
   try {
-    res.clearCookie("refreshToken", { path: "/api/v1/auth" });
+    res.clearCookie("refreshToken", { path: refreshCookieOptions.path });
     res.json({ ok: true });
   } catch (error) {
     next(error);
@@ -136,6 +138,8 @@ export const refresh: RequestHandler = async (req, res, next) => {
     }
 
     const accessToken = createAccessToken(user);
+    const refreshToken = createRefreshToken(user.id);
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
     res.json({ user: toPublicUser(user), accessToken });
   } catch {
     next(new AppError(401, "Invalid refresh token"));

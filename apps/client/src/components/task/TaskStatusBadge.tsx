@@ -5,8 +5,8 @@ const labels: Record<TaskStatus, string> = {
   [TaskStatus.BACKLOG]: "Backlog",
   [TaskStatus.TODO]: "A fazer",
   [TaskStatus.IN_PROGRESS]: "Em andamento",
-  [TaskStatus.IN_REVIEW]: "Em revisao",
-  [TaskStatus.DONE]: "Concluido"
+  [TaskStatus.IN_REVIEW]: "Em revisão",
+  [TaskStatus.DONE]: "Concluído"
 };
 
 const tones: Record<TaskStatus, "muted" | "blue" | "orange" | "purple" | "green"> = {

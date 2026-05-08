@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { format, isBefore } from "date-fns";
-import { Edit3, Inbox, Plus, X } from "lucide-react";
+import { Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { getDefaultDiscipline, Priority, TaskStatus, type Discipline, type DisciplineType, type Task, type User } from "shared";
 import { DisciplineTab } from "../components/discipline/DisciplineTab";
@@ -167,9 +167,27 @@ export function ProjectDetailPage() {
     <div className="grid gap-6">
       <section>
         <div>
-          <p className="text-sm font-semibold uppercase text-brand-orange">{projectBuilder(project) ?? "Projeto"}</p>
-          <h1 className="mt-1 text-3xl font-bold text-text-primary">{project.name}</h1>
+          <p className="text-sm font-semibold uppercase text-brand-orange">{projectBuilder(project) ?? "Projeto Asana"}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold text-text-primary">{project.name}</h1>
+            {project.permalinkUrl ? (
+              <a
+                href={project.permalinkUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold text-text-secondary transition hover:border-brand-orange hover:text-brand-orange"
+              >
+                <ExternalLink size={16} />
+                Asana
+              </a>
+            ) : null}
+          </div>
           <p className="mt-2 max-w-3xl text-sm text-text-secondary">{project.description ?? "Sem descricao cadastrada."}</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-text-secondary">
+            {project.owner?.name ? <span className="rounded-md border border-border px-2 py-1">Responsável: {project.owner.name}</span> : null}
+            {project.defaultView ? <span className="rounded-md border border-border px-2 py-1">View: {project.defaultView}</span> : null}
+            {project.asanaGid ? <span className="rounded-md border border-border px-2 py-1">GID: {project.asanaGid}</span> : null}
+          </div>
         </div>
       </section>
 
@@ -257,6 +275,9 @@ export function ProjectDetailPage() {
             onTaskStatusChange={(taskId, status) => void updateTask.mutateAsync({ id: taskId, payload: { status } })}
             onTaskAssigneeChange={(taskId, assigneeId) =>
               void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } })
+            }
+            onTaskCustomFieldChange={(taskId, fieldId, value) =>
+              void updateTask.mutateAsync({ id: taskId, payload: { customFieldValues: [{ id: fieldId, value }] } })
             }
             onOpenTask={setSelectedTask}
           />
@@ -440,6 +461,7 @@ function ListView({
   onSort,
   onTaskStatusChange,
   onTaskAssigneeChange,
+  onTaskCustomFieldChange,
   onOpenTask
 }: {
   disciplines: Discipline[];
@@ -457,9 +479,13 @@ function ListView({
   onSort: (key: SortKey) => void;
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
+  onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
 }) {
   const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDirection === "asc" ? " ↑" : " ↓") : "");
+  const customFieldNames = Array.from(
+    new Set(tasks.flatMap((task) => task.customFieldValues?.map((field) => field.customFieldName ?? "Campo") ?? []))
+  );
 
   return (
     <div className="grid gap-4">
@@ -506,10 +532,13 @@ function ListView({
             <tr className="text-left text-text-secondary">
               <SortableHeader label="Tarefa" sortKey="title" onSort={onSort} indicator={sortIndicator("title")} />
               <SortableHeader label="Disciplina" sortKey="discipline" onSort={onSort} indicator={sortIndicator("discipline")} />
-              <SortableHeader label="Responsavel" sortKey="assignee" onSort={onSort} indicator={sortIndicator("assignee")} />
+              <SortableHeader label="Responsável" sortKey="assignee" onSort={onSort} indicator={sortIndicator("assignee")} />
               <SortableHeader label="Prioridade" sortKey="priority" onSort={onSort} indicator={sortIndicator("priority")} />
               <SortableHeader label="Status" sortKey="status" onSort={onSort} indicator={sortIndicator("status")} />
               <SortableHeader label="Entrega" sortKey="dueDate" onSort={onSort} indicator={sortIndicator("dueDate")} />
+              {customFieldNames.map((name) => (
+                <th key={name} className="p-3 font-semibold">{name}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -526,7 +555,9 @@ function ListView({
                   users={users}
                   onTaskStatusChange={onTaskStatusChange}
                   onTaskAssigneeChange={onTaskAssigneeChange}
+                  onTaskCustomFieldChange={onTaskCustomFieldChange}
                   onOpenTask={onOpenTask}
+                  customFieldNames={customFieldNames}
                 />
               );
             })}
@@ -545,7 +576,9 @@ function GroupedDisciplineRows({
   users,
   onTaskStatusChange,
   onTaskAssigneeChange,
-  onOpenTask
+  onTaskCustomFieldChange,
+  onOpenTask,
+  customFieldNames
 }: {
   discipline: Discipline;
   disciplineColor: string;
@@ -553,12 +586,14 @@ function GroupedDisciplineRows({
   users: User[];
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
+  onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  customFieldNames: string[];
 }) {
   return (
     <>
       <tr className="border-t border-border bg-surface">
-        <td colSpan={6} className="p-3">
+        <td colSpan={6 + customFieldNames.length} className="p-3">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: disciplineColor }} />
             <span className="font-bold text-text-primary">{discipline.name}</span>
@@ -568,7 +603,7 @@ function GroupedDisciplineRows({
       </tr>
       {tasks.length === 0 ? (
         <tr className="border-t border-border">
-          <td colSpan={6} className="p-4 text-sm text-text-muted">
+          <td colSpan={6 + customFieldNames.length} className="p-4 text-sm text-text-muted">
             Nenhuma tarefa nesta disciplina.
           </td>
         </tr>
@@ -609,6 +644,21 @@ function GroupedDisciplineRows({
             <td className="p-3 text-text-secondary">
               {task.dueDate ? format(new Date(task.dueDate), "dd/MM/yyyy") : "-"}
             </td>
+            {customFieldNames.map((name) => {
+              const field = task.customFieldValues?.find((item) => (item.customFieldName ?? "Campo") === name);
+              return (
+                <td key={`${task.id}-${name}`} className="p-3">
+                  {field ? (
+                    <InlineField
+                      value={String(field.displayValue ?? field.enumOptionName ?? field.numberValue ?? "")}
+                      onSave={(value) => onTaskCustomFieldChange(task.id, field.id, value || null)}
+                    />
+                  ) : (
+                    <span className="text-text-muted">-</span>
+                  )}
+                </td>
+              );
+            })}
           </tr>
         ))
       )}
@@ -634,6 +684,24 @@ function SortableHeader({
         {indicator}
       </button>
     </th>
+  );
+}
+
+function InlineField({ value, onSave }: { value: string; onSave: (value: string) => void }) {
+  const [draft, setDraft] = useState(value);
+
+  return (
+    <Input
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={() => onSave(draft)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        }
+      }}
+      className="h-9 min-w-36 border-border bg-brand-black/60"
+    />
   );
 }
 

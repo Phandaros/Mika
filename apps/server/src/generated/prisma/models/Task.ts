@@ -388,6 +388,7 @@ export type TaskWhereInput = {
   likes?: Prisma.TaskLikeListRelationFilter
   tags?: Prisma.TaskTagListRelationFilter
   customFieldValues?: Prisma.TaskCustomFieldValueListRelationFilter
+  comments?: Prisma.CommentListRelationFilter
 }
 
 export type TaskOrderByWithRelationInput = {
@@ -424,6 +425,7 @@ export type TaskOrderByWithRelationInput = {
   likes?: Prisma.TaskLikeOrderByRelationAggregateInput
   tags?: Prisma.TaskTagOrderByRelationAggregateInput
   customFieldValues?: Prisma.TaskCustomFieldValueOrderByRelationAggregateInput
+  comments?: Prisma.CommentOrderByRelationAggregateInput
 }
 
 export type TaskWhereUniqueInput = Prisma.AtLeast<{
@@ -463,6 +465,7 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   likes?: Prisma.TaskLikeListRelationFilter
   tags?: Prisma.TaskTagListRelationFilter
   customFieldValues?: Prisma.TaskCustomFieldValueListRelationFilter
+  comments?: Prisma.CommentListRelationFilter
 }, "id" | "asanaGid">
 
 export type TaskOrderByWithAggregationInput = {
@@ -561,6 +564,7 @@ export type TaskCreateInput = {
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateInput = {
@@ -595,6 +599,7 @@ export type TaskUncheckedCreateInput = {
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUpdateInput = {
@@ -629,6 +634,7 @@ export type TaskUpdateInput = {
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateInput = {
@@ -663,6 +669,7 @@ export type TaskUncheckedUpdateInput = {
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateManyInput = {
@@ -969,6 +976,20 @@ export type TaskUncheckedUpdateManyWithoutParentNestedInput = {
   deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
 }
 
+export type TaskCreateNestedOneWithoutCommentsInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutCommentsInput, Prisma.TaskUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutCommentsInput
+  connect?: Prisma.TaskWhereUniqueInput
+}
+
+export type TaskUpdateOneRequiredWithoutCommentsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutCommentsInput, Prisma.TaskUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutCommentsInput
+  upsert?: Prisma.TaskUpsertWithoutCommentsInput
+  connect?: Prisma.TaskWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaskUpdateToOneWithWhereWithoutCommentsInput, Prisma.TaskUpdateWithoutCommentsInput>, Prisma.TaskUncheckedUpdateWithoutCommentsInput>
+}
+
 export type TaskCreateNestedOneWithoutMembershipsInput = {
   create?: Prisma.XOR<Prisma.TaskCreateWithoutMembershipsInput, Prisma.TaskUncheckedCreateWithoutMembershipsInput>
   connectOrCreate?: Prisma.TaskCreateOrConnectWithoutMembershipsInput
@@ -1070,6 +1091,7 @@ export type TaskCreateWithoutAssigneeInput = {
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutAssigneeInput = {
@@ -1103,6 +1125,7 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutAssigneeInput = {
@@ -1192,6 +1215,7 @@ export type TaskCreateWithoutSubtasksInput = {
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutSubtasksInput = {
@@ -1225,6 +1249,7 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutSubtasksInput = {
@@ -1263,6 +1288,7 @@ export type TaskCreateWithoutParentInput = {
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutParentInput = {
@@ -1296,6 +1322,7 @@ export type TaskUncheckedCreateWithoutParentInput = {
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutParentInput = {
@@ -1349,6 +1376,7 @@ export type TaskUpdateWithoutSubtasksInput = {
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutSubtasksInput = {
@@ -1382,6 +1410,7 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUpsertWithWhereUniqueWithoutParentInput = {
@@ -1398,6 +1427,158 @@ export type TaskUpdateWithWhereUniqueWithoutParentInput = {
 export type TaskUpdateManyWithWhereWithoutParentInput = {
   where: Prisma.TaskScalarWhereInput
   data: Prisma.XOR<Prisma.TaskUpdateManyMutationInput, Prisma.TaskUncheckedUpdateManyWithoutParentInput>
+}
+
+export type TaskCreateWithoutCommentsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  localStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+}
+
+export type TaskUncheckedCreateWithoutCommentsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  localStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  assigneeGid?: string | null
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+}
+
+export type TaskCreateOrConnectWithoutCommentsInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutCommentsInput, Prisma.TaskUncheckedCreateWithoutCommentsInput>
+}
+
+export type TaskUpsertWithoutCommentsInput = {
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutCommentsInput, Prisma.TaskUncheckedUpdateWithoutCommentsInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutCommentsInput, Prisma.TaskUncheckedCreateWithoutCommentsInput>
+  where?: Prisma.TaskWhereInput
+}
+
+export type TaskUpdateToOneWithWhereWithoutCommentsInput = {
+  where?: Prisma.TaskWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutCommentsInput, Prisma.TaskUncheckedUpdateWithoutCommentsInput>
+}
+
+export type TaskUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutMembershipsInput = {
@@ -1431,6 +1612,7 @@ export type TaskCreateWithoutMembershipsInput = {
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutMembershipsInput = {
@@ -1464,6 +1646,7 @@ export type TaskUncheckedCreateWithoutMembershipsInput = {
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutMembershipsInput = {
@@ -1513,6 +1696,7 @@ export type TaskUpdateWithoutMembershipsInput = {
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutMembershipsInput = {
@@ -1546,6 +1730,7 @@ export type TaskUncheckedUpdateWithoutMembershipsInput = {
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutFollowersInput = {
@@ -1579,6 +1764,7 @@ export type TaskCreateWithoutFollowersInput = {
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutFollowersInput = {
@@ -1612,6 +1798,7 @@ export type TaskUncheckedCreateWithoutFollowersInput = {
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutFollowersInput = {
@@ -1661,6 +1848,7 @@ export type TaskUpdateWithoutFollowersInput = {
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutFollowersInput = {
@@ -1694,6 +1882,7 @@ export type TaskUncheckedUpdateWithoutFollowersInput = {
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutLikesInput = {
@@ -1727,6 +1916,7 @@ export type TaskCreateWithoutLikesInput = {
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutLikesInput = {
@@ -1760,6 +1950,7 @@ export type TaskUncheckedCreateWithoutLikesInput = {
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutLikesInput = {
@@ -1809,6 +2000,7 @@ export type TaskUpdateWithoutLikesInput = {
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutLikesInput = {
@@ -1842,6 +2034,7 @@ export type TaskUncheckedUpdateWithoutLikesInput = {
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutTagsInput = {
@@ -1875,6 +2068,7 @@ export type TaskCreateWithoutTagsInput = {
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutTagsInput = {
@@ -1908,6 +2102,7 @@ export type TaskUncheckedCreateWithoutTagsInput = {
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutTagsInput = {
@@ -1957,6 +2152,7 @@ export type TaskUpdateWithoutTagsInput = {
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutTagsInput = {
@@ -1990,6 +2186,7 @@ export type TaskUncheckedUpdateWithoutTagsInput = {
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutCustomFieldValuesInput = {
@@ -2023,6 +2220,7 @@ export type TaskCreateWithoutCustomFieldValuesInput = {
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
@@ -2056,6 +2254,7 @@ export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutCustomFieldValuesInput = {
@@ -2105,6 +2304,7 @@ export type TaskUpdateWithoutCustomFieldValuesInput = {
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
@@ -2138,6 +2338,7 @@ export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateManyAssigneeInput = {
@@ -2198,6 +2399,7 @@ export type TaskUpdateWithoutAssigneeInput = {
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutAssigneeInput = {
@@ -2231,6 +2433,7 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
@@ -2318,6 +2521,7 @@ export type TaskUpdateWithoutParentInput = {
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutParentInput = {
@@ -2351,6 +2555,7 @@ export type TaskUncheckedUpdateWithoutParentInput = {
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutParentInput = {
@@ -2392,6 +2597,7 @@ export type TaskCountOutputType = {
   likes: number
   tags: number
   customFieldValues: number
+  comments: number
 }
 
 export type TaskCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2401,6 +2607,7 @@ export type TaskCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   likes?: boolean | TaskCountOutputTypeCountLikesArgs
   tags?: boolean | TaskCountOutputTypeCountTagsArgs
   customFieldValues?: boolean | TaskCountOutputTypeCountCustomFieldValuesArgs
+  comments?: boolean | TaskCountOutputTypeCountCommentsArgs
 }
 
 /**
@@ -2455,6 +2662,13 @@ export type TaskCountOutputTypeCountCustomFieldValuesArgs<ExtArgs extends runtim
   where?: Prisma.TaskCustomFieldValueWhereInput
 }
 
+/**
+ * TaskCountOutputType without action
+ */
+export type TaskCountOutputTypeCountCommentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CommentWhereInput
+}
+
 
 export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2490,6 +2704,7 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   likes?: boolean | Prisma.Task$likesArgs<ExtArgs>
   tags?: boolean | Prisma.Task$tagsArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Task$customFieldValuesArgs<ExtArgs>
+  comments?: boolean | Prisma.Task$commentsArgs<ExtArgs>
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["task"]>
 
@@ -2591,6 +2806,7 @@ export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   likes?: boolean | Prisma.Task$likesArgs<ExtArgs>
   tags?: boolean | Prisma.Task$tagsArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Task$customFieldValuesArgs<ExtArgs>
+  comments?: boolean | Prisma.Task$commentsArgs<ExtArgs>
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TaskIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2613,6 +2829,7 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     likes: Prisma.$TaskLikePayload<ExtArgs>[]
     tags: Prisma.$TaskTagPayload<ExtArgs>[]
     customFieldValues: Prisma.$TaskCustomFieldValuePayload<ExtArgs>[]
+    comments: Prisma.$CommentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3054,6 +3271,7 @@ export interface Prisma__TaskClient<T, Null = never, ExtArgs extends runtime.Typ
   likes<T extends Prisma.Task$likesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$likesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskLikePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tags<T extends Prisma.Task$tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customFieldValues<T extends Prisma.Task$customFieldValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$customFieldValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  comments<T extends Prisma.Task$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3686,6 +3904,30 @@ export type Task$customFieldValuesArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.TaskCustomFieldValueScalarFieldEnum | Prisma.TaskCustomFieldValueScalarFieldEnum[]
+}
+
+/**
+ * Task.comments
+ */
+export type Task$commentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Comment
+   */
+  select?: Prisma.CommentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Comment
+   */
+  omit?: Prisma.CommentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CommentInclude<ExtArgs> | null
+  where?: Prisma.CommentWhereInput
+  orderBy?: Prisma.CommentOrderByWithRelationInput | Prisma.CommentOrderByWithRelationInput[]
+  cursor?: Prisma.CommentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CommentScalarFieldEnum | Prisma.CommentScalarFieldEnum[]
 }
 
 /**

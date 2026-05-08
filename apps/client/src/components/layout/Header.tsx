@@ -30,13 +30,18 @@ export function Header() {
       <div className="flex items-center gap-3">
         <NotificationBell />
         {user ? (
-          <div className="hidden items-center gap-3 sm:flex">
+          <button
+            type="button"
+            onClick={() => navigate(`/users/${user.id}`)}
+            className="hidden items-center gap-3 rounded-md px-2 py-1 text-left transition hover:bg-surface-hover sm:flex"
+            title="Abrir meu usuário"
+          >
             <Avatar name={user.name} imageUrl={user.avatarUrl} />
             <div className="text-right">
               <p className="text-sm font-semibold text-text-primary">{user.name}</p>
               <p className="text-xs text-text-secondary">{user.role}</p>
             </div>
-          </div>
+          </button>
         ) : null}
         <Button variant="ghost" className="h-10 w-10 px-0" onClick={handleLogout} title="Sair">
           <LogOut size={18} />

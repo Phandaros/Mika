@@ -1,7 +1,6 @@
 import type { RequestHandler } from "express";
-import { Role } from "../lib/enums.js";
 import { prisma } from "../lib/prisma.js";
-import { emitNotification } from "../lib/socket.js";
+import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 
@@ -11,26 +10,29 @@ interface CommentBody {
 
 export const listComments: RequestHandler = async (req, res, next) => {
   try {
+    const task = await prisma.task.findUnique({ where: { id: req.params.taskId }, select: { id: true } });
+
+    if (!task) {
+      throw new AppError(404, "Task not found");
+    }
+
     const comments = await prisma.comment.findMany({
-      where: { taskId: req.params.taskId },
+      where: { taskId: task.id },
       orderBy: { createdAt: "asc" },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            avatarUrl: true,
-            isActive: true,
-            createdAt: true,
-            updatedAt: true
-          }
-        }
-      }
+      include: { author: { select: userSelect } }
     });
 
-    res.json({ comments });
+    res.json({
+      comments: comments.map((comment) => ({
+        id: comment.id,
+        taskId: comment.taskId,
+        authorId: comment.authorId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        author: toPublicUser(comment.author)
+      }))
+    });
   } catch (error) {
     next(error);
   }
@@ -38,52 +40,34 @@ export const listComments: RequestHandler = async (req, res, next) => {
 
 export const createComment: RequestHandler = async (req, res, next) => {
   try {
-    const user = getAuthUser(req);
-    const body = req.body as CommentBody;
-
-    const task = await prisma.task.findUnique({ where: { id: req.params.taskId } });
+    const task = await prisma.task.findUnique({ where: { id: req.params.taskId }, select: { id: true } });
 
     if (!task) {
       throw new AppError(404, "Task not found");
     }
 
+    const body = req.body as CommentBody;
+    const authUser = getAuthUser(req);
     const comment = await prisma.comment.create({
       data: {
-        taskId: req.params.taskId,
-        authorId: user.id,
+        taskId: task.id,
+        authorId: authUser.id,
         content: body.content
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            avatarUrl: true,
-            isActive: true,
-            createdAt: true,
-            updatedAt: true
-          }
-        }
-      }
+      include: { author: { select: userSelect } }
     });
 
-    if (task.assigneeId && task.assigneeId !== user.id) {
-      const notification = await prisma.notification.create({
-        data: {
-          userId: task.assigneeId,
-          type: "COMMENT_ADDED",
-          title: "Novo comentario",
-          message: `${user.name} comentou na tarefa ${task.title}`,
-          taskId: task.id
-        }
-      });
-
-      emitNotification(task.assigneeId, notification);
-    }
-
-    res.status(201).json({ comment });
+    res.status(201).json({
+      comment: {
+        id: comment.id,
+        taskId: comment.taskId,
+        authorId: comment.authorId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        author: toPublicUser(comment.author)
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -91,17 +75,6 @@ export const createComment: RequestHandler = async (req, res, next) => {
 
 export const deleteComment: RequestHandler = async (req, res, next) => {
   try {
-    const user = getAuthUser(req);
-    const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
-
-    if (!comment) {
-      throw new AppError(404, "Comment not found");
-    }
-
-    if (comment.authorId !== user.id && user.role !== Role.ADMIN) {
-      throw new AppError(403, "Insufficient permissions");
-    }
-
     await prisma.comment.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {

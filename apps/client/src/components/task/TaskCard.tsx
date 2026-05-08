@@ -33,6 +33,11 @@ export function TaskCard<TTask extends TaskCardTask>({ task, disciplineName, onO
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <PriorityBadge priority={task.priority} />
+        {task.tags?.slice(0, 2).map((tag) => (
+          <span key={tag.id} className="inline-flex h-6 items-center rounded-md border border-border px-2 text-xs font-semibold text-text-secondary">
+            {tag.name}
+          </span>
+        ))}
         {disciplineName ? (
           <span
             className="inline-flex h-6 items-center rounded-md border border-border px-2 text-xs font-semibold text-text-primary"

@@ -25,7 +25,7 @@ function isJwtUserPayload(payload: string | JwtPayload): payload is JwtPayload &
     typeof payload.id === "string" &&
     typeof payload.email === "string" &&
     typeof payload.name === "string" &&
-    Object.values(Role).includes(payload.role as RoleValue)
+    typeof payload.role === "string"
   );
 }
 

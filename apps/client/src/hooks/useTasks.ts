@@ -147,6 +147,11 @@ export function useUpdateTask(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+    },
+    onSettled: async () => {
+      if (!projectId) {
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      }
     }
   });
 }

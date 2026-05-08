@@ -45,7 +45,7 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
       <Textarea
         value={description}
         onChange={(event) => setDescription(event.target.value)}
-        placeholder="Descricao"
+        placeholder="Descrição"
       />
       <div className="grid gap-3 sm:grid-cols-3">
         <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>

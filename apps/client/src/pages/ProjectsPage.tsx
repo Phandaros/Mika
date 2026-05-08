@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
-import { FolderKanban, ListFilter, Plus, SlidersHorizontal, X } from "lucide-react";
+import { ExternalLink, FolderKanban, ListFilter, Plus, SlidersHorizontal, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getDefaultDiscipline, ProjectStatus, type Project } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
@@ -17,7 +17,6 @@ export function ProjectsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
-  const [platformFilter, setPlatformFilter] = useState("all");
   const [builderFilter, setBuilderFilter] = useState("all");
   const [sortMode, setSortMode] = useState("updatedAt-desc");
 
@@ -32,7 +31,6 @@ export function ProjectsPage() {
   const filteredProjects = useMemo(() => {
     const nextProjects = projects
       .filter((project) => statusFilter === "all" || project.status === statusFilter)
-      .filter((project) => platformFilter === "all" || project.platform === platformFilter)
       .filter((project) => builderFilter === "all" || projectBuilder(project) === builderFilter)
       .slice();
 
@@ -49,7 +47,7 @@ export function ProjectsPage() {
     });
 
     return nextProjects;
-  }, [builderFilter, platformFilter, projects, sortMode, statusFilter]);
+  }, [builderFilter, projects, sortMode, statusFilter]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -68,15 +66,48 @@ export function ProjectsPage() {
               <h1 className="text-2xl font-bold text-text-primary">Projetos Ativos</h1>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" className="h-9" onClick={() => setShowFilters((current) => !current)}>
-              <ListFilter size={16} />
-              Filtrar
-            </Button>
-            <Button variant="secondary" className="h-9" onClick={() => setShowOptions((current) => !current)}>
-              <SlidersHorizontal size={16} />
-              Opcoes
-            </Button>
+          <div className="relative flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Button variant="secondary" className="h-9" onClick={() => setShowFilters((current) => !current)}>
+                <ListFilter size={16} />
+                Filtrar
+              </Button>
+              {showFilters ? (
+                <div className="absolute right-0 top-11 z-30 grid w-80 gap-3 rounded-md border border-border bg-surface-card p-4 shadow-2xl">
+                  <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                    <option value="all">Todos os status</option>
+                    {Object.values(ProjectStatus).map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select value={builderFilter} onChange={(event) => setBuilderFilter(event.target.value)}>
+                    <option value="all">Todas as equipes/workspaces</option>
+                    {builderSuggestions.map((builder) => (
+                      <option key={builder} value={builder}>
+                        {builder}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              ) : null}
+            </div>
+            <div className="relative">
+              <Button variant="secondary" className="h-9" onClick={() => setShowOptions((current) => !current)}>
+                <SlidersHorizontal size={16} />
+                Organizar
+              </Button>
+              {showOptions ? (
+                <div className="absolute right-0 top-11 z-30 grid w-64 gap-3 rounded-md border border-border bg-surface-card p-4 shadow-2xl">
+                  <Select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
+                    <option value="updatedAt-desc">Atualizados recentemente</option>
+                    <option value="name-asc">Nome A-Z</option>
+                    <option value="endDate-asc">Entrega mais próxima</option>
+                  </Select>
+                </div>
+              ) : null}
+            </div>
             <Button className="h-9" onClick={() => setShowCreateModal(true)}>
               <Plus size={16} />
               Adicionar projeto
@@ -84,42 +115,6 @@ export function ProjectsPage() {
           </div>
         </div>
       </div>
-
-      {showFilters ? (
-        <div className="grid gap-3 rounded-md border border-border bg-surface-card p-4 md:grid-cols-3">
-          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="all">Todos os status</option>
-            {Object.values(ProjectStatus).map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </Select>
-          <Select value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
-            <option value="all">Todas as plataformas</option>
-            <option value="CAD">CAD</option>
-            <option value="BIM">BIM</option>
-          </Select>
-          <Select value={builderFilter} onChange={(event) => setBuilderFilter(event.target.value)}>
-            <option value="all">Todas as construtoras</option>
-            {builderSuggestions.map((builder) => (
-              <option key={builder} value={builder}>
-                {builder}
-              </option>
-            ))}
-          </Select>
-        </div>
-      ) : null}
-
-      {showOptions ? (
-        <div className="grid gap-3 rounded-md border border-border bg-surface-card p-4 sm:max-w-xs">
-          <Select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
-            <option value="updatedAt-desc">Atualizados recentemente</option>
-            <option value="name-asc">Nome A-Z</option>
-            <option value="endDate-asc">Entrega mais proxima</option>
-          </Select>
-        </div>
-      ) : null}
 
       {showCreateModal ? (
         <ProjectModal title="Adicionar projeto" onClose={() => setShowCreateModal(false)}>
@@ -140,18 +135,19 @@ export function ProjectsPage() {
 function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
   return (
     <div className="overflow-auto rounded-md border border-border">
-      <table className="w-full min-w-[1480px] border-collapse bg-surface-card text-sm">
+        <table className="w-full min-w-[1280px] border-collapse bg-surface-card text-sm">
         <thead className="bg-surface text-left text-text-secondary">
           <tr>
             <th className="w-[320px] border-r border-border p-3 font-semibold">Nome</th>
-            <th className="w-[150px] border-r border-border p-3 font-semibold">Plataforma</th>
-            <th className="w-[180px] border-r border-border p-3 font-semibold">Construtora</th>
-            <th className="w-[120px] border-r border-border p-3 font-semibold">Area</th>
+            <th className="w-[180px] border-r border-border p-3 font-semibold">Equipe</th>
+            <th className="w-[180px] border-r border-border p-3 font-semibold">Responsável</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Status</th>
-            <th className="w-[360px] border-r border-border p-3 font-semibold">Disciplinas</th>
+            <th className="w-[260px] border-r border-border p-3 font-semibold">Campos</th>
+            <th className="w-[360px] border-r border-border p-3 font-semibold">Seções</th>
             <th className="w-[120px] border-r border-border p-3 font-semibold">Tarefas</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Entrega</th>
-            <th className="w-[150px] p-3 font-semibold">Atualizado</th>
+            <th className="w-[150px] border-r border-border p-3 font-semibold">Atualizado</th>
+            <th className="w-[90px] p-3 font-semibold">Asana</th>
           </tr>
         </thead>
         <tbody>
@@ -171,13 +167,19 @@ function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
                     {project.name}
                   </Link>
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">{project.platform ?? "-"}</td>
                 <td className="border-r border-border p-3 text-text-secondary">{projectBuilder(project) ?? "-"}</td>
-                <td className="border-r border-border p-3 text-text-secondary">
-                  {project.areaM2 ? `${project.areaM2.toFixed(2)} m2` : "-"}
-                </td>
+                <td className="border-r border-border p-3 text-text-secondary">{project.owner?.name ?? "-"}</td>
                 <td className="border-r border-border p-3">
                   <Badge tone="orange">{project.status}</Badge>
+                </td>
+                <td className="border-r border-border p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {project.customFields?.slice(0, 4).map((field) => (
+                      <Badge key={field.id} tone={field.isImportant ? "orange" : "muted"}>{field.name}</Badge>
+                    ))}
+                    {(project.customFields?.length ?? 0) > 4 ? <Badge tone="muted">Mais {(project.customFields?.length ?? 0) - 4}</Badge> : null}
+                    {!project.customFields?.length ? <span className="text-text-muted">-</span> : null}
+                  </div>
                 </td>
                 <td className="border-r border-border p-3">
                   <div className="flex flex-wrap gap-2">
@@ -201,7 +203,22 @@ function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
                 <td className="border-r border-border p-3 text-text-secondary">
                   {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : "-"}
                 </td>
-                <td className="p-3 text-text-secondary">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
+                <td className="border-r border-border p-3 text-text-secondary">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
+                <td className="p-3">
+                  {project.permalinkUrl ? (
+                    <a
+                      href={project.permalinkUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition hover:bg-surface hover:text-brand-orange"
+                      title="Abrir no Asana"
+                    >
+                      <ExternalLink size={16} />
+                    </a>
+                  ) : (
+                    <span className="text-text-muted">-</span>
+                  )}
+                </td>
               </tr>
             );
           })}

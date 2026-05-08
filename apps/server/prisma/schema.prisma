@@ -35,6 +35,7 @@ model User {
   projectMembers      ProjectMember[]
   taskFollowers       TaskFollower[]
   taskLikes           TaskLike[]
+  comments            Comment[]
 
   @@index([asanaGid])
   @@index([email])
@@ -211,6 +212,7 @@ model Task {
   likes             TaskLike[]
   tags              TaskTag[]
   customFieldValues TaskCustomFieldValue[]
+  comments          Comment[]
 
   @@index([name])
   @@index([assigneeGid])
@@ -218,6 +220,22 @@ model Task {
   @@index([parentId])
   @@index([completed])
   @@index([dueOn])
+}
+
+model Comment {
+  id       String @id @default(cuid())
+  taskId   String
+  authorId String
+  content  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([authorId])
 }
 
 model TaskMembership {

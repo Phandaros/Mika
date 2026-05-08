@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 DEFAULT_PASSWORD_HASH = "mk123"
+IMPORT_USERS = False
 
 
 def now_iso() -> str:
@@ -71,7 +72,12 @@ def resolve_db_path(server_dir: Path, explicit_db: str | None) -> Path:
     if db_path.is_absolute():
         return db_path
 
-    # Prisma resolve SQLite file: relativo à pasta do schema.prisma.
+    # No app atual o adapter better-sqlite3 resolve a URL relativa a apps/server.
+    # Mantemos fallback para a regra antiga do Prisma relativa ao schema.
+    server_relative = (server_dir / db_path).resolve()
+    if server_relative.exists():
+        return server_relative
+
     schema_dir = server_dir / "prisma"
     return (schema_dir / db_path).resolve()
 
@@ -81,26 +87,31 @@ def load_json_file(path: Path) -> Any:
         return json.load(f)
 
 
-def find_file(json_dir: Path, pattern: str) -> Path | None:
+def find_files(json_dir: Path, pattern: str) -> list[Path]:
     # Case-insensitive; aceita nomes como projects(1).json.
     rx = re.compile(pattern, re.IGNORECASE)
-    matches = sorted([p for p in json_dir.glob("*.json") if rx.search(p.name)])
-    return matches[0] if matches else None
+    return sorted([p for p in json_dir.glob("*.json") if rx.search(p.name)])
 
 
 def load_list(json_dir: Path, pattern: str) -> list[dict[str, Any]]:
-    path = find_file(json_dir, pattern)
-    if not path:
+    paths = find_files(json_dir, pattern)
+    if not paths:
         print(f"[aviso] Arquivo não encontrado para padrão: {pattern}")
         return []
-    data = load_json_file(path)
-    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
-        data = data["data"]
-    if not isinstance(data, list):
-        print(f"[aviso] Ignorando {path.name}: esperado JSON array")
-        return []
-    print(f"[ok] {path.name}: {len(data)} registros")
-    return [x for x in data if isinstance(x, dict)]
+
+    records: list[dict[str, Any]] = []
+    for path in paths:
+        data = load_json_file(path)
+        if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
+            data = data["data"]
+        if not isinstance(data, list):
+            print(f"[aviso] Ignorando {path.name}: esperado JSON array")
+            continue
+        records.extend(x for x in data if isinstance(x, dict))
+
+    label = paths[0].name if len(paths) == 1 else f"{len(paths)} arquivos"
+    print(f"[ok] {label}: {len(records)} registros")
+    return records
 
 
 def q(name: str) -> str:
@@ -137,6 +148,10 @@ def get_id_by(conn: sqlite3.Connection, table: str, column: str, value: Any) -> 
     return row[0] if row else None
 
 
+def exists_by(conn: sqlite3.Connection, table: str, column: str, value: Any) -> bool:
+    return get_id_by(conn, table, column, value) is not None
+
+
 def boolv(value: Any, default: bool = False) -> int:
     if value is None:
         return int(default)
@@ -152,6 +167,9 @@ def asana_ref_name(obj: Any) -> str | None:
 
 
 def ensure_user(conn: sqlite3.Connection, ref: dict[str, Any] | None, password_hash: str) -> None:
+    if not IMPORT_USERS:
+        return
+
     if not isinstance(ref, dict) or not ref.get("gid"):
         return
     gid = str(ref["gid"])
@@ -182,7 +200,7 @@ def clear_asana_tables(conn: sqlite3.Connection) -> None:
     tables = [
         "TaskCustomFieldValue", "TaskTag", "TaskLike", "TaskFollower", "TaskMembership",
         "ProjectCustomFieldSetting", "AsanaCustomFieldEnumOption", "AsanaCustomField",
-        "ProjectMember", "ProjectFollower", "Tag", "Section", "Task", "Project", "Team", "AsanaWorkspace", "User",
+        "ProjectMember", "ProjectFollower", "Tag", "Section", "Task", "Project", "Team", "AsanaWorkspace",
     ]
     conn.execute("PRAGMA foreign_keys = OFF")
     for table in tables:
@@ -225,6 +243,10 @@ def import_teams(conn: sqlite3.Connection, teams: list[dict[str, Any]], default_
 
 
 def import_users(conn: sqlite3.Connection, users: Iterable[dict[str, Any]], password_hash: str) -> None:
+    if not IMPORT_USERS:
+        print("[info] Pulando usuários (--import-users não foi informado).")
+        return
+
     for u in users:
         ensure_user(conn, u, password_hash)
 
@@ -272,11 +294,11 @@ def import_projects(conn: sqlite3.Connection, projects: list[dict[str, Any]], pa
         if project_id:
             for u in p.get("followers") or []:
                 ugid = asana_ref_gid(u)
-                if ugid:
+                if ugid and exists_by(conn, "User", "asanaGid", ugid):
                     insert_or_update(conn, "ProjectFollower", ["projectId", "userGid"], {"id": new_id(), "projectId": project_id, "userGid": ugid})
             for u in p.get("members") or []:
                 ugid = asana_ref_gid(u)
-                if ugid:
+                if ugid and exists_by(conn, "User", "asanaGid", ugid):
                     insert_or_update(conn, "ProjectMember", ["projectId", "userGid"], {"id": new_id(), "projectId": project_id, "userGid": ugid})
 
 
@@ -424,6 +446,11 @@ def import_task_relations(conn: sqlite3.Connection, task_records: list[dict[str,
         if not task_id:
             continue
 
+        # Reimportar deve ser idempotente mesmo quando chaves únicas têm NULL
+        # (SQLite permite duplicatas nesses casos).
+        for table in ["TaskMembership", "TaskFollower", "TaskLike", "TaskTag", "TaskCustomFieldValue"]:
+            conn.execute(f"DELETE FROM {q(table)} WHERE taskId = ?", (task_id,))
+
         for m in t.get("memberships") or []:
             project = m.get("project") if isinstance(m.get("project"), dict) else {}
             section = m.get("section") if isinstance(m.get("section"), dict) else {}
@@ -438,17 +465,17 @@ def import_task_relations(conn: sqlite3.Connection, task_records: list[dict[str,
 
         for u in t.get("followers") or []:
             ugid = asana_ref_gid(u)
-            if ugid:
+            if ugid and exists_by(conn, "User", "asanaGid", ugid):
                 insert_or_update(conn, "TaskFollower", ["taskId", "userGid"], {"id": new_id(), "taskId": task_id, "userGid": ugid})
 
         for u in t.get("likes") or []:
             ugid = asana_ref_gid(u)
-            if ugid:
+            if ugid and exists_by(conn, "User", "asanaGid", ugid):
                 insert_or_update(conn, "TaskLike", ["taskId", "userGid"], {"id": new_id(), "taskId": task_id, "userGid": ugid})
 
         for tag in t.get("tags") or []:
             tag_gid = asana_ref_gid(tag)
-            if tag_gid:
+            if tag_gid and exists_by(conn, "Tag", "asanaGid", tag_gid):
                 insert_or_update(conn, "TaskTag", ["taskId", "tagGid"], {"id": new_id(), "taskId": task_id, "tagGid": tag_gid})
 
         for cf in t.get("custom_fields") or []:
@@ -489,8 +516,11 @@ def main() -> int:
     parser.add_argument("--server-dir", default=".", help="Pasta apps/server. Padrão: diretório atual")
     parser.add_argument("--db", default=None, help="Caminho explícito do SQLite. Se omitido, lê DATABASE_URL do .env")
     parser.add_argument("--clear", action="store_true", help="Apaga os dados das tabelas importadas antes de popular")
+    parser.add_argument("--import-users", action="store_true", help="Tambem cria/atualiza usuarios do dump. Por padrao, usuarios sao preservados.")
     parser.add_argument("--password-hash", default=DEFAULT_PASSWORD_HASH, help="Valor gravado em User.passwordHash. Padrão: mk123")
     args = parser.parse_args()
+    global IMPORT_USERS
+    IMPORT_USERS = args.import_users
 
     server_dir = Path(args.server_dir).resolve()
     json_dir = Path(args.json_dir).resolve()
@@ -545,7 +575,7 @@ def main() -> int:
             print(f"  {table}: {count_table(conn, table)}")
 
     print("\n[ok] Importação finalizada.")
-    if args.password_hash == DEFAULT_PASSWORD_HASH:
+    if IMPORT_USERS and args.password_hash == DEFAULT_PASSWORD_HASH:
         print("[aviso] User.passwordHash foi preenchido com o texto 'mk123'. Se seu login espera bcrypt/argon, rode novamente passando --password-hash com o hash correto.")
     return 0
 

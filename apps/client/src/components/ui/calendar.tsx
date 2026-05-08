@@ -25,11 +25,11 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
   return (
     <div className="w-72 rounded-md border border-border bg-surface-card p-3 shadow-2xl">
       <div className="mb-3 flex items-center justify-between">
-        <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mes anterior">
+        <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
           <ChevronLeft size={16} />
         </Button>
         <span className="text-sm font-semibold text-text-primary">{format(month, "MM/yyyy")}</span>
-        <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Proximo mes">
+        <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
           <ChevronRight size={16} />
         </Button>
       </div>
