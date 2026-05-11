@@ -13,6 +13,7 @@ interface TaskBody {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  completed?: boolean;
   customFieldValues?: Array<{
     id: string;
     value: string | number | null;
@@ -21,6 +22,10 @@ interface TaskBody {
 
 interface StatusBody {
   status: TaskStatusValue;
+}
+
+interface CompletionBody {
+  completed: boolean;
 }
 
 function dateOnly(value: string | null | undefined): string | null | undefined {
@@ -125,8 +130,8 @@ export const createTask: RequestHandler = async (req, res, next) => {
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
           dueOn: dateOnly(body.dueDate),
-          completed: body.status === TaskStatus.DONE,
-          completedAtAsana: body.status === TaskStatus.DONE ? new Date() : null
+          completed: body.completed ?? false,
+          completedAtAsana: body.completed ? new Date() : null
         }
       });
 
@@ -157,8 +162,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
     const body = req.body as TaskBody;
 
     const task = await prisma.$transaction(async (tx) => {
-      const completed =
-        body.status === undefined ? undefined : body.status === TaskStatus.DONE;
+      const completed = body.completed;
 
       await tx.task.update({
         where: { id: req.params.id },
@@ -172,7 +176,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
           dueOn: dateOnly(body.dueDate),
           completed,
           completedAtAsana:
-            body.status === undefined ? undefined : body.status === TaskStatus.DONE ? new Date() : null
+            completed === undefined ? undefined : completed ? new Date() : null
         }
       });
 
@@ -216,9 +220,25 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        localStatus: body.status,
-        completed: body.status === TaskStatus.DONE,
-        completedAtAsana: body.status === TaskStatus.DONE ? new Date() : null
+        localStatus: body.status
+      },
+      include: taskInclude
+    });
+
+    res.json({ task: toTaskDto(task) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
+  try {
+    const body = req.body as CompletionBody;
+    const task = await prisma.task.update({
+      where: { id: req.params.id },
+      data: {
+        completed: body.completed,
+        completedAtAsana: body.completed ? new Date() : null
       },
       include: taskInclude
     });

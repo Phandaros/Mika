@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { format, isBefore } from "date-fns";
-import { Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
+import { CheckCircle2, Circle, Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { getDefaultDiscipline, Priority, TaskStatus, type Discipline, type DisciplineType, type Task, type User } from "shared";
 import { DisciplineTab } from "../components/discipline/DisciplineTab";
@@ -18,13 +18,14 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
 import { useProject, useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask, useUpdateTaskStatus } from "../hooks/useTasks";
+import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import { cn } from "../lib/utils";
 
 type ProjectTab = "kanban" | "list" | "workload";
 type SortKey = "title" | "discipline" | "assignee" | "priority" | "status" | "dueDate";
 type SortDirection = "asc" | "desc";
+type CompletionFilter = "open" | "completed" | "all";
 
 type TaskWithDiscipline = Task & {
   discipline: {
@@ -74,9 +75,11 @@ export function ProjectDetailPage() {
   const { data: project, isLoading, isFetching } = useProject(projectId);
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
+  const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
   const [activeTab, setActiveTab] = useState<ProjectTab>("kanban");
   const [selectedDisciplineIds, setSelectedDisciplineIds] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("dueDate");
@@ -108,6 +111,13 @@ export function ProjectDetailPage() {
       : disciplines.filter((discipline) => selectedDisciplineSet.has(discipline.id));
 
   const listTasks = disciplineFilteredTasks
+    .filter((task) => {
+      if (completionFilter === "all") {
+        return true;
+      }
+
+      return completionFilter === "completed" ? task.completed : !task.completed;
+    })
     .filter((task) => statusFilter === "all" || task.status === statusFilter)
     .filter((task) => assigneeFilter === "all" || (assigneeFilter === "none" ? !task.assigneeId : task.assigneeId === assigneeFilter))
     .filter((task) => priorityFilter === "all" || task.priority === priorityFilter)
@@ -255,6 +265,7 @@ export function ProjectDetailPage() {
             isLoading={isTasksLoading}
             onDragEnd={handleDragEnd}
             onOpenTask={setSelectedTask}
+            onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
           />
         ) : null}
         {activeTab === "list" ? (
@@ -264,15 +275,18 @@ export function ProjectDetailPage() {
             users={users}
             isLoading={isTasksLoading}
             statusFilter={statusFilter}
+            completionFilter={completionFilter}
             assigneeFilter={assigneeFilter}
             priorityFilter={priorityFilter}
             sortKey={sortKey}
             sortDirection={sortDirection}
             onStatusFilterChange={setStatusFilter}
+            onCompletionFilterChange={setCompletionFilter}
             onAssigneeFilterChange={setAssigneeFilter}
             onPriorityFilterChange={setPriorityFilter}
             onSort={handleSort}
             onTaskStatusChange={(taskId, status) => void updateTask.mutateAsync({ id: taskId, payload: { status } })}
+            onTaskCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
             onTaskAssigneeChange={(taskId, assigneeId) =>
               void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } })
             }
@@ -297,7 +311,8 @@ function KanbanView({
   tasks,
   isLoading,
   onDragEnd,
-  onOpenTask
+  onOpenTask,
+  onCompletionChange
 }: {
   projectId: string;
   disciplineId: string | null;
@@ -305,6 +320,7 @@ function KanbanView({
   isLoading: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  onCompletionChange: (task: TaskWithDiscipline) => void;
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -322,6 +338,7 @@ function KanbanView({
                 tasks={columnTasks}
                 isLoading={isLoading}
                 onOpenTask={onOpenTask}
+                onCompletionChange={onCompletionChange}
               />
             );
           })}
@@ -338,7 +355,8 @@ function KanbanColumn({
   label,
   tasks,
   isLoading,
-  onOpenTask
+  onOpenTask,
+  onCompletionChange
 }: {
   projectId: string;
   disciplineId: string | null;
@@ -347,6 +365,7 @@ function KanbanColumn({
   tasks: TaskWithDiscipline[];
   isLoading: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  onCompletionChange: (task: TaskWithDiscipline) => void;
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState("");
@@ -397,7 +416,7 @@ function KanbanColumn({
                         {...dragProvided.dragHandleProps}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
-                        <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} />
+                        <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} onToggleCompletion={onCompletionChange} />
                       </div>
                     )}
                   </Draggable>
@@ -451,15 +470,18 @@ function ListView({
   users,
   isLoading,
   statusFilter,
+  completionFilter,
   assigneeFilter,
   priorityFilter,
   sortKey,
   sortDirection,
   onStatusFilterChange,
+  onCompletionFilterChange,
   onAssigneeFilterChange,
   onPriorityFilterChange,
   onSort,
   onTaskStatusChange,
+  onTaskCompletionChange,
   onTaskAssigneeChange,
   onTaskCustomFieldChange,
   onOpenTask
@@ -469,15 +491,18 @@ function ListView({
   users: User[];
   isLoading: boolean;
   statusFilter: string;
+  completionFilter: CompletionFilter;
   assigneeFilter: string;
   priorityFilter: string;
   sortKey: SortKey;
   sortDirection: SortDirection;
   onStatusFilterChange: (value: string) => void;
+  onCompletionFilterChange: (value: CompletionFilter) => void;
   onAssigneeFilterChange: (value: string) => void;
   onPriorityFilterChange: (value: string) => void;
   onSort: (key: SortKey) => void;
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
+  onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
   onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
@@ -489,7 +514,12 @@ function ListView({
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 rounded-md border border-border bg-surface-card p-4 md:grid-cols-4">
+      <div className="grid gap-3 rounded-md border border-border bg-surface-card p-4 md:grid-cols-5">
+        <Select value={completionFilter} onChange={(event) => onCompletionFilterChange(event.target.value as CompletionFilter)}>
+          <option value="open">Nao concluidas</option>
+          <option value="completed">Concluidas</option>
+          <option value="all">Todas</option>
+        </Select>
         <Select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)}>
           <option value="all">Todos os status</option>
           {Object.values(TaskStatus).map((status) => (
@@ -554,6 +584,7 @@ function ListView({
                   tasks={disciplineTasks}
                   users={users}
                   onTaskStatusChange={onTaskStatusChange}
+                  onTaskCompletionChange={onTaskCompletionChange}
                   onTaskAssigneeChange={onTaskAssigneeChange}
                   onTaskCustomFieldChange={onTaskCustomFieldChange}
                   onOpenTask={onOpenTask}
@@ -575,6 +606,7 @@ function GroupedDisciplineRows({
   tasks,
   users,
   onTaskStatusChange,
+  onTaskCompletionChange,
   onTaskAssigneeChange,
   onTaskCustomFieldChange,
   onOpenTask,
@@ -585,6 +617,7 @@ function GroupedDisciplineRows({
   tasks: TaskWithDiscipline[];
   users: User[];
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
+  onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
   onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
@@ -609,11 +642,25 @@ function GroupedDisciplineRows({
         </tr>
       ) : (
         tasks.map((task) => (
-          <tr key={task.id} className="border-t border-border">
+          <tr key={task.id} className={cn("border-t border-border", task.completed ? "opacity-70" : "")}>
             <td className="p-3">
-              <button type="button" onClick={() => onOpenTask(task)} className="font-semibold text-text-primary hover:text-brand-orange">
-                {task.title}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onTaskCompletionChange(task)}
+                  className="flex h-5 w-5 items-center justify-center rounded-full text-text-secondary transition hover:text-brand-orange"
+                  title={task.completed ? "Reabrir tarefa" : "Concluir tarefa"}
+                >
+                  {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenTask(task)}
+                  className={cn("font-semibold text-text-primary hover:text-brand-orange", task.completed ? "text-text-muted line-through" : "")}
+                >
+                  {task.title}
+                </button>
+              </div>
             </td>
             <td className="p-3 text-text-secondary">{task.discipline.name}</td>
             <td className="p-3">
@@ -716,10 +763,10 @@ function WorkloadView({
 }) {
   const rows = users.map((user) => {
     const userTasks = tasks.filter((task) => task.assigneeId === user.id);
-    const done = userTasks.filter((task) => task.status === TaskStatus.DONE).length;
+    const done = userTasks.filter((task) => task.completed).length;
     const inProgress = userTasks.filter((task) => task.status === TaskStatus.IN_PROGRESS).length;
     const overdue = userTasks.filter(
-      (task) => task.dueDate && task.status !== TaskStatus.DONE && isBefore(new Date(task.dueDate), new Date())
+      (task) => task.dueDate && !task.completed && isBefore(new Date(task.dueDate), new Date())
     ).length;
     const progress = userTasks.length === 0 ? 0 : Math.round((done / userTasks.length) * 100);
 

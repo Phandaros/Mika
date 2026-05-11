@@ -106,10 +106,6 @@ export function normalizeRole(role: string): string {
 }
 
 export function normalizeStatus(task: Pick<TaskRecord, "completed" | "localStatus" | "assigneeStatus">): string {
-  if (task.completed) {
-    return TaskStatus.DONE;
-  }
-
   if (task.localStatus && Object.values(TaskStatus).includes(task.localStatus as (typeof TaskStatus)[keyof typeof TaskStatus])) {
     return task.localStatus;
   }
@@ -155,6 +151,7 @@ export function toTaskDto(task: TaskRecord, fallbackSection?: { id: string; name
     creatorId: "",
     startDate: task.startOn,
     dueDate: task.dueOn ?? task.dueAt,
+    completed: task.completed,
     completedAt: task.completedAtAsana,
     createdAt: task.asanaCreatedAt ?? task.createdAt,
     updatedAt: task.asanaModifiedAt ?? task.updatedAt,
@@ -189,7 +186,7 @@ export function toDisciplineDto(section: SectionRecord, projectId: string) {
     projectId,
     name: section.name,
     type: DisciplineType.OTHER,
-    status: tasks.some((task) => task.status !== TaskStatus.DONE) ? DisciplineStatus.IN_PROGRESS : DisciplineStatus.COMPLETED,
+    status: tasks.some((task) => !task.completed) ? DisciplineStatus.IN_PROGRESS : DisciplineStatus.COMPLETED,
     responsibleId: null,
     createdAt: section.asanaCreatedAt ?? section.createdAt,
     updatedAt: section.updatedAt,

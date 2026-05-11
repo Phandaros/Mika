@@ -14,11 +14,11 @@ import {
   startOfWeek
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Circle, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
 import { Priority, TaskStatus, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
-import { useUpdateTask, useUpdateTaskStatus } from "../../hooks/useTasks";
+import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
@@ -67,6 +67,7 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
   const updateTaskStatus = useUpdateTaskStatus(projectId);
+  const updateTaskCompletion = useUpdateTaskCompletion(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
 
@@ -160,6 +161,18 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     }
 
     const updatedTask = await updateTaskStatus.mutateAsync({ id: currentTask.id, status });
+    setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
+    setOpenField(null);
+  }
+
+  async function patchTaskCompletion(completed: boolean) {
+    const currentTask = visibleTask;
+
+    if (!currentTask) {
+      return;
+    }
+
+    const updatedTask = await updateTaskCompletion.mutateAsync({ id: currentTask.id, completed });
     setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
     setOpenField(null);
   }
@@ -278,10 +291,27 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
                 setIsEditingTitle(false);
               }
             }}
-            className="h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight focus:border-brand-orange focus:bg-brand-black focus:px-2"
+            className={cn(
+              "h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight focus:border-brand-orange focus:bg-brand-black focus:px-2",
+              visibleTask.completed ? "text-text-muted line-through" : ""
+            )}
           />
 
           <div className="mt-6 grid gap-4 text-sm">
+            <DetailRow icon={visibleTask.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />} label="Conclusao">
+              <button
+                type="button"
+                onClick={() => void patchTaskCompletion(!visibleTask.completed)}
+                className={cn(
+                  "inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-left font-semibold transition hover:bg-surface-hover",
+                  visibleTask.completed ? "text-green-300" : "text-text-secondary"
+                )}
+              >
+                {visibleTask.completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                {visibleTask.completed ? "Concluida" : "Nao concluida"}
+              </button>
+            </DetailRow>
+
             <DetailRow icon={<UserRound size={18} />} label="Responsável">
               <button
                 type="button"
@@ -371,7 +401,7 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
               ) : null}
             </DetailRow>
 
-            <DetailRow icon={<CalendarDays size={18} />} label="Data de conclusao">
+            <DetailRow icon={<CalendarDays size={18} />} label="Prazo">
               <button
                 ref={completionDateTriggerRef}
                 type="button"

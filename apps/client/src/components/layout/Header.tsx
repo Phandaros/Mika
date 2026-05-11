@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Clock3, LogOut, Menu, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, Menu, Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -42,7 +42,6 @@ export function Header() {
           <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => navigate(1)} title="Avancar">
             <ChevronRight size={17} />
           </Button>
-          <Clock3 size={17} />
         </div>
         <form className="relative w-[min(44vw,540px)] min-w-48" onSubmit={handleSearchSubmit}>
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />

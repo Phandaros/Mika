@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { format, isBefore, isToday } from "date-fns";
-import { FolderKanban, MessageSquare, Target, UserRound } from "lucide-react";
+import { CheckCircle2, Circle, FolderKanban, MessageSquare, Target, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
-import { TaskStatus, type Task } from "shared";
+import { type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { TaskDetail } from "../components/task/TaskDetail";
@@ -45,9 +45,9 @@ export function DashboardPage() {
     [projects, user?.id]
   );
 
-  const overdueTasks = myTasks.filter((task) => task.dueDate && task.status !== TaskStatus.DONE && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
-  const nextTasks = myTasks.filter((task) => task.status !== TaskStatus.DONE && !overdueTasks.some((item) => item.id === task.id)).slice(0, 7);
-  const completedTasks = myTasks.filter((task) => task.status === TaskStatus.DONE);
+  const overdueTasks = myTasks.filter((task) => task.dueDate && !task.completed && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
+  const nextTasks = myTasks.filter((task) => !task.completed && !overdueTasks.some((item) => item.id === task.id)).slice(0, 7);
+  const completedTasks = myTasks.filter((task) => task.completed);
   const completedCount = completedTasks.length;
   const collaboratorCount = new Set(myTasks.map((task) => task.creatorId).filter(Boolean)).size;
   const homeTasks = homeTaskTab === "overdue" ? overdueTasks.slice(0, 7) : homeTaskTab === "done" ? completedTasks.slice(0, 7) : nextTasks;
@@ -107,7 +107,7 @@ export function DashboardPage() {
           </div>
           {activeProjects.map((project) => {
             const tasks = project.disciplines?.flatMap((discipline) => discipline.tasks ?? []) ?? [];
-            const done = tasks.filter((task) => task.status === TaskStatus.DONE).length;
+            const done = tasks.filter((task) => task.completed).length;
             const progress = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
 
             return <GoalRow key={project.id} title={project.name} href={`/projects/${project.id}`} progress={progress} />;
@@ -160,8 +160,10 @@ function TaskMiniList({ tasks, onOpenTask }: { tasks: TaskWithProject[]; onOpenT
           onClick={() => onOpenTask(task)}
           className="grid w-full grid-cols-[18px_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-border py-2 text-left text-sm hover:bg-surface-hover"
         >
-          <span className={cn("h-4 w-4 rounded-full border", task.status === TaskStatus.DONE ? "border-green-400 bg-green-400" : "border-text-secondary")} />
-          <span className="truncate font-semibold text-text-primary">{task.title}</span>
+          <span className="text-text-secondary">
+            {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
+          </span>
+          <span className={cn("truncate font-semibold text-text-primary", task.completed ? "text-text-muted line-through" : "")}>{task.title}</span>
           <span className="max-w-32 truncate rounded bg-surface-hover px-2 py-1 text-xs font-semibold text-text-primary">{task.discipline.projectName}</span>
           <span className={cn("text-xs font-semibold", isOverdue(task) ? "text-red-300" : "text-text-secondary")}>{dateLabel(task.dueDate)}</span>
         </button>
@@ -203,7 +205,7 @@ function firstName(name: string): string {
 }
 
 function isOverdue(task: Task): boolean {
-  return Boolean(task.dueDate && task.status !== TaskStatus.DONE && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
+  return Boolean(task.dueDate && !task.completed && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
 }
 
 function dateLabel(date: string | null): string {

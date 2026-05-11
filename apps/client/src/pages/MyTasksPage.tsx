@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import {
   addMonths,
@@ -12,7 +12,7 @@ import {
   startOfMonth,
   startOfWeek
 } from "date-fns";
-import { ArrowDownUp, CalendarDays, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
+import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Circle, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { TaskStatus, type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
@@ -25,10 +25,11 @@ import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask } from "../hooks/useTasks";
+import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
 import { cn } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
+type CompletionFilter = "open" | "completed" | "all";
 
 type TaskWithProject = Task & {
   discipline: {
@@ -55,12 +56,14 @@ export function MyTasksPage() {
   const [month, setMonth] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [showUndatedOnly, setShowUndatedOnly] = useState(false);
   const [sortMode, setSortMode] = useState<"dueDate" | "title" | "project">("dueDate");
   const [showCreate, setShowCreate] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [selectedCreateTarget, setSelectedCreateTarget] = useState("");
   const updateTask = useUpdateTask("");
+  const updateTaskCompletion = useUpdateTaskCompletion("");
   const disciplineOptions = useMemo(
     () =>
       projects.flatMap((project) =>
@@ -101,6 +104,13 @@ export function MyTasksPage() {
     const normalizedSearch = search.trim().toLowerCase();
     const filteredTasks = myTasks
       .filter((task) => statusFilter === "all" || task.status === statusFilter)
+      .filter((task) => {
+        if (completionFilter === "all") {
+          return true;
+        }
+
+        return completionFilter === "completed" ? task.completed : !task.completed;
+      })
       .filter((task) => !showUndatedOnly || !task.dueDate)
       .filter((task) => {
         if (!normalizedSearch) {
@@ -124,7 +134,7 @@ export function MyTasksPage() {
 
       return String(a.dueDate ?? "9999").localeCompare(String(b.dueDate ?? "9999"));
     });
-  }, [myTasks, search, showUndatedOnly, sortMode, statusFilter]);
+  }, [completionFilter, myTasks, search, showUndatedOnly, sortMode, statusFilter]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -220,6 +230,14 @@ export function MyTasksPage() {
             Sem data ({myTasks.filter((task) => !task.dueDate).length})
           </button>
           <label className="inline-flex items-center gap-1.5">
+            <CheckCircle2 size={15} />
+            <Select value={completionFilter} onChange={(event) => setCompletionFilter(event.target.value as CompletionFilter)} className="h-8 w-40">
+              <option value="open">Nao concluidas</option>
+              <option value="completed">Concluidas</option>
+              <option value="all">Todas</option>
+            </Select>
+          </label>
+          <label className="inline-flex items-center gap-1.5">
             <Filter size={15} />
             <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 w-36">
               <option value="all">Todos status</option>
@@ -279,8 +297,22 @@ export function MyTasksPage() {
 
       {myTasks.length === 0 ? <EmptyState title="Voce nao possui tarefas atribuidas" /> : null}
       {myTasks.length > 0 && visibleTasks.length === 0 ? <EmptyState title="Nenhuma tarefa corresponde aos filtros" /> : null}
-      {view === "list" ? <ListView tasks={visibleTasks} onOpenTask={setSelectedTask} onStatusChange={(task, status) => void updateTask.mutateAsync({ id: task.id, payload: { status } })} /> : null}
-      {view === "kanban" ? <KanbanView tasks={visibleTasks} onDragEnd={handleDragEnd} onOpenTask={setSelectedTask} /> : null}
+      {view === "list" ? (
+        <ListView
+          tasks={visibleTasks}
+          onOpenTask={setSelectedTask}
+          onStatusChange={(task, status) => void updateTask.mutateAsync({ id: task.id, payload: { status } })}
+          onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
+        />
+      ) : null}
+      {view === "kanban" ? (
+        <KanbanView
+          tasks={visibleTasks}
+          onDragEnd={handleDragEnd}
+          onOpenTask={setSelectedTask}
+          onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
+        />
+      ) : null}
       {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={setSelectedTask} /> : null}
       <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
@@ -303,12 +335,21 @@ function ViewTab({ active, icon, label, onClick }: { active: boolean; icon: Reac
 function ListView({
   tasks,
   onOpenTask,
-  onStatusChange
+  onStatusChange,
+  onCompletionChange
 }: {
   tasks: TaskWithProject[];
   onOpenTask: (task: TaskWithProject) => void;
   onStatusChange: (task: TaskWithProject, status: TaskStatus) => void;
+  onCompletionChange: (task: TaskWithProject) => void;
 }) {
+  const openTasks = tasks.filter((task) => !task.completed);
+  const completedTasks = tasks.filter((task) => task.completed);
+  const groups = [
+    { key: "open", label: "Nao concluidas", tasks: openTasks },
+    { key: "completed", label: "Concluidas", tasks: completedTasks }
+  ].filter((group) => group.tasks.length > 0);
+
   return (
     <div className="overflow-auto">
       <table className="w-full min-w-[980px] border-collapse text-sm">
@@ -322,31 +363,53 @@ function ListView({
           </tr>
         </thead>
         <tbody>
-          {tasks.map((task) => (
-            <tr key={task.id} className="h-7 border-b border-border hover:bg-surface-hover">
-              <td className="p-1.5">
-                <button type="button" onClick={() => onOpenTask(task)} className="flex max-w-full items-center gap-2 font-semibold text-text-primary">
-                  <span className={cn("h-4 w-4 rounded-full border", task.status === TaskStatus.DONE ? "border-green-400 bg-green-400" : "border-text-secondary")} />
-                  <span className="truncate">{task.title}</span>
-                </button>
-              </td>
-              <td className="border-l border-border p-1.5">
-                <span className="inline-flex max-w-36 items-center rounded bg-surface-hover px-2 py-0.5 text-xs font-bold text-text-primary">
-                  <span className="truncate">{task.discipline.projectName}</span>
-                </span>
-              </td>
-              <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{task.dueDate ? format(new Date(task.dueDate), "d MMM") : ""}</td>
-              <td className="border-l border-border p-1.5">
-                <Select value={task.status} onChange={(event) => onStatusChange(task, event.target.value as TaskStatus)} className="h-7 w-36 py-0">
-                  {Object.values(TaskStatus).map((status) => (
-                    <option key={status} value={status}>
-                      {statusLabel(status)}
-                    </option>
-                  ))}
-                </Select>
-              </td>
-              <td className="border-l border-border p-1.5 text-text-muted" />
-            </tr>
+          {groups.map((group) => (
+            <Fragment key={group.key}>
+              <tr className="border-b border-border bg-brand-black">
+                <td colSpan={5} className="px-2 py-2 text-xs font-bold uppercase text-text-secondary">
+                  {group.label} <span className="text-text-muted">{group.tasks.length}</span>
+                </td>
+              </tr>
+              {group.tasks.map((task) => (
+                <tr key={task.id} className={cn("h-7 border-b border-border hover:bg-surface-hover", task.completed ? "opacity-70" : "")}>
+                  <td className="p-1.5">
+                    <div className="flex max-w-full items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onCompletionChange(task)}
+                        className="flex h-5 w-5 items-center justify-center rounded-full text-text-secondary transition hover:text-brand-orange"
+                        title={task.completed ? "Reabrir tarefa" : "Concluir tarefa"}
+                      >
+                        {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onOpenTask(task)}
+                        className={cn("min-w-0 font-semibold text-text-primary", task.completed ? "text-text-muted line-through" : "")}
+                      >
+                        <span className="block truncate">{task.title}</span>
+                      </button>
+                    </div>
+                  </td>
+                  <td className="border-l border-border p-1.5">
+                    <span className="inline-flex max-w-36 items-center rounded bg-surface-hover px-2 py-0.5 text-xs font-bold text-text-primary">
+                      <span className="truncate">{task.discipline.projectName}</span>
+                    </span>
+                  </td>
+                  <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{task.dueDate ? format(new Date(task.dueDate), "d MMM") : ""}</td>
+                  <td className="border-l border-border p-1.5">
+                    <Select value={task.status} onChange={(event) => onStatusChange(task, event.target.value as TaskStatus)} className="h-7 w-36 py-0">
+                      {Object.values(TaskStatus).map((status) => (
+                        <option key={status} value={status}>
+                          {statusLabel(status)}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                  <td className="border-l border-border p-1.5 text-text-muted" />
+                </tr>
+              ))}
+            </Fragment>
           ))}
         </tbody>
       </table>
@@ -354,7 +417,17 @@ function ListView({
   );
 }
 
-function KanbanView({ tasks, onDragEnd, onOpenTask }: { tasks: TaskWithProject[]; onDragEnd: (result: DropResult) => void; onOpenTask: (task: TaskWithProject) => void }) {
+function KanbanView({
+  tasks,
+  onDragEnd,
+  onOpenTask,
+  onCompletionChange
+}: {
+  tasks: TaskWithProject[];
+  onDragEnd: (result: DropResult) => void;
+  onOpenTask: (task: TaskWithProject) => void;
+  onCompletionChange: (task: TaskWithProject) => void;
+}) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="overflow-x-auto py-4">
@@ -381,7 +454,7 @@ function KanbanView({ tasks, onDragEnd, onOpenTask }: { tasks: TaskWithProject[]
                         <Draggable key={task.id} draggableId={task.id} index={index}>
                           {(dragProvided) => (
                             <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                              <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} />
+                              <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} onToggleCompletion={onCompletionChange} />
                             </div>
                           )}
                         </Draggable>

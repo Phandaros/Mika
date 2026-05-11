@@ -6,6 +6,7 @@ import {
   getTaskById,
   listTasks,
   updateTask,
+  updateTaskCompletion,
   updateTaskStatus
 } from "../controllers/tasks.controller.js";
 import { auth } from "../middleware/auth.js";
@@ -22,6 +23,7 @@ const taskSchema = z.object({
   assigneeId: z.string().nullable().optional(),
   startDate: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
+  completed: z.boolean().optional(),
   customFieldValues: z.array(z.object({
     id: z.string(),
     value: z.union([z.string(), z.number()]).nullable()
@@ -34,6 +36,10 @@ const taskStatusSchema = z.object({
   status: z.nativeEnum(TaskStatus)
 });
 
+const taskCompletionSchema = z.object({
+  completed: z.boolean()
+});
+
 router.use(auth);
 router.get("/disciplines/:disciplineId/tasks", listTasks);
 router.get("/tasks/:id", getTaskById);
@@ -41,5 +47,6 @@ router.post("/disciplines/:disciplineId/tasks", validateBody(taskSchema), create
 router.patch("/tasks/:id", validateBody(updateTaskSchema), updateTask);
 router.delete("/tasks/:id", deleteTask);
 router.patch("/tasks/:id/status", validateBody(taskStatusSchema), updateTaskStatus);
+router.patch("/tasks/:id/completed", validateBody(taskCompletionSchema), updateTaskCompletion);
 
 export default router;

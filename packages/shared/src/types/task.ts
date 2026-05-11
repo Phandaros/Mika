@@ -16,6 +16,7 @@ export interface Task {
   creatorId: string;
   startDate: string | null;
   dueDate: string | null;
+  completed: boolean;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +53,7 @@ export interface CreateTaskRequest {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  completed?: boolean;
 }
 
 export interface UpdateTaskRequest {
@@ -62,6 +64,7 @@ export interface UpdateTaskRequest {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  completed?: boolean;
   customFieldValues?: Array<{
     id: string;
     value: string | number | null;
@@ -70,4 +73,8 @@ export interface UpdateTaskRequest {
 
 export interface UpdateTaskStatusRequest {
   status: TaskStatus;
+}
+
+export interface UpdateTaskCompletionRequest {
+  completed: boolean;
 }

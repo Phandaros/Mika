@@ -83,6 +83,7 @@ export function useCreateTask(projectId: string, disciplineId: string) {
         creatorId: "",
         startDate: payload.startDate ?? null,
         dueDate: payload.dueDate ?? null,
+        completed: payload.completed ?? false,
         completedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -164,6 +165,23 @@ export function useUpdateTaskStatus(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+    }
+  });
+}
+
+export function useUpdateTaskCompletion(projectId: string) {
+  return useMutation({
+    mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+      const response = await api.patch<TaskResponse>(`/tasks/${id}/completed`, { completed });
+      return response.data.task;
+    },
+    onSuccess: (updatedTask) => {
+      updateTaskInProjectCache(projectId, updatedTask);
+    },
+    onSettled: async () => {
+      if (!projectId) {
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      }
     }
   });
 }

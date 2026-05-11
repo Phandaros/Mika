@@ -7,6 +7,7 @@ import { prisma } from "./lib/prisma.js";
 import { initSocket } from "./lib/socket.js";
 import apiRoutes from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import mikeAuthRoutes from "./modules/mike/auth/mike-auth.router.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +23,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/v1", apiRoutes);
+app.use("/api/mike/auth", mikeAuthRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Route not found" });
