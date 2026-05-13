@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { DEFAULT_DISCIPLINES, ProjectStatus, type DisciplineType, type Project } from "shared";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useCreateProject, useUpdateProject } from "../../hooks/useProjects";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Select } from "../ui/select";
+import {
+  MK_SELECT_EMPTY_VALUE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../ui/select";
 import { Textarea } from "../ui/textarea";
 
 interface ProjectFormProps {
@@ -115,10 +122,20 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
         </label>
         <label className="grid gap-2 text-sm font-semibold text-text-secondary">
           Plataforma
-          <Select value={platform} onChange={(event) => setPlatform(event.target.value as "CAD" | "BIM" | "")}>
-            <option value="">Selecionar plataforma</option>
-            <option value="CAD">CAD</option>
-            <option value="BIM">BIM</option>
+          <Select
+            value={platform || MK_SELECT_EMPTY_VALUE}
+            onValueChange={(value) =>
+              setPlatform(value === MK_SELECT_EMPTY_VALUE ? "" : (value as "CAD" | "BIM"))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecionar plataforma" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={MK_SELECT_EMPTY_VALUE}>Selecionar plataforma</SelectItem>
+              <SelectItem value="CAD">CAD</SelectItem>
+              <SelectItem value="BIM">BIM</SelectItem>
+            </SelectContent>
           </Select>
         </label>
         <label className="grid gap-2 text-sm font-semibold text-text-secondary">
@@ -137,12 +154,17 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
         onChange={(event) => setDescription(event.target.value)}
         placeholder="Descrição"
       />
-      <Select value={status} onChange={(event) => setStatus(event.target.value as ProjectStatus)}>
-        {Object.values(ProjectStatus).map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
+      <Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {Object.values(ProjectStatus).map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
       <fieldset className="grid gap-3">
         <legend className="text-sm font-semibold text-text-secondary">Disciplinas do projeto</legend>

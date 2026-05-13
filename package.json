@@ -8,10 +8,12 @@
     "dev": "turbo run dev --filter=server --filter=client",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "test": "turbo run test",
     "db:push": "pnpm --filter server prisma db push",
     "db:migrate": "pnpm --filter server prisma migrate dev",
     "db:studio": "pnpm --filter server prisma studio",
     "db:seed": "pnpm --filter server tsx prisma/seed.ts",
+    "db:import-asana-comments": "pnpm --filter server run db:import-asana-comments",
     "desktop:dev": "pnpm --filter desktop dev",
     "desktop:build": "pnpm --filter desktop build"
   },

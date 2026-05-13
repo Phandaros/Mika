@@ -41,8 +41,10 @@ const taskCompletionSchema = z.object({
 });
 
 router.use(auth);
+router.get("/sections/:sectionId/tasks", listTasks);
 router.get("/disciplines/:disciplineId/tasks", listTasks);
 router.get("/tasks/:id", getTaskById);
+router.post("/sections/:sectionId/tasks", validateBody(taskSchema), createTask);
 router.post("/disciplines/:disciplineId/tasks", validateBody(taskSchema), createTask);
 router.patch("/tasks/:id", validateBody(updateTaskSchema), updateTask);
 router.delete("/tasks/:id", deleteTask);

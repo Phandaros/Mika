@@ -36,9 +36,27 @@ model User {
   taskFollowers       TaskFollower[]
   taskLikes           TaskLike[]
   comments            Comment[]
+  notifications       Notification[]
 
   @@index([asanaGid])
   @@index([email])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  taskId    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
 }
 
 model AsanaWorkspace {
@@ -225,17 +243,24 @@ model Task {
 model Comment {
   id       String @id @default(cuid())
   taskId   String
-  authorId String
+  authorId String?
   content  String
+
+  /// Idempotência / rastreio de comentários importados do Asana
+  asanaGid         String?   @unique
+  authorAsanaGid   String?
+  asanaCreatedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([taskId])
   @@index([authorId])
+  @@index([asanaGid])
+  @@index([authorAsanaGid])
 }
 
 model TaskMembership {

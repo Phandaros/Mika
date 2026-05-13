@@ -1,8 +1,8 @@
 import { format } from "date-fns";
-import { CheckCircle2, Circle } from "lucide-react";
 import { getDefaultDiscipline, type DisciplineType, type Task } from "shared";
 import { Avatar } from "../shared/Avatar";
 import { PriorityBadge } from "../shared/PriorityBadge";
+import { TaskCompletionButton } from "./TaskCompletionButton";
 import { cn } from "../../lib/utils";
 
 export type TaskCardTask = Task & {
@@ -19,9 +19,16 @@ interface TaskCardProps<TTask extends TaskCardTask> {
   disciplineName?: string;
   onOpen?: (task: TTask) => void;
   onToggleCompletion?: (task: TTask) => void;
+  completionBusy?: boolean;
 }
 
-export function TaskCard<TTask extends TaskCardTask>({ task, disciplineName, onOpen, onToggleCompletion }: TaskCardProps<TTask>) {
+export function TaskCard<TTask extends TaskCardTask>({
+  task,
+  disciplineName,
+  onOpen,
+  onToggleCompletion,
+  completionBusy
+}: TaskCardProps<TTask>) {
   const disciplineColor = task.discipline?.type ? getDefaultDiscipline(task.discipline.type).color : undefined;
 
   return (
@@ -33,19 +40,14 @@ export function TaskCard<TTask extends TaskCardTask>({ task, disciplineName, onO
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleCompletion?.(task);
-            }}
-            className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full text-text-secondary transition hover:text-brand-orange"
-            title={task.completed ? "Reabrir tarefa" : "Concluir tarefa"}
-          >
-            {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
-          </button>
+          <TaskCompletionButton
+            completed={task.completed}
+            disabled={completionBusy}
+            onToggle={() => onToggleCompletion?.(task)}
+            className="mt-0.5"
+          />
           <button type="button" onClick={() => onOpen?.(task)} className="min-w-0 text-left">
-            <h3 className={cn("text-sm font-semibold leading-5 text-text-primary", task.completed ? "text-text-muted line-through" : "")}>
+            <h3 className={cn("text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
               {task.title}
             </h3>
           </button>

@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "sonner";
 import { App } from "./App";
 import { queryClient } from "./lib/queryClient";
 import { initializeRuntimeConfig } from "./lib/runtimeConfig";
@@ -14,16 +14,7 @@ async function bootstrap(): Promise<void> {
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <App />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: "#242424",
-              color: "#F5F5F5",
-              border: "1px solid #3A3A3A"
-            }
-          }}
-        />
+        <Toaster richColors position="top-right" theme="dark" toastOptions={{ classNames: { toast: "border border-border-subtle bg-bg-2" } }} />
       </QueryClientProvider>
     </React.StrictMode>
   );

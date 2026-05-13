@@ -27,45 +27,79 @@ function mergeTask(currentTask: Task, updatedTask: Task): Task {
   };
 }
 
-function updateTaskInProjectCache(projectId: string, updatedTask: Task) {
-  if (!projectId) {
-    return;
+function mapDisciplinesWithUpdatedTask(
+  disciplines: Project["disciplines"] | Project["sections"] | undefined,
+  updatedTask: Task
+) {
+  if (!disciplines) {
+    return undefined;
   }
 
-  queryClient.setQueryData<Project>(["projects", projectId], (currentProject) => {
-    if (!currentProject?.disciplines) {
-      return currentProject;
+  return disciplines.map((discipline) => ({
+    ...discipline,
+    tasks: discipline.tasks?.map((task) => (task.id === updatedTask.id ? mergeTask(task, updatedTask) : task))
+  }));
+}
+
+function patchProjectWithUpdatedTask(project: Project, updatedTask: Task): Project {
+  return {
+    ...project,
+    disciplines: mapDisciplinesWithUpdatedTask(project.disciplines, updatedTask) ?? project.disciplines,
+    sections: mapDisciplinesWithUpdatedTask(project.sections, updatedTask) ?? project.sections
+  };
+}
+
+function updateProjectsListCache(updatedTask: Task) {
+  queryClient.setQueryData<Project[]>(["projects"], (projects) => {
+    if (!projects) {
+      return projects;
     }
 
-    return {
-      ...currentProject,
-      disciplines: currentProject.disciplines.map((discipline) => ({
-        ...discipline,
-        tasks: discipline.tasks?.map((task) => (task.id === updatedTask.id ? mergeTask(task, updatedTask) : task))
-      }))
-    };
-  });
+    return projects.map((project) => {
+      const inProject = [project.disciplines, project.sections].some((arr) =>
+        arr?.some((discipline) => discipline.tasks?.some((task) => task.id === updatedTask.id))
+      );
 
-  queryClient.setQueryData<Task[]>(["disciplines", updatedTask.disciplineId, "tasks"], (currentTasks) =>
+      return inProject ? patchProjectWithUpdatedTask(project, updatedTask) : project;
+    });
+  });
+}
+
+function updateTaskInProjectCache(projectId: string, updatedTask: Task) {
+  const resolvedProjectId = projectId || updatedTask.discipline?.projectId;
+
+  updateProjectsListCache(updatedTask);
+
+  if (resolvedProjectId) {
+    queryClient.setQueryData<Project>(["projects", resolvedProjectId], (currentProject) => {
+      if (!currentProject) {
+        return currentProject;
+      }
+
+      return patchProjectWithUpdatedTask(currentProject, updatedTask);
+    });
+  }
+
+  queryClient.setQueryData<Task[]>(["sections", updatedTask.disciplineId, "tasks"], (currentTasks) =>
     currentTasks?.map((task) => (task.id === updatedTask.id ? mergeTask(task, updatedTask) : task))
   );
 }
 
-export function useTasks(disciplineId: string | undefined) {
+export function useTasks(sectionId: string | undefined) {
   return useQuery({
-    queryKey: ["disciplines", disciplineId, "tasks"],
-    enabled: Boolean(disciplineId),
+    queryKey: ["sections", sectionId, "tasks"],
+    enabled: Boolean(sectionId),
     queryFn: async () => {
-      const response = await api.get<TasksResponse>(`/disciplines/${disciplineId}/tasks`);
+      const response = await api.get<TasksResponse>(`/sections/${sectionId}/tasks`);
       return response.data.tasks;
     }
   });
 }
 
-export function useCreateTask(projectId: string, disciplineId: string) {
+export function useCreateTask(projectId: string, sectionId: string) {
   return useMutation({
     mutationFn: async (payload: CreateTaskRequest) => {
-      const response = await api.post<TaskResponse>(`/disciplines/${disciplineId}/tasks`, payload);
+      const response = await api.post<TaskResponse>(`/sections/${sectionId}/tasks`, payload);
       return response.data.task;
     },
     onMutate: async (payload) => {
@@ -74,7 +108,7 @@ export function useCreateTask(projectId: string, disciplineId: string) {
       const previousProject = queryClient.getQueryData<Project>(["projects", projectId]);
       const optimisticTask: Task = {
         id: `optimistic-${Date.now()}`,
-        disciplineId,
+        disciplineId: sectionId,
         title: payload.title,
         description: payload.description ?? null,
         status: payload.status ?? TaskStatusValue.BACKLOG,
@@ -98,7 +132,7 @@ export function useCreateTask(projectId: string, disciplineId: string) {
         return {
           ...currentProject,
           disciplines: currentProject.disciplines?.map((discipline) =>
-            discipline.id === disciplineId
+            discipline.id === sectionId
               ? { ...discipline, tasks: [optimisticTask, ...(discipline.tasks ?? [])] }
               : discipline
           )
@@ -121,7 +155,7 @@ export function useCreateTask(projectId: string, disciplineId: string) {
         return {
           ...currentProject,
           disciplines: currentProject.disciplines?.map((discipline) =>
-            discipline.id === disciplineId
+            discipline.id === sectionId
               ? {
                   ...discipline,
                   tasks: (discipline.tasks ?? []).map((task) =>
@@ -135,7 +169,7 @@ export function useCreateTask(projectId: string, disciplineId: string) {
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
-      await queryClient.invalidateQueries({ queryKey: ["disciplines", disciplineId, "tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["sections", sectionId, "tasks"] });
     }
   });
 }
@@ -177,11 +211,6 @@ export function useUpdateTaskCompletion(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
-    },
-    onSettled: async () => {
-      if (!projectId) {
-        await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      }
     }
   });
 }

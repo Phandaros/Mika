@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { createAndEmitNotification } from "../lib/notify.js";
 
 interface CommentBody {
   content: string;
@@ -30,6 +31,8 @@ export const listComments: RequestHandler = async (req, res, next) => {
         content: comment.content,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
+        asanaGid: comment.asanaGid,
+        asanaCreatedAt: comment.asanaCreatedAt,
         author: toPublicUser(comment.author)
       }))
     });
@@ -57,6 +60,37 @@ export const createComment: RequestHandler = async (req, res, next) => {
       include: { author: { select: userSelect } }
     });
 
+    const fullTask = await prisma.task.findUnique({
+      where: { id: task.id },
+      include: {
+        assignee: { select: { id: true } },
+        followers: { include: { user: { select: { id: true } } } }
+      }
+    });
+
+    if (fullTask) {
+      const recipients = new Set<string>();
+      if (fullTask.assignee) {
+        recipients.add(fullTask.assignee.id);
+      }
+      for (const follower of fullTask.followers) {
+        if (follower.user) {
+          recipients.add(follower.user.id);
+        }
+      }
+      recipients.delete(authUser.id);
+
+      for (const userId of recipients) {
+        await createAndEmitNotification({
+          userId,
+          type: "COMMENT_ADDED",
+          title: "Novo comentario",
+          message: `${fullTask.name}: ${body.content.slice(0, 120)}${body.content.length > 120 ? "…" : ""}`,
+          taskId: fullTask.id
+        });
+      }
+    }
+
     res.status(201).json({
       comment: {
         id: comment.id,
@@ -65,6 +99,8 @@ export const createComment: RequestHandler = async (req, res, next) => {
         content: comment.content,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
+        asanaGid: comment.asanaGid,
+        asanaCreatedAt: comment.asanaCreatedAt,
         author: toPublicUser(comment.author)
       }
     });

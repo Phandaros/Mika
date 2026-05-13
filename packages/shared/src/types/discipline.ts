@@ -38,7 +38,11 @@ export const DEFAULT_DISCIPLINES: readonly DefaultDiscipline[] = [
 export const DEFAULT_DISCIPLINE_TYPES = DEFAULT_DISCIPLINES.map((discipline) => discipline.type);
 
 export function getDefaultDiscipline(type: DisciplineType): DefaultDiscipline {
-  return DEFAULT_DISCIPLINES.find((discipline) => discipline.type === type) ?? DEFAULT_DISCIPLINES[0];
+  const found = DEFAULT_DISCIPLINES.find((discipline) => discipline.type === type) ?? DEFAULT_DISCIPLINES[0];
+  if (!found) {
+    throw new Error("DEFAULT_DISCIPLINES must not be empty");
+  }
+  return found;
 }
 
 export interface CreateDisciplineRequest {
@@ -54,3 +58,8 @@ export interface UpdateDisciplineRequest {
   status?: DisciplineStatus;
   responsibleId?: string | null;
 }
+
+/** Secao Asana (API canonica); alias de Discipline para compat. */
+export type Section = Discipline;
+export type CreateSectionRequest = CreateDisciplineRequest;
+export type UpdateSectionRequest = UpdateDisciplineRequest;

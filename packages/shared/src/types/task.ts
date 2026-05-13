@@ -28,6 +28,11 @@ export interface Task {
     enumOptionName: string | null;
     numberValue: number | null;
     enumOptionColor?: string | null;
+    enumOptions?: Array<{
+      id: string;
+      name: string;
+      color: string | null;
+    }>;
   }>;
   tags?: Array<{
     id: string;

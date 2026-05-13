@@ -9,11 +9,11 @@
 
 **MK Projetos** é um gerenciador de tarefas para escritório de engenharia (MK Engenharia, Balneário Camboriú/SC), substituindo o Asana. Roda em rede local (LAN): um PC Windows hospeda o servidor, os demais acessam via navegador pelo IP da rede. Também terá um app desktop Windows via Electron, funcionando como shell nativo do client React/Vite, sem duplicar regra de negócio nem criar outro frontend.
 
-**Hierarquia de dados:**
+**Hierarquia de dados (produto):**
 ```
-Projeto → Disciplina → Tarefa
+Projeto → Secao (Asana Section) → Tarefa
 ```
-Não há sub-tarefas. Não há níveis adicionais.
+No modelo importado do Asana, **Section** e a unidade entre projeto e tarefa. O client ainda expoe o tipo compartilhado `Discipline` como alias de `Section` por compatibilidade. Nao ha sub-tarefas como entidade de produto; relacoes `parentId` no banco sao legado Asana.
 
 ---
 
@@ -40,7 +40,7 @@ Não há sub-tarefas. Não há níveis adicionais.
 | JWT (jsonwebtoken) | 9.x | Autenticação stateless |
 | bcrypt | 5.x | Hash de senhas |
 | Socket.io | 4.x | Notificações in-app em tempo real |
-| Multer | 3.x | Upload de arquivos |
+| Multer | 1.x LTS | Upload de arquivos (Fase 2; endpoint pode retornar 501) |
 | Zod | 3.x | Validação de schemas de entrada |
 | cors | 2.x | Liberar acesso da LAN |
 | dotenv | 16.x | Variáveis de ambiente |
@@ -60,7 +60,12 @@ Não há sub-tarefas. Não há níveis adicionais.
 | @hello-pangea/dnd | latest | Drag & Drop no Kanban |
 | axios | 1.x | HTTP client (com interceptors) |
 | date-fns | 3.x | Manipulação de datas |
-| react-hot-toast | 2.x | Toasts de feedback |
+| sonner | 2.x | Toasts de feedback |
+| cmdk | 1.x | Paleta de comandos (⌘/Ctrl+K) |
+| tinykeys | 3.x | Atalhos de teclado globais |
+| tailwind-merge + clsx | latest | Utilitario `cn()` no client |
+| tailwindcss-animate | 1.x | Animacoes utilitarias (shadcn) |
+| @radix-ui/react-dialog | 1.x | Dialog (paleta, atalhos) |
 | lucide-react | latest | Ícones |
 | socket.io-client | 4.x | Notificações em tempo real |
 
@@ -84,12 +89,12 @@ Não há sub-tarefas. Não há níveis adicionais.
 - Nunca desabilitar `webSecurity`
 - Links externos devem abrir com `shell.openExternal` após validação de URL
 
-### Pacote compartilhado — `packages/shared`
-- Apenas tipos TypeScript (`interfaces`, `enums`, `type aliases`).
-- Zero dependências externas.
-- Exporta: tipos de entidades, DTOs de request/response, enums de status/role/prioridade.
+### Pacote compartilhado — `packages/shared` e `packages/eslint-config`
+- **`packages/shared`:** apenas tipos TypeScript (interfaces, enums, aliases). Zero dependencias externas.
+- **`packages/eslint-config`:** configuracao ESLint compartilhada (`@mk/eslint-config`); apps estendem `server.cjs` ou `client.cjs`.
 
 ---
+
 
 ## 3. Estrutura de Pastas — EXATA
 
@@ -103,18 +108,22 @@ mk-projetos/                        ← root do monorepo
 ├── .gitignore
 │
 ├── packages/
-│   └── shared/
+│   ├── shared/
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── index.ts
+│   │       └── types/
+│   │           ├── user.ts
+│   │           ├── project.ts
+│   │           ├── discipline.ts
+│   │           ├── task.ts
+│   │           ├── comment.ts
+│   │           ├── notification.ts
+│   │           └── enums.ts
+│   └── eslint-config/
 │       ├── package.json
-│       └── src/
-│           ├── index.ts
-│           └── types/
-│               ├── user.ts
-│               ├── project.ts
-│               ├── discipline.ts
-│               ├── task.ts
-│               ├── comment.ts
-│               ├── notification.ts
-│               └── enums.ts
+│       ├── server.cjs
+│       └── client.cjs
 │
 └── apps/
     ├── server/
@@ -124,6 +133,8 @@ mk-projetos/                        ← root do monorepo
     │   ├── prisma/
     │   │   ├── schema.prisma
     │   │   └── seed.ts
+    │   ├── scripts/
+    │   │   └── import_asana_json.py
     │   ├── data/                   ← banco SQLite (NÃO commitar)
     │   ├── uploads/                ← arquivos enviados (NÃO commitar)
     │   └── src/
@@ -132,7 +143,8 @@ mk-projetos/                        ← root do monorepo
     │       │   └── env.ts          ← lê e valida variáveis com Zod
     │       ├── lib/
     │       │   ├── prisma.ts       ← singleton PrismaClient
-    │       │   └── socket.ts       ← instância Socket.io exportável
+    │       │   ├── socket.ts       ← instância Socket.io exportável
+    │       │   └── notify.ts       ← persistir + emitir notificacoes
     │       ├── middleware/
     │       │   ├── auth.ts         ← verifica JWT
     │       │   ├── role.ts         ← verifica role mínimo
@@ -143,19 +155,21 @@ mk-projetos/                        ← root do monorepo
     │       │   ├── auth.routes.ts
     │       │   ├── users.routes.ts
     │       │   ├── projects.routes.ts
-    │       │   ├── disciplines.routes.ts
+    │       │   ├── sections.routes.ts
     │       │   ├── tasks.routes.ts
     │       │   ├── comments.routes.ts
     │       │   ├── notifications.routes.ts
+    │       │   ├── activity.routes.ts
     │       │   └── uploads.routes.ts
     │       └── controllers/
     │           ├── auth.controller.ts
     │           ├── users.controller.ts
     │           ├── projects.controller.ts
-    │           ├── disciplines.controller.ts
+    │           ├── sections.controller.ts
     │           ├── tasks.controller.ts
     │           ├── comments.controller.ts
     │           ├── notifications.controller.ts
+    │           ├── activity.controller.ts
     │           └── uploads.controller.ts
     │
     └── client/
@@ -163,6 +177,7 @@ mk-projetos/                        ← root do monorepo
         ├── tsconfig.json
         ├── vite.config.ts
         ├── tailwind.config.ts
+        ├── components.json
         ├── index.html
         └── src/
             ├── main.tsx
@@ -173,34 +188,38 @@ mk-projetos/                        ← root do monorepo
             │   └── globals.css     ← Tailwind directives + CSS vars
             ├── lib/
             │   ├── api.ts          ← instância axios configurada
-            │   ├── queryClient.ts  ← TanStack Query client
-            │   └── socket.ts       ← socket.io-client singleton
+            │   ├── queryClient.ts
+            │   ├── socket.ts
+            │   ├── utils.ts
+            │   └── runtimeConfig.ts
             ├── store/
             │   ├── authStore.ts    ← Zustand: user, token, login/logout
-            │   └── uiStore.ts      ← Zustand: sidebar, modais globais
+            │   └── uiStore.ts      ← Zustand: sidebar, paleta de comandos, dialogo de atalhos
             ├── hooks/
             │   ├── useAuth.ts
             │   ├── useProjects.ts
-            │   ├── useDisciplines.ts
+            │   ├── useSections.ts
             │   ├── useTasks.ts
+            │   ├── useRecentActivity.ts
+            │   ├── useAppHotkeys.ts
             │   └── useNotifications.ts
             ├── components/
-            │   ├── ui/             ← shadcn/ui (auto-gerados, não editar)
+            │   ├── ui/
             │   ├── layout/
-            │   │   ├── AppShell.tsx      ← wrapper com sidebar + header
+            │   │   ├── AppShell.tsx
             │   │   ├── Sidebar.tsx
             │   │   ├── Header.tsx
+            │   │   ├── CommandPalette.tsx
+            │   │   ├── ShortcutsDialog.tsx
             │   │   └── NotificationBell.tsx
             │   ├── project/
-            │   │   ├── ProjectCard.tsx
             │   │   └── ProjectForm.tsx
-            │   ├── discipline/
-            │   │   ├── DisciplineTab.tsx
-            │   │   └── DisciplineForm.tsx
+            │   ├── section/
+            │   │   └── SectionTab.tsx
             │   ├── task/
-            │   │   ├── TaskCard.tsx       ← usado no Kanban e na Lista
+            │   │   ├── TaskCard.tsx
             │   │   ├── TaskForm.tsx
-            │   │   ├── TaskDetail.tsx     ← drawer lateral com detalhes
+            │   │   ├── TaskDetail.tsx
             │   │   └── TaskStatusBadge.tsx
             │   └── shared/
             │       ├── Avatar.tsx
@@ -230,178 +249,19 @@ mk-projetos/                        ← root do monorepo
 
 ## 4. Modelo de Dados (Prisma Schema)
 
-```prisma
-// apps/server/prisma/schema.prisma
+A fonte de verdade e o arquivo `apps/server/prisma/schema.prisma`. O banco espelha o **export JSON do Asana** (workspace, teams, projects, sections, tasks, memberships, tags, custom fields, etc.), com cliente Prisma gerado em `apps/server/src/generated/prisma`.
 
-generator client {
-  provider = "prisma-client-js"
-}
+Resumo das entidades principais:
 
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
+- **AsanaWorkspace**, **Team**, **Project**, **Section**: hierarquia de projeto; `Section` e a unidade entre projeto e tarefa no backend canonico.
+- **Task** + **TaskMembership**: tarefas Asana e colocacao em secao; campos locais (`localStatus`, etc.) para o Kanban.
+- **User**: usuarios do app e importados (`asanaGid`); `passwordHash` pode ser nulo para usuarios importados.
+- **Comment**: comentarios com campos opcionais de import (`asanaGid`, `authorAsanaGid`, `asanaCreatedAt`).
+- **Notification**: notificacoes in-app persistidas; emissao em tempo real via Socket.io (`lib/notify.ts`).
 
-enum Role {
-  ADMIN
-  COORDINATOR
-  DESIGNER
-  INTERN
-}
+Enums e tipos de API expostos ao client permanecem em `packages/shared` (`TaskStatus`, `Priority`, `DisciplineType`, alias `Section` = `Discipline`, etc.).
 
-enum ProjectStatus {
-  ACTIVE
-  ON_HOLD
-  COMPLETED
-  CANCELLED
-}
-
-enum DisciplineType {
-  HYDRAULIC       // Hidráulico
-  SANITARY        // Sanitário
-  FIRE_PROTECTION // PPCI
-  SPRINKLER
-  PRESSURIZED_STAIR // Escada Pressurizada
-  ELECTRICAL
-  SPDA
-  TELECOM
-  HVAC            // Climatização
-  GAS
-  AUTOMATION
-  EXHAUST         // Exaustão
-  VACUUM          // Aspiração Central
-  OTHER
-}
-
-enum DisciplineStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  IN_REVIEW
-  COMPLETED
-}
-
-enum TaskStatus {
-  BACKLOG
-  TODO
-  IN_PROGRESS
-  IN_REVIEW
-  DONE
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(DESIGNER)
-  avatarUrl    String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  assignedTasks    Task[]         @relation("TaskAssignee")
-  createdTasks     Task[]         @relation("TaskCreator")
-  comments         Comment[]
-  notifications    Notification[]
-  responsibleDisciplines Discipline[] @relation("DisciplineResponsible")
-}
-
-model Project {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  client      String?
-  status      ProjectStatus @default(ACTIVE)
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  disciplines Discipline[]
-}
-
-model Discipline {
-  id            String           @id @default(cuid())
-  projectId     String
-  name          String
-  type          DisciplineType
-  status        DisciplineStatus @default(NOT_STARTED)
-  responsibleId String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  responsible User?   @relation("DisciplineResponsible", fields: [responsibleId], references: [id])
-  tasks       Task[]
-}
-
-model Task {
-  id           String     @id @default(cuid())
-  disciplineId String
-  title        String
-  description  String?
-  status       TaskStatus @default(BACKLOG)
-  priority     Priority   @default(MEDIUM)
-  assigneeId   String?
-  creatorId    String
-  startDate    DateTime?
-  dueDate      DateTime?
-  completedAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-  assignee     User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  creator      User       @relation("TaskCreator", fields: [creatorId], references: [id])
-  comments     Comment[]
-  attachments  Attachment[]
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  taskId    String
-  authorId  String
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id])
-}
-
-model Attachment {
-  id           String   @id @default(cuid())
-  taskId       String
-  filename     String
-  originalName String
-  mimeType     String
-  size         Int
-  uploadedById String
-  createdAt    DateTime @default(now())
-
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // TASK_ASSIGNED | TASK_UPDATED | COMMENT_ADDED | DUE_SOON
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  taskId    String?
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-```
+Nao duplicar o schema completo neste arquivo: apos alterar o Prisma, rodar `pnpm --filter server prisma migrate dev` e revisar o `schema.prisma` no repositorio.
 
 ---
 
@@ -430,73 +290,60 @@ PROJECTS
   PATCH  /projects/:id       (Admin, Coordinator)
   DELETE /projects/:id       (Admin only)
 
-DISCIPLINES
+SECTIONS (canonico; alias temporario `/disciplines` espelha as mesmas rotas)
+  GET    /projects/:projectId/sections
   GET    /projects/:projectId/disciplines
-  POST   /projects/:projectId/disciplines  (Admin, Coordinator)
-  PATCH  /disciplines/:id
-  DELETE /disciplines/:id    (Admin, Coordinator)
+  POST   /projects/:projectId/sections   (Coordinator)
+  POST   /projects/:projectId/disciplines (alias)
+  PATCH  /sections/:id
+  PATCH  /disciplines/:id                 (alias)
+  DELETE /sections/:id                   (Coordinator)
+  DELETE /disciplines/:id                (alias)
 
 TASKS
-  GET    /disciplines/:disciplineId/tasks
+  GET    /sections/:sectionId/tasks
+  GET    /disciplines/:disciplineId/tasks (alias)
   GET    /tasks/:id
-  POST   /disciplines/:disciplineId/tasks
+  POST   /sections/:sectionId/tasks
+  POST   /disciplines/:disciplineId/tasks (alias)
   PATCH  /tasks/:id
   DELETE /tasks/:id
-  PATCH  /tasks/:id/status   (move no kanban)
+  PATCH  /tasks/:id/status
 
 COMMENTS
   GET    /tasks/:taskId/comments
   POST   /tasks/:taskId/comments
   DELETE /comments/:id
 
+ACTIVITY
+  GET    /activity/recent                 (feed mesclado para dashboard)
+
 ATTACHMENTS
-  POST   /tasks/:taskId/attachments   (multipart/form-data)
+  POST   /tasks/:taskId/attachments       (Fase 2; pode responder 501)
   GET    /attachments/:id/download
   DELETE /attachments/:id
 
 NOTIFICATIONS
-  GET    /notifications               (do usuário logado)
+  GET    /notifications
   PATCH  /notifications/:id/read
   PATCH  /notifications/read-all
 ```
 
 ---
 
-## 6. Identidade Visual — TRAVADA
+## 6. Identidade Visual — TRAVADA (Linear-style)
 
-```css
-/* Cores base — CSS custom properties em globals.css */
---color-brand-orange:   #FF6600;
---color-brand-black:    #111111;
---color-brand-white:    #FFFFFF;
+Tokens em `apps/client/src/styles/globals.css` (dark unico). Alem da marca MK (`--color-brand-orange`, etc.), usar camadas de fundo e borda:
 
---color-surface:        #1A1A1A;   /* fundo sidebar */
---color-surface-card:   #242424;   /* cards de tarefas */
---color-surface-hover:  #2E2E2E;
---color-border:         #3A3A3A;
---color-text-primary:   #F5F5F5;
---color-text-secondary: #A0A0A0;
---color-text-muted:     #666666;
+- **Fundos:** `--bg-0` … `--bg-3` (mais profundo ao mais elevado).
+- **Bordas:** `--color-border`, `--color-border-subtle`.
+- **Texto:** `--color-text-primary`, `--color-text-secondary`, `--color-text-muted`.
+- **Status / prioridade:** `--color-status-*`, `--color-priority-*` (alinhados ao Kanban e ao calendario em `MyTasksPage`).
+- **Movimento:** `--ease-out-expo` + plugin `tailwindcss-animate` no `tailwind.config.ts`.
 
-/* Status de tarefas */
---color-status-backlog:     #555555;
---color-status-todo:        #3B82F6;  /* azul */
---color-status-in-progress: #FF6600;  /* laranja MK */
---color-status-in-review:   #A855F7;  /* roxo */
---color-status-done:        #22C55E;  /* verde */
+Tipografia: Inter com `font-feature-settings` leves. Logo: `apps/client/src/assets/logo.svg`.
 
-/* Prioridades */
---color-priority-low:    #22C55E;
---color-priority-medium: #EAB308;
---color-priority-high:   #F97316;
---color-priority-urgent: #EF4444;
-```
-
-**Tema:** Dark mode como padrão e único tema (combina com a identidade escura da MK).
-
-**Tipografia:** Inter (Google Fonts) — sans-serif limpa, legível em telas.
-
-**Logo:** usar `apps/client/src/assets/logo.svg` (arquivo original fornecido).
+Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globais (**tinykeys**): ver `CommandPalette.tsx`, `ShortcutsDialog.tsx`, `useAppHotkeys.ts`.
 
 ---
 
@@ -513,11 +360,10 @@ NOTIFICATIONS
 
 ## 8. Upload de Arquivos
 
-- Multer salva em `apps/server/uploads/` com nome UUID.
+- Multer (quando ativo) salva em `apps/server/uploads/` com nome UUID.
 - Limite: 50 MB por arquivo.
 - Tipos permitidos: `pdf, dwg, dxf, rvt, ifc, jpg, jpeg, png, xlsx, docx, zip`.
-- Endpoint de download serve o arquivo com `Content-Disposition: attachment`.
-- A pasta `uploads/` deve estar no `.gitignore`.
+- Ate a Fase 2, o controller pode responder **501** com mensagem em portugues; o client nao deve exibir fluxo de anexo quebrado.
 
 ---
 
@@ -529,7 +375,7 @@ NOTIFICATIONS
   - Uma tarefa é atribuída a ele → `notification:new`
   - Um comentário é adicionado em tarefa que ele está atribuído → `notification:new`
   - Status de tarefa atribuída é alterado → `notification:new`
-- Client ouve `notification:new` e exibe badge no sino + toast.
+- Client ouve `notification:new` e exibe badge no sino + toast (Sonner).
 
 ---
 
@@ -577,6 +423,7 @@ docs: atualiza AGENTS.md com rotas de upload
     "dev":     "turbo run dev",
     "build":   "turbo run build",
     "lint":    "turbo run lint",
+    "test":    "turbo run test",
     "db:push": "pnpm --filter server prisma db push",
     "db:migrate": "pnpm --filter server prisma migrate dev",
     "db:studio": "pnpm --filter server prisma studio",
@@ -593,7 +440,8 @@ docs: atualiza AGENTS.md com rotas de upload
   "dev":   "tsx watch src/index.ts",
   "build": "tsc -p tsconfig.json",
   "start": "node dist/index.js",
-  "lint":  "eslint src --ext .ts"
+  "lint":  "eslint src --ext .ts",
+  "test":  "vitest run"
 }
 ```
 
@@ -603,7 +451,8 @@ docs: atualiza AGENTS.md com rotas de upload
   "dev":   "vite",
   "build": "tsc && vite build",
   "preview": "vite preview",
-  "lint":  "eslint src --ext .ts,.tsx"
+  "lint":  "eslint src --ext .ts,.tsx",
+  "test":  "node -e \"process.exit(0)\""
 }
 ```
 
@@ -612,7 +461,8 @@ docs: atualiza AGENTS.md com rotas de upload
 {
   "dev":   "electron .",
   "build": "tsc -p tsconfig.json && electron-builder",
-  "lint":  "eslint src --ext .ts"
+  "lint":  "eslint src --ext .ts",
+  "test":  "node -e \"process.exit(0)\""
 }
 ```
 
@@ -635,6 +485,8 @@ MAX_FILE_SIZE_MB=50
 # apps/client/.env (nunca commitar)
 VITE_API_URL="http://localhost:3001/api/v1"
 VITE_SOCKET_URL="http://localhost:3001"
+# Fallback de hostname quando o browser nao expoe host (ex.: desktop / LAN)
+VITE_DEFAULT_SERVER_HOST="192.168.1.100"
 ```
 
 ```env
@@ -649,10 +501,7 @@ ELECTRON_APP_NAME="MK Projetos"
 
 ## 13. Seed Inicial
 
-O seed (`prisma/seed.ts`) deve criar:
-1. Um usuário Admin: `admin@mkengenharia.eng.br` / senha `admin123` (forçar troca no primeiro login)
-2. Disciplinas padrão disponíveis como constantes em `packages/shared`
-3. Um projeto de exemplo com 3 disciplinas e 5 tarefas em diferentes status
+O `prisma/seed.ts` cria **workspace** local, usuario administrador com senha conhecida para primeiro login, e (quando o banco nao tem projetos) dados minimos de demonstracao compativeis com o schema Asana. Ajustar emails/senhas apenas em ambiente de desenvolvimento; nunca commitar `.env`.
 
 ---
 
@@ -662,14 +511,14 @@ A página de detalhe de projeto tem 3 abas:
 
 ### Kanban
 - Colunas: `BACKLOG | A FAZER | EM ANDAMENTO | EM REVISÃO | CONCLUÍDO`
-- Filtro por disciplina (dropdown no topo)
+- Filtro por secao (dropdown no topo)
 - Drag & drop de cards entre colunas via `@hello-pangea/dnd`
-- Card exibe: título, assignee avatar, prioridade, data de entrega, disciplina badge
+- Card exibe: título, assignee avatar, prioridade, data de entrega, badge da secao
 
 ### Lista
-- Tabela com colunas: Tarefa | Disciplina | Responsável | Prioridade | Status | Entrega
-- Ordenação por coluna clicável
-- Filtros: disciplina, status, responsável, prioridade
+- Tabela com colunas: Tarefa | Secao | Responsavel | Prioridade | Status | Entrega
+- Ordenacao por coluna clicavel
+- Filtros: secao, status, responsavel, prioridade
 - Inline edit de status e assignee
 
 ### Carga de Trabalho
@@ -706,4 +555,13 @@ webPreferences: {
 
 ---
 
-*Última atualização: 2025 · MK Engenharia · Balneário Camboriú/SC*
+## 16. Import Asana (JSON → SQLite)
+
+Script: `apps/server/scripts/import_asana_json.py`.
+
+- Uso basico: `python import_asana_json.py --json-dir <pasta> --server-dir apps/server`
+- Opcoes uteis: `--clear` (limpa tabelas importadas), `--import-users`, `--clear-comments` + import de `comments_*.json` / `stories_*.json` para a tabela `Comment` (idempotente por `asanaGid`).
+
+---
+
+*Última atualização: 2026 · MK Engenharia · Balneário Camboriú/SC*

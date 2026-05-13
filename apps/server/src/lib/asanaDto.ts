@@ -27,7 +27,19 @@ export const taskInclude = {
       project: true
     }
   },
-  customFieldValues: true,
+  customFieldValues: {
+    include: {
+      customField: {
+        include: {
+          enumOptions: {
+            where: { enabled: true },
+            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
+          }
+        }
+      },
+      enumOption: true
+    }
+  },
   tags: {
     include: {
       tag: true
@@ -158,7 +170,20 @@ export function toTaskDto(task: TaskRecord, fallbackSection?: { id: string; name
     assignee: toPublicUser(task.assignee),
     creator: undefined,
     comments: [],
-    customFieldValues: task.customFieldValues,
+    customFieldValues: task.customFieldValues.map((row) => ({
+      id: row.id,
+      customFieldName: row.customFieldName ?? row.customField?.name ?? null,
+      type: row.type,
+      displayValue: row.displayValue,
+      enumOptionName: row.enumOptionName ?? row.enumOption?.name ?? null,
+      numberValue: row.numberValue,
+      enumOptionColor: row.enumOptionColor ?? row.enumOption?.color ?? null,
+      enumOptions: row.customField?.enumOptions?.map((option) => ({
+        id: option.id,
+        name: option.name,
+        color: option.color
+      }))
+    })),
     tags: task.tags.map((item) => item.tag),
     discipline: {
       id: disciplineId,
@@ -259,6 +284,7 @@ export function toProjectDto(project: ProjectRecord) {
     })),
     createdAt: project.asanaCreatedAt ?? project.createdAt,
     updatedAt: project.asanaModifiedAt ?? project.updatedAt,
-    disciplines
+    disciplines,
+    sections: disciplines
   };
 }

@@ -1,13 +1,20 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Plus, RotateCcw, X } from "lucide-react";
 import { Role, type CreateUserRequest } from "shared";
 import { Avatar } from "../components/shared/Avatar";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Select } from "../components/ui/select";
+import {
+  MK_SELECT_EMPTY_VALUE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../components/ui/select";
 import { useCreateUser, useDeactivateUser, useResetUserPassword, useUsers } from "../hooks/useUsers";
 
 export function UsersPage() {
@@ -127,12 +134,17 @@ function CreateUserForm({ onSubmit, loading }: { onSubmit: (payload: CreateUserR
       <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome" required />
       <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" required />
       <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha inicial" required />
-      <Select value={role} onChange={(event) => setRole(event.target.value as Role)}>
-        {Object.values(Role).map((option) => (
-          <option key={option} value={option}>
-            {roleLabel(option)}
-          </option>
-        ))}
+      <Select value={role} onValueChange={(value) => setRole(value as Role)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {Object.values(Role).map((option) => (
+            <SelectItem key={option} value={option}>
+              {roleLabel(option)}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
       <Button type="submit" disabled={loading}>
         Criar usuário

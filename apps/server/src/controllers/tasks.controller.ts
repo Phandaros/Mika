@@ -4,6 +4,11 @@ import { prisma } from "../lib/prisma.js";
 import { Priority, TaskStatus, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
 import { makeLocalAsanaGid, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { createAndEmitNotification } from "../lib/notify.js";
+
+function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
+  return req.params.sectionId ?? req.params.disciplineId ?? "";
+}
 
 interface TaskBody {
   title?: string;
@@ -56,7 +61,7 @@ async function assigneeGid(tx: Prisma.TransactionClient, userId: string | null |
 export const listTasks: RequestHandler = async (req, res, next) => {
   try {
     const section = await prisma.section.findUnique({
-      where: { id: req.params.disciplineId },
+      where: { id: sectionIdFromReq(req) },
       include: {
         memberships: {
           include: {
@@ -112,7 +117,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
 
     const task = await prisma.$transaction(async (tx) => {
       const section = await tx.section.findUnique({
-        where: { id: req.params.disciplineId },
+        where: { id: sectionIdFromReq(req) },
         include: { project: true }
       });
 
@@ -151,6 +156,16 @@ export const createTask: RequestHandler = async (req, res, next) => {
       });
     });
 
+    if (body.assigneeId) {
+      await createAndEmitNotification({
+        userId: body.assigneeId,
+        type: "TASK_ASSIGNED",
+        title: "Nova tarefa atribuida",
+        message: task.name,
+        taskId: task.id
+      });
+    }
+
     res.status(201).json({ task: toTaskDto(task) });
   } catch (error) {
     next(error);
@@ -160,6 +175,11 @@ export const createTask: RequestHandler = async (req, res, next) => {
 export const updateTask: RequestHandler = async (req, res, next) => {
   try {
     const body = req.body as TaskBody;
+
+    const existing = await prisma.task.findUnique({
+      where: { id: req.params.id },
+      select: { assigneeGid: true }
+    });
 
     const task = await prisma.$transaction(async (tx) => {
       const completed = body.completed;
@@ -183,12 +203,47 @@ export const updateTask: RequestHandler = async (req, res, next) => {
       if (body.customFieldValues) {
         for (const field of body.customFieldValues) {
           const value = field.value;
+          const existingRow = await tx.taskCustomFieldValue.findUnique({
+            where: { id: field.id },
+            include: {
+              customField: {
+                include: { enumOptions: { where: { enabled: true } } }
+              }
+            }
+          });
+
+          if (typeof value === "number") {
+            await tx.taskCustomFieldValue.update({
+              where: { id: field.id },
+              data: { numberValue: value, displayValue: String(value), enumOptionName: null, enumOptionId: null, enumOptionGid: null }
+            });
+            continue;
+          }
+
+          const str = value === null || value === undefined ? null : String(value);
+          if (existingRow?.customField?.enumOptions?.length) {
+            const match = existingRow.customField.enumOptions.find(
+              (option) => option.name === str || option.asanaGid === str
+            );
+            if (match) {
+              await tx.taskCustomFieldValue.update({
+                where: { id: field.id },
+                data: {
+                  displayValue: match.name,
+                  enumOptionName: match.name,
+                  enumOptionId: match.id,
+                  enumOptionGid: match.asanaGid,
+                  enumOptionColor: match.color,
+                  numberValue: null
+                }
+              });
+              continue;
+            }
+          }
+
           await tx.taskCustomFieldValue.update({
             where: { id: field.id },
-            data:
-              typeof value === "number"
-                ? { numberValue: value, displayValue: String(value), enumOptionName: null }
-                : { displayValue: value, enumOptionName: value, numberValue: null }
+            data: { displayValue: str, enumOptionName: str, numberValue: null }
           });
         }
       }
@@ -198,6 +253,17 @@ export const updateTask: RequestHandler = async (req, res, next) => {
         include: taskInclude
       });
     });
+
+    const newGid = task.assignee?.asanaGid ?? null;
+    if (body.assigneeId !== undefined && existing?.assigneeGid !== newGid && task.assignee) {
+      await createAndEmitNotification({
+        userId: task.assignee.id,
+        type: "TASK_ASSIGNED",
+        title: "Tarefa atribuida a voce",
+        message: task.name,
+        taskId: task.id
+      });
+    }
 
     res.json({ task: toTaskDto(task) });
   } catch (error) {
@@ -224,6 +290,16 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
       },
       include: taskInclude
     });
+
+    if (task.assignee) {
+      await createAndEmitNotification({
+        userId: task.assignee.id,
+        type: "TASK_UPDATED",
+        title: "Status da tarefa",
+        message: `${task.name}: ${body.status}`,
+        taskId: task.id
+      });
+    }
 
     res.json({ task: toTaskDto(task) });
   } catch (error) {

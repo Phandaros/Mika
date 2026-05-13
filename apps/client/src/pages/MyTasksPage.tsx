@@ -12,17 +12,24 @@ import {
   startOfMonth,
   startOfWeek
 } from "date-fns";
-import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Circle, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
+import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { TaskStatus, type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Avatar } from "../components/shared/Avatar";
 import { TaskCard } from "../components/task/TaskCard";
+import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Select } from "../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../components/ui/select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
@@ -67,7 +74,7 @@ export function MyTasksPage() {
   const disciplineOptions = useMemo(
     () =>
       projects.flatMap((project) =>
-        project.disciplines?.map((discipline) => ({
+        (project.sections ?? project.disciplines)?.map((discipline) => ({
           key: `${project.id}:${discipline.id}`,
           projectId: project.id,
           disciplineId: discipline.id,
@@ -83,7 +90,7 @@ export function MyTasksPage() {
   const myTasks = useMemo(
     () =>
       projects.flatMap((project) =>
-        project.disciplines?.flatMap((discipline) =>
+        (project.sections ?? project.disciplines)?.flatMap((discipline) =>
           (discipline.tasks ?? [])
             .filter((task) => task.assigneeId === user?.id)
             .map((task) => ({
@@ -196,7 +203,7 @@ export function MyTasksPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-3">
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            className="h-8 bg-blue-600 hover:bg-blue-500"
+            className="h-8 bg-brand-orange hover:bg-orange-600"
             onClick={() => {
               setSelectedCreateTarget((current) => current || disciplineOptions[0]?.key || "");
               setShowCreate((current) => !current);
@@ -231,29 +238,44 @@ export function MyTasksPage() {
           </button>
           <label className="inline-flex items-center gap-1.5">
             <CheckCircle2 size={15} />
-            <Select value={completionFilter} onChange={(event) => setCompletionFilter(event.target.value as CompletionFilter)} className="h-8 w-40">
-              <option value="open">Nao concluidas</option>
-              <option value="completed">Concluidas</option>
-              <option value="all">Todas</option>
+            <Select value={completionFilter} onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}>
+              <SelectTrigger className="h-8 w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Nao concluidas</SelectItem>
+                <SelectItem value="completed">Concluidas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
+              </SelectContent>
             </Select>
           </label>
           <label className="inline-flex items-center gap-1.5">
             <Filter size={15} />
-            <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 w-36">
-              <option value="all">Todos status</option>
-              {Object.values(TaskStatus).map((status) => (
-                <option key={status} value={status}>
-                  {statusLabel(status)}
-                </option>
-              ))}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                {Object.values(TaskStatus).map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {statusLabel(status)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </label>
           <label className="inline-flex items-center gap-1.5">
             <ArrowDownUp size={15} />
-            <Select value={sortMode} onChange={(event) => setSortMode(event.target.value as typeof sortMode)} className="h-8 w-36">
-              <option value="dueDate">Entrega</option>
-              <option value="title">Nome</option>
-              <option value="project">Projeto</option>
+            <Select value={sortMode} onValueChange={(value) => setSortMode(value as typeof sortMode)}>
+              <SelectTrigger className="h-8 w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="dueDate">Entrega</SelectItem>
+                <SelectItem value="title">Nome</SelectItem>
+                <SelectItem value="project">Projeto</SelectItem>
+              </SelectContent>
             </Select>
           </label>
           <label className="relative">
@@ -265,13 +287,23 @@ export function MyTasksPage() {
 
       {showCreate ? (
         <div className="grid gap-2 border-b border-border py-3 lg:grid-cols-[minmax(220px,340px)_minmax(260px,1fr)_auto]">
-          <Select value={selectedCreateTarget || createTarget?.key || ""} onChange={(event) => setSelectedCreateTarget(event.target.value)}>
-            {disciplineOptions.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+          {disciplineOptions.length > 0 ? (
+            <Select
+              value={selectedCreateTarget || createTarget?.key || disciplineOptions[0]!.key}
+              onValueChange={setSelectedCreateTarget}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {disciplineOptions.map((option) => (
+                  <SelectItem key={option.key} value={option.key}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
           <Input
             value={draftTitle}
             onChange={(event) => setDraftTitle(event.target.value)}
@@ -300,6 +332,7 @@ export function MyTasksPage() {
       {view === "list" ? (
         <ListView
           tasks={visibleTasks}
+          completionBusy={updateTaskCompletion.isPending}
           onOpenTask={setSelectedTask}
           onStatusChange={(task, status) => void updateTask.mutateAsync({ id: task.id, payload: { status } })}
           onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
@@ -308,6 +341,7 @@ export function MyTasksPage() {
       {view === "kanban" ? (
         <KanbanView
           tasks={visibleTasks}
+          completionBusy={updateTaskCompletion.isPending}
           onDragEnd={handleDragEnd}
           onOpenTask={setSelectedTask}
           onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
@@ -334,11 +368,13 @@ function ViewTab({ active, icon, label, onClick }: { active: boolean; icon: Reac
 
 function ListView({
   tasks,
+  completionBusy,
   onOpenTask,
   onStatusChange,
   onCompletionChange
 }: {
   tasks: TaskWithProject[];
+  completionBusy?: boolean;
   onOpenTask: (task: TaskWithProject) => void;
   onStatusChange: (task: TaskWithProject, status: TaskStatus) => void;
   onCompletionChange: (task: TaskWithProject) => void;
@@ -359,14 +395,13 @@ function ListView({
             <th className="w-[12%] border-l border-border p-2 font-semibold">Projetos</th>
             <th className="w-[12%] border-l border-border p-2 font-semibold">Data de ...</th>
             <th className="w-[12%] border-l border-border p-2 font-semibold">Status</th>
-            <th className="border-l border-border p-2 font-semibold">+</th>
           </tr>
         </thead>
         <tbody>
           {groups.map((group) => (
             <Fragment key={group.key}>
               <tr className="border-b border-border bg-brand-black">
-                <td colSpan={5} className="px-2 py-2 text-xs font-bold uppercase text-text-secondary">
+                <td colSpan={4} className="px-2 py-2 text-xs font-bold uppercase text-text-secondary">
                   {group.label} <span className="text-text-muted">{group.tasks.length}</span>
                 </td>
               </tr>
@@ -374,18 +409,15 @@ function ListView({
                 <tr key={task.id} className={cn("h-7 border-b border-border hover:bg-surface-hover", task.completed ? "opacity-70" : "")}>
                   <td className="p-1.5">
                     <div className="flex max-w-full items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onCompletionChange(task)}
-                        className="flex h-5 w-5 items-center justify-center rounded-full text-text-secondary transition hover:text-brand-orange"
-                        title={task.completed ? "Reabrir tarefa" : "Concluir tarefa"}
-                      >
-                        {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
-                      </button>
+                      <TaskCompletionButton
+                        completed={task.completed}
+                        disabled={completionBusy}
+                        onToggle={() => onCompletionChange(task)}
+                      />
                       <button
                         type="button"
                         onClick={() => onOpenTask(task)}
-                        className={cn("min-w-0 font-semibold text-text-primary", task.completed ? "text-text-muted line-through" : "")}
+                        className={cn("min-w-0 font-semibold", task.completed ? "text-text-muted" : "text-text-primary")}
                       >
                         <span className="block truncate">{task.title}</span>
                       </button>
@@ -398,15 +430,19 @@ function ListView({
                   </td>
                   <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{task.dueDate ? format(new Date(task.dueDate), "d MMM") : ""}</td>
                   <td className="border-l border-border p-1.5">
-                    <Select value={task.status} onChange={(event) => onStatusChange(task, event.target.value as TaskStatus)} className="h-7 w-36 py-0">
-                      {Object.values(TaskStatus).map((status) => (
-                        <option key={status} value={status}>
-                          {statusLabel(status)}
-                        </option>
-                      ))}
+                    <Select value={task.status} onValueChange={(value) => onStatusChange(task, value as TaskStatus)}>
+                      <SelectTrigger className="h-7 w-36 py-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(TaskStatus).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {statusLabel(status)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </td>
-                  <td className="border-l border-border p-1.5 text-text-muted" />
                 </tr>
               ))}
             </Fragment>
@@ -419,11 +455,13 @@ function ListView({
 
 function KanbanView({
   tasks,
+  completionBusy,
   onDragEnd,
   onOpenTask,
   onCompletionChange
 }: {
   tasks: TaskWithProject[];
+  completionBusy?: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithProject) => void;
   onCompletionChange: (task: TaskWithProject) => void;
@@ -454,7 +492,13 @@ function KanbanView({
                         <Draggable key={task.id} draggableId={task.id} index={index}>
                           {(dragProvided) => (
                             <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                              <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} onToggleCompletion={onCompletionChange} />
+                              <TaskCard
+                                task={task}
+                                disciplineName={task.discipline.name}
+                                onOpen={onOpenTask}
+                                onToggleCompletion={onCompletionChange}
+                                completionBusy={completionBusy}
+                              />
                             </div>
                           )}
                         </Draggable>
@@ -513,11 +557,11 @@ function statusLabel(status: TaskStatus): string {
 
 function calendarColor(status: TaskStatus): string {
   const colors: Record<TaskStatus, string> = {
-    [TaskStatus.BACKLOG]: "#A3A3A3",
-    [TaskStatus.TODO]: "#F0A1DF",
-    [TaskStatus.IN_PROGRESS]: "#86A567",
-    [TaskStatus.IN_REVIEW]: "#FFD166",
-    [TaskStatus.DONE]: "#7BDDA3"
+    [TaskStatus.BACKLOG]: "var(--color-status-backlog)",
+    [TaskStatus.TODO]: "var(--color-status-todo)",
+    [TaskStatus.IN_PROGRESS]: "var(--color-status-in-progress)",
+    [TaskStatus.IN_REVIEW]: "var(--color-status-in-review)",
+    [TaskStatus.DONE]: "var(--color-status-done)"
   };
 
   return colors[status];

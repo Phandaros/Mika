@@ -3,7 +3,14 @@ import { Priority, TaskStatus, type User } from "shared";
 import { useCreateTask } from "../../hooks/useTasks";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Select } from "../ui/select";
+import {
+  MK_SELECT_EMPTY_VALUE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../ui/select";
 import { Textarea } from "../ui/textarea";
 
 interface TaskFormProps {
@@ -48,20 +55,33 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
         placeholder="Descrição"
       />
       <div className="grid gap-3 sm:grid-cols-3">
-        <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
-          {Object.values(Priority).map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
+        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.values(Priority).map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-        <Select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>
-          <option value="">Sem responsavel</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name}
-            </option>
-          ))}
+        <Select
+          value={assigneeId || MK_SELECT_EMPTY_VALUE}
+          onValueChange={(value) => setAssigneeId(value === MK_SELECT_EMPTY_VALUE ? "" : value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Sem responsavel" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={MK_SELECT_EMPTY_VALUE}>Sem responsavel</SelectItem>
+            {users.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                {user.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </div>
       <fieldset className="grid gap-3 rounded-md border border-border p-3">

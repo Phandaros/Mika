@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  Notification: 'Notification',
   AsanaWorkspace: 'AsanaWorkspace',
   Team: 'Team',
   Project: 'Project',
@@ -103,6 +104,20 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  message: 'message',
+  read: 'read',
+  taskId: 'taskId',
+  createdAt: 'createdAt'
+} as const
+
+export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
 
 
 export const AsanaWorkspaceScalarFieldEnum = {
@@ -227,6 +242,9 @@ export const CommentScalarFieldEnum = {
   taskId: 'taskId',
   authorId: 'authorId',
   content: 'content',
+  asanaGid: 'asanaGid',
+  authorAsanaGid: 'authorAsanaGid',
+  asanaCreatedAt: 'asanaCreatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

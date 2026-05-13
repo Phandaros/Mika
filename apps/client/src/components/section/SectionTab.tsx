@@ -1,14 +1,14 @@
-import { getDefaultDiscipline, type Discipline } from "shared";
+import { getDefaultDiscipline, type Section } from "shared";
 import { cn } from "../../lib/utils";
 
-interface DisciplineTabProps {
-  discipline: Discipline;
+interface SectionTabProps {
+  section: Section;
   active: boolean;
   onClick: () => void;
 }
 
-export function DisciplineTab({ discipline, active, onClick }: DisciplineTabProps) {
-  const catalogItem = getDefaultDiscipline(discipline.type);
+export function SectionTab({ section, active, onClick }: SectionTabProps) {
+  const catalogItem = getDefaultDiscipline(section.type);
 
   return (
     <button
@@ -22,7 +22,7 @@ export function DisciplineTab({ discipline, active, onClick }: DisciplineTabProp
       )}
     >
       <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: catalogItem.color }} />
-      {discipline.name}
+      {section.name}
     </button>
   );
 }

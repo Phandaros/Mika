@@ -1,4 +1,4 @@
-const DEFAULT_SERVER_HOST = "DESKTOP-TP1SBGH";
+const DEFAULT_SERVER_HOST = (import.meta.env.VITE_DEFAULT_SERVER_HOST as string | undefined)?.trim() || "";
 const SERVER_PORT = "3001";
 
 interface DesktopApi {
@@ -53,7 +53,7 @@ function browserServerUrl(): string {
     }
   }
 
-  const hostname = currentHostname || DEFAULT_SERVER_HOST;
+  const hostname = currentHostname || DEFAULT_SERVER_HOST || "localhost";
   return `http://${hostname}:${SERVER_PORT}`;
 }
 
@@ -72,6 +72,13 @@ export function getApiBaseUrl(): string {
 
 export function getSocketBaseUrl(): string {
   return socketBaseUrl || browserServerUrl();
+}
+
+export function desktopServerPlaceholder(): string {
+  if (DEFAULT_SERVER_HOST) {
+    return `http://${DEFAULT_SERVER_HOST}:${SERVER_PORT}`;
+  }
+  return `http://192.168.1.100:${SERVER_PORT}`;
 }
 
 export async function updateDesktopServerUrl(serverUrl: string): Promise<void> {

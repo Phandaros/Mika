@@ -1,22 +1,30 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { format, isBefore } from "date-fns";
-import { CheckCircle2, Circle, Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
-import { useParams } from "react-router-dom";
-import { getDefaultDiscipline, Priority, TaskStatus, type Discipline, type DisciplineType, type Task, type User } from "shared";
-import { DisciplineTab } from "../components/discipline/DisciplineTab";
+import { Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
+import { useParams, useSearchParams } from "react-router-dom";
+import { getDefaultDiscipline, Priority, TaskStatus, type DisciplineType, type Section, type Task, type User } from "shared";
+import { SectionTab } from "../components/section/SectionTab";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Avatar } from "../components/shared/Avatar";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
 import { TaskCard } from "../components/task/TaskCard";
+import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { TaskForm } from "../components/task/TaskForm";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Select } from "../components/ui/select";
+import {
+  MK_SELECT_EMPTY_VALUE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../components/ui/select";
 import { useProject, useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
@@ -44,15 +52,15 @@ const columns: Array<{ status: TaskStatus; label: string }> = [
   { status: TaskStatus.DONE, label: "CONCLUIDO" }
 ];
 
-function tasksFromDisciplines(disciplines: Discipline[]): TaskWithDiscipline[] {
-  return disciplines.flatMap((discipline) =>
-    (discipline.tasks ?? []).map((task) => ({
+function tasksFromDisciplines(sections: Section[]): TaskWithDiscipline[] {
+  return sections.flatMap((section) =>
+    (section.tasks ?? []).map((task) => ({
       ...task,
       discipline: {
-        id: discipline.id,
-        name: discipline.name,
-        projectId: discipline.projectId,
-        type: discipline.type
+        id: section.id,
+        name: section.name,
+        projectId: section.projectId,
+        type: section.type
       }
     }))
   );
@@ -72,6 +80,7 @@ function taskSortValue(task: TaskWithDiscipline, key: SortKey): string {
 
 export function ProjectDetailPage() {
   const { projectId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: project, isLoading, isFetching } = useProject(projectId);
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
@@ -91,8 +100,33 @@ export function ProjectDetailPage() {
   const { data: users = [] } = useUsers();
   const { data: projects = [] } = useProjects();
 
-  const disciplines = project?.disciplines ?? [];
+  const disciplines = project?.sections ?? project?.disciplines ?? [];
   const allTasks = useMemo(() => tasksFromDisciplines(disciplines), [disciplines]);
+
+  useEffect(() => {
+    const taskId = searchParams.get("task");
+    if (!taskId || allTasks.length === 0) {
+      return;
+    }
+    const match = allTasks.find((t) => t.id === taskId);
+    if (match) {
+      setSelectedTask(match);
+    }
+  }, [searchParams, allTasks]);
+
+  function closeTaskDetail() {
+    setSelectedTask(null);
+    const next = new URLSearchParams(searchParams);
+    next.delete("task");
+    setSearchParams(next, { replace: true });
+  }
+
+  function openTaskDetail(task: TaskWithDiscipline) {
+    setSelectedTask(task);
+    const next = new URLSearchParams(searchParams);
+    next.set("task", task.id);
+    setSearchParams(next, { replace: true });
+  }
   const selectedDisciplineSet = useMemo(() => new Set(selectedDisciplineIds), [selectedDisciplineIds]);
   const builderSuggestions = useMemo(
     () =>
@@ -247,9 +281,9 @@ export function ProjectDetailPage() {
           Tudo
         </Button>
         {disciplines.map((discipline) => (
-          <DisciplineTab
+          <SectionTab
             key={discipline.id}
-            discipline={discipline}
+            section={discipline}
             active={selectedDisciplineSet.has(discipline.id)}
             onClick={() => toggleDisciplineFilter(discipline.id)}
           />
@@ -263,8 +297,9 @@ export function ProjectDetailPage() {
             disciplineId={taskFormDiscipline?.id ?? null}
             tasks={disciplineFilteredTasks}
             isLoading={isTasksLoading}
+            completionBusy={updateTaskCompletion.isPending}
             onDragEnd={handleDragEnd}
-            onOpenTask={setSelectedTask}
+            onOpenTask={openTaskDetail}
             onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
           />
         ) : null}
@@ -274,6 +309,7 @@ export function ProjectDetailPage() {
             tasks={listTasks}
             users={users}
             isLoading={isTasksLoading}
+            completionBusy={updateTaskCompletion.isPending}
             statusFilter={statusFilter}
             completionFilter={completionFilter}
             assigneeFilter={assigneeFilter}
@@ -293,14 +329,14 @@ export function ProjectDetailPage() {
             onTaskCustomFieldChange={(taskId, fieldId, value) =>
               void updateTask.mutateAsync({ id: taskId, payload: { customFieldValues: [{ id: fieldId, value }] } })
             }
-            onOpenTask={setSelectedTask}
+            onOpenTask={openTaskDetail}
           />
         ) : null}
         {activeTab === "workload" ? (
           <WorkloadView tasks={disciplineFilteredTasks} users={users} onUserClick={openUserTasks} />
         ) : null}
       </div>
-      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+      <TaskDetail task={selectedTask} onClose={closeTaskDetail} />
     </div>
   );
 }
@@ -310,6 +346,7 @@ function KanbanView({
   disciplineId,
   tasks,
   isLoading,
+  completionBusy,
   onDragEnd,
   onOpenTask,
   onCompletionChange
@@ -318,6 +355,7 @@ function KanbanView({
   disciplineId: string | null;
   tasks: TaskWithDiscipline[];
   isLoading: boolean;
+  completionBusy?: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
   onCompletionChange: (task: TaskWithDiscipline) => void;
@@ -337,6 +375,7 @@ function KanbanView({
                 label={column.label}
                 tasks={columnTasks}
                 isLoading={isLoading}
+                completionBusy={completionBusy}
                 onOpenTask={onOpenTask}
                 onCompletionChange={onCompletionChange}
               />
@@ -355,6 +394,7 @@ function KanbanColumn({
   label,
   tasks,
   isLoading,
+  completionBusy,
   onOpenTask,
   onCompletionChange
 }: {
@@ -364,6 +404,7 @@ function KanbanColumn({
   label: string;
   tasks: TaskWithDiscipline[];
   isLoading: boolean;
+  completionBusy?: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
   onCompletionChange: (task: TaskWithDiscipline) => void;
 }) {
@@ -416,7 +457,13 @@ function KanbanColumn({
                         {...dragProvided.dragHandleProps}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
-                        <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} onToggleCompletion={onCompletionChange} />
+                        <TaskCard
+                          task={task}
+                          disciplineName={task.discipline.name}
+                          onOpen={onOpenTask}
+                          onToggleCompletion={onCompletionChange}
+                          completionBusy={completionBusy}
+                        />
                       </div>
                     )}
                   </Draggable>
@@ -469,6 +516,7 @@ function ListView({
   tasks,
   users,
   isLoading,
+  completionBusy,
   statusFilter,
   completionFilter,
   assigneeFilter,
@@ -486,10 +534,11 @@ function ListView({
   onTaskCustomFieldChange,
   onOpenTask
 }: {
-  disciplines: Discipline[];
+  disciplines: Section[];
   tasks: TaskWithDiscipline[];
   users: User[];
   isLoading: boolean;
+  completionBusy?: boolean;
   statusFilter: string;
   completionFilter: CompletionFilter;
   assigneeFilter: string;
@@ -515,35 +564,55 @@ function ListView({
   return (
     <div className="grid gap-4">
       <div className="grid gap-3 rounded-md border border-border bg-surface-card p-4 md:grid-cols-5">
-        <Select value={completionFilter} onChange={(event) => onCompletionFilterChange(event.target.value as CompletionFilter)}>
-          <option value="open">Nao concluidas</option>
-          <option value="completed">Concluidas</option>
-          <option value="all">Todas</option>
+        <Select value={completionFilter} onValueChange={(value) => onCompletionFilterChange(value as CompletionFilter)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="open">Nao concluidas</SelectItem>
+            <SelectItem value="completed">Concluidas</SelectItem>
+            <SelectItem value="all">Todas</SelectItem>
+          </SelectContent>
         </Select>
-        <Select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)}>
-          <option value="all">Todos os status</option>
-          {Object.values(TaskStatus).map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            {Object.values(TaskStatus).map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-        <Select value={assigneeFilter} onChange={(event) => onAssigneeFilterChange(event.target.value)}>
-          <option value="all">Todos responsaveis</option>
-          <option value="none">Sem responsavel</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name}
-            </option>
-          ))}
+        <Select value={assigneeFilter} onValueChange={onAssigneeFilterChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos responsaveis</SelectItem>
+            <SelectItem value="none">Sem responsavel</SelectItem>
+            {users.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                {user.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-        <Select value={priorityFilter} onChange={(event) => onPriorityFilterChange(event.target.value)}>
-          <option value="all">Todas prioridades</option>
-          {Object.values(Priority).map((priority) => (
-            <option key={priority} value={priority}>
-              {priority}
-            </option>
-          ))}
+        <Select value={priorityFilter} onValueChange={onPriorityFilterChange}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas prioridades</SelectItem>
+            {Object.values(Priority).map((priority) => (
+              <SelectItem key={priority} value={priority}>
+                {priority}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
         <Button variant="secondary" onClick={() => onSort("dueDate")}>
           Entrega{sortIndicator("dueDate")}
@@ -583,6 +652,7 @@ function ListView({
                   disciplineColor={catalogItem.color}
                   tasks={disciplineTasks}
                   users={users}
+                  completionBusy={completionBusy}
                   onTaskStatusChange={onTaskStatusChange}
                   onTaskCompletionChange={onTaskCompletionChange}
                   onTaskAssigneeChange={onTaskAssigneeChange}
@@ -605,6 +675,7 @@ function GroupedDisciplineRows({
   disciplineColor,
   tasks,
   users,
+  completionBusy,
   onTaskStatusChange,
   onTaskCompletionChange,
   onTaskAssigneeChange,
@@ -612,10 +683,11 @@ function GroupedDisciplineRows({
   onOpenTask,
   customFieldNames
 }: {
-  discipline: Discipline;
+  discipline: Section;
   disciplineColor: string;
   tasks: TaskWithDiscipline[];
   users: User[];
+  completionBusy?: boolean;
   onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
@@ -645,18 +717,15 @@ function GroupedDisciplineRows({
           <tr key={task.id} className={cn("border-t border-border", task.completed ? "opacity-70" : "")}>
             <td className="p-3">
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onTaskCompletionChange(task)}
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-text-secondary transition hover:text-brand-orange"
-                  title={task.completed ? "Reabrir tarefa" : "Concluir tarefa"}
-                >
-                  {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
-                </button>
+                <TaskCompletionButton
+                  completed={task.completed}
+                  disabled={completionBusy}
+                  onToggle={() => onTaskCompletionChange(task)}
+                />
                 <button
                   type="button"
                   onClick={() => onOpenTask(task)}
-                  className={cn("font-semibold text-text-primary hover:text-brand-orange", task.completed ? "text-text-muted line-through" : "")}
+                  className={cn("font-semibold hover:text-brand-orange", task.completed ? "text-text-muted" : "text-text-primary")}
                 >
                   {task.title}
                 </button>
@@ -665,27 +734,39 @@ function GroupedDisciplineRows({
             <td className="p-3 text-text-secondary">{task.discipline.name}</td>
             <td className="p-3">
               <Select
-                value={task.assigneeId ?? ""}
-                onChange={(event) => onTaskAssigneeChange(task.id, event.target.value || null)}
+                value={task.assigneeId ?? MK_SELECT_EMPTY_VALUE}
+                onValueChange={(value) =>
+                  onTaskAssigneeChange(task.id, value === MK_SELECT_EMPTY_VALUE ? null : value)
+                }
               >
-                <option value="">Sem responsavel</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem responsavel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={MK_SELECT_EMPTY_VALUE}>Sem responsavel</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </td>
             <td className="p-3">
               <PriorityBadge priority={task.priority} />
             </td>
             <td className="p-3">
-              <Select value={task.status} onChange={(event) => onTaskStatusChange(task.id, event.target.value as TaskStatus)}>
-                {Object.values(TaskStatus).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
+              <Select value={task.status} onValueChange={(value) => onTaskStatusChange(task.id, value as TaskStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(TaskStatus).map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </td>
             <td className="p-3 text-text-secondary">

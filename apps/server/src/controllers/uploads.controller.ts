@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import { AppError } from "../middleware/errorHandler.js";
 
 export const uploadAttachment: RequestHandler = async (_req, _res, next) => {
-  next(new AppError(501, "Attachments are not available in the imported Asana schema"));
+  next(new AppError(501, "Anexos serão disponibilizados na próxima versão."));
 };
 
 export const downloadAttachment: RequestHandler = async (_req, _res, next) => {

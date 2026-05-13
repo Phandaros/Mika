@@ -11,6 +11,7 @@ export function Header() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
   const [search, setSearch] = useState("");
 
   async function handleLogout() {
@@ -30,7 +31,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-[#202123]/95 px-4 backdrop-blur">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border-subtle bg-bg-1/90 px-4 backdrop-blur-md">
       <div className="flex items-center gap-3">
         <Button variant="ghost" className="h-9 w-9 px-0 lg:hidden" onClick={toggleSidebar} title="Menu">
           <Menu size={20} />
@@ -43,12 +44,23 @@ export function Header() {
             <ChevronRight size={17} />
           </Button>
         </div>
-        <form className="relative w-[min(44vw,540px)] min-w-48" onSubmit={handleSearchSubmit}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="hidden h-9 items-center gap-2 rounded-md border border-border-subtle bg-bg-2 px-3 text-sm text-text-secondary hover:bg-surface-hover hover:text-text-primary md:inline-flex"
+          onClick={() => setCommandPaletteOpen(true)}
+          title="Paleta de comandos"
+        >
+          <Search size={16} />
+          <span className="max-w-[min(28vw,320px)] truncate text-left">Buscar ou saltar...</span>
+          <kbd className="ml-1 hidden rounded border border-border bg-bg-3 px-1.5 font-mono text-[10px] text-text-muted lg:inline">⌘K</kbd>
+        </Button>
+        <form className="relative w-[min(44vw,540px)] min-w-48 md:hidden" onSubmit={handleSearchSubmit}>
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="h-9 w-full rounded-full border border-transparent bg-white/15 pl-9 pr-4 text-sm text-text-primary outline-none placeholder:text-text-secondary focus:border-border focus:bg-surface-card"
+            className="h-9 w-full rounded-full border border-border-subtle bg-bg-2 pl-9 pr-4 text-sm text-text-primary outline-none placeholder:text-text-muted focus:border-border focus:bg-bg-3"
             placeholder="Buscar tarefas"
           />
         </form>

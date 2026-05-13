@@ -16,7 +16,14 @@ function isPrivateLanHost(hostname: string): boolean {
   }
 
   const parts = hostname.split(".").map((part) => Number(part));
-  return parts.length === 4 && parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31;
+  if (parts.length !== 4) {
+    return false;
+  }
+  const [a, b] = parts;
+  if (a === undefined || b === undefined) {
+    return false;
+  }
+  return a === 172 && b >= 16 && b <= 31;
 }
 
 export function isAllowedCorsOrigin(origin: string | undefined, configuredClientUrl: string): boolean {

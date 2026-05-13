@@ -10,6 +10,7 @@ import {
   isSameDay,
   isSameMonth,
   isWithinInterval,
+  startOfDay,
   startOfMonth,
   startOfWeek
 } from "date-fns";
@@ -24,6 +25,14 @@ import { cn } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import {
+  MK_SELECT_EMPTY_VALUE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../ui/select";
 import { Textarea } from "../ui/textarea";
 
 interface TaskDetailProps {
@@ -71,23 +80,37 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
 
+  const previousTaskIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (task) {
-      setVisibleTask(task);
-      setOpenField(null);
-      setDateDraftStart(task.startDate ? new Date(task.startDate) : null);
-      setDateDraftEnd(task.dueDate ? new Date(task.dueDate) : null);
-      setIsEditingDescription(false);
-      setIsEditingTitle(false);
-      setDescriptionDraft(task.description ?? "");
-      setTitleDraft(task.title);
-      window.requestAnimationFrame(() => setIsOpen(true));
-      return;
+    if (!task) {
+      previousTaskIdRef.current = null;
+      setIsOpen(false);
+      const timeoutId = window.setTimeout(() => setVisibleTask(null), 480);
+      return () => window.clearTimeout(timeoutId);
     }
 
+    const previousId = previousTaskIdRef.current;
+    previousTaskIdRef.current = task.id;
+
+    setVisibleTask(task);
+
+    if (previousId === task.id) {
+      return undefined;
+    }
+
+    setOpenField(null);
+    setDateDraftStart(task.startDate ? new Date(task.startDate) : null);
+    setDateDraftEnd(task.dueDate ? new Date(task.dueDate) : null);
+    setIsEditingDescription(false);
+    setIsEditingTitle(false);
+    setDescriptionDraft(task.description ?? "");
+    setTitleDraft(task.title);
     setIsOpen(false);
-    const timeoutId = window.setTimeout(() => setVisibleTask(null), 180);
-    return () => window.clearTimeout(timeoutId);
+    const frame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setIsOpen(true));
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [task]);
 
   useEffect(() => {
@@ -98,48 +121,6 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     descriptionRef.current.style.height = "auto";
     descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
   }, [descriptionDraft, isEditingDescription]);
-
-  useEffect(() => {
-    if (openField !== "completionDate") {
-      return;
-    }
-
-    function handleDocumentMouseDown(event: MouseEvent) {
-      const target = event.target;
-
-      if (!(target instanceof Node)) {
-        return;
-      }
-
-      if (completionDatePanelRef.current?.contains(target) || completionDateTriggerRef.current?.contains(target)) {
-        return;
-      }
-
-      void saveCompletionDate();
-    }
-
-    function handleKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") {
-        void saveCompletionDate();
-      }
-    }
-
-    document.addEventListener("mousedown", handleDocumentMouseDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleDocumentMouseDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [dateDraftEnd, dateDraftStart, openField]);
-
-  if (!visibleTask) {
-    return null;
-  }
-
-  function requestClose() {
-    setIsOpen(false);
-    window.setTimeout(onClose, 180);
-  }
 
   async function patchTask(payload: UpdateTaskRequest) {
     const currentTask = visibleTask;
@@ -195,8 +176,14 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     setIsEditingTitle(false);
   }
 
-  async function handleCustomFieldSave(fieldId: string, value: string) {
-    await patchTask({ customFieldValues: [{ id: fieldId, value: value.trim() || null }] });
+  async function handleCustomFieldSave(fieldId: string, value: string | number | null) {
+    const normalized =
+      value === null || value === ""
+        ? null
+        : typeof value === "number"
+          ? value
+          : String(value).trim() || null;
+    await patchTask({ customFieldValues: [{ id: fieldId, value: normalized }] });
   }
 
   function openCompletionDate() {
@@ -224,6 +211,51 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     await patchTask({ startDate: null, dueDate: null });
   }
 
+  useEffect(() => {
+    if (openField !== "completionDate") {
+      return;
+    }
+
+    function handleDocumentMouseDown(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (completionDatePanelRef.current?.contains(target) || completionDateTriggerRef.current?.contains(target)) {
+        return;
+      }
+
+      void saveCompletionDate();
+    }
+
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setDateDraftStart(visibleTask?.startDate ? new Date(visibleTask.startDate) : null);
+        setDateDraftEnd(visibleTask?.dueDate ? new Date(visibleTask.dueDate) : null);
+        setOpenField(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveCompletionDate usa draft/task do render corrente
+  }, [dateDraftEnd, dateDraftStart, openField, visibleTask?.dueDate, visibleTask?.id, visibleTask?.startDate]);
+
+  if (!visibleTask) {
+    return null;
+  }
+
+  function requestClose() {
+    setIsOpen(false);
+    window.setTimeout(onClose, 480);
+  }
+
   function handleDescriptionKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     const currentTask = visibleTask;
 
@@ -249,14 +281,14 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
   return (
     <div
       className={cn(
-        "fixed inset-0 z-40 bg-brand-black/60 transition-opacity duration-200",
+        "fixed inset-0 z-40 bg-brand-black/60 transition-opacity duration-500 ease-out",
         isOpen ? "opacity-100" : "opacity-0"
       )}
       onMouseDown={requestClose}
     >
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-200",
+          "fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-500 ease-out-expo will-change-transform",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
         onMouseDown={(event) => event.stopPropagation()}
@@ -293,12 +325,12 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
             }}
             className={cn(
               "h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight focus:border-brand-orange focus:bg-brand-black focus:px-2",
-              visibleTask.completed ? "text-text-muted line-through" : ""
+              visibleTask.completed ? "text-text-muted" : "text-text-primary"
             )}
           />
 
           <div className="mt-6 grid gap-4 text-sm">
-            <DetailRow icon={visibleTask.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />} label="Conclusao">
+            <DetailRow icon={visibleTask.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />} label="Situação">
               <button
                 type="button"
                 onClick={() => void patchTaskCompletion(!visibleTask.completed)}
@@ -484,20 +516,26 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
 
           <section className="mt-8">
             <div className="flex items-center gap-2">
-              <MessageSquare size={18} className="text-text-secondary" />
+              <MessageSquare size={18} className="shrink-0 text-text-secondary" />
               <h3 className="text-sm font-bold text-text-primary">Comentários</h3>
               <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{comments.length}</span>
             </div>
-            <div className="mt-4 grid gap-4">
+            <div className="mt-4 flex flex-col gap-4">
               {comments.map((item) => (
                 <div key={item.id} className="flex gap-3">
-                  <Avatar name={item.author?.name ?? "Usuário"} imageUrl={item.author?.avatarUrl} className="h-8 w-8" />
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-text-primary">{item.author?.name ?? "Usuário"}</span>
-                      <span className="text-xs text-text-muted">{format(new Date(item.createdAt), "dd/MM/yyyy HH:mm")}</span>
+                  <Avatar
+                    name={item.author?.name ?? "Usuário"}
+                    imageUrl={item.author?.avatarUrl}
+                    className="mt-0.5 h-8 w-8 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="text-sm font-semibold leading-5 text-text-primary">{item.author?.name ?? "Usuário"}</span>
+                      <span className="text-xs tabular-nums text-text-muted">
+                        {format(new Date(item.createdAt), "dd/MM/yyyy HH:mm")}
+                      </span>
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-text-secondary">{item.content}</p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">{item.content}</p>
                   </div>
                 </div>
               ))}
@@ -506,15 +544,15 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
           </section>
         </div>
 
-        <form onSubmit={handleCommentSubmit} className="flex gap-3 border-t border-border p-5">
-          {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="h-9 w-9" /> : null}
+        <form onSubmit={handleCommentSubmit} className="flex items-start gap-3 border-t border-border p-5">
+          {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
           <Textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             placeholder="Adicionar um comentário"
-            className="min-h-20"
+            className="min-h-20 flex-1 resize-none"
           />
-          <Button type="submit" className="h-10 w-10 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
+          <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
             <Send size={16} />
           </Button>
         </form>
@@ -525,12 +563,12 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
 
 function DetailRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
-    <div className="relative grid grid-cols-[128px_minmax(0,1fr)] items-center gap-3">
-      <div className="flex items-center gap-2 text-text-secondary">
+    <div className="relative grid grid-cols-[128px_minmax(0,1fr)] items-start gap-3">
+      <div className="flex items-center gap-2 pt-2 text-text-secondary">
         {icon}
         <span>{label}</span>
       </div>
-      <div>{children}</div>
+      <div className="min-w-0 pt-2">{children}</div>
     </div>
   );
 }
@@ -544,21 +582,117 @@ function EditableCustomField({
   onSave
 }: {
   field: NonNullable<Task["customFieldValues"]>[number];
-  onSave: (value: string) => void;
+  onSave: (value: string | number | null) => void;
 }) {
-  const [value, setValue] = useState(String(field.displayValue ?? field.enumOptionName ?? field.numberValue ?? ""));
+  const asanaType = (field.type ?? "").toLowerCase();
+  const label = field.customFieldName ?? "Campo";
+  const nameLower = label.toLowerCase();
+  const isPlatform = nameLower.includes("plataforma") || nameLower.includes("platform");
+
+  const normalizedEnumOptions =
+    field.enumOptions && field.enumOptions.length > 0
+      ? field.enumOptions
+      : isPlatform
+        ? [
+            { id: "cad", name: "CAD", color: null as string | null },
+            { id: "bim", name: "BIM", color: null as string | null }
+          ]
+        : [];
+
+  const showEnumSelect = normalizedEnumOptions.length > 0;
+
+  const [enumValue, setEnumValue] = useState(() => String(field.enumOptionName ?? field.displayValue ?? ""));
+  const [textValue, setTextValue] = useState(() => String(field.displayValue ?? field.enumOptionName ?? ""));
+  const [numValue, setNumValue] = useState(() => (field.numberValue != null ? String(field.numberValue) : ""));
+  const [dateValue, setDateValue] = useState(() => {
+    const raw = field.displayValue ?? "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+    return "";
+  });
 
   useEffect(() => {
-    setValue(String(field.displayValue ?? field.enumOptionName ?? field.numberValue ?? ""));
-  }, [field.displayValue, field.enumOptionName, field.numberValue]);
+    setEnumValue(String(field.enumOptionName ?? field.displayValue ?? ""));
+    setTextValue(String(field.displayValue ?? field.enumOptionName ?? ""));
+    setNumValue(field.numberValue != null ? String(field.numberValue) : "");
+    const raw = field.displayValue ?? "";
+    setDateValue(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "");
+  }, [field.displayValue, field.enumOptionName, field.numberValue, field.id]);
+
+  const shellClass =
+    "grid gap-2 rounded-md border border-border bg-surface-card p-3 text-sm font-semibold text-text-secondary";
+
+  if (asanaType === "number" || asanaType === "integer") {
+    return (
+      <label className={shellClass}>
+        <span className="text-xs uppercase text-text-muted">{label}</span>
+        <Input
+          type="number"
+          value={numValue}
+          onChange={(event) => setNumValue(event.target.value)}
+          onBlur={() => {
+            const parsed = Number.parseFloat(numValue);
+            void onSave(Number.isFinite(parsed) ? parsed : null);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+          }}
+        />
+      </label>
+    );
+  }
+
+  if (asanaType === "date") {
+    return (
+      <label className={shellClass}>
+        <span className="text-xs uppercase text-text-muted">{label}</span>
+        <Input
+          type="date"
+          value={dateValue}
+          onChange={(event) => setDateValue(event.target.value)}
+          onBlur={() => void onSave(dateValue.trim() || null)}
+        />
+      </label>
+    );
+  }
+
+  if (showEnumSelect) {
+    return (
+      <label className={shellClass}>
+        <span className="text-xs uppercase text-text-muted">{label}</span>
+        <Select
+          value={enumValue || MK_SELECT_EMPTY_VALUE}
+          onValueChange={(next) => {
+            setEnumValue(next === MK_SELECT_EMPTY_VALUE ? "" : next);
+            void onSave(next === MK_SELECT_EMPTY_VALUE ? null : next);
+          }}
+        >
+          <SelectTrigger className="h-9 py-0">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={MK_SELECT_EMPTY_VALUE}>—</SelectItem>
+            {normalizedEnumOptions.map((option) => (
+              <SelectItem key={option.id} value={option.name}>
+                {option.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+    );
+  }
 
   return (
-    <label className="grid gap-2 rounded-md border border-border bg-surface-card p-3 text-sm font-semibold text-text-secondary">
-      <span className="text-xs uppercase text-text-muted">{field.customFieldName ?? "Campo"}</span>
+    <label className={shellClass}>
+      <span className="text-xs uppercase text-text-muted">{label}</span>
       <Input
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        onBlur={() => onSave(value)}
+        value={textValue}
+        onChange={(event) => setTextValue(event.target.value)}
+        onBlur={() => onSave(textValue)}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.currentTarget.blur();
@@ -677,11 +811,16 @@ function DateRangePanel({
             </span>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-y-1 overflow-hidden rounded-md">
+        <div className="grid grid-cols-7 gap-0 overflow-hidden rounded-md border border-border bg-border">
           {days.map((day) => {
-            const inRange = isDateInRange(day, startDate, endDate);
-            const selectedStart = startDate ? isSameDay(day, startDate) : false;
-            const selectedEnd = endDate ? isSameDay(day, endDate) : false;
+            const s0 = startDate ? startOfDay(startDate) : null;
+            const e0 = endDate ? startOfDay(endDate) : null;
+            const d0 = startOfDay(day);
+            const rangeOk = Boolean(s0 && e0 && !isAfter(s0, e0));
+            const inClosedRange = rangeOk && s0 && e0 ? isWithinInterval(d0, { start: s0, end: e0 }) : false;
+            const isStart = Boolean(startDate && isSameDay(day, startDate));
+            const isEnd = Boolean(endDate && isSameDay(day, endDate));
+            const isMiddle = inClosedRange && !isStart && !isEnd;
 
             return (
               <button
@@ -689,11 +828,11 @@ function DateRangePanel({
                 type="button"
                 onClick={() => handleDaySelect(day)}
                 className={cn(
-                  "flex h-8 items-center justify-center text-sm transition hover:bg-surface-hover",
+                  "flex h-8 items-center justify-center border border-transparent text-sm font-semibold transition outline-none",
                   isSameMonth(day, month) ? "text-text-primary" : "text-text-muted",
-                  inRange ? "bg-brand-orange/30 text-text-primary hover:bg-brand-orange/40" : "",
-                  inRange && !selectedStart && !selectedEnd ? "rounded-none" : "rounded-md",
-                  selectedStart || selectedEnd ? "bg-brand-orange font-bold text-brand-white hover:bg-brand-orange" : ""
+                  isMiddle && "bg-brand-orange/45 text-text-primary hover:bg-brand-orange/60",
+                  (isStart || isEnd) && "z-[1] bg-brand-orange font-bold text-brand-white hover:bg-brand-orange",
+                  !isMiddle && !isStart && !isEnd && "bg-surface-card hover:bg-surface-hover"
                 )}
               >
                 {format(day, "d")}
@@ -729,16 +868,12 @@ function formatMonthLabel(date: Date): string {
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }
 
-function isDateInRange(day: Date, startDate: Date | null, endDate: Date | null): boolean {
-  if (!startDate || !endDate || isAfter(startDate, endDate)) {
-    return false;
-  }
-
-  return isWithinInterval(day, { start: startDate, end: endDate });
-}
-
 function StatusPill({ status }: { status: TaskStatus }) {
-  const option = statusOptions.find((item) => item.value === status) ?? statusOptions[0];
+  const fallback = statusOptions[0];
+  const option = statusOptions.find((item) => item.value === status) ?? fallback;
+  if (!option) {
+    return null;
+  }
 
   return (
     <span className="inline-flex h-7 items-center gap-2 rounded-md border border-border px-2 text-xs font-semibold text-text-primary">
@@ -749,7 +884,11 @@ function StatusPill({ status }: { status: TaskStatus }) {
 }
 
 function PriorityPill({ priority }: { priority: Priority }) {
-  const option = priorityOptions.find((item) => item.value === priority) ?? priorityOptions[1];
+  const fallback = priorityOptions[1] ?? priorityOptions[0];
+  const option = priorityOptions.find((item) => item.value === priority) ?? fallback;
+  if (!option) {
+    return null;
+  }
 
   return (
     <span className="inline-flex h-7 items-center gap-2 rounded-md border border-border px-2 text-xs font-semibold text-text-primary">

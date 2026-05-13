@@ -1,137 +1,111 @@
 import bcrypt from "bcrypt";
-import { DEFAULT_DISCIPLINES } from "../../../packages/shared/src/index.ts";
 import { prisma } from "../src/lib/prisma.js";
-import { DisciplineStatus, Priority, ProjectStatus, Role, TaskStatus } from "../src/lib/enums.js";
+import { makeLocalAsanaGid } from "../src/lib/asanaDto.js";
+import { Priority, Role, TaskStatus } from "../src/lib/enums.js";
 
-const adminId = "seed-admin";
-const projectId = "seed-project-mk-tower";
-const disciplineIds = ["seed-discipline-hydraulic", "seed-discipline-sanitary", "seed-discipline-fire"];
+const ADMIN_EMAIL = "admin@mkengenharia.eng.br";
 
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash("admin123", 10);
 
-  await prisma.user.upsert({
-    where: { email: "admin@mkengenharia.eng.br" },
-    update: {
-      name: "Administrador MK",
-      passwordHash,
-      role: Role.ADMIN,
-      isActive: true
-    },
-    create: {
-      id: adminId,
-      name: "Administrador MK",
-      email: "admin@mkengenharia.eng.br",
-      passwordHash,
-      role: Role.ADMIN,
-      isActive: true
-    }
-  });
-
-  await prisma.project.upsert({
-    where: { id: projectId },
-    update: {
-      name: "Residencial MK Tower",
-      description: "Projeto exemplo para validacao do fluxo Projeto > Disciplina > Tarefa.",
-      client: "MK Engenharia",
-      status: ProjectStatus.ACTIVE
-    },
-    create: {
-      id: projectId,
-      name: "Residencial MK Tower",
-      description: "Projeto exemplo para validacao do fluxo Projeto > Disciplina > Tarefa.",
-      client: "MK Engenharia",
-      status: ProjectStatus.ACTIVE,
-      startDate: new Date()
-    }
-  });
-
-  const selectedDisciplines = DEFAULT_DISCIPLINES.slice(0, 3);
-
-  for (const [index, discipline] of selectedDisciplines.entries()) {
-    await prisma.discipline.upsert({
-      where: { id: disciplineIds[index] },
-      update: {
-        name: discipline.name,
-        type: discipline.type,
-        status: index === 0 ? DisciplineStatus.IN_PROGRESS : DisciplineStatus.NOT_STARTED,
-        responsibleId: adminId
-      },
-      create: {
-        id: disciplineIds[index],
-        projectId,
-        name: discipline.name,
-        type: discipline.type,
-        status: index === 0 ? DisciplineStatus.IN_PROGRESS : DisciplineStatus.NOT_STARTED,
-        responsibleId: adminId
+  let workspace = await prisma.asanaWorkspace.findFirst();
+  if (!workspace) {
+    workspace = await prisma.asanaWorkspace.create({
+      data: {
+        asanaGid: makeLocalAsanaGid("workspace"),
+        name: "MK Engenharia",
+        resourceType: "workspace"
       }
     });
   }
 
-  const tasks = [
-    {
-      id: "seed-task-01",
-      disciplineId: disciplineIds[0],
-      title: "Levantar pontos de agua fria",
-      status: TaskStatus.BACKLOG,
-      priority: Priority.MEDIUM
+  const admin = await prisma.user.upsert({
+    where: { email: ADMIN_EMAIL },
+    update: {
+      name: "Administrador MK",
+      passwordHash,
+      role: Role.ADMIN,
+      isActive: true
     },
-    {
-      id: "seed-task-02",
-      disciplineId: disciplineIds[0],
-      title: "Compatibilizar shaft hidraulico",
-      status: TaskStatus.TODO,
-      priority: Priority.HIGH
-    },
-    {
-      id: "seed-task-03",
-      disciplineId: disciplineIds[1],
-      title: "Revisar prumadas sanitarias",
-      status: TaskStatus.IN_PROGRESS,
-      priority: Priority.URGENT
-    },
-    {
-      id: "seed-task-04",
-      disciplineId: disciplineIds[2],
-      title: "Conferir memorial PPCI",
-      status: TaskStatus.IN_REVIEW,
-      priority: Priority.HIGH
-    },
-    {
-      id: "seed-task-05",
-      disciplineId: disciplineIds[2],
-      title: "Enviar prancha de sprinklers",
-      status: TaskStatus.DONE,
-      priority: Priority.LOW
+    create: {
+      email: ADMIN_EMAIL,
+      name: "Administrador MK",
+      passwordHash,
+      role: Role.ADMIN,
+      isActive: true,
+      asanaGid: makeLocalAsanaGid("user")
     }
+  });
+
+  const projectCount = await prisma.project.count();
+  if (projectCount > 0 || !admin.asanaGid) {
+    console.log("Seed: admin garantido; projetos ja existem — pulando demo.");
+    return;
+  }
+
+  const project = await prisma.project.create({
+    data: {
+      asanaGid: makeLocalAsanaGid("project"),
+      name: "Residencial MK Tower (demo)",
+      notes: "Projeto exemplo do seed (schema Asana).",
+      workspaceGid: workspace.asanaGid,
+      ownerGid: admin.asanaGid
+    }
+  });
+
+  const sectionNames = ["Backlog", "Em andamento", "Concluido"];
+  const sections: { id: string; asanaGid: string; name: string }[] = [];
+
+  for (const name of sectionNames) {
+    const section = await prisma.section.create({
+      data: {
+        asanaGid: makeLocalAsanaGid("section"),
+        name,
+        projectGid: project.asanaGid
+      }
+    });
+    sections.push({ id: section.id, asanaGid: section.asanaGid, name: section.name });
+  }
+
+  const demoTasks: Array<{ name: string; status: string; priority: string; sectionIdx: number }> = [
+    { name: "Levantar pontos de agua fria", status: TaskStatus.BACKLOG, priority: Priority.MEDIUM, sectionIdx: 0 },
+    { name: "Compatibilizar shaft hidraulico", status: TaskStatus.TODO, priority: Priority.HIGH, sectionIdx: 0 },
+    { name: "Revisar prumadas sanitarias", status: TaskStatus.IN_PROGRESS, priority: Priority.URGENT, sectionIdx: 1 },
+    { name: "Conferir memorial PPCI", status: TaskStatus.IN_REVIEW, priority: Priority.HIGH, sectionIdx: 1 },
+    { name: "Enviar prancha de sprinklers", status: TaskStatus.DONE, priority: Priority.LOW, sectionIdx: 2 }
   ];
 
-  for (const task of tasks) {
-    await prisma.task.upsert({
-      where: { id: task.id },
-      update: {
-        title: task.title,
-        status: task.status,
-        priority: task.priority,
-        assigneeId: adminId,
-        completedAt: task.status === TaskStatus.DONE ? new Date() : null
-      },
-      create: {
-        id: task.id,
-        disciplineId: task.disciplineId,
-        title: task.title,
-        description: "Tarefa exemplo criada pelo seed inicial.",
-        status: task.status,
-        priority: task.priority,
-        assigneeId: adminId,
-        creatorId: adminId,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        completedAt: task.status === TaskStatus.DONE ? new Date() : null
+  for (const row of demoTasks) {
+    const sec = sections[row.sectionIdx];
+    if (!sec) {
+      continue;
+    }
+
+    const task = await prisma.task.create({
+      data: {
+        asanaGid: makeLocalAsanaGid("task"),
+        name: row.name,
+        notes: "Tarefa exemplo criada pelo seed.",
+        localStatus: row.status,
+        priority: row.priority,
+        assigneeGid: admin.asanaGid,
+        completed: row.status === TaskStatus.DONE,
+        completedAtAsana: row.status === TaskStatus.DONE ? new Date() : null
+      }
+    });
+
+    await prisma.taskMembership.create({
+      data: {
+        taskId: task.id,
+        projectGid: project.asanaGid,
+        projectName: project.name,
+        sectionGid: sec.asanaGid,
+        sectionName: sec.name
       }
     });
   }
 
-  console.log("Seed concluido: admin@mkengenharia.eng.br / admin123");
+  console.log(`Seed concluido: ${ADMIN_EMAIL} / admin123`);
 }
 
 try {

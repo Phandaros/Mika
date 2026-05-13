@@ -70,9 +70,9 @@ export function App() {
               <Route path="/users" element={<UsersPage />} />
             </Route>
             <Route path="/users/:userId" element={<UserProfilePage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
-        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

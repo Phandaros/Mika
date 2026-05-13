@@ -8,7 +8,7 @@ import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Select } from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useProjects } from "../hooks/useProjects";
 
 export function ProjectsPage() {
@@ -81,21 +81,31 @@ export function ProjectsPage() {
               </Button>
               {showFilters ? (
                 <div className="absolute right-0 top-11 z-30 grid w-80 gap-3 rounded-md border border-border bg-surface-card p-4 shadow-2xl">
-                  <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                    <option value="all">Todos os status</option>
-                    {Object.values(ProjectStatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      {Object.values(ProjectStatus).map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
-                  <Select value={builderFilter} onChange={(event) => setBuilderFilter(event.target.value)}>
-                    <option value="all">Todas as equipes/workspaces</option>
-                    {builderSuggestions.map((builder) => (
-                      <option key={builder} value={builder}>
-                        {builder}
-                      </option>
-                    ))}
+                  <Select value={builderFilter} onValueChange={setBuilderFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as equipes/workspaces</SelectItem>
+                      {builderSuggestions.map((builder) => (
+                        <SelectItem key={builder} value={builder}>
+                          {builder}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
               ) : null}
@@ -107,10 +117,15 @@ export function ProjectsPage() {
               </Button>
               {showOptions ? (
                 <div className="absolute right-0 top-11 z-30 grid w-64 gap-3 rounded-md border border-border bg-surface-card p-4 shadow-2xl">
-                  <Select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
-                    <option value="updatedAt-desc">Atualizados recentemente</option>
-                    <option value="name-asc">Nome A-Z</option>
-                    <option value="endDate-asc">Entrega mais próxima</option>
+                  <Select value={sortMode} onValueChange={setSortMode}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="updatedAt-desc">Atualizados recentemente</SelectItem>
+                      <SelectItem value="name-asc">Nome A-Z</SelectItem>
+                      <SelectItem value="endDate-asc">Entrega mais próxima</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
               ) : null}
@@ -160,9 +175,9 @@ function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
         <tbody>
           {projects.map((project) => {
             const taskCount =
-              project.disciplines?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
-            const visibleDisciplines = project.disciplines?.slice(0, 3) ?? [];
-            const hiddenDisciplinesCount = Math.max((project.disciplines?.length ?? 0) - visibleDisciplines.length, 0);
+              (project.sections ?? project.disciplines)?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
+            const visibleDisciplines = (project.sections ?? project.disciplines)?.slice(0, 3) ?? [];
+            const hiddenDisciplinesCount = Math.max(((project.sections ?? project.disciplines)?.length ?? 0) - visibleDisciplines.length, 0);
 
             return (
               <tr key={project.id} className="border-t border-border hover:bg-surface-hover">

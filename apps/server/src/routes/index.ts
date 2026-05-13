@@ -1,7 +1,8 @@
 import { Router } from "express";
+import activityRoutes from "./activity.routes.js";
 import authRoutes from "./auth.routes.js";
 import commentsRoutes from "./comments.routes.js";
-import disciplinesRoutes from "./disciplines.routes.js";
+import sectionsRoutes from "./sections.routes.js";
 import notificationsRoutes from "./notifications.routes.js";
 import projectsRoutes from "./projects.routes.js";
 import tasksRoutes from "./tasks.routes.js";
@@ -11,9 +12,10 @@ import usersRoutes from "./users.routes.js";
 const router = Router();
 
 router.use("/auth", authRoutes);
+router.use(activityRoutes);
 router.use(usersRoutes);
 router.use(projectsRoutes);
-router.use(disciplinesRoutes);
+router.use(sectionsRoutes);
 router.use(tasksRoutes);
 router.use(commentsRoutes);
 router.use(notificationsRoutes);

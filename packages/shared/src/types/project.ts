@@ -23,6 +23,8 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   disciplines?: Discipline[];
+  /** Alias canonico (secao Asana); espelha `disciplines` quando presente. */
+  sections?: Discipline[];
 }
 
 export interface ProjectCustomField {

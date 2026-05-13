@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import type { Notification } from "shared";
 import { api } from "../lib/api";
 import { getNotificationSocket } from "../lib/socket";

@@ -1,10 +1,15 @@
 import { Outlet } from "react-router-dom";
+import { useAppHotkeys } from "../../hooks/useAppHotkeys";
+import { CommandPalette } from "./CommandPalette";
 import { Header } from "./Header";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Sidebar } from "./Sidebar";
 
 export function AppShell() {
+  useAppHotkeys();
+
   return (
-    <div className="min-h-screen bg-brand-black text-text-primary lg:flex">
+    <div className="min-h-screen bg-bg-0 text-text-primary lg:flex">
       <Sidebar />
       <div className="min-w-0 flex-1">
         <Header />
@@ -12,6 +17,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
+      <ShortcutsDialog />
     </div>
   );
 }

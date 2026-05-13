@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import logoUrl from "../assets/logo.svg";
 import { useAuth } from "../hooks/useAuth";
-import { getSocketBaseUrl, updateDesktopServerUrl } from "../lib/runtimeConfig";
+import { desktopServerPlaceholder, getSocketBaseUrl, updateDesktopServerUrl } from "../lib/runtimeConfig";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
@@ -39,12 +39,12 @@ export function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-brand-black px-4">
-      <section className="w-full max-w-md rounded-md border border-border bg-surface p-8 shadow-2xl">
+    <main className="grid min-h-screen place-items-center bg-bg-0 px-4">
+      <section className="w-full max-w-md rounded-lg border border-border-subtle bg-bg-2 p-8 shadow-2xl">
         <img src={logoUrl} alt="MK Projetos" className="mx-auto h-16 w-auto" />
         <div className="mt-8">
           <h1 className="text-2xl font-bold text-text-primary">Entrar no MK Projetos</h1>
-          <p className="mt-2 text-sm text-text-secondary">Acesse projetos, disciplinas e tarefas da equipe.</p>
+          <p className="mt-2 text-sm text-text-secondary">Acesse projetos, secoes e tarefas da equipe.</p>
         </div>
         <form onSubmit={handleSubmit} className="mt-8 grid gap-4" autoComplete="on">
           {isDesktop ? (
@@ -53,7 +53,7 @@ export function LoginPage() {
               <Input
                 value={serverUrl}
                 onChange={(event) => setServerUrl(event.target.value)}
-                placeholder="http://DESKTOP-TP1SBGH:3001"
+                placeholder={desktopServerPlaceholder()}
                 autoComplete="off"
                 required
               />

@@ -503,6 +503,69 @@ def import_task_relations(conn: sqlite3.Connection, task_records: list[dict[str,
             })
 
 
+def load_comment_json_records(json_dir: Path) -> list[dict[str, Any]]:
+    """Carrega comentarios / stories do dump (nomes: comments_*.json, stories_*.json)."""
+    by_gid: dict[str, dict[str, Any]] = {}
+    for pattern in (r"^comments_.*\.json$", r"^stories_.*\.json$"):
+        for row in load_list(json_dir, pattern):
+            gid = row.get("gid")
+            if gid:
+                by_gid[str(gid)] = row
+    return list(by_gid.values())
+
+
+def _comment_task_gid(record: dict[str, Any]) -> str | None:
+    if record.get("task_gid"):
+        return str(record["task_gid"])
+    target = record.get("target")
+    if isinstance(target, dict) and target.get("resource_type") == "task" and target.get("gid"):
+        return str(target["gid"])
+    parent = record.get("parent")
+    if isinstance(parent, dict) and parent.get("resource_type") == "task" and parent.get("gid"):
+        return str(parent["gid"])
+    return None
+
+
+def import_comments(conn: sqlite3.Connection, records: list[dict[str, Any]], _password_hash: str) -> None:
+    for row in records:
+        st = row.get("resource_subtype")
+        if st is not None and st != "comment_added":
+            continue
+        task_gid = _comment_task_gid(row)
+        if not task_gid:
+            continue
+        story_gid = row.get("gid")
+        if not story_gid:
+            continue
+        task_id = get_id_by(conn, "Task", "asanaGid", task_gid)
+        if not task_id:
+            continue
+        created_by = row.get("created_by") if isinstance(row.get("created_by"), dict) else {}
+        author_gid = created_by.get("gid")
+        author_id = get_id_by(conn, "User", "asanaGid", str(author_gid)) if author_gid else None
+        text = (row.get("text") or "").strip()
+        if not text:
+            continue
+        created_at = row.get("created_at")
+        asana_created = created_at if isinstance(created_at, str) else None
+        insert_or_update(
+            conn,
+            "Comment",
+            ["asanaGid"],
+            {
+                "id": new_id(),
+                "asanaGid": str(story_gid),
+                "taskId": task_id,
+                "authorId": author_id,
+                "authorAsanaGid": str(author_gid) if author_gid else None,
+                "content": text,
+                "asanaCreatedAt": asana_created,
+                "createdAt": now_iso(),
+                "updatedAt": now_iso(),
+            },
+        )
+
+
 def count_table(conn: sqlite3.Connection, table: str) -> int:
     try:
         return int(conn.execute(f"SELECT COUNT(*) FROM {q(table)}").fetchone()[0])
@@ -517,8 +580,7 @@ def main() -> int:
     parser.add_argument("--db", default=None, help="Caminho explícito do SQLite. Se omitido, lê DATABASE_URL do .env")
     parser.add_argument("--clear", action="store_true", help="Apaga os dados das tabelas importadas antes de popular")
     parser.add_argument("--import-users", action="store_true", help="Tambem cria/atualiza usuarios do dump. Por padrao, usuarios sao preservados.")
-    parser.add_argument("--password-hash", default=DEFAULT_PASSWORD_HASH, help="Valor gravado em User.passwordHash. Padrão: mk123")
-    args = parser.parse_args()
+    parser.add_argument("--clear-comments", action="store_true", help="Remove comentarios importados (asanaGid NOT NULL) antes de importar stories")
     global IMPORT_USERS
     IMPORT_USERS = args.import_users
 
@@ -564,6 +626,13 @@ def main() -> int:
         import_tasks_base(conn, task_records, args.password_hash)
         resolve_task_parents(conn)
         import_task_relations(conn, task_records)
+        comment_rows = load_comment_json_records(json_dir)
+        if args.clear_comments:
+            print("[info] Limpando comentarios importados do Asana...")
+            conn.execute('DELETE FROM "Comment" WHERE "asanaGid" IS NOT NULL')
+        if comment_rows:
+            print(f"[info] Importando comentarios ({len(comment_rows)} stories unicos)...")
+            import_comments(conn, comment_rows, args.password_hash)
         conn.commit()
 
         print("\nResumo:")
@@ -571,6 +640,7 @@ def main() -> int:
             "AsanaWorkspace", "Team", "User", "Project", "Section", "Tag", "Task",
             "TaskMembership", "TaskFollower", "TaskLike", "TaskTag",
             "AsanaCustomField", "AsanaCustomFieldEnumOption", "ProjectCustomFieldSetting", "TaskCustomFieldValue",
+            "Comment",
         ]:
             print(f"  {table}: {count_table(conn, table)}")
 
