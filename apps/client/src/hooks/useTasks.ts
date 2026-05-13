@@ -18,6 +18,17 @@ interface TaskResponse {
   task: Task;
 }
 
+export function useTaskById(taskId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["task", taskId],
+    queryFn: async () => {
+      const response = await api.get<TaskResponse>(`/tasks/${taskId}`);
+      return response.data.task;
+    },
+    enabled: Boolean(taskId)
+  });
+}
+
 function mergeTask(currentTask: Task, updatedTask: Task): Task {
   return {
     ...currentTask,
@@ -85,6 +96,53 @@ function updateTaskInProjectCache(projectId: string, updatedTask: Task) {
   );
 }
 
+function invalidateWorkloadTaskQueries(projectId?: string) {
+  void queryClient.invalidateQueries({
+    predicate: (query) => {
+      if (!Array.isArray(query.queryKey)) {
+        return false;
+      }
+
+      if (query.queryKey[0] === "globalWorkloadTasks") {
+        return true;
+      }
+
+      return query.queryKey[0] === "projectWorkloadTasks" && (!projectId || query.queryKey[1] === projectId);
+    }
+  });
+}
+
+export function useProjectWorkloadTasks(projectId: string | undefined, from: string, to: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["projectWorkloadTasks", projectId, from, to],
+    enabled: Boolean(projectId) && enabled && Boolean(from) && Boolean(to),
+    queryFn: async () => {
+      const response = await api.get<TasksResponse>(`/projects/${projectId}/workload-tasks`, {
+        params: { from, to, includeUndated: "true" }
+      });
+      return response.data.tasks;
+    }
+  });
+}
+
+export function useGlobalWorkloadTasks(
+  scope: "general" | "civil" | "electrical",
+  from: string,
+  to: string,
+  enabled: boolean
+) {
+  return useQuery({
+    queryKey: ["globalWorkloadTasks", scope, from, to],
+    enabled: enabled && Boolean(from) && Boolean(to),
+    queryFn: async () => {
+      const response = await api.get<TasksResponse>("/workload/tasks", {
+        params: { from, to, scope, includeUndated: "true" }
+      });
+      return response.data.tasks;
+    }
+  });
+}
+
 export function useTasks(sectionId: string | undefined) {
   return useQuery({
     queryKey: ["sections", sectionId, "tasks"],
@@ -117,6 +175,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
         creatorId: "",
         startDate: payload.startDate ?? null,
         dueDate: payload.dueDate ?? null,
+        estimatedDays: payload.estimatedDays ?? null,
         completed: payload.completed ?? false,
         completedAt: null,
         createdAt: new Date().toISOString(),
@@ -170,6 +229,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
       await queryClient.invalidateQueries({ queryKey: ["sections", sectionId, "tasks"] });
+      invalidateWorkloadTaskQueries(projectId);
     }
   });
 }
@@ -182,6 +242,7 @@ export function useUpdateTask(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+      invalidateWorkloadTaskQueries(projectId);
     },
     onSettled: async () => {
       if (!projectId) {
@@ -199,6 +260,7 @@ export function useUpdateTaskStatus(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+      invalidateWorkloadTaskQueries(projectId);
     }
   });
 }
@@ -211,6 +273,7 @@ export function useUpdateTaskCompletion(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+      invalidateWorkloadTaskQueries(projectId);
     }
   });
 }

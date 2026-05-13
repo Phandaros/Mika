@@ -211,6 +211,9 @@ model Task {
   dueOn   String?
   startOn String?
 
+  /// Esforço planejado (dias) para gráficos de carga; independente do Asana.
+  estimatedDays Float?
+
   assigneeGid String?
 
   /// `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.

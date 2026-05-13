@@ -226,6 +226,7 @@ export const TaskScalarFieldEnum = {
   asanaModifiedAt: 'asanaModifiedAt',
   dueOn: 'dueOn',
   startOn: 'startOn',
+  estimatedDays: 'estimatedDays',
   assigneeGid: 'assigneeGid',
   parentAsanaGid: 'parentAsanaGid',
   parentName: 'parentName',

@@ -16,6 +16,8 @@ export interface Task {
   creatorId: string;
   startDate: string | null;
   dueDate: string | null;
+  /** Dias estimados de esforço (opcional); usado na vista Carga de trabalho. */
+  estimatedDays?: number | null;
   completed: boolean;
   completedAt: string | null;
   createdAt: string;
@@ -46,6 +48,8 @@ export interface Task {
     id: string;
     name: string;
     projectId: string;
+    /** Nome do projeto (vistas de workload multi-projeto). */
+    projectName?: string | null;
     type?: DisciplineType;
   };
 }
@@ -58,6 +62,7 @@ export interface CreateTaskRequest {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  estimatedDays?: number | null;
   completed?: boolean;
 }
 
@@ -69,6 +74,7 @@ export interface UpdateTaskRequest {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  estimatedDays?: number | null;
   completed?: boolean;
   customFieldValues?: Array<{
     id: string;

@@ -27,9 +27,11 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
   const [assigneeId, setAssigneeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [estimatedDays, setEstimatedDays] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const days = estimatedDays.trim() === "" ? null : Number(estimatedDays);
     await createTask.mutateAsync({
       title,
       description: description || null,
@@ -37,13 +39,15 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
       priority,
       assigneeId: assigneeId || null,
       startDate: startDate || null,
-      dueDate: dueDate || null
+      dueDate: dueDate || null,
+      estimatedDays: days === null || Number.isNaN(days) ? null : days
     });
     setTitle("");
     setDescription("");
     setAssigneeId("");
     setStartDate("");
     setDueDate("");
+    setEstimatedDays("");
   }
 
   return (
@@ -90,6 +94,14 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
           <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
           <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
         </div>
+        <Input
+          type="number"
+          min={0}
+          step={0.25}
+          value={estimatedDays}
+          onChange={(event) => setEstimatedDays(event.target.value)}
+          placeholder="Dias estimados (opcional)"
+        />
       </fieldset>
       <Button type="submit" disabled={createTask.isPending}>
         Criar tarefa

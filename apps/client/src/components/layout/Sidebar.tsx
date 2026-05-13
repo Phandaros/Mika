@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Bell,
+  CalendarRange,
   CheckCircle2,
   FolderKanban,
   Home,
@@ -79,6 +80,14 @@ export function Sidebar() {
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <SidebarSection title="Insights" items={[{ label: "Relatorios", icon: BarChart3, to: "/projects" }, { label: "Metas", icon: Target, to: "/" }]} />
         <SidebarSection title="Projetos" items={[{ label: "Projetos ativos", icon: FolderKanban, to: "/projects" }]} />
+        <SidebarSection
+          title="Workloads"
+          items={[
+            { label: "Workload Civil", icon: CalendarRange, to: "/workloads/civil" },
+            { label: "Workload Elétrico", icon: CalendarRange, to: "/workloads/eletrico" },
+            { label: "Workload Geral", icon: CalendarRange, to: "/workloads/geral" }
+          ]}
+        />
       </div>
       {user && roleWeight[user.role] >= roleWeight[Role.COORDINATOR] ? (
         <div className="border-t border-border p-4">

@@ -5,6 +5,7 @@ import {
   deleteProject,
   getProjectById,
   listProjects,
+  listWorkloadTasks,
   updateProject
 } from "../controllers/projects.controller.js";
 import { auth } from "../middleware/auth.js";
@@ -31,6 +32,7 @@ const updateProjectSchema = projectSchema.partial();
 
 router.use(auth);
 router.get("/projects", listProjects);
+router.get("/projects/:id/workload-tasks", listWorkloadTasks);
 router.get("/projects/:id", getProjectById);
 router.post("/projects", requireRole(Role.COORDINATOR), validateBody(projectSchema), createProject);
 router.patch("/projects/:id", requireRole(Role.COORDINATOR), validateBody(updateProjectSchema), updateProject);

@@ -15,7 +15,7 @@ import {
   startOfWeek
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Circle, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Circle, Flag, FolderKanban, MessageSquare, Send, UserRound, X, BarChart2 } from "lucide-react";
 import { Priority, TaskStatus, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
@@ -68,10 +68,15 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [estimatedDraft, setEstimatedDraft] = useState("");
   const [comment, setComment] = useState("");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const completionDateTriggerRef = useRef<HTMLButtonElement | null>(null);
   const completionDatePanelRef = useRef<HTMLDivElement | null>(null);
+  const asideRef = useRef<HTMLElement | null>(null);
+  const closePanelTimeoutRef = useRef<number | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const projectId = visibleTask?.discipline?.projectId ?? "";
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
@@ -86,12 +91,21 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     if (!task) {
       previousTaskIdRef.current = null;
       setIsOpen(false);
+      if (closePanelTimeoutRef.current != null) {
+        window.clearTimeout(closePanelTimeoutRef.current);
+        closePanelTimeoutRef.current = null;
+      }
       const timeoutId = window.setTimeout(() => setVisibleTask(null), 480);
       return () => window.clearTimeout(timeoutId);
     }
 
     const previousId = previousTaskIdRef.current;
     previousTaskIdRef.current = task.id;
+
+    if (closePanelTimeoutRef.current != null) {
+      window.clearTimeout(closePanelTimeoutRef.current);
+      closePanelTimeoutRef.current = null;
+    }
 
     setVisibleTask(task);
 
@@ -106,6 +120,9 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     setIsEditingTitle(false);
     setDescriptionDraft(task.description ?? "");
     setTitleDraft(task.title);
+    setEstimatedDraft(
+      task.estimatedDays === undefined || task.estimatedDays === null ? "" : String(task.estimatedDays)
+    );
     setIsOpen(false);
     const frame = window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => setIsOpen(true));
@@ -247,13 +264,55 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- saveCompletionDate usa draft/task do render corrente
   }, [dateDraftEnd, dateDraftStart, openField, visibleTask?.dueDate, visibleTask?.id, visibleTask?.startDate]);
 
+  useEffect(() => {
+    if (!visibleTask || !isOpen) {
+      return undefined;
+    }
+
+    function isTargetInsidePanelShell(target: Element): boolean {
+      const asideEl = asideRef.current;
+      if (asideEl?.contains(target)) {
+        return true;
+      }
+      return Boolean(target.closest('[role="listbox"][data-state="open"]'));
+    }
+
+    function handlePointerDownCapture(event: PointerEvent) {
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      if (isTargetInsidePanelShell(event.target)) {
+        return;
+      }
+
+      setIsOpen(false);
+      if (closePanelTimeoutRef.current != null) {
+        return;
+      }
+      closePanelTimeoutRef.current = window.setTimeout(() => {
+        closePanelTimeoutRef.current = null;
+        onCloseRef.current();
+      }, 480);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDownCapture, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDownCapture, true);
+  }, [isOpen, visibleTask]);
+
   if (!visibleTask) {
     return null;
   }
 
   function requestClose() {
     setIsOpen(false);
-    window.setTimeout(onClose, 480);
+    if (closePanelTimeoutRef.current != null) {
+      return;
+    }
+    closePanelTimeoutRef.current = window.setTimeout(() => {
+      closePanelTimeoutRef.current = null;
+      onCloseRef.current();
+    }, 480);
   }
 
   function handleDescriptionKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -281,17 +340,17 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
   return (
     <div
       className={cn(
-        "fixed inset-0 z-40 bg-brand-black/60 transition-opacity duration-500 ease-out",
+        "pointer-events-none fixed inset-0 z-40 bg-brand-black/60 transition-opacity duration-500 ease-out",
         isOpen ? "opacity-100" : "opacity-0"
       )}
-      onMouseDown={requestClose}
+      aria-hidden={!isOpen}
     >
       <aside
+        ref={asideRef}
         className={cn(
-          "fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-500 ease-out-expo will-change-transform",
+          "pointer-events-auto fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-500 ease-out-expo will-change-transform",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
-        onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2 text-sm text-text-secondary">
@@ -456,6 +515,27 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
                   onClear={() => void clearCompletionDate()}
                 />
               ) : null}
+            </DetailRow>
+
+            <DetailRow icon={<BarChart2 size={18} />} label="Dias estimados">
+              <Input
+                type="number"
+                min={0}
+                step={0.25}
+                value={estimatedDraft}
+                onChange={(event) => setEstimatedDraft(event.target.value)}
+                onBlur={() => {
+                  const parsed =
+                    estimatedDraft.trim() === "" ? null : Number(estimatedDraft.replace(",", "."));
+                  const normalized = parsed === null || Number.isNaN(parsed) ? null : parsed;
+                  const current = visibleTask.estimatedDays ?? null;
+                  if (normalized !== current) {
+                    void patchTask({ estimatedDays: normalized });
+                  }
+                }}
+                className="h-10 border-border bg-brand-black/60"
+                placeholder="Opcional"
+              />
             </DetailRow>
 
             <DetailRow icon={<FolderKanban size={18} />} label="Disciplina">

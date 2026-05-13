@@ -23,6 +23,7 @@ const taskSchema = z.object({
   assigneeId: z.string().nullable().optional(),
   startDate: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
+  estimatedDays: z.number().nonnegative().nullable().optional(),
   completed: z.boolean().optional(),
   customFieldValues: z.array(z.object({
     id: z.string(),

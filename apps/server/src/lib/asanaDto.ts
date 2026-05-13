@@ -141,13 +141,22 @@ export function normalizePriority(value: string | null | undefined): string {
   return Priority.MEDIUM;
 }
 
-export function toTaskDto(task: TaskRecord, fallbackSection?: { id: string; name: string; projectId: string }) {
+export function toTaskDto(
+  task: TaskRecord,
+  fallbackSection?: { id: string; name: string; projectId: string; projectName?: string | null }
+) {
   const membership = task.memberships[0];
   const section = membership?.section;
   const project = membership?.project;
   const disciplineId = fallbackSection?.id ?? section?.id ?? "uncategorized";
   const disciplineName = fallbackSection?.name ?? section?.name ?? membership?.sectionName ?? "Sem secao";
   const projectId = fallbackSection?.projectId ?? project?.id ?? membership?.projectGid ?? "";
+  const projectName =
+    fallbackSection?.projectName != null && fallbackSection.projectName !== ""
+      ? fallbackSection.projectName
+      : project && "name" in project && typeof (project as { name?: string }).name === "string"
+        ? (project as { name: string }).name
+        : undefined;
 
   return {
     id: task.id,
@@ -163,6 +172,7 @@ export function toTaskDto(task: TaskRecord, fallbackSection?: { id: string; name
     creatorId: "",
     startDate: task.startOn,
     dueDate: task.dueOn ?? task.dueAt,
+    estimatedDays: task.estimatedDays ?? null,
     completed: task.completed,
     completedAt: task.completedAtAsana,
     createdAt: task.asanaCreatedAt ?? task.createdAt,
@@ -189,7 +199,8 @@ export function toTaskDto(task: TaskRecord, fallbackSection?: { id: string; name
       id: disciplineId,
       name: disciplineName,
       projectId,
-      type: DisciplineType.OTHER
+      type: DisciplineType.OTHER,
+      ...(projectName ? { projectName } : {})
     }
   };
 }

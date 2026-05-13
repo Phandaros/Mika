@@ -1,14 +1,14 @@
 import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { format, isBefore } from "date-fns";
+import { format } from "date-fns";
 import { Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { getDefaultDiscipline, Priority, TaskStatus, type DisciplineType, type Section, type Task, type User } from "shared";
+import { ProjectWorkloadTimeline } from "../components/project/ProjectWorkloadTimeline";
 import { SectionTab } from "../components/section/SectionTab";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
-import { Avatar } from "../components/shared/Avatar";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
@@ -185,11 +185,6 @@ export function ProjectDetailPage() {
     void updateTaskStatus.mutateAsync({ id: result.draggableId, status: nextStatus });
   }
 
-  function openUserTasks(userId: string) {
-    setAssigneeFilter(userId);
-    setActiveTab("list");
-  }
-
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -333,7 +328,15 @@ export function ProjectDetailPage() {
           />
         ) : null}
         {activeTab === "workload" ? (
-          <WorkloadView tasks={disciplineFilteredTasks} users={users} onUserClick={openUserTasks} />
+          <ProjectWorkloadTimeline
+            mode="project"
+            projectId={projectId}
+            users={users}
+            disciplineIdFilter={selectedDisciplineSet}
+            isActive={activeTab === "workload"}
+            onOpenTask={openTaskDetail}
+            updateTask={updateTask}
+          />
         ) : null}
       </div>
       <TaskDetail task={selectedTask} onClose={closeTaskDetail} />
@@ -830,67 +833,6 @@ function InlineField({ value, onSave }: { value: string; onSave: (value: string)
       }}
       className="h-9 min-w-36 border-border bg-brand-black/60"
     />
-  );
-}
-
-function WorkloadView({
-  tasks,
-  users,
-  onUserClick
-}: {
-  tasks: TaskWithDiscipline[];
-  users: User[];
-  onUserClick: (userId: string) => void;
-}) {
-  const rows = users.map((user) => {
-    const userTasks = tasks.filter((task) => task.assigneeId === user.id);
-    const done = userTasks.filter((task) => task.completed).length;
-    const inProgress = userTasks.filter((task) => task.status === TaskStatus.IN_PROGRESS).length;
-    const overdue = userTasks.filter(
-      (task) => task.dueDate && !task.completed && isBefore(new Date(task.dueDate), new Date())
-    ).length;
-    const progress = userTasks.length === 0 ? 0 : Math.round((done / userTasks.length) * 100);
-
-    return { user, total: userTasks.length, inProgress, overdue, progress };
-  });
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {rows.map((row) => (
-        <button
-          key={row.user.id}
-          type="button"
-          onClick={() => onUserClick(row.user.id)}
-          className="rounded-md border border-border bg-surface-card p-4 text-left transition hover:border-brand-orange hover:bg-surface-hover"
-        >
-          <div className="flex items-center gap-3">
-            <Avatar name={row.user.name} imageUrl={row.user.avatarUrl} />
-            <div>
-              <h3 className="font-semibold text-text-primary">{row.user.name}</h3>
-              <p className="text-xs text-text-secondary">{row.user.role}</p>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-            <Metric label="Total" value={row.total} />
-            <Metric label="Em andamento" value={row.inProgress} />
-            <Metric label="Atrasadas" value={row.overdue} />
-          </div>
-          <div className="mt-4 h-2 rounded-full bg-brand-black">
-            <div className="h-2 rounded-full bg-brand-orange" style={{ width: `${row.progress}%` }} />
-          </div>
-        </button>
-      ))}
-      {rows.length === 0 ? <EmptyState title="Nenhum usuario cadastrado" /> : null}
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-border bg-brand-black p-3">
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-1 text-lg font-bold text-text-primary">{value}</p>
-    </div>
   );
 }
 

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom
 import { AppShell } from "./components/layout/AppShell";
 import { LoadingSpinner } from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
+import { GlobalWorkloadPage } from "./pages/GlobalWorkloadPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyTasksPage } from "./pages/MyTasksPage";
@@ -65,6 +66,9 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+            <Route path="/workloads/geral" element={<GlobalWorkloadPage scope="general" />} />
+            <Route path="/workloads/civil" element={<GlobalWorkloadPage scope="civil" />} />
+            <Route path="/workloads/eletrico" element={<GlobalWorkloadPage scope="electrical" />} />
             <Route path="/my-tasks" element={<MyTasksPage />} />
             <Route element={<CoordinatorRoute />}>
               <Route path="/users" element={<UsersPage />} />

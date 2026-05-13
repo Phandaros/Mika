@@ -8,6 +8,7 @@ import projectsRoutes from "./projects.routes.js";
 import tasksRoutes from "./tasks.routes.js";
 import uploadsRoutes from "./uploads.routes.js";
 import usersRoutes from "./users.routes.js";
+import workloadRoutes from "./workload.routes.js";
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.use("/auth", authRoutes);
 router.use(activityRoutes);
 router.use(usersRoutes);
 router.use(projectsRoutes);
+router.use(workloadRoutes);
 router.use(sectionsRoutes);
 router.use(tasksRoutes);
 router.use(commentsRoutes);

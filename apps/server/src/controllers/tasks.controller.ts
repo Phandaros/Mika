@@ -18,6 +18,7 @@ interface TaskBody {
   assigneeId?: string | null;
   startDate?: string | null;
   dueDate?: string | null;
+  estimatedDays?: number | null;
   completed?: boolean;
   customFieldValues?: Array<{
     id: string;
@@ -135,6 +136,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
           dueOn: dateOnly(body.dueDate),
+          estimatedDays: body.estimatedDays === undefined ? undefined : body.estimatedDays,
           completed: body.completed ?? false,
           completedAtAsana: body.completed ? new Date() : null
         }
@@ -194,6 +196,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
           dueOn: dateOnly(body.dueDate),
+          estimatedDays: body.estimatedDays === undefined ? undefined : body.estimatedDays,
           completed,
           completedAtAsana:
             completed === undefined ? undefined : completed ? new Date() : null

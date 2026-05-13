@@ -679,14 +679,6 @@ export type TaskCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput 
   deleteMany?: Prisma.TaskCustomFieldValueScalarWhereInput | Prisma.TaskCustomFieldValueScalarWhereInput[]
 }
 
-export type NullableFloatFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type TaskCustomFieldValueCreateWithoutTaskInput = {
   id?: string
   customFieldGid: string
