@@ -8,17 +8,16 @@ import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { SearchableSelect } from "../components/ui/searchable-select";
 import { useProjects } from "../hooks/useProjects";
 
 export function ProjectsPage() {
   const { data: projects = [], isLoading } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
-  const [builderFilter, setBuilderFilter] = useState("all");
+  const [platformFilter, setPlatformFilter] = useState("all");
   const [sortMode, setSortMode] = useState("updatedAt-desc");
 
   useEffect(() => {
@@ -38,7 +37,7 @@ export function ProjectsPage() {
   const filteredProjects = useMemo(() => {
     const nextProjects = projects
       .filter((project) => statusFilter === "all" || project.status === statusFilter)
-      .filter((project) => builderFilter === "all" || projectBuilder(project) === builderFilter)
+      .filter((project) => platformFilter === "all" || (platformFilter === "none" ? !project.platform : project.platform === platformFilter))
       .slice();
 
     nextProjects.sort((a, b) => {
@@ -54,7 +53,7 @@ export function ProjectsPage() {
     });
 
     return nextProjects;
-  }, [builderFilter, projects, sortMode, statusFilter]);
+  }, [platformFilter, projects, sortMode, statusFilter]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -74,62 +73,56 @@ export function ProjectsPage() {
             </div>
           </div>
           <div className="relative flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Button variant="secondary" className="h-9" onClick={() => setShowFilters((current) => !current)}>
-                <ListFilter size={16} />
-                Filtrar
-              </Button>
-              {showFilters ? (
-                <div className="absolute right-0 top-11 z-30 grid w-80 gap-3 rounded-md border border-border bg-surface-card p-4 shadow-2xl">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      {Object.values(ProjectStatus).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={builderFilter} onValueChange={setBuilderFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as equipes/workspaces</SelectItem>
-                      {builderSuggestions.map((builder) => (
-                        <SelectItem key={builder} value={builder}>
-                          {builder}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-            </div>
-            <div className="relative">
-              <Button variant="secondary" className="h-9" onClick={() => setShowOptions((current) => !current)}>
-                <SlidersHorizontal size={16} />
-                Organizar
-              </Button>
-              {showOptions ? (
-                <div className="absolute right-0 top-11 z-30 grid w-64 gap-3 rounded-md border border-border bg-surface-card p-4 shadow-2xl">
-                  <Select value={sortMode} onValueChange={setSortMode}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="updatedAt-desc">Atualizados recentemente</SelectItem>
-                      <SelectItem value="name-asc">Nome A-Z</SelectItem>
-                      <SelectItem value="endDate-asc">Entrega mais próxima</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary" className="h-9">
+                  <ListFilter size={16} />
+                  Filtrar
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="grid w-80 gap-3">
+                <SearchableSelect
+                  value={statusFilter}
+                  options={[
+                    { value: "all", label: "Todos os status" },
+                    ...Object.values(ProjectStatus).map((status) => ({ value: status, label: status }))
+                  ]}
+                  searchPlaceholder="Buscar status..."
+                  onValueChange={setStatusFilter}
+                />
+                <SearchableSelect
+                  value={platformFilter}
+                  options={[
+                    { value: "all", label: "Todas as plataformas" },
+                    { value: "CAD", label: "CAD" },
+                    { value: "BIM", label: "BIM" },
+                    { value: "none", label: "Sem plataforma" }
+                  ]}
+                  searchPlaceholder="Buscar plataforma..."
+                  onValueChange={setPlatformFilter}
+                />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary" className="h-9">
+                  <SlidersHorizontal size={16} />
+                  Organizar
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="grid w-64 gap-3">
+                <SearchableSelect
+                  value={sortMode}
+                  options={[
+                    { value: "updatedAt-desc", label: "Atualizados recentemente" },
+                    { value: "name-asc", label: "Nome A-Z" },
+                    { value: "endDate-asc", label: "Entrega mais proxima" }
+                  ]}
+                  searchPlaceholder="Buscar ordenacao..."
+                  onValueChange={setSortMode}
+                />
+              </PopoverContent>
+            </Popover>
             <Button className="h-9" onClick={() => setShowCreateModal(true)}>
               <Plus size={16} />
               Adicionar projeto
@@ -157,14 +150,14 @@ export function ProjectsPage() {
 function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
   return (
     <div className="overflow-auto rounded-md border border-border">
-        <table className="w-full min-w-[1280px] border-collapse bg-surface-card text-sm">
+      <table className="w-full min-w-[1160px] border-collapse bg-surface-card text-sm">
         <thead className="bg-surface text-left text-text-secondary">
           <tr>
             <th className="w-[320px] border-r border-border p-3 font-semibold">Nome</th>
-            <th className="w-[180px] border-r border-border p-3 font-semibold">Equipe</th>
-            <th className="w-[180px] border-r border-border p-3 font-semibold">Responsável</th>
+            <th className="w-[130px] border-r border-border p-3 font-semibold">Plataforma</th>
+            <th className="w-[130px] border-r border-border p-3 font-semibold">Área</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Status</th>
-            <th className="w-[260px] border-r border-border p-3 font-semibold">Campos</th>
+            <th className="w-[260px] border-r border-border p-3 font-semibold">Campos Asana</th>
             <th className="w-[360px] border-r border-border p-3 font-semibold">Seções</th>
             <th className="w-[120px] border-r border-border p-3 font-semibold">Tarefas</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Entrega</th>
@@ -189,15 +182,19 @@ function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
                     {project.name}
                   </Link>
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">{projectBuilder(project) ?? "-"}</td>
-                <td className="border-r border-border p-3 text-text-secondary">{project.owner?.name ?? "-"}</td>
+                <td className="border-r border-border p-3 text-text-secondary">
+                  {project.platform ? <Badge tone="muted">{project.platform}</Badge> : "-"}
+                </td>
+                <td className="border-r border-border p-3 text-text-secondary">{formatArea(project.areaM2)}</td>
                 <td className="border-r border-border p-3">
                   <Badge tone="orange">{project.status}</Badge>
                 </td>
                 <td className="border-r border-border p-3">
                   <div className="flex flex-wrap gap-1.5">
                     {project.customFields?.slice(0, 4).map((field) => (
-                      <Badge key={field.id} tone={field.isImportant ? "orange" : "muted"}>{field.name}</Badge>
+                      <Badge key={field.id} tone={field.isImportant ? "orange" : "muted"}>
+                        {field.name}
+                      </Badge>
                     ))}
                     {(project.customFields?.length ?? 0) > 4 ? <Badge tone="muted">Mais {(project.customFields?.length ?? 0) - 4}</Badge> : null}
                     {!project.customFields?.length ? <span className="text-text-muted">-</span> : null}
@@ -274,6 +271,14 @@ function ProjectModal({ title, children, onClose }: { title: string; children: R
 
 function projectBuilder(project: Project): string | null {
   return project.builder ?? project.client ?? null;
+}
+
+function formatArea(areaM2: number | null): string {
+  if (areaM2 === null) {
+    return "-";
+  }
+
+  return `${areaM2.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} m²`;
 }
 
 function closeCreateModal(

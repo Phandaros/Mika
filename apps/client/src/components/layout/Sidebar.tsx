@@ -7,16 +7,19 @@ import {
   FolderKanban,
   Home,
   Inbox,
+  ListTodo,
   Plus,
   Target,
   Users
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Role } from "shared";
 import logoUrl from "../../assets/logo.svg";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../hooks/useAuth";
 import { useUiStore } from "../../store/uiStore";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 const navItems = [
   { to: "/", label: "Pagina inicial", icon: Home },
@@ -28,7 +31,10 @@ const navItems = [
 
 export function Sidebar() {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
+  const openTaskCreate = useUiStore((state) => state.openTaskCreate);
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
   const roleWeight: Record<Role, number> = {
     [Role.INTERN]: 0,
     [Role.DESIGNER]: 1,
@@ -45,13 +51,43 @@ export function Sidebar() {
     >
       <div className="flex h-14 items-center gap-3 border-b border-border-subtle px-4">
         <img src={logoUrl} alt="MK Projetos" className="h-9 w-auto" />
-        <NavLink
-          to="/projects?new=1"
-          className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface-card px-3 text-xs font-semibold text-text-primary hover:bg-surface-hover"
-        >
-          <Plus size={15} />
-          Criar
-        </NavLink>
+        <Popover open={createOpen} onOpenChange={setCreateOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface-card px-3 text-xs font-semibold text-text-primary hover:bg-surface-hover"
+            >
+              <Plus size={15} />
+              Criar
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-2">
+            <div className="grid gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateOpen(false);
+                  openTaskCreate();
+                }}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover"
+              >
+                <ListTodo size={17} className="text-brand-orange" />
+                Criar tarefa
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateOpen(false);
+                  navigate("/projects?new=1");
+                }}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover"
+              >
+                <FolderKanban size={17} className="text-brand-orange" />
+                Criar projeto
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       <nav className="grid gap-1 border-b border-border-subtle p-3">
         {navItems

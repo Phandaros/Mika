@@ -1,16 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Priority, TaskStatus, type User } from "shared";
 import { useCreateTask } from "../../hooks/useTasks";
+import { PriorityOptionPill, priorityColors } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
+import { DateRangePicker } from "../ui/date-picker";
+import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
-import {
-  MK_SELECT_EMPTY_VALUE,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../ui/select";
+import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
 
 interface TaskFormProps {
@@ -31,7 +27,7 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const days = estimatedDays.trim() === "" ? null : Number(estimatedDays);
+    const days = parseDecimalInput(estimatedDays);
     await createTask.mutateAsync({
       title,
       description: description || null,
@@ -59,47 +55,37 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
         placeholder="Descrição"
       />
       <div className="grid gap-3 sm:grid-cols-3">
-        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(Priority).map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={assigneeId || MK_SELECT_EMPTY_VALUE}
-          onValueChange={(value) => setAssigneeId(value === MK_SELECT_EMPTY_VALUE ? "" : value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Sem responsavel" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={MK_SELECT_EMPTY_VALUE}>Sem responsavel</SelectItem>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={priority}
+          options={Object.values(Priority).map((option) => ({
+            value: option,
+            label: option,
+            color: priorityColors[option],
+            render: <PriorityOptionPill priority={option} />
+          }))}
+          onValueChange={(value) => setPriority(value as Priority)}
+        />
+        <SearchableSelect
+          value={assigneeId || "none"}
+          options={[
+            { value: "none", label: "Sem responsavel" },
+            ...users.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+          ]}
+          searchPlaceholder="Buscar responsavel..."
+          onValueChange={(value) => setAssigneeId(value === "none" ? "" : value)}
+        />
       </div>
       <fieldset className="grid gap-3 rounded-md border border-border p-3">
         <legend className="px-1 text-sm font-semibold text-text-secondary">Data de conclusao</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
-          <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
-        </div>
-        <Input
-          type="number"
-          min={0}
-          step={0.25}
+        <DateRangePicker
+          startDate={startDate}
+          endDate={dueDate}
+          onStartDateChange={(value) => setStartDate(value ?? "")}
+          onEndDateChange={(value) => setDueDate(value ?? "")}
+        />
+        <DecimalInput
           value={estimatedDays}
-          onChange={(event) => setEstimatedDays(event.target.value)}
+          onValueChange={setEstimatedDays}
           placeholder="Dias estimados (opcional)"
         />
       </fieldset>

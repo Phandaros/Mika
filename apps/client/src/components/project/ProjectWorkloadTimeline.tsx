@@ -25,6 +25,7 @@ import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { cn, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
+import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
 import {
   ContextMenu,
@@ -34,13 +35,7 @@ import {
   ContextMenuTrigger
 } from "../ui/context-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../ui/select";
+import { SearchableSelect } from "../ui/searchable-select";
 import { WORKLOAD_TASK_DRAG_MIME, WorkloadUndatedPanel } from "./WorkloadUndatedPanel";
 
 const DAY_W = 44;
@@ -1028,15 +1023,16 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           </Button>
           <div className="flex items-center gap-2 text-xs text-text-secondary">
             <Group size={14} />
-            <Select value={grouping} onValueChange={(value) => setGrouping(value as WorkloadGrouping)}>
-              <SelectTrigger className="h-8 w-[150px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="assignee">Responsavel</SelectItem>
-                <SelectItem value="section">Secao</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={grouping}
+              options={[
+                { value: "assignee", label: "Responsavel" },
+                { value: "section", label: "Secao" }
+              ]}
+              triggerClassName="h-8 w-[150px] text-xs"
+              searchPlaceholder="Buscar agrupamento..."
+              onValueChange={(value) => setGrouping(value as WorkloadGrouping)}
+            />
           </div>
           <Button
             type="button"
@@ -1079,68 +1075,67 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
       {filtersOpen ? (
         <div className="grid gap-2 rounded-md border border-border bg-bg-1 p-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Select value={sectionFilter} onValueChange={setSectionFilter}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Secao" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_FILTER_VALUE}>Todas as secoes</SelectItem>
-              {sectionOptions.map(([id, label]) => (
-                <SelectItem key={id} value={id}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Responsavel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_FILTER_VALUE}>Todos os responsaveis</SelectItem>
-              {assigneeOptions.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_FILTER_VALUE}>Todos os status</SelectItem>
-              {Object.values(TaskStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_FILTER_VALUE}>Todas as prioridades</SelectItem>
-              {Object.values(Priority).map((priority) => (
-                <SelectItem key={priority} value={priority}>
-                  {priority}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={completionFilter} onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}>
-            <SelectTrigger className="h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="open">Abertas</SelectItem>
-              <SelectItem value="completed">Concluidas</SelectItem>
-              <SelectItem value="all">Todas</SelectItem>
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={sectionFilter}
+            options={[
+              { value: ALL_FILTER_VALUE, label: "Todas as secoes" },
+              ...sectionOptions.map(([id, label]) => ({ value: id, label }))
+            ]}
+            triggerClassName="h-9 text-xs"
+            searchPlaceholder="Buscar secao..."
+            onValueChange={setSectionFilter}
+          />
+          <SearchableSelect
+            value={assigneeFilter}
+            options={[
+              { value: ALL_FILTER_VALUE, label: "Todos os responsaveis" },
+              ...assigneeOptions.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+            ]}
+            triggerClassName="h-9 text-xs"
+            searchPlaceholder="Buscar responsavel..."
+            onValueChange={setAssigneeFilter}
+          />
+          <SearchableSelect
+            value={statusFilter}
+            options={[
+              { value: ALL_FILTER_VALUE, label: "Todos os status" },
+              ...Object.values(TaskStatus).map((status) => ({
+                value: status,
+                label: status,
+                color: taskStatusColors[status],
+                render: <StatusOptionPill label={status} color={taskStatusColors[status]} />
+              }))
+            ]}
+            triggerClassName="h-9 text-xs"
+            searchPlaceholder="Buscar status..."
+            onValueChange={setStatusFilter}
+          />
+          <SearchableSelect
+            value={priorityFilter}
+            options={[
+              { value: ALL_FILTER_VALUE, label: "Todas as prioridades" },
+              ...Object.values(Priority).map((priority) => ({
+                value: priority,
+                label: priority,
+                color: priorityColors[priority],
+                render: <PriorityOptionPill priority={priority} />
+              }))
+            ]}
+            triggerClassName="h-9 text-xs"
+            searchPlaceholder="Buscar prioridade..."
+            onValueChange={setPriorityFilter}
+          />
+          <SearchableSelect
+            value={completionFilter}
+            options={[
+              { value: "open", label: "Abertas" },
+              { value: "completed", label: "Concluidas" },
+              { value: "all", label: "Todas" }
+            ]}
+            triggerClassName="h-9 text-xs"
+            searchPlaceholder="Buscar conclusao..."
+            onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
+          />
         </div>
       ) : null}
 

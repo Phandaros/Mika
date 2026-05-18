@@ -5,14 +5,7 @@ import { useCreateProject, useUpdateProject } from "../../hooks/useProjects";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import {
-  MK_SELECT_EMPTY_VALUE,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../ui/select";
+import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
 
 interface ProjectFormProps {
@@ -122,21 +115,16 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
         </label>
         <label className="grid gap-2 text-sm font-semibold text-text-secondary">
           Plataforma
-          <Select
-            value={platform || MK_SELECT_EMPTY_VALUE}
-            onValueChange={(value) =>
-              setPlatform(value === MK_SELECT_EMPTY_VALUE ? "" : (value as "CAD" | "BIM"))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecionar plataforma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={MK_SELECT_EMPTY_VALUE}>Selecionar plataforma</SelectItem>
-              <SelectItem value="CAD">CAD</SelectItem>
-              <SelectItem value="BIM">BIM</SelectItem>
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={platform || "none"}
+            options={[
+              { value: "none", label: "Selecionar plataforma" },
+              { value: "CAD", label: "CAD" },
+              { value: "BIM", label: "BIM" }
+            ]}
+            searchPlaceholder="Buscar plataforma..."
+            onValueChange={(value) => setPlatform(value === "none" ? "" : (value as "CAD" | "BIM"))}
+          />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-text-secondary">
           Area (m2)
@@ -154,18 +142,12 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
         onChange={(event) => setDescription(event.target.value)}
         placeholder="Descrição"
       />
-      <Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus)}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(ProjectStatus).map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={status}
+        options={Object.values(ProjectStatus).map((option) => ({ value: option, label: option }))}
+        searchPlaceholder="Buscar status..."
+        onValueChange={(value) => setStatus(value as ProjectStatus)}
+      />
       <fieldset className="grid gap-3">
         <legend className="text-sm font-semibold text-text-secondary">Disciplinas do projeto</legend>
         {showDisciplineError ? <p className="text-sm font-semibold text-red-400">Selecione pelo menos uma disciplina.</p> : null}

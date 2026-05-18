@@ -17,18 +17,13 @@ import { TaskStatus, type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Avatar } from "../components/shared/Avatar";
+import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../components/ui/select";
+import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
@@ -86,6 +81,25 @@ export function MyTasksPage() {
   const createTarget = disciplineOptions.find((option) => option.key === selectedCreateTarget) ?? disciplineOptions[0];
   const createTask = useCreateTask(createTarget?.projectId ?? "", createTarget?.disciplineId ?? "");
   const search = searchParams.get("search") ?? "";
+  const statusOptions = [
+    { value: "all", label: "Todos status" },
+    ...Object.values(TaskStatus).map((status) => ({
+      value: status,
+      label: statusLabel(status),
+      color: taskStatusColors[status],
+      render: <StatusOptionPill label={statusLabel(status)} color={taskStatusColors[status]} />
+    }))
+  ];
+  const completionOptions = [
+    { value: "open", label: "Nao concluidas" },
+    { value: "completed", label: "Concluidas" },
+    { value: "all", label: "Todas" }
+  ];
+  const sortOptions = [
+    { value: "dueDate", label: "Entrega" },
+    { value: "title", label: "Nome" },
+    { value: "project", label: "Projeto" }
+  ];
 
   const myTasks = useMemo(
     () =>
@@ -243,45 +257,33 @@ export function MyTasksPage() {
           </button>
           <label className="inline-flex items-center gap-1.5">
             <CheckCircle2 size={15} />
-            <Select value={completionFilter} onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}>
-              <SelectTrigger className="h-8 w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">Nao concluidas</SelectItem>
-                <SelectItem value="completed">Concluidas</SelectItem>
-                <SelectItem value="all">Todas</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={completionFilter}
+              options={completionOptions}
+              triggerClassName="h-8 w-40"
+              searchPlaceholder="Buscar conclusao..."
+              onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
+            />
           </label>
           <label className="inline-flex items-center gap-1.5">
             <Filter size={15} />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos status</SelectItem>
-                {Object.values(TaskStatus).map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {statusLabel(status)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={statusFilter}
+              options={statusOptions}
+              triggerClassName="h-8 w-40"
+              searchPlaceholder="Buscar status..."
+              onValueChange={setStatusFilter}
+            />
           </label>
           <label className="inline-flex items-center gap-1.5">
             <ArrowDownUp size={15} />
-            <Select value={sortMode} onValueChange={(value) => setSortMode(value as typeof sortMode)}>
-              <SelectTrigger className="h-8 w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dueDate">Entrega</SelectItem>
-                <SelectItem value="title">Nome</SelectItem>
-                <SelectItem value="project">Projeto</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={sortMode}
+              options={sortOptions}
+              triggerClassName="h-8 w-36"
+              searchPlaceholder="Buscar ordenacao..."
+              onValueChange={(value) => setSortMode(value as typeof sortMode)}
+            />
           </label>
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2" />
@@ -293,21 +295,12 @@ export function MyTasksPage() {
       {showCreate ? (
         <div className="grid gap-2 border-b border-border py-3 lg:grid-cols-[minmax(220px,340px)_minmax(260px,1fr)_auto]">
           {disciplineOptions.length > 0 ? (
-            <Select
+            <SearchableSelect
               value={selectedCreateTarget || createTarget?.key || disciplineOptions[0]!.key}
+              options={disciplineOptions.map((option) => ({ value: option.key, label: option.label }))}
+              searchPlaceholder="Buscar projeto ou secao..."
               onValueChange={setSelectedCreateTarget}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {disciplineOptions.map((option) => (
-                  <SelectItem key={option.key} value={option.key}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           ) : null}
           <Input
             value={draftTitle}
@@ -435,18 +428,18 @@ function ListView({
                   </td>
                   <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{formatDateOnly(task.dueDate, "d MMM")}</td>
                   <td className="border-l border-border p-1.5">
-                    <Select value={task.status} onValueChange={(value) => onStatusChange(task, value as TaskStatus)}>
-                      <SelectTrigger className="h-7 w-36 py-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(TaskStatus).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {statusLabel(status)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      value={task.status}
+                      options={Object.values(TaskStatus).map((status) => ({
+                        value: status,
+                        label: statusLabel(status),
+                        color: taskStatusColors[status],
+                        render: <StatusOptionPill label={statusLabel(status)} color={taskStatusColors[status]} />
+                      }))}
+                      triggerClassName="h-7 w-40 py-0"
+                      searchPlaceholder="Buscar status..."
+                      onValueChange={(value) => onStatusChange(task, value as TaskStatus)}
+                    />
                   </td>
                 </tr>
               ))}

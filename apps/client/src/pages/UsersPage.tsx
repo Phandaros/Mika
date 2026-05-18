@@ -7,13 +7,7 @@ import { Avatar } from "../components/shared/Avatar";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../components/ui/select";
+import { SearchableSelect } from "../components/ui/searchable-select";
 import { useCreateUser, useDeactivateUser, useResetUserPassword, useUsers } from "../hooks/useUsers";
 
 export function UsersPage() {
@@ -133,18 +127,12 @@ function CreateUserForm({ onSubmit, loading }: { onSubmit: (payload: CreateUserR
       <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome" required />
       <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" required />
       <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha inicial" required />
-      <Select value={role} onValueChange={(value) => setRole(value as Role)}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(Role).map((option) => (
-            <SelectItem key={option} value={option}>
-              {roleLabel(option)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={role}
+        options={Object.values(Role).map((option) => ({ value: option, label: roleLabel(option) }))}
+        searchPlaceholder="Buscar perfil..."
+        onValueChange={(value) => setRole(value as Role)}
+      />
       <Button type="submit" disabled={loading}>
         Criar usuário
       </Button>

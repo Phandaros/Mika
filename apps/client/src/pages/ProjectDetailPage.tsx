@@ -1,38 +1,39 @@
 import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
+import { ArrowDownUp, Edit3, ExternalLink, Filter, Group, Inbox, Plus, Settings2, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { getDefaultDiscipline, Priority, TaskStatus, type DisciplineType, type Section, type Task, type User } from "shared";
+import { Priority, TaskStatus, type DisciplineType, type Section, type Task, type User } from "shared";
 import { ProjectWorkloadTimeline } from "../components/project/ProjectWorkloadTimeline";
-import { SectionTab } from "../components/section/SectionTab";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
+import {
+  enumColor,
+  PriorityOptionPill,
+  priorityColors
+} from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskDetail } from "../components/task/TaskDetail";
-import { TaskForm } from "../components/task/TaskForm";
 import { Button } from "../components/ui/button";
+import { DatePicker } from "../components/ui/date-picker";
+import { DecimalInput, parseDecimalInput } from "../components/ui/decimal-input";
 import { Input } from "../components/ui/input";
-import {
-  MK_SELECT_EMPTY_VALUE,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { SearchableSelect } from "../components/ui/searchable-select";
 import { useProject, useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import { cn, formatDateOnly } from "../lib/utils";
+import { useUiStore } from "../store/uiStore";
 
 type ProjectTab = "kanban" | "list" | "workload";
 type SortKey = "title" | "discipline" | "assignee" | "priority" | "status" | "dueDate";
 type SortDirection = "asc" | "desc";
 type CompletionFilter = "open" | "completed" | "all";
+type TaskScope = "general" | "civil" | "electrical";
 
 type TaskWithDiscipline = Task & {
   discipline: {
@@ -74,6 +75,10 @@ function taskSortValue(task: TaskWithDiscipline, key: SortKey): string {
     return task.assignee?.name ?? "";
   }
 
+  if (key === "status") {
+    return customStatusValue(task) ?? "";
+  }
+
   return String(task[key] ?? "");
 }
 
@@ -85,7 +90,7 @@ export function ProjectDetailPage() {
   const updateTask = useUpdateTask(projectId ?? "");
   const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
   const [activeTab, setActiveTab] = useState<ProjectTab>("kanban");
-  const [selectedDisciplineIds, setSelectedDisciplineIds] = useState<string[]>([]);
+  const [taskScope, setTaskScope] = useState<TaskScope>("general");
   const [statusFilter, setStatusFilter] = useState("all");
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
@@ -95,7 +100,7 @@ export function ProjectDetailPage() {
   const [selectedTask, setSelectedTask] = useState<TaskWithDiscipline | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const openTaskCreate = useUiStore((state) => state.openTaskCreate);
 
   const { data: users = [] } = useUsers();
   const { data: projects = [] } = useProjects();
@@ -145,7 +150,13 @@ export function ProjectDetailPage() {
     );
   }
 
-  const selectedDisciplineSet = useMemo(() => new Set(selectedDisciplineIds), [selectedDisciplineIds]);
+  const scopedDisciplineIds = useMemo(() => {
+    if (taskScope === "general") {
+      return new Set<string>();
+    }
+
+    return new Set(disciplines.filter((discipline) => sectionScope(discipline) === taskScope).map((discipline) => discipline.id));
+  }, [disciplines, taskScope]);
   const builderSuggestions = useMemo(
     () =>
       Array.from(
@@ -155,12 +166,12 @@ export function ProjectDetailPage() {
   );
 
   const disciplineFilteredTasks = allTasks.filter(
-    (task) => selectedDisciplineSet.size === 0 || selectedDisciplineSet.has(task.discipline.id)
+    (task) => scopedDisciplineIds.size === 0 || scopedDisciplineIds.has(task.discipline.id)
   );
   const visibleDisciplines =
-    selectedDisciplineSet.size === 0
+    scopedDisciplineIds.size === 0
       ? disciplines
-      : disciplines.filter((discipline) => selectedDisciplineSet.has(discipline.id));
+      : disciplines.filter((discipline) => scopedDisciplineIds.has(discipline.id));
 
   const listTasks = disciplineFilteredTasks
     .filter((task) => {
@@ -170,7 +181,7 @@ export function ProjectDetailPage() {
 
       return completionFilter === "completed" ? task.completed : !task.completed;
     })
-    .filter((task) => statusFilter === "all" || task.status === statusFilter)
+    .filter((task) => statusFilter === "all" || customStatusValue(task) === statusFilter)
     .filter((task) => assigneeFilter === "all" || (assigneeFilter === "none" ? !task.assigneeId : task.assigneeId === assigneeFilter))
     .filter((task) => priorityFilter === "all" || task.priority === priorityFilter)
     .sort((a, b) => {
@@ -213,12 +224,6 @@ export function ProjectDetailPage() {
 
   const taskFormDiscipline = visibleDisciplines[0] ?? disciplines[0] ?? null;
   const isTasksLoading = isFetching && !isLoading;
-
-  function toggleDisciplineFilter(disciplineId: string) {
-    setSelectedDisciplineIds((current) =>
-      current.includes(disciplineId) ? current.filter((id) => id !== disciplineId) : [...current, disciplineId]
-    );
-  }
 
   return (
     <div className="grid gap-6">
@@ -265,7 +270,10 @@ export function ProjectDetailPage() {
             <Edit3 size={16} />
             Editar projeto
           </Button>
-          <Button onClick={() => setShowTaskForm((current) => !current)} disabled={!taskFormDiscipline}>
+          <Button
+            onClick={() => openTaskCreate({ projectId, sectionId: taskFormDiscipline?.id })}
+            disabled={!taskFormDiscipline}
+          >
             <Plus size={16} />
             Criar tarefa
           </Button>
@@ -282,25 +290,10 @@ export function ProjectDetailPage() {
           />
         </ProjectModal>
       ) : null}
-      {showTaskForm && taskFormDiscipline ? (
-        <TaskForm projectId={projectId} disciplineId={taskFormDiscipline.id} users={users} />
-      ) : null}
-
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant={selectedDisciplineIds.length === 0 ? "primary" : "secondary"}
-          onClick={() => setSelectedDisciplineIds([])}
-        >
-          Tudo
-        </Button>
-        {disciplines.map((discipline) => (
-          <SectionTab
-            key={discipline.id}
-            section={discipline}
-            active={selectedDisciplineSet.has(discipline.id)}
-            onClick={() => toggleDisciplineFilter(discipline.id)}
-          />
-        ))}
+        <ScopeTab active={taskScope === "general"} label="Geral" onClick={() => setTaskScope("general")} />
+        <ScopeTab active={taskScope === "civil"} label="Civil" onClick={() => setTaskScope("civil")} />
+        <ScopeTab active={taskScope === "electrical"} label="Elétrica" onClick={() => setTaskScope("electrical")} />
       </div>
 
       <div className="min-w-0">
@@ -334,7 +327,6 @@ export function ProjectDetailPage() {
             onAssigneeFilterChange={setAssigneeFilter}
             onPriorityFilterChange={setPriorityFilter}
             onSort={handleSort}
-            onTaskStatusChange={(taskId, status) => void updateTask.mutateAsync({ id: taskId, payload: { status } })}
             onTaskCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
             onTaskAssigneeChange={(taskId, assigneeId) =>
               void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } })
@@ -350,7 +342,7 @@ export function ProjectDetailPage() {
             mode="project"
             projectId={projectId}
             users={users}
-            disciplineIdFilter={selectedDisciplineSet}
+            disciplineIdFilter={scopedDisciplineIds}
             isActive={activeTab === "workload"}
             onOpenTask={openTaskDetail}
             onTaskUpdated={handleTimelineTaskUpdated}
@@ -406,6 +398,14 @@ function KanbanView({
         </div>
       </div>
     </DragDropContext>
+  );
+}
+
+function ScopeTab({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <Button variant={active ? "primary" : "secondary"} onClick={onClick}>
+      {label}
+    </Button>
   );
 }
 
@@ -550,7 +550,6 @@ function ListView({
   onAssigneeFilterChange,
   onPriorityFilterChange,
   onSort,
-  onTaskStatusChange,
   onTaskCompletionChange,
   onTaskAssigneeChange,
   onTaskCustomFieldChange,
@@ -572,73 +571,119 @@ function ListView({
   onAssigneeFilterChange: (value: string) => void;
   onPriorityFilterChange: (value: string) => void;
   onSort: (key: SortKey) => void;
-  onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
-  onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | null) => void;
+  onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | number | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
 }) {
-  const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDirection === "asc" ? " ↑" : " ↓") : "");
-  const customFieldNames = Array.from(
-    new Set(tasks.flatMap((task) => task.customFieldValues?.map((field) => field.customFieldName ?? "Campo") ?? []))
-  );
+  const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDirection === "asc" ? " ?" : " ?") : "");
+  const customFieldNames = uniqueCustomFieldNames(tasks);
+  const groupedTasks = groupTasksByScope(tasks);
+  const customStatusOptions = [
+    { value: "all", label: "Todos os status" },
+    ...uniqueCustomStatusOptions(tasks).map((status) => ({ value: status, label: status, color: enumColor(status) }))
+  ];
+  const assigneeOptions = [
+    { value: "all", label: "Todos responsaveis" },
+    { value: "none", label: "Sem responsavel" },
+    ...users.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+  ];
+  const priorityOptions = [
+    { value: "all", label: "Todas prioridades" },
+    ...Object.values(Priority).map((priority) => ({
+      value: priority,
+      label: priority,
+      color: priorityColors[priority],
+      render: <PriorityOptionPill priority={priority} />
+    }))
+  ];
+  const completionOptions = [
+    { value: "open", label: "Nao concluidas" },
+    { value: "completed", label: "Concluidas" },
+    { value: "all", label: "Todas" }
+  ];
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 rounded-md border border-border bg-surface-card p-4 md:grid-cols-5">
-        <Select value={completionFilter} onValueChange={(value) => onCompletionFilterChange(value as CompletionFilter)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="open">Nao concluidas</SelectItem>
-            <SelectItem value="completed">Concluidas</SelectItem>
-            <SelectItem value="all">Todas</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {Object.values(TaskStatus).map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={assigneeFilter} onValueChange={onAssigneeFilterChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos responsaveis</SelectItem>
-            <SelectItem value="none">Sem responsavel</SelectItem>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={onPriorityFilterChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas prioridades</SelectItem>
-            {Object.values(Priority).map((priority) => (
-              <SelectItem key={priority} value={priority}>
-                {priority}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="secondary" onClick={() => onSort("dueDate")}>
-          Entrega{sortIndicator("dueDate")}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="secondary" className="h-8">
+                <Filter size={15} />
+                Filtrar
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-80 gap-3">
+              <SearchableSelect
+                value={completionFilter}
+                options={completionOptions}
+                searchPlaceholder="Buscar conclusao..."
+                onValueChange={(value) => onCompletionFilterChange(value as CompletionFilter)}
+              />
+              <SearchableSelect
+                value={statusFilter}
+                options={customStatusOptions}
+                searchPlaceholder="Buscar status Asana..."
+                emptyText="Nenhum status customizado encontrado"
+                onValueChange={onStatusFilterChange}
+              />
+              <SearchableSelect
+                value={assigneeFilter}
+                options={assigneeOptions}
+                searchPlaceholder="Buscar responsavel..."
+                onValueChange={onAssigneeFilterChange}
+              />
+              <SearchableSelect
+                value={priorityFilter}
+                options={priorityOptions}
+                searchPlaceholder="Buscar prioridade..."
+                onValueChange={onPriorityFilterChange}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="secondary" className="h-8">
+                <ArrowDownUp size={15} />
+                Ordenar
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-64 gap-2">
+              {(["dueDate", "title", "discipline", "assignee", "priority", "status"] as SortKey[]).map((key) => (
+                <Button key={key} variant="ghost" className="h-8 justify-start px-2" onClick={() => onSort(key)}>
+                  {sortLabel(key)}
+                  {sortIndicator(key)}
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="secondary" className="h-8">
+                <Group size={15} />
+                Agrupar
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-64 text-sm text-text-secondary">
+              Agrupado por Geral, Civil e Eletrica.
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="secondary" className="h-8">
+                <Settings2 size={15} />
+                Opcoes
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-64 gap-2">
+              <Button variant="ghost" className="h-8 justify-start px-2" onClick={() => onSort("dueDate")}>
+                Entrega{sortIndicator("dueDate")}
+              </Button>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <span className="text-sm font-semibold text-text-secondary">{tasks.length} tarefas</span>
       </div>
       {isLoading ? (
         <div className="grid gap-3 md:grid-cols-3">
@@ -647,98 +692,99 @@ function ListView({
           <TaskCardSkeleton />
         </div>
       ) : null}
-      {!isLoading ? <div className="overflow-auto rounded-md border border-border">
-        <table className="w-full min-w-[980px] border-collapse bg-surface-card text-sm">
-          <thead className="bg-surface">
-            <tr className="text-left text-text-secondary">
-              <SortableHeader label="Tarefa" sortKey="title" onSort={onSort} indicator={sortIndicator("title")} />
-              <SortableHeader label="Disciplina" sortKey="discipline" onSort={onSort} indicator={sortIndicator("discipline")} />
-              <SortableHeader label="Responsável" sortKey="assignee" onSort={onSort} indicator={sortIndicator("assignee")} />
-              <SortableHeader label="Prioridade" sortKey="priority" onSort={onSort} indicator={sortIndicator("priority")} />
-              <SortableHeader label="Status" sortKey="status" onSort={onSort} indicator={sortIndicator("status")} />
-              <SortableHeader label="Entrega" sortKey="dueDate" onSort={onSort} indicator={sortIndicator("dueDate")} />
-              {customFieldNames.map((name) => (
-                <th key={name} className="p-3 font-semibold">{name}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {disciplines.map((discipline) => {
-              const disciplineTasks = tasks.filter((task) => task.discipline.id === discipline.id);
-              const catalogItem = getDefaultDiscipline(discipline.type);
-
-              return (
-                <GroupedDisciplineRows
-                  key={discipline.id}
-                  discipline={discipline}
-                  disciplineColor={catalogItem.color}
-                  tasks={disciplineTasks}
+      {!isLoading ? (
+        <div className="overflow-auto rounded-md border border-border">
+          <table className="w-full min-w-[1480px] border-collapse bg-surface-card text-sm">
+            <thead className="bg-surface">
+              <tr className="text-left text-text-secondary">
+                <SortableHeader label="Tarefa" sortKey="title" onSort={onSort} indicator={sortIndicator("title")} className="w-[420px]" />
+                <SortableHeader label="Disciplina" sortKey="discipline" onSort={onSort} indicator={sortIndicator("discipline")} />
+                <SortableHeader label="Responsavel" sortKey="assignee" onSort={onSort} indicator={sortIndicator("assignee")} />
+                <SortableHeader label="Prioridade" sortKey="priority" onSort={onSort} indicator={sortIndicator("priority")} />
+                <SortableHeader label="Entrega" sortKey="dueDate" onSort={onSort} indicator={sortIndicator("dueDate")} />
+                {customFieldNames.map((name) => (
+                  <th key={name} className="min-w-40 p-3 font-semibold">
+                    {name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {groupedTasks.map((group) => (
+                <GroupedScopeRows
+                  key={group.scope}
+                  label={group.label}
+                  color={group.color}
+                  tasks={group.tasks}
                   users={users}
                   completionBusy={completionBusy}
-                  onTaskStatusChange={onTaskStatusChange}
                   onTaskCompletionChange={onTaskCompletionChange}
                   onTaskAssigneeChange={onTaskAssigneeChange}
                   onTaskCustomFieldChange={onTaskCustomFieldChange}
                   onOpenTask={onOpenTask}
                   customFieldNames={customFieldNames}
                 />
-              );
-            })}
-          </tbody>
-        </table>
-      </div> : null}
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
       {disciplines.length === 0 ? <EmptyState title="Nenhuma disciplina selecionada no projeto" /> : null}
     </div>
   );
 }
 
-function GroupedDisciplineRows({
-  discipline,
-  disciplineColor,
+function GroupedScopeRows({
+  label,
+  color,
   tasks,
   users,
   completionBusy,
-  onTaskStatusChange,
   onTaskCompletionChange,
   onTaskAssigneeChange,
   onTaskCustomFieldChange,
   onOpenTask,
   customFieldNames
 }: {
-  discipline: Section;
-  disciplineColor: string;
+  label: string;
+  color: string;
   tasks: TaskWithDiscipline[];
   users: User[];
   completionBusy?: boolean;
-  onTaskStatusChange: (taskId: string, status: TaskStatus) => void;
   onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
-  onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | null) => void;
+  onTaskCustomFieldChange: (taskId: string, fieldId: string, value: string | number | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
   customFieldNames: string[];
 }) {
+  const assigneeOptions = [
+    { value: "none", label: "Sem responsavel" },
+    ...users.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+  ];
+  const columnSpan = 5 + customFieldNames.length;
+
   return (
     <>
       <tr className="border-t border-border bg-surface">
-        <td colSpan={6 + customFieldNames.length} className="p-3">
+        <td colSpan={columnSpan} className="p-3">
           <div className="flex items-center gap-3">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: disciplineColor }} />
-            <span className="font-bold text-text-primary">{discipline.name}</span>
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+            <span className="font-bold text-text-primary">{label}</span>
             <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{tasks.length}</span>
           </div>
         </td>
       </tr>
       {tasks.length === 0 ? (
         <tr className="border-t border-border">
-          <td colSpan={6 + customFieldNames.length} className="p-4 text-sm text-text-muted">
-            Nenhuma tarefa nesta disciplina.
+          <td colSpan={columnSpan} className="p-4 text-sm text-text-muted">
+            Nenhuma tarefa nesta secao.
           </td>
         </tr>
       ) : (
         tasks.map((task) => (
           <tr key={task.id} className={cn("border-t border-border", task.completed ? "opacity-70" : "")}>
-            <td className="p-3">
-              <div className="flex items-center gap-2">
+            <td className="w-[420px] max-w-[420px] p-3">
+              <div className="flex min-w-0 items-center gap-2">
                 <TaskCompletionButton
                   completed={task.completed}
                   disabled={completionBusy}
@@ -747,62 +793,40 @@ function GroupedDisciplineRows({
                 <button
                   type="button"
                   onClick={() => onOpenTask(task)}
-                  className={cn("font-semibold hover:text-brand-orange", task.completed ? "text-text-muted" : "text-text-primary")}
+                  title={task.title}
+                  className={cn(
+                    "min-w-0 max-w-full truncate text-left font-semibold hover:text-brand-orange",
+                    task.completed ? "text-text-muted" : "text-text-primary"
+                  )}
                 >
                   {task.title}
                 </button>
               </div>
             </td>
-            <td className="p-3 text-text-secondary">{task.discipline.name}</td>
+            <td className="max-w-48 p-3 text-text-secondary">
+              <span className="block truncate" title={task.discipline.name}>{task.discipline.name}</span>
+            </td>
             <td className="p-3">
-              <Select
-                value={task.assigneeId ?? MK_SELECT_EMPTY_VALUE}
-                onValueChange={(value) =>
-                  onTaskAssigneeChange(task.id, value === MK_SELECT_EMPTY_VALUE ? null : value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sem responsavel" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={MK_SELECT_EMPTY_VALUE}>Sem responsavel</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={task.assigneeId ?? "none"}
+                options={assigneeOptions}
+                searchPlaceholder="Buscar responsavel..."
+                triggerClassName="h-8 min-w-44"
+                onValueChange={(value) => onTaskAssigneeChange(task.id, value === "none" ? null : value)}
+              />
             </td>
             <td className="p-3">
               <PriorityBadge priority={task.priority} />
-            </td>
-            <td className="p-3">
-              <Select value={task.status} onValueChange={(value) => onTaskStatusChange(task.id, value as TaskStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(TaskStatus).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </td>
             <td className="p-3 text-text-secondary">
               {task.dueDate ? formatDateOnly(task.dueDate, "dd/MM/yyyy") : "-"}
             </td>
             {customFieldNames.map((name) => {
-              const field = task.customFieldValues?.find((item) => (item.customFieldName ?? "Campo") === name);
+              const field = task.customFieldValues?.find((item) => normalizeFieldName(item.customFieldName ?? "Campo") === normalizeFieldName(name));
               return (
-                <td key={`${task.id}-${name}`} className="p-3">
+                <td key={task.id + "-" + name} className="p-3">
                   {field ? (
-                    <InlineField
-                      value={String(field.displayValue ?? field.enumOptionName ?? field.numberValue ?? "")}
-                      onSave={(value) => onTaskCustomFieldChange(task.id, field.id, value || null)}
-                    />
+                    <InlineField field={field} onSave={(value) => onTaskCustomFieldChange(task.id, field.id, value)} />
                   ) : (
                     <span className="text-text-muted">-</span>
                   )}
@@ -820,15 +844,17 @@ function SortableHeader({
   label,
   sortKey,
   indicator,
-  onSort
+  onSort,
+  className
 }: {
   label: string;
   sortKey: SortKey;
   indicator: string;
   onSort: (key: SortKey) => void;
+  className?: string;
 }) {
   return (
-    <th className="p-3">
+    <th className={cn("p-3", className)}>
       <button type="button" className="font-semibold hover:text-brand-orange" onClick={() => onSort(sortKey)}>
         {label}
         {indicator}
@@ -837,20 +863,175 @@ function SortableHeader({
   );
 }
 
-function InlineField({ value, onSave }: { value: string; onSave: (value: string) => void }) {
-  const [draft, setDraft] = useState(value);
+function sortLabel(key: SortKey): string {
+  const labels: Record<SortKey, string> = {
+    title: "Tarefa",
+    discipline: "Disciplina",
+    assignee: "Responsável",
+    priority: "Prioridade",
+    status: "Status",
+    dueDate: "Entrega"
+  };
+
+  return labels[key];
+}
+
+function uniqueCustomFieldNames(tasks: TaskWithDiscipline[]) {
+  const names = new Map<string, string>();
+
+  for (const task of tasks) {
+    for (const field of task.customFieldValues ?? []) {
+      const name = field.customFieldName ?? "Campo";
+      const normalized = normalizeFieldName(name);
+      if (!names.has(normalized)) {
+        names.set(normalized, name);
+      }
+    }
+  }
+
+  return Array.from(names.values());
+}
+
+function uniqueCustomStatusOptions(tasks: TaskWithDiscipline[]) {
+  return Array.from(
+    new Set(tasks.map((task) => customStatusValue(task)).filter((value): value is string => Boolean(value)))
+  ).sort((a, b) => a.localeCompare(b));
+}
+
+function customStatusValue(task: TaskWithDiscipline) {
+  const field = task.customFieldValues?.find((item) => isCustomStatusField(item.customFieldName ?? ""));
+  return field?.displayValue ?? field?.enumOptionName ?? null;
+}
+
+function isCustomStatusField(name: string) {
+  const normalized = normalizeFieldName(name);
+  return normalized === "status" || normalized === "status de conclusao" || normalized === "situacao";
+}
+
+function normalizeFieldName(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function groupTasksByScope(tasks: TaskWithDiscipline[]) {
+  const groups: Array<{ scope: TaskScope; label: string; color: string; tasks: TaskWithDiscipline[] }> = [
+    { scope: "general", label: "Geral", color: "var(--color-text-muted)", tasks: [] },
+    { scope: "civil", label: "Civil", color: "#CBD5E1", tasks: [] },
+    { scope: "electrical", label: "Elétrica", color: "#F59E0B", tasks: [] }
+  ];
+
+  for (const task of tasks) {
+    const scope = sectionScope(task.discipline);
+    const group = groups.find((item) => item.scope === scope) ?? groups[0];
+    group?.tasks.push(task);
+  }
+
+  return groups;
+}
+
+function InlineField({
+  field,
+  onSave
+}: {
+  field: NonNullable<Task["customFieldValues"]>[number];
+  onSave: (value: string | number | null) => void;
+}) {
+  const initialValue = String(field.displayValue ?? field.enumOptionName ?? field.numberValue ?? "");
+  const [draft, setDraft] = useState(initialValue);
+  const [editing, setEditing] = useState(false);
+  const type = (field.type ?? "").toLowerCase();
+  const enumOptions = field.enumOptions?.filter((option) => option.name) ?? [];
+
+  useEffect(() => {
+    setDraft(initialValue);
+  }, [initialValue]);
+
+  if (enumOptions.length > 0) {
+    return (
+      <SearchableSelect
+        value={draft || "none"}
+        options={[
+          { value: "none", label: "-" },
+          ...enumOptions.map((option) => ({
+            value: option.name,
+            label: option.name,
+            color: option.color ?? enumColor(option.name)
+          }))
+        ]}
+        triggerClassName="h-8 min-w-40"
+        searchPlaceholder={`Buscar ${field.customFieldName ?? "campo"}...`}
+        onValueChange={(value) => {
+          const nextValue = value === "none" ? "" : value;
+          setDraft(nextValue);
+          onSave(nextValue || null);
+        }}
+      />
+    );
+  }
+
+  if (type === "number" || type === "integer") {
+    return (
+      <DecimalInput
+        value={draft}
+        onValueChange={setDraft}
+        onBlur={() => {
+          const parsed = parseDecimalInput(draft);
+          onSave(parsed === null || Number.isNaN(parsed) ? null : parsed);
+        }}
+        className="h-8 min-w-32 border-border bg-brand-black/60"
+      />
+    );
+  }
+
+  if (type === "date") {
+    return (
+      <DatePicker
+        value={/^\d{4}-\d{2}-\d{2}$/.test(draft) ? draft : ""}
+        onValueChange={(value) => {
+          const nextValue = value ?? "";
+          setDraft(nextValue);
+          onSave(nextValue || null);
+        }}
+        className="h-8 min-w-36 border-border bg-brand-black/60"
+      />
+    );
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="min-h-8 min-w-36 rounded-md px-2 text-left text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
+      >
+        {draft || "-"}
+      </button>
+    );
+  }
 
   return (
     <Input
       value={draft}
       onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => onSave(draft)}
+      onBlur={() => {
+        setEditing(false);
+        onSave(draft.trim() || null);
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
           event.currentTarget.blur();
         }
+
+        if (event.key === "Escape") {
+          setDraft(initialValue);
+          setEditing(false);
+        }
       }}
-      className="h-9 min-w-36 border-border bg-brand-black/60"
+      className="h-8 min-w-36 border-border bg-brand-black/60"
+      autoFocus
     />
   );
 }
@@ -879,4 +1060,40 @@ function ProjectModal({ title, children, onClose }: { title: string; children: R
 
 function projectBuilder(project: { builder?: string | null; client?: string | null }): string | null {
   return project.builder ?? project.client ?? null;
+}
+
+function sectionScope(section: Pick<Section, "name" | "type">): TaskScope {
+  const normalizedName = section.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const electricalTypes = new Set<DisciplineType>([
+    "ELECTRICAL" as DisciplineType,
+    "SPDA" as DisciplineType,
+    "TELECOM" as DisciplineType,
+    "AUTOMATION" as DisciplineType
+  ]);
+  const civilTypes = new Set<DisciplineType>([
+    "HYDRAULIC" as DisciplineType,
+    "SANITARY" as DisciplineType,
+    "FIRE_PROTECTION" as DisciplineType,
+    "SPRINKLER" as DisciplineType,
+    "GAS" as DisciplineType,
+    "HVAC" as DisciplineType
+  ]);
+
+  if (
+    electricalTypes.has(section.type) ||
+    ["ele", "eletrico", "spda", "tel", "telecom", "aut"].some((token) => normalizedName.includes(token))
+  ) {
+    return "electrical";
+  }
+
+  if (
+    civilTypes.has(section.type) ||
+    ["civil", "hid", "ppci", "preventivo", "sanitario", "arquitetonico", "estudo preliminar"].some((token) =>
+      normalizedName.includes(token)
+    )
+  ) {
+    return "civil";
+  }
+
+  return "general";
 }

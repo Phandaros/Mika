@@ -24,14 +24,22 @@ const taskSchema = z.object({
   startDate: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
   estimatedDays: z.number().nonnegative().nullable().optional(),
-  completed: z.boolean().optional(),
+  completed: z.boolean().optional()
+});
+
+const createTaskSchema = taskSchema.extend({
+  customFieldValues: z.array(z.object({
+    settingId: z.string(),
+    value: z.union([z.string(), z.number()]).nullable()
+  })).optional()
+});
+
+const updateTaskSchema = taskSchema.partial().extend({
   customFieldValues: z.array(z.object({
     id: z.string(),
     value: z.union([z.string(), z.number()]).nullable()
   })).optional()
 });
-
-const updateTaskSchema = taskSchema.partial();
 
 const taskStatusSchema = z.object({
   status: z.nativeEnum(TaskStatus)
@@ -45,8 +53,8 @@ router.use(auth);
 router.get("/sections/:sectionId/tasks", listTasks);
 router.get("/disciplines/:disciplineId/tasks", listTasks);
 router.get("/tasks/:id", getTaskById);
-router.post("/sections/:sectionId/tasks", validateBody(taskSchema), createTask);
-router.post("/disciplines/:disciplineId/tasks", validateBody(taskSchema), createTask);
+router.post("/sections/:sectionId/tasks", validateBody(createTaskSchema), createTask);
+router.post("/disciplines/:disciplineId/tasks", validateBody(createTaskSchema), createTask);
 router.patch("/tasks/:id", validateBody(updateTaskSchema), updateTask);
 router.delete("/tasks/:id", deleteTask);
 router.patch("/tasks/:id/status", validateBody(taskStatusSchema), updateTaskStatus);

@@ -21,7 +21,8 @@ interface TaskBody {
   estimatedDays?: number | null;
   completed?: boolean;
   customFieldValues?: Array<{
-    id: string;
+    id?: string;
+    settingId?: string;
     value: string | number | null;
   }>;
 }
@@ -57,6 +58,15 @@ async function assigneeGid(tx: Prisma.TransactionClient, userId: string | null |
 
   const user = await tx.user.findUnique({ where: { id: userId }, select: { asanaGid: true } });
   return user?.asanaGid ?? null;
+}
+
+function normalizedCustomFieldString(value: string | number | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const str = String(value).trim();
+  return str || null;
 }
 
 export const listTasks: RequestHandler = async (req, res, next) => {
@@ -152,6 +162,59 @@ export const createTask: RequestHandler = async (req, res, next) => {
         }
       });
 
+      if (body.customFieldValues) {
+        for (const field of body.customFieldValues) {
+          if (!field.settingId) {
+            continue;
+          }
+
+          const setting = await tx.projectCustomFieldSetting.findUnique({
+            where: { id: field.settingId },
+            include: {
+              customField: {
+                include: { enumOptions: { where: { enabled: true } } }
+              }
+            }
+          });
+
+          if (!setting || setting.projectId !== section.project.id) {
+            continue;
+          }
+
+          const stringValue = normalizedCustomFieldString(field.value);
+          if (stringValue === null) {
+            continue;
+          }
+
+          const enumMatch = setting.customField.enumOptions.find(
+            (option) => option.name === stringValue || option.asanaGid === stringValue
+          );
+          const numericValue =
+            typeof field.value === "number"
+              ? field.value
+              : setting.customField.type === "number" || setting.customField.type === "integer"
+                ? Number(stringValue.replace(",", "."))
+                : null;
+
+          await tx.taskCustomFieldValue.create({
+            data: {
+              taskId: createdTask.id,
+              customFieldGid: setting.customField.asanaGid,
+              customFieldName: setting.customField.name,
+              type: setting.customField.type,
+              precision: setting.customField.precision,
+              displayValue: enumMatch?.name ?? stringValue,
+              numberValue: numericValue !== null && !Number.isNaN(numericValue) ? numericValue : null,
+              enumOptionName: enumMatch?.name ?? null,
+              enumOptionId: enumMatch?.id ?? null,
+              enumOptionGid: enumMatch?.asanaGid ?? null,
+              enumOptionColor: enumMatch?.color ?? null,
+              customFieldId: setting.customField.id
+            }
+          });
+        }
+      }
+
       return tx.task.findUniqueOrThrow({
         where: { id: createdTask.id },
         include: taskInclude
@@ -205,6 +268,10 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
       if (body.customFieldValues) {
         for (const field of body.customFieldValues) {
+          if (!field.id) {
+            continue;
+          }
+
           const value = field.value;
           const existingRow = await tx.taskCustomFieldValue.findUnique({
             where: { id: field.id },

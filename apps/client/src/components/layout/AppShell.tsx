@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useAppHotkeys } from "../../hooks/useAppHotkeys";
+import { TaskCreateSheet } from "../task/TaskCreateSheet";
 import { CommandPalette } from "./CommandPalette";
 import { Header } from "./Header";
 import { ShortcutsDialog } from "./ShortcutsDialog";
@@ -17,6 +18,7 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <TaskCreateSheet />
       <CommandPalette />
       <ShortcutsDialog />
     </div>

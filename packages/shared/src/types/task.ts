@@ -64,6 +64,10 @@ export interface CreateTaskRequest {
   dueDate?: string | null;
   estimatedDays?: number | null;
   completed?: boolean;
+  customFieldValues?: Array<{
+    settingId: string;
+    value: string | number | null;
+  }>;
 }
 
 export interface UpdateTaskRequest {

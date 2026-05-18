@@ -23,16 +23,12 @@ import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
+import { enumColor } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
+import { DatePicker } from "../ui/date-picker";
+import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
-import {
-  MK_SELECT_EMPTY_VALUE,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../ui/select";
+import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
 
 interface TaskDetailProps {
@@ -519,15 +515,11 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
             </DetailRow>
 
             <DetailRow icon={<BarChart2 size={18} />} label="Dias estimados">
-              <Input
-                type="number"
-                min={0}
-                step={0.25}
+              <DecimalInput
                 value={estimatedDraft}
-                onChange={(event) => setEstimatedDraft(event.target.value)}
+                onValueChange={setEstimatedDraft}
                 onBlur={() => {
-                  const parsed =
-                    estimatedDraft.trim() === "" ? null : Number(estimatedDraft.replace(",", "."));
+                  const parsed = parseDecimalInput(estimatedDraft);
                   const normalized = parsed === null || Number.isNaN(parsed) ? null : parsed;
                   const current = visibleTask.estimatedDays ?? null;
                   if (normalized !== current) {
@@ -708,13 +700,12 @@ function EditableCustomField({
     return (
       <label className={shellClass}>
         <span className="text-xs uppercase text-text-muted">{label}</span>
-        <Input
-          type="number"
+        <DecimalInput
           value={numValue}
-          onChange={(event) => setNumValue(event.target.value)}
+          onValueChange={setNumValue}
           onBlur={() => {
-            const parsed = Number.parseFloat(numValue);
-            void onSave(Number.isFinite(parsed) ? parsed : null);
+            const parsed = parseDecimalInput(numValue);
+            void onSave(parsed === null || Number.isNaN(parsed) ? null : parsed);
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
@@ -730,11 +721,14 @@ function EditableCustomField({
     return (
       <label className={shellClass}>
         <span className="text-xs uppercase text-text-muted">{label}</span>
-        <Input
-          type="date"
+        <DatePicker
           value={dateValue}
-          onChange={(event) => setDateValue(event.target.value)}
-          onBlur={() => void onSave(dateValue.trim() || null)}
+          onValueChange={(nextValue) => {
+            const value = nextValue ?? "";
+            setDateValue(value);
+            void onSave(value || null);
+          }}
+          className="h-9 w-full justify-between px-3"
         />
       </label>
     );
@@ -744,25 +738,23 @@ function EditableCustomField({
     return (
       <label className={shellClass}>
         <span className="text-xs uppercase text-text-muted">{label}</span>
-        <Select
-          value={enumValue || MK_SELECT_EMPTY_VALUE}
+        <SearchableSelect
+          value={enumValue || "none"}
+          options={[
+            { value: "none", label: "?" },
+            ...normalizedEnumOptions.map((option) => ({
+              value: option.name,
+              label: option.name,
+              color: option.color ?? enumColor(option.name)
+            }))
+          ]}
+          searchPlaceholder={"Buscar " + label + "..."}
+          triggerClassName="h-9"
           onValueChange={(next) => {
-            setEnumValue(next === MK_SELECT_EMPTY_VALUE ? "" : next);
-            void onSave(next === MK_SELECT_EMPTY_VALUE ? null : next);
+            setEnumValue(next === "none" ? "" : next);
+            void onSave(next === "none" ? null : next);
           }}
-        >
-          <SelectTrigger className="h-9 py-0">
-            <SelectValue placeholder="—" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={MK_SELECT_EMPTY_VALUE}>—</SelectItem>
-            {normalizedEnumOptions.map((option) => (
-              <SelectItem key={option.id} value={option.name}>
-                {option.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </label>
     );
   }

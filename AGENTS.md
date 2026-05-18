@@ -400,6 +400,9 @@ Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globa
 - ✅ Usar `async/await` com try/catch (sem `.then().catch()` sem motivo)
 - ✅ Exportar tipos do `packages/shared` para reusar em client e server
 - ✅ Usar `date-fns` para toda manipulação de datas (nunca `moment`)
+- ✅ Campos de duração/dias estimados nunca devem usar `input type="number"`; usar input textual decimal compartilhado sem steppers nativos.
+- ✅ Campos de data devem usar o datepicker compartilhado; nunca usar `input type="date"` cru no frontend.
+- ✅ Dropdowns de dados editáveis com lista de opções devem usar o dropdown pesquisável compartilhado.
 - ✅ Nomes de arquivos em `camelCase` para utilitários, `PascalCase` para componentes React
 - ✅ Nomes de branches: `feat/nome-da-feature`, `fix/descricao`, `chore/descricao`
 - ✅ Manter o Electron como shell nativo seguro, apontando para o Vite dev server em desenvolvimento e para o build estático do client em produção
