@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { format } from "date-fns";
 import { Edit3, ExternalLink, Inbox, Plus, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { getDefaultDiscipline, Priority, TaskStatus, type DisciplineType, type Section, type Task, type User } from "shared";
@@ -28,7 +27,7 @@ import {
 import { useProject, useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
-import { cn } from "../lib/utils";
+import { cn, formatDateOnly } from "../lib/utils";
 
 type ProjectTab = "kanban" | "list" | "workload";
 type SortKey = "title" | "discipline" | "assignee" | "priority" | "status" | "dueDate";
@@ -94,6 +93,7 @@ export function ProjectDetailPage() {
   const [sortKey, setSortKey] = useState<SortKey>("dueDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [selectedTask, setSelectedTask] = useState<TaskWithDiscipline | null>(null);
+  const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
 
@@ -122,11 +122,29 @@ export function ProjectDetailPage() {
   }
 
   function openTaskDetail(task: TaskWithDiscipline) {
+    setTaskDetailOpenVersion((version) => version + 1);
     setSelectedTask(task);
     const next = new URLSearchParams(searchParams);
     next.set("task", task.id);
     setSearchParams(next, { replace: true });
   }
+
+  function handleTimelineTaskUpdated(task: TaskWithDiscipline) {
+    setSelectedTask((currentTask) =>
+      currentTask?.id === task.id
+        ? {
+            ...currentTask,
+            ...task,
+            discipline: {
+              ...currentTask.discipline,
+              ...task.discipline,
+              type: task.discipline.type ?? currentTask.discipline.type
+            }
+          }
+        : currentTask
+    );
+  }
+
   const selectedDisciplineSet = useMemo(() => new Set(selectedDisciplineIds), [selectedDisciplineIds]);
   const builderSuggestions = useMemo(
     () =>
@@ -335,11 +353,12 @@ export function ProjectDetailPage() {
             disciplineIdFilter={selectedDisciplineSet}
             isActive={activeTab === "workload"}
             onOpenTask={openTaskDetail}
+            onTaskUpdated={handleTimelineTaskUpdated}
             updateTask={updateTask}
           />
         ) : null}
       </div>
-      <TaskDetail task={selectedTask} onClose={closeTaskDetail} />
+      <TaskDetail task={selectedTask} onClose={closeTaskDetail} openVersion={taskDetailOpenVersion} />
     </div>
   );
 }
@@ -773,7 +792,7 @@ function GroupedDisciplineRows({
               </Select>
             </td>
             <td className="p-3 text-text-secondary">
-              {task.dueDate ? format(new Date(task.dueDate), "dd/MM/yyyy") : "-"}
+              {task.dueDate ? formatDateOnly(task.dueDate, "dd/MM/yyyy") : "-"}
             </td>
             {customFieldNames.map((name) => {
               const field = task.customFieldValues?.find((item) => (item.customFieldName ?? "Campo") === name);

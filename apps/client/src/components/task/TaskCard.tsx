@@ -1,9 +1,8 @@
-import { format } from "date-fns";
 import { getDefaultDiscipline, type DisciplineType, type Task } from "shared";
 import { Avatar } from "../shared/Avatar";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { TaskCompletionButton } from "./TaskCompletionButton";
-import { cn } from "../../lib/utils";
+import { cn, formatDateOnly } from "../../lib/utils";
 
 export type TaskCardTask = Task & {
   discipline?: {
@@ -71,7 +70,7 @@ export function TaskCard<TTask extends TaskCardTask>({
         ) : null}
       </div>
       {task.dueDate ? (
-        <p className="mt-3 text-xs text-text-secondary">Entrega {format(new Date(task.dueDate), "dd/MM/yyyy")}</p>
+        <p className="mt-3 text-xs text-text-secondary">Entrega {formatDateOnly(task.dueDate, "dd/MM/yyyy")}</p>
       ) : null}
     </div>
   );

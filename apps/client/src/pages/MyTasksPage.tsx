@@ -8,7 +8,6 @@ import {
   format,
   isSameDay,
   isSameMonth,
-  parseISO,
   startOfMonth,
   startOfWeek
 } from "date-fns";
@@ -33,7 +32,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
-import { cn } from "../lib/utils";
+import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
 type CompletionFilter = "open" | "completed" | "all";
@@ -62,6 +61,7 @@ export function MyTasksPage() {
   const [view, setView] = useState<MyTasksView>("list");
   const [month, setMonth] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
+  const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [showUndatedOnly, setShowUndatedOnly] = useState(false);
@@ -177,6 +177,11 @@ export function MyTasksPage() {
     }
 
     setSearchParams(nextParams, { replace: true });
+  }
+
+  function openTaskDetail(task: TaskWithProject) {
+    setTaskDetailOpenVersion((version) => version + 1);
+    setSelectedTask(task);
   }
 
   return (
@@ -333,7 +338,7 @@ export function MyTasksPage() {
         <ListView
           tasks={visibleTasks}
           completionBusy={updateTaskCompletion.isPending}
-          onOpenTask={setSelectedTask}
+          onOpenTask={openTaskDetail}
           onStatusChange={(task, status) => void updateTask.mutateAsync({ id: task.id, payload: { status } })}
           onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
         />
@@ -343,12 +348,12 @@ export function MyTasksPage() {
           tasks={visibleTasks}
           completionBusy={updateTaskCompletion.isPending}
           onDragEnd={handleDragEnd}
-          onOpenTask={setSelectedTask}
+          onOpenTask={openTaskDetail}
           onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
         />
       ) : null}
-      {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={setSelectedTask} /> : null}
-      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+      {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
+      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} openVersion={taskDetailOpenVersion} />
     </div>
   );
 }
@@ -428,7 +433,7 @@ function ListView({
                       <span className="truncate">{task.discipline.projectName}</span>
                     </span>
                   </td>
-                  <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{task.dueDate ? format(new Date(task.dueDate), "d MMM") : ""}</td>
+                  <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{formatDateOnly(task.dueDate, "d MMM")}</td>
                   <td className="border-l border-border p-1.5">
                     <Select value={task.status} onValueChange={(value) => onStatusChange(task, value as TaskStatus)}>
                       <SelectTrigger className="h-7 w-36 py-0">
@@ -527,7 +532,10 @@ function CalendarView({ month, tasks, onOpenTask }: { month: Date; tasks: TaskWi
         </div>
       ))}
       {days.map((day) => {
-        const dayTasks = tasks.filter((task) => task.dueDate && isSameDay(parseISO(String(task.dueDate).slice(0, 10)), day));
+        const dayTasks = tasks.filter((task) => {
+          const dueDate = dateOnlyToLocalDate(task.dueDate);
+          return Boolean(dueDate && isSameDay(dueDate, day));
+        });
         return (
           <div key={day.toISOString()} className="min-h-32 border-b border-r border-border p-2">
             <p className={cn("mb-2 text-base font-semibold", isSameMonth(day, month) ? "text-text-primary" : "text-text-muted")}>{format(day, "d")}</p>

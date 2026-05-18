@@ -25,6 +25,7 @@ export function GlobalWorkloadPage({ scope }: { scope: GlobalWorkloadScope }) {
   const taskIdFromUrl = searchParams.get("task");
   const { data: taskFromApi } = useTaskById(taskIdFromUrl);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask("");
 
@@ -40,10 +41,24 @@ export function GlobalWorkloadPage({ scope }: { scope: GlobalWorkloadScope }) {
   }, [taskIdFromUrl, taskFromApi]);
 
   function openTaskDetail(task: Task) {
+    setTaskDetailOpenVersion((version) => version + 1);
     setSelectedTask(task);
     const next = new URLSearchParams(searchParams);
     next.set("task", task.id);
     setSearchParams(next, { replace: true });
+  }
+
+  function handleTimelineTaskUpdated(task: Task) {
+    setSelectedTask((currentTask) =>
+      currentTask?.id === task.id
+        ? {
+            ...currentTask,
+            ...task,
+            discipline: task.discipline ?? currentTask.discipline,
+            comments: task.comments ?? currentTask.comments
+          }
+        : currentTask
+    );
   }
 
   function closeTaskDetail() {
@@ -66,9 +81,10 @@ export function GlobalWorkloadPage({ scope }: { scope: GlobalWorkloadScope }) {
         users={users}
         isActive
         onOpenTask={openTaskDetail}
+        onTaskUpdated={handleTimelineTaskUpdated}
         updateTask={updateTask}
       />
-      <TaskDetail task={selectedTask} onClose={closeTaskDetail} />
+      <TaskDetail task={selectedTask} onClose={closeTaskDetail} openVersion={taskDetailOpenVersion} />
     </div>
   );
 }

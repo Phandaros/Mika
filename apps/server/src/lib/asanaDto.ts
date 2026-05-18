@@ -141,6 +141,14 @@ export function normalizePriority(value: string | null | undefined): string {
   return Priority.MEDIUM;
 }
 
+function dateOnlyString(value: string | null | undefined): string | null {
+  return value ? value.slice(0, 10) : null;
+}
+
+function dateOnlyFromDate(value: Date | null | undefined): string | null {
+  return value ? value.toISOString().slice(0, 10) : null;
+}
+
 export function toTaskDto(
   task: TaskRecord,
   fallbackSection?: { id: string; name: string; projectId: string; projectName?: string | null }
@@ -170,8 +178,8 @@ export function toTaskDto(
     assigneeId: task.assignee?.id ?? null,
     assigneeGid: task.assigneeGid,
     creatorId: "",
-    startDate: task.startOn,
-    dueDate: task.dueOn ?? task.dueAt,
+    startDate: dateOnlyString(task.startOn),
+    dueDate: dateOnlyString(task.dueOn) ?? dateOnlyFromDate(task.dueAt),
     estimatedDays: task.estimatedDays ?? null,
     completed: task.completed,
     completedAt: task.completedAtAsana,

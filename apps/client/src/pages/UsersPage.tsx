@@ -8,7 +8,6 @@ import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
-  MK_SELECT_EMPTY_VALUE,
   Select,
   SelectContent,
   SelectItem,

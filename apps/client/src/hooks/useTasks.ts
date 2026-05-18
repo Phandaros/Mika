@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, type QueryKey } from "@tanstack/react-query";
+import { addMonths, endOfMonth, format, startOfMonth } from "date-fns";
 import { Priority, TaskStatus as TaskStatusValue } from "shared";
 import type {
   CreateTaskRequest,
@@ -18,6 +19,16 @@ interface TaskResponse {
   task: Task;
 }
 
+type UpdateTaskMutationContext = {
+  previousTask: Task | undefined;
+  previousProjects: Project[] | undefined;
+  previousProjectId: string | undefined;
+  previousProject: Project | undefined;
+  previousSectionId: string | undefined;
+  previousSectionTasks: Task[] | undefined;
+  previousWorkloadQueries: Array<[QueryKey, Task[] | undefined]>;
+};
+
 export function useTaskById(taskId: string | null | undefined) {
   return useQuery({
     queryKey: ["task", taskId],
@@ -30,10 +41,19 @@ export function useTaskById(taskId: string | null | undefined) {
 }
 
 function mergeTask(currentTask: Task, updatedTask: Task): Task {
+  const discipline =
+    currentTask.discipline && updatedTask.discipline
+      ? {
+          ...currentTask.discipline,
+          ...updatedTask.discipline,
+          type: updatedTask.discipline.type ?? currentTask.discipline.type
+        }
+      : updatedTask.discipline ?? currentTask.discipline;
+
   return {
     ...currentTask,
     ...updatedTask,
-    discipline: updatedTask.discipline ?? currentTask.discipline,
+    ...(discipline ? { discipline } : {}),
     comments: updatedTask.comments ?? currentTask.comments
   };
 }
@@ -80,6 +100,9 @@ function updateTaskInProjectCache(projectId: string, updatedTask: Task) {
   const resolvedProjectId = projectId || updatedTask.discipline?.projectId;
 
   updateProjectsListCache(updatedTask);
+  queryClient.setQueryData<Task>(["task", updatedTask.id], (currentTask) =>
+    currentTask ? mergeTask(currentTask, updatedTask) : updatedTask
+  );
 
   if (resolvedProjectId) {
     queryClient.setQueryData<Project>(["projects", resolvedProjectId], (currentProject) => {
@@ -93,6 +116,22 @@ function updateTaskInProjectCache(projectId: string, updatedTask: Task) {
 
   queryClient.setQueryData<Task[]>(["sections", updatedTask.disciplineId, "tasks"], (currentTasks) =>
     currentTasks?.map((task) => (task.id === updatedTask.id ? mergeTask(task, updatedTask) : task))
+  );
+
+  queryClient.setQueriesData<Task[]>(
+    {
+      predicate: (query) =>
+        Array.isArray(query.queryKey) &&
+        (query.queryKey[0] === "projectWorkloadTasks" || query.queryKey[0] === "globalWorkloadTasks")
+    },
+    (currentTasks) => currentTasks?.map((task) => (task.id === updatedTask.id ? mergeTask(task, updatedTask) : task))
+  );
+}
+
+function workloadQueryPredicate(query: { queryKey: QueryKey }): boolean {
+  return (
+    Array.isArray(query.queryKey) &&
+    (query.queryKey[0] === "projectWorkloadTasks" || query.queryKey[0] === "globalWorkloadTasks")
   );
 }
 
@@ -112,6 +151,102 @@ function invalidateWorkloadTaskQueries(projectId?: string) {
   });
 }
 
+function patchTaskForOptimisticUpdate(task: Task, payload: UpdateTaskRequest): Task {
+  return {
+    ...task,
+    ...(payload.title !== undefined ? { title: payload.title } : {}),
+    ...(payload.description !== undefined ? { description: payload.description } : {}),
+    ...(payload.status !== undefined ? { status: payload.status } : {}),
+    ...(payload.priority !== undefined ? { priority: payload.priority } : {}),
+    ...(payload.assigneeId !== undefined ? { assigneeId: payload.assigneeId } : {}),
+    ...(payload.startDate !== undefined ? { startDate: payload.startDate } : {}),
+    ...(payload.dueDate !== undefined ? { dueDate: payload.dueDate } : {}),
+    ...(payload.estimatedDays !== undefined ? { estimatedDays: payload.estimatedDays } : {}),
+    ...(payload.completed !== undefined ? { completed: payload.completed } : {})
+  };
+}
+
+function findCachedTask(taskId: string): Task | undefined {
+  const taskById = queryClient.getQueryData<Task>(["task", taskId]);
+  if (taskById) {
+    return taskById;
+  }
+
+  const workloadQueries = queryClient.getQueriesData<Task[]>({ predicate: workloadQueryPredicate });
+  for (const [, tasks] of workloadQueries) {
+    const task = tasks?.find((item) => item.id === taskId);
+    if (task) {
+      return task;
+    }
+  }
+
+  const projects = queryClient.getQueryData<Project[]>(["projects"]);
+  for (const project of projects ?? []) {
+    const task = (project.sections ?? project.disciplines ?? [])
+      .flatMap((section) => section.tasks ?? [])
+      .find((item) => item.id === taskId);
+    if (task) {
+      return task;
+    }
+  }
+
+  return undefined;
+}
+
+type WorkloadMonthChunk = {
+  key: string;
+  from: string;
+  to: string;
+};
+
+function parseYmdToLocalNoon(ymd: string): Date {
+  const parts = ymd.split("-").map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
+function workloadMonthChunks(from: string, to: string): WorkloadMonthChunk[] {
+  if (!from || !to) {
+    return [];
+  }
+
+  const startYmd = from <= to ? from : to;
+  const endYmd = from <= to ? to : from;
+  const endMonth = startOfMonth(parseYmdToLocalNoon(endYmd));
+  const chunks: WorkloadMonthChunk[] = [];
+  let cursor = startOfMonth(parseYmdToLocalNoon(startYmd));
+
+  while (cursor <= endMonth) {
+    chunks.push({
+      key: format(cursor, "yyyy-MM"),
+      from: format(cursor, "yyyy-MM-dd"),
+      to: format(endOfMonth(cursor), "yyyy-MM-dd")
+    });
+    cursor = addMonths(cursor, 1);
+  }
+
+  return chunks;
+}
+
+function mergeTasksById(taskLists: Array<Task[] | undefined>): Task[] {
+  const map = new Map<string, Task>();
+
+  for (const tasks of taskLists) {
+    for (const task of tasks ?? []) {
+      const current = map.get(task.id);
+      map.set(task.id, current ? mergeTask(current, task) : task);
+    }
+  }
+
+  return [...map.values()];
+}
+
+function isUndatedTask(task: Task): boolean {
+  return !task.startDate && !task.dueDate;
+}
+
 export function useProjectWorkloadTasks(projectId: string | undefined, from: string, to: string, enabled: boolean) {
   return useQuery({
     queryKey: ["projectWorkloadTasks", projectId, from, to],
@@ -123,6 +258,38 @@ export function useProjectWorkloadTasks(projectId: string | undefined, from: str
       return response.data.tasks;
     }
   });
+}
+
+export function useProjectWorkloadTaskChunks(projectId: string | undefined, from: string, to: string, enabled: boolean) {
+  const chunks = workloadMonthChunks(from, to);
+  const undatedQuery = useQuery({
+    queryKey: ["projectWorkloadTasks", projectId, "undated"],
+    enabled: Boolean(projectId) && enabled,
+    queryFn: async () => {
+      const response = await api.get<TasksResponse>(`/projects/${projectId}/workload-tasks`, {
+        params: { from: "1970-01-01", to: "1970-01-01", includeUndated: "true" }
+      });
+      return response.data.tasks.filter(isUndatedTask);
+    }
+  });
+  const results = useQueries({
+    queries: chunks.map((chunk) => ({
+      queryKey: ["projectWorkloadTasks", projectId, "month", chunk.key],
+      enabled: Boolean(projectId) && enabled && Boolean(chunk.from) && Boolean(chunk.to),
+      queryFn: async () => {
+        const response = await api.get<TasksResponse>(`/projects/${projectId}/workload-tasks`, {
+          params: { from: chunk.from, to: chunk.to, includeUndated: "false" }
+        });
+        return response.data.tasks;
+      }
+    }))
+  });
+
+  return {
+    data: mergeTasksById([undatedQuery.data, ...results.map((result) => result.data)]),
+    isLoading: enabled && (undatedQuery.isLoading || results.some((result) => result.isLoading)),
+    isFetching: enabled && (undatedQuery.isFetching || results.some((result) => result.isFetching))
+  };
 }
 
 export function useGlobalWorkloadTasks(
@@ -141,6 +308,43 @@ export function useGlobalWorkloadTasks(
       return response.data.tasks;
     }
   });
+}
+
+export function useGlobalWorkloadTaskChunks(
+  scope: "general" | "civil" | "electrical",
+  from: string,
+  to: string,
+  enabled: boolean
+) {
+  const chunks = workloadMonthChunks(from, to);
+  const undatedQuery = useQuery({
+    queryKey: ["globalWorkloadTasks", scope, "undated"],
+    enabled,
+    queryFn: async () => {
+      const response = await api.get<TasksResponse>("/workload/tasks", {
+        params: { from: "1970-01-01", to: "1970-01-01", scope, includeUndated: "true" }
+      });
+      return response.data.tasks.filter(isUndatedTask);
+    }
+  });
+  const results = useQueries({
+    queries: chunks.map((chunk) => ({
+      queryKey: ["globalWorkloadTasks", scope, "month", chunk.key],
+      enabled: enabled && Boolean(chunk.from) && Boolean(chunk.to),
+      queryFn: async () => {
+        const response = await api.get<TasksResponse>("/workload/tasks", {
+          params: { from: chunk.from, to: chunk.to, scope, includeUndated: "false" }
+        });
+        return response.data.tasks;
+      }
+    }))
+  });
+
+  return {
+    data: mergeTasksById([undatedQuery.data, ...results.map((result) => result.data)]),
+    isLoading: enabled && (undatedQuery.isLoading || results.some((result) => result.isLoading)),
+    isFetching: enabled && (undatedQuery.isFetching || results.some((result) => result.isFetching))
+  };
 }
 
 export function useTasks(sectionId: string | undefined) {
@@ -240,6 +444,50 @@ export function useUpdateTask(projectId: string) {
       const response = await api.patch<TaskResponse>(`/tasks/${id}`, payload);
       return response.data.task;
     },
+    onMutate: async ({ id, payload }) => {
+      await queryClient.cancelQueries({
+        predicate: (query) =>
+          workloadQueryPredicate(query) ||
+          (Array.isArray(query.queryKey) &&
+            (query.queryKey[0] === "projects" || (query.queryKey[0] === "task" && query.queryKey[1] === id)))
+      });
+
+      const currentTask = findCachedTask(id);
+      const optimisticTask = currentTask ? patchTaskForOptimisticUpdate(currentTask, payload) : undefined;
+      const resolvedProjectId = projectId || optimisticTask?.discipline?.projectId || currentTask?.discipline?.projectId;
+      const sectionId = optimisticTask?.disciplineId ?? currentTask?.disciplineId;
+      const context: UpdateTaskMutationContext = {
+        previousTask: queryClient.getQueryData<Task>(["task", id]),
+        previousProjects: queryClient.getQueryData<Project[]>(["projects"]),
+        previousProjectId: resolvedProjectId,
+        previousProject: resolvedProjectId ? queryClient.getQueryData<Project>(["projects", resolvedProjectId]) : undefined,
+        previousSectionId: sectionId,
+        previousSectionTasks: sectionId ? queryClient.getQueryData<Task[]>(["sections", sectionId, "tasks"]) : undefined,
+        previousWorkloadQueries: queryClient.getQueriesData<Task[]>({ predicate: workloadQueryPredicate })
+      };
+
+      if (optimisticTask) {
+        updateTaskInProjectCache(resolvedProjectId ?? projectId, optimisticTask);
+      }
+
+      return context;
+    },
+    onError: (_error, variables, context) => {
+      queryClient.setQueryData(["task", variables.id], context?.previousTask);
+      queryClient.setQueryData(["projects"], context?.previousProjects);
+
+      if (context?.previousProjectId) {
+        queryClient.setQueryData(["projects", context.previousProjectId], context.previousProject);
+      }
+
+      if (context?.previousSectionId) {
+        queryClient.setQueryData(["sections", context.previousSectionId, "tasks"], context.previousSectionTasks);
+      }
+
+      for (const [queryKey, data] of context?.previousWorkloadQueries ?? []) {
+        queryClient.setQueryData(queryKey, data);
+      }
+    },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
@@ -273,6 +521,35 @@ export function useUpdateTaskCompletion(projectId: string) {
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+      invalidateWorkloadTaskQueries(projectId);
+    }
+  });
+}
+
+export function useDeleteTask(projectId?: string) {
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      await api.delete(`/tasks/${taskId}`);
+      return taskId;
+    },
+    onSuccess: (taskId) => {
+      queryClient.removeQueries({ queryKey: ["task", taskId] });
+      queryClient.setQueryData<Project[]>(["projects"], (projects) =>
+        projects?.map((project) => ({
+          ...project,
+          disciplines: project.disciplines?.map((discipline) => ({
+            ...discipline,
+            tasks: discipline.tasks?.filter((task) => task.id !== taskId)
+          })),
+          sections: project.sections?.map((section) => ({
+            ...section,
+            tasks: section.tasks?.filter((task) => task.id !== taskId)
+          }))
+        }))
+      );
+      queryClient.setQueriesData<Task[]>({ predicate: workloadQueryPredicate }, (tasks) =>
+        tasks?.filter((task) => task.id !== taskId)
+      );
       invalidateWorkloadTaskQueries(projectId);
     }
   });

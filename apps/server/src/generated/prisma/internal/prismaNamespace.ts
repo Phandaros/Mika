@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  CompanyHoliday: 'CompanyHoliday',
   Notification: 'Notification',
   AsanaWorkspace: 'AsanaWorkspace',
   Team: 'Team',
@@ -418,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "comment" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "taskCustomFieldValue"
+    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "comment" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "taskCustomFieldValue"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -493,6 +494,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    CompanyHoliday: {
+      payload: Prisma.$CompanyHolidayPayload<ExtArgs>
+      fields: Prisma.CompanyHolidayFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CompanyHolidayFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CompanyHolidayFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>
+        }
+        findFirst: {
+          args: Prisma.CompanyHolidayFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CompanyHolidayFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>
+        }
+        findMany: {
+          args: Prisma.CompanyHolidayFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>[]
+        }
+        create: {
+          args: Prisma.CompanyHolidayCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>
+        }
+        createMany: {
+          args: Prisma.CompanyHolidayCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CompanyHolidayCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>[]
+        }
+        delete: {
+          args: Prisma.CompanyHolidayDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>
+        }
+        update: {
+          args: Prisma.CompanyHolidayUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>
+        }
+        deleteMany: {
+          args: Prisma.CompanyHolidayDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CompanyHolidayUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CompanyHolidayUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>[]
+        }
+        upsert: {
+          args: Prisma.CompanyHolidayUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompanyHolidayPayload>
+        }
+        aggregate: {
+          args: Prisma.CompanyHolidayAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCompanyHoliday>
+        }
+        groupBy: {
+          args: Prisma.CompanyHolidayGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CompanyHolidayGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CompanyHolidayCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CompanyHolidayCountAggregateOutputType> | number
         }
       }
     }
@@ -1885,6 +1960,18 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const CompanyHolidayScalarFieldEnum = {
+  id: 'id',
+  date: 'date',
+  name: 'name',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CompanyHolidayScalarFieldEnum = (typeof CompanyHolidayScalarFieldEnum)[keyof typeof CompanyHolidayScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2312,6 +2399,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  companyHoliday?: Prisma.CompanyHolidayOmit
   notification?: Prisma.NotificationOmit
   asanaWorkspace?: Prisma.AsanaWorkspaceOmit
   team?: Prisma.TeamOmit

@@ -5,3 +5,4 @@ export * from "./types/discipline.js";
 export * from "./types/task.js";
 export * from "./types/comment.js";
 export * from "./types/notification.js";
+export * from "./types/calendar.js";

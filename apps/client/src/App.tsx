@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom
 import { AppShell } from "./components/layout/AppShell";
 import { LoadingSpinner } from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
+import { AdminCalendarPage } from "./pages/AdminCalendarPage";
 import { GlobalWorkloadPage } from "./pages/GlobalWorkloadPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -56,6 +57,13 @@ function CoordinatorRoute() {
   return allowed ? <Outlet /> : <Navigate to="/" replace />;
 }
 
+function AdminRoute() {
+  const { user } = useAuth();
+  const allowed = user?.role === Role.ADMIN;
+
+  return allowed ? <Outlet /> : <Navigate to="/" replace />;
+}
+
 export function App() {
   return (
     <BrowserRouter>
@@ -72,6 +80,9 @@ export function App() {
             <Route path="/my-tasks" element={<MyTasksPage />} />
             <Route element={<CoordinatorRoute />}>
               <Route path="/users" element={<UsersPage />} />
+            </Route>
+            <Route element={<AdminRoute />}>
+              <Route path="/admin/calendar" element={<AdminCalendarPage />} />
             </Route>
             <Route path="/users/:userId" element={<UserProfilePage />} />
             <Route path="*" element={<NotFoundPage />} />

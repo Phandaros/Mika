@@ -21,7 +21,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
-import { cn } from "../../lib/utils";
+import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -38,6 +38,7 @@ import { Textarea } from "../ui/textarea";
 interface TaskDetailProps {
   task: Task | null;
   onClose: () => void;
+  openVersion?: number;
 }
 
 type EditableField = "assignee" | "status" | "priority" | "completionDate" | null;
@@ -57,7 +58,7 @@ const priorityOptions: Array<{ value: Priority; label: string; color: string }> 
   { value: Priority.URGENT, label: "Urgente", color: "var(--color-priority-urgent)" }
 ];
 
-export function TaskDetail({ task, onClose }: TaskDetailProps) {
+export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) {
   const { user } = useAuth();
   const [visibleTask, setVisibleTask] = useState<Task | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -110,12 +111,13 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     setVisibleTask(task);
 
     if (previousId === task.id) {
+      setIsOpen(true);
       return undefined;
     }
 
     setOpenField(null);
-    setDateDraftStart(task.startDate ? new Date(task.startDate) : null);
-    setDateDraftEnd(task.dueDate ? new Date(task.dueDate) : null);
+    setDateDraftStart(dateOnlyToLocalDate(task.startDate));
+    setDateDraftEnd(dateOnlyToLocalDate(task.dueDate));
     setIsEditingDescription(false);
     setIsEditingTitle(false);
     setDescriptionDraft(task.description ?? "");
@@ -128,7 +130,7 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
       window.requestAnimationFrame(() => setIsOpen(true));
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [task]);
+  }, [openVersion, task]);
 
   useEffect(() => {
     if (!isEditingDescription || !descriptionRef.current) {
@@ -210,15 +212,15 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
       return;
     }
 
-    setDateDraftStart(currentTask.startDate ? new Date(currentTask.startDate) : null);
-    setDateDraftEnd(currentTask.dueDate ? new Date(currentTask.dueDate) : null);
+    setDateDraftStart(dateOnlyToLocalDate(currentTask.startDate));
+    setDateDraftEnd(dateOnlyToLocalDate(currentTask.dueDate));
     setOpenField(openField === "completionDate" ? null : "completionDate");
   }
 
   async function saveCompletionDate() {
     await patchTask({
-      startDate: dateDraftStart ? dateDraftStart.toISOString() : null,
-      dueDate: dateDraftEnd ? dateDraftEnd.toISOString() : null
+      startDate: localDateToDateOnly(dateDraftStart),
+      dueDate: localDateToDateOnly(dateDraftEnd)
     });
   }
 
@@ -249,8 +251,8 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape") {
-        setDateDraftStart(visibleTask?.startDate ? new Date(visibleTask.startDate) : null);
-        setDateDraftEnd(visibleTask?.dueDate ? new Date(visibleTask.dueDate) : null);
+        setDateDraftStart(dateOnlyToLocalDate(visibleTask?.startDate));
+        setDateDraftEnd(dateOnlyToLocalDate(visibleTask?.dueDate));
         setOpenField(null);
       }
     }
@@ -261,7 +263,6 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
       document.removeEventListener("mousedown", handleDocumentMouseDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveCompletionDate usa draft/task do render corrente
   }, [dateDraftEnd, dateDraftStart, openField, visibleTask?.dueDate, visibleTask?.id, visibleTask?.startDate]);
 
   useEffect(() => {
@@ -932,15 +933,21 @@ function DateRangePanel({
 }
 
 function dateInputValue(date: Date | null): string {
-  return date ? format(date, "yyyy-MM-dd") : "";
+  return localDateToDateOnly(date) ?? "";
 }
 
 function inputDateValue(value: string): Date | null {
-  return value ? new Date(`${value}T00:00:00`) : null;
+  return dateOnlyToLocalDate(value);
 }
 
 function formatDisplayDate(date: string | Date): string {
-  return format(typeof date === "string" ? new Date(date) : date, "dd/MM/yyyy");
+  if (typeof date === "string") {
+    const dateOnly = toDateOnly(date);
+    const parsed = dateOnlyToLocalDate(dateOnly);
+    return parsed ? format(parsed, "dd/MM/yyyy") : "";
+  }
+
+  return format(date, "dd/MM/yyyy");
 }
 
 function formatMonthLabel(date: Date): string {

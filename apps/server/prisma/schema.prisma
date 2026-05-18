@@ -37,9 +37,24 @@ model User {
   taskLikes           TaskLike[]
   comments            Comment[]
   notifications       Notification[]
+  createdHolidays     CompanyHoliday[]      @relation("HolidayCreator")
 
   @@index([asanaGid])
   @@index([email])
+}
+
+model CompanyHoliday {
+  id        String   @id @default(cuid())
+  date      String   @unique
+  name      String
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator User? @relation("HolidayCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([createdBy])
 }
 
 model Notification {

@@ -7,21 +7,40 @@ import {
   useState,
   type DragEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode
+  type ReactNode,
+  type WheelEvent as ReactWheelEvent
 } from "react";
 import {
   addDays,
   format,
+  getDay,
   startOfDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
+import { Priority, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { useGlobalWorkloadTasks, useProjectWorkloadTasks } from "../../hooks/useTasks";
-import { cn } from "../../lib/utils";
+import { CheckCircle2, Copy, Eye, Filter, Group, Hash, MoreHorizontal, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
+import { useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
+import { cn, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
-import { LoadingSpinner } from "../shared/LoadingSpinner";
 import { Button } from "../ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from "../ui/context-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../ui/select";
 import { WORKLOAD_TASK_DRAG_MIME, WorkloadUndatedPanel } from "./WorkloadUndatedPanel";
 
 const DAY_W = 44;
@@ -33,6 +52,7 @@ const LANE_STRIDE = BAR_H + BAR_GAP;
 const NAME_COL = 192;
 const EXTENSION_DAYS = 28;
 const SCROLL_EDGE = 100;
+const ALL_FILTER_VALUE = "__all__";
 
 type TaskWithDiscipline = Task & {
   discipline: {
@@ -44,12 +64,28 @@ type TaskWithDiscipline = Task & {
   };
 };
 
-function toYmd(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
+type PendingTaskMove = {
+  startDate: string | null;
+  dueDate: string | null;
+};
 
-  return value.slice(0, 10);
+type WorkloadGrouping = "assignee" | "section";
+type CompletionFilter = "open" | "completed" | "all";
+
+type WorkloadRow = {
+  id: string;
+  label: string;
+  sublabel?: string;
+  avatarName?: string;
+  avatarUrl?: string | null;
+  rowTasks: TaskWithDiscipline[];
+  positioned: PositionedTask[];
+  lanes: number[];
+  rowH: number;
+};
+
+function toYmd(value: string | null | undefined): string | null {
+  return toDateOnly(value);
 }
 
 const MS_PER_DAY = 86400000;
@@ -173,7 +209,7 @@ function clipToViewport(
   return { startIdx, endIdx };
 }
 
-function buildDailyLoadsForTasks(tasks: Task[], dayKeys: string[]): number[] {
+function buildDailyLoadsForTasks(tasks: Task[], dayKeys: string[], nonWorkingDays: Set<string>): number[] {
   if (dayKeys.length === 0) {
     return [];
   }
@@ -196,14 +232,18 @@ function buildDailyLoadsForTasks(tasks: Task[], dayKeys: string[]): number[] {
       continue;
     }
 
-    const fullSpan = eachYmdInclusive(bounds.start, bounds.end);
-    if (fullSpan.length === 0) {
+    const workDaysInFullSpan = eachYmdInclusive(bounds.start, bounds.end).filter((ymd) => !nonWorkingDays.has(ymd));
+    if (workDaysInFullSpan.length === 0) {
       continue;
     }
 
-    const per = task.estimatedDays / fullSpan.length;
+    const per = task.estimatedDays / workDaysInFullSpan.length;
 
     for (const ymd of eachYmdInclusive(clippedStartY, clippedEndY)) {
+      if (nonWorkingDays.has(ymd)) {
+        continue;
+      }
+
       const idx = dayIndex.get(ymd);
       if (idx !== undefined) {
         const current = loads[idx] ?? 0;
@@ -296,6 +336,7 @@ type BaseTimelineProps = {
   users: User[];
   isActive: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  onTaskUpdated?: (task: TaskWithDiscipline) => void;
   updateTask: UseMutationResult<Task, Error, { id: string; payload: UpdateTaskRequest }>;
 };
 
@@ -321,16 +362,30 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   }
 
   const mode = props.mode === "global" ? "global" : "project";
-  const { users, isActive, onOpenTask, updateTask } = props;
+  const { users, isActive, onOpenTask, onTaskUpdated, updateTask } = props;
   const today = startOfDay(new Date());
   const [unionFrom, setUnionFrom] = useState(() => format(addDays(today, -21), "yyyy-MM-dd"));
   const [unionTo, setUnionTo] = useState(() => format(addDays(today, 84), "yyyy-MM-dd"));
   const [showAllUsers, setShowAllUsers] = useState(false);
   const [undatedPanelOpen, setUndatedPanelOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [abbreviatedDays, setAbbreviatedDays] = useState(true);
+  const [showEstimatedDays, setShowEstimatedDays] = useState(true);
+  const [grouping, setGrouping] = useState<WorkloadGrouping>("assignee");
+  const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER_VALUE);
+  const [priorityFilter, setPriorityFilter] = useState<string>(ALL_FILTER_VALUE);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE);
+  const [sectionFilter, setSectionFilter] = useState<string>(ALL_FILTER_VALUE);
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [dragPreview, setDragPreview] = useState<{ taskId: string; deltaDays: number } | null>(null);
+  const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
+  const [taskPendingDelete, setTaskPendingDelete] = useState<TaskWithDiscipline | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollAdjust = useRef(0);
   const scrollReady = useRef(false);
+  const extendingLeft = useRef(false);
+  const extendingRight = useRef(false);
+  const deleteTask = useDeleteTask(projectId);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -339,29 +394,130 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     return () => window.clearTimeout(id);
   }, []);
 
-  const projectQuery = useProjectWorkloadTasks(projectId, unionFrom, unionTo, isActive && mode === "project");
-  const globalQuery = useGlobalWorkloadTasks(
+  const projectQuery = useProjectWorkloadTaskChunks(projectId, unionFrom, unionTo, isActive && mode === "project");
+  const globalQuery = useGlobalWorkloadTaskChunks(
     workloadScope ?? "general",
     unionFrom,
     unionTo,
     isActive && mode === "global"
   );
+  const holidaysQuery = useCompanyHolidays(unionFrom, unionTo, isActive);
 
-  const rawTasks = mode === "global" ? (globalQuery.data ?? []) : (projectQuery.data ?? []);
-  const isLoading = mode === "global" ? globalQuery.isLoading : projectQuery.isLoading;
-  const isFetching = mode === "global" ? globalQuery.isFetching : projectQuery.isFetching;
+  const rawTasks = mode === "global" ? globalQuery.data : projectQuery.data;
+  const isFetching = (mode === "global" ? globalQuery.isFetching : projectQuery.isFetching) || holidaysQuery.isFetching;
+
+  const timelineTasks = useMemo(
+    () =>
+      rawTasks.map((task) => {
+        const pendingMove = pendingTaskMoves[task.id];
+        return pendingMove ? { ...task, ...pendingMove } : task;
+      }),
+    [pendingTaskMoves, rawTasks]
+  );
+
+  useEffect(() => {
+    if (Object.keys(pendingTaskMoves).length === 0) {
+      return;
+    }
+
+    setPendingTaskMoves((current) => {
+      let changed = false;
+      const next = { ...current };
+
+      for (const task of rawTasks) {
+        const pendingMove = current[task.id];
+        if (!pendingMove) {
+          continue;
+        }
+
+        const rawStart = toYmd(task.startDate);
+        const rawDue = toYmd(task.dueDate);
+        if (rawStart === pendingMove.startDate && rawDue === pendingMove.dueDate) {
+          delete next[task.id];
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, [pendingTaskMoves, rawTasks]);
 
   const tasks = useMemo(() => {
-    return rawTasks.filter((task) => {
+    return timelineTasks.filter((task) => {
       if (disciplineIdFilter.size === 0) {
         return true;
       }
 
       return disciplineIdFilter.has(task.disciplineId);
     }) as TaskWithDiscipline[];
-  }, [rawTasks, disciplineIdFilter]);
+  }, [timelineTasks, disciplineIdFilter]);
 
   const days = useMemo(() => eachYmdInclusive(unionFrom, unionTo), [unionFrom, unionTo]);
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const holiday of holidaysQuery.data ?? []) {
+      map.set(holiday.date, holiday.name);
+    }
+    return map;
+  }, [holidaysQuery.data]);
+  const nonWorkingDays = useMemo(() => {
+    const set = new Set<string>();
+    for (const day of days) {
+      const weekDay = getDay(parseYmdToLocalNoon(day));
+      if (weekDay === 0 || weekDay === 6 || holidayMap.has(day)) {
+        set.add(day);
+      }
+    }
+    return set;
+  }, [days, holidayMap]);
+  const sectionOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const task of tasks) {
+      const label =
+        mode === "global" && task.discipline.projectName
+          ? `${task.discipline.projectName} / ${task.discipline.name}`
+          : task.discipline.name;
+      map.set(task.disciplineId, label);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+  }, [mode, tasks]);
+  const assigneeOptions = useMemo(() => {
+    const ids = new Set(tasks.map((task) => task.assigneeId).filter((id): id is string => Boolean(id)));
+    return users
+      .filter((user) => ids.has(user.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [tasks, users]);
+  const filteredTasks = useMemo(
+    () =>
+      tasks.filter((task) => {
+        if (sectionFilter !== ALL_FILTER_VALUE && task.disciplineId !== sectionFilter) {
+          return false;
+        }
+
+        if (assigneeFilter !== ALL_FILTER_VALUE && task.assigneeId !== assigneeFilter) {
+          return false;
+        }
+
+        if (statusFilter !== ALL_FILTER_VALUE && task.status !== statusFilter) {
+          return false;
+        }
+
+        if (priorityFilter !== ALL_FILTER_VALUE && task.priority !== priorityFilter) {
+          return false;
+        }
+
+        if (completionFilter === "completed") {
+          return task.completed;
+        }
+
+        if (completionFilter === "open") {
+          return !task.completed;
+        }
+
+        return true;
+      }),
+    [assigneeFilter, completionFilter, priorityFilter, sectionFilter, statusFilter, tasks]
+  );
 
   const dayCount = days.length;
   const timelineWidth = dayCount * DAY_W;
@@ -369,8 +525,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const todayKey = format(today, "yyyy-MM-dd");
   const todayIdx = days.indexOf(todayKey);
 
-  const datedTasks = useMemo(() => tasks.filter((t) => clientTaskBounds(t) !== null), [tasks]);
-  const undatedTasks = useMemo(() => tasks.filter((t) => clientTaskBounds(t) === null), [tasks]);
+  const datedTasks = useMemo(() => filteredTasks.filter((t) => clientTaskBounds(t) !== null), [filteredTasks]);
+  const undatedTasks = useMemo(() => filteredTasks.filter((t) => clientTaskBounds(t) === null), [filteredTasks]);
 
   const assigneeIdsWithTasks = useMemo(() => {
     const set = new Set<string>();
@@ -388,40 +544,123 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     return [...base].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }, [assigneeIdsWithTasks, showAllUsers, users]);
 
-  const hasUnassigned = datedTasks.some((t) => !t.assigneeId);
-
-  const totalLoads = useMemo(() => buildDailyLoadsForTasks(datedTasks, days), [datedTasks, days]);
+  const totalLoads = useMemo(
+    () => buildDailyLoadsForTasks(datedTasks, days, nonWorkingDays),
+    [datedTasks, days, nonWorkingDays]
+  );
 
   const totalRowH = CHART_H + 8;
 
-  const userLayouts = useMemo(
-    () =>
-      userRows.map((user) => {
-        const rowTasks = datedTasks.filter((t) => t.assigneeId === user.id);
-        const { positioned, lanes, rowH } = layoutRowTasks(rowTasks, unionFrom, unionTo);
-        return { user, rowTasks, positioned, lanes, rowH };
-      }),
-    [datedTasks, unionFrom, unionTo, userRows]
-  );
+  const workloadRows = useMemo<WorkloadRow[]>(() => {
+    if (grouping === "section") {
+      const map = new Map<string, { label: string; sublabel?: string; tasks: TaskWithDiscipline[] }>();
+      for (const task of datedTasks) {
+        const key = task.disciplineId;
+        const current = map.get(key);
+        const label = task.discipline.name;
+        const sublabel = task.discipline.projectName ?? undefined;
+        if (current) {
+          current.tasks.push(task);
+        } else {
+          map.set(key, { label, sublabel, tasks: [task] });
+        }
+      }
 
-  const unassignedLayout = useMemo(() => {
-    if (!hasUnassigned) {
-      return null;
+      return [...map.entries()]
+        .sort((a, b) => a[1].label.localeCompare(b[1].label, "pt-BR"))
+        .map(([id, row]) => {
+          const { positioned, lanes, rowH } = layoutRowTasks(row.tasks, unionFrom, unionTo);
+          return {
+            id,
+            label: row.label,
+            sublabel: row.sublabel,
+            rowTasks: row.tasks,
+            positioned,
+            lanes,
+            rowH
+          };
+        });
     }
 
-    const rowTasks = datedTasks.filter((t) => !t.assigneeId);
-    return layoutRowTasks(rowTasks, unionFrom, unionTo);
-  }, [datedTasks, hasUnassigned, unionFrom, unionTo]);
+    const rows: WorkloadRow[] = userRows.map((user) => {
+      const rowTasks = datedTasks.filter((t) => t.assigneeId === user.id);
+      const { positioned, lanes, rowH } = layoutRowTasks(rowTasks, unionFrom, unionTo);
+      return {
+        id: user.id,
+        label: user.name,
+        sublabel: user.role,
+        avatarName: user.name,
+        avatarUrl: user.avatarUrl,
+        rowTasks,
+        positioned,
+        lanes,
+        rowH
+      };
+    });
+
+    const unassignedTasks = datedTasks.filter((t) => !t.assigneeId);
+    if (unassignedTasks.length) {
+      const { positioned, lanes, rowH } = layoutRowTasks(unassignedTasks, unionFrom, unionTo);
+      rows.push({
+        id: "unassigned",
+        label: "Sem responsavel",
+        rowTasks: unassignedTasks,
+        positioned,
+        lanes,
+        rowH
+      });
+    }
+
+    return rows;
+  }, [datedTasks, grouping, unionFrom, unionTo, userRows]);
 
   const extendLeft = useCallback(() => {
+    if (extendingLeft.current) {
+      return;
+    }
+
+    extendingLeft.current = true;
     const nextFrom = addCalendarDaysYmd(unionFrom, -EXTENSION_DAYS);
     pendingScrollAdjust.current += EXTENSION_DAYS * DAY_W;
     setUnionFrom(nextFrom);
   }, [unionFrom]);
 
   const extendRight = useCallback(() => {
+    if (extendingRight.current) {
+      return;
+    }
+
+    extendingRight.current = true;
     setUnionTo((current) => addCalendarDaysYmd(current, EXTENSION_DAYS));
   }, []);
+
+  useEffect(() => {
+    extendingLeft.current = false;
+  }, [unionFrom]);
+
+  useEffect(() => {
+    extendingRight.current = false;
+  }, [unionTo]);
+
+  const maybeExtendTimeline = useCallback(
+    (box: HTMLDivElement, direction: "left" | "right" | "both") => {
+      if (!scrollReady.current) {
+        return;
+      }
+
+      const atLeftEdge = box.scrollLeft < SCROLL_EDGE;
+      const atRightEdge = box.scrollLeft + box.clientWidth > box.scrollWidth - SCROLL_EDGE;
+
+      if ((direction === "left" || direction === "both") && atLeftEdge) {
+        extendLeft();
+      }
+
+      if ((direction === "right" || direction === "both") && atRightEdge) {
+        extendRight();
+      }
+    },
+    [extendLeft, extendRight]
+  );
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -442,22 +681,33 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     function onScroll() {
       const box = scrollRef.current;
-      if (!box || !scrollReady.current) {
+      if (!box) {
         return;
       }
 
-      if (box.scrollLeft < SCROLL_EDGE) {
-        extendLeft();
-      }
-
-      if (box.scrollLeft + box.clientWidth > box.scrollWidth - SCROLL_EDGE) {
-        extendRight();
-      }
+      maybeExtendTimeline(box, "both");
     }
 
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
-  }, [extendLeft, extendRight]);
+  }, [maybeExtendTimeline]);
+
+  function handleTimelineWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    const box = event.currentTarget;
+    const shiftHorizontalDelta = event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : 0;
+    const horizontalDelta = shiftHorizontalDelta || event.deltaX;
+
+    if (horizontalDelta === 0) {
+      return;
+    }
+
+    if (shiftHorizontalDelta !== 0) {
+      event.preventDefault();
+      box.scrollLeft += shiftHorizontalDelta;
+    }
+
+    maybeExtendTimeline(box, horizontalDelta < 0 ? "left" : "right");
+  }
 
   function handleTimelineDragOver(event: DragEvent<HTMLDivElement>) {
     if (!Array.from(event.dataTransfer.types).includes(WORKLOAD_TASK_DRAG_MIME)) {
@@ -492,7 +742,22 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return;
     }
 
-    void updateTask.mutateAsync({ id, payload: { startDate: ymd, dueDate: ymd } });
+    setPendingTaskMoves((current) => ({
+      ...current,
+      [id]: { startDate: ymd, dueDate: ymd }
+    }));
+
+    void updateTask
+      .mutateAsync({ id, payload: { startDate: ymd, dueDate: ymd } })
+      .then((updatedTask) => {
+        const originalTask = tasks.find((task) => task.id === updatedTask.id);
+        if (originalTask) {
+          onTaskUpdated?.(mergeTimelineTask(originalTask, updatedTask));
+        }
+      })
+      .catch(() => {
+        setPendingTaskMoves((current) => removePendingTaskMove(current, id));
+      });
   }
 
   function handleBarPointerDown(
@@ -500,6 +765,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     task: TaskWithDiscipline,
     bounds: { start: string; end: string }
   ) {
+    if (ev.button !== 0) {
+      return;
+    }
+
     ev.preventDefault();
     ev.stopPropagation();
     const pointerId = ev.pointerId;
@@ -550,19 +819,80 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
       const newStart = addCalendarDaysYmd(bounds.start, deltaDays);
       const newEnd = addCalendarDaysYmd(bounds.end, deltaDays);
+      setPendingTaskMoves((current) => ({
+        ...current,
+        [task.id]: { startDate: newStart, dueDate: newEnd }
+      }));
+      setDragPreview(null);
       void updateTask
         .mutateAsync({
           id: task.id,
           payload: { startDate: newStart, dueDate: newEnd }
         })
-        .finally(() => {
-          setDragPreview((current) => (current?.taskId === task.id ? null : current));
+        .then((updatedTask) => {
+          onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
+        })
+        .catch(() => {
+          setDragPreview(null);
+          setPendingTaskMoves((current) => removePendingTaskMove(current, task.id));
         });
     }
 
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", finish);
     window.addEventListener("pointercancel", finish);
+  }
+
+  function taskLink(task: TaskWithDiscipline): string {
+    const projectForLink = task.discipline?.projectId;
+    const path = projectForLink ? `/projects/${projectForLink}?task=${task.id}` : `/tasks/${task.id}`;
+    return `${window.location.origin}${path}`;
+  }
+
+  async function copyTaskLink(task: TaskWithDiscipline) {
+    await window.navigator.clipboard.writeText(taskLink(task));
+    toast.success("Link da tarefa copiado");
+  }
+
+  async function toggleTaskCompleted(task: TaskWithDiscipline) {
+    const updatedTask = await updateTask.mutateAsync({
+      id: task.id,
+      payload: { completed: !task.completed }
+    });
+    onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
+    toast.success(task.completed ? "Tarefa reaberta" : "Tarefa concluida");
+  }
+
+  async function confirmDeleteTask() {
+    if (!taskPendingDelete) {
+      return;
+    }
+
+    const task = taskPendingDelete;
+    await deleteTask.mutateAsync(task.id);
+    setTaskPendingDelete(null);
+    toast.success("Tarefa excluida");
+  }
+
+  function renderNonWorkingBands(rowHeight: number, rowKey: string): ReactNode {
+    return days.map((day, index) => {
+      if (!nonWorkingDays.has(day)) {
+        return null;
+      }
+
+      const holidayName = holidayMap.get(day);
+      return (
+        <div
+          key={`${rowKey}-non-working-${day}`}
+          className={cn(
+            "pointer-events-none absolute top-0 z-[1] border-r border-border-subtle",
+            holidayName ? "bg-brand-orange/10" : "bg-white/[0.035]"
+          )}
+          title={holidayName ?? "Final de semana"}
+          style={{ left: index * DAY_W, width: DAY_W, height: rowHeight }}
+        />
+      );
+    });
   }
 
   function renderBars(
@@ -573,9 +903,11 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   ): ReactNode {
     return (
       <>
-        <div className="absolute left-0 top-1">
+        {showEstimatedDays ? (
+        <div className="absolute left-0 top-1 z-[3]">
           <MiniLoadChart loads={loads} height={CHART_H} />
         </div>
+        ) : null}
         {positioned.map((p, i) => {
           const { startIdx, endIdx } = p.clip;
           const lane = lanes[i] ?? 0;
@@ -589,37 +921,59 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           }
 
           return (
-            <button
-              key={`${rowKey}-${p.task.id}`}
-              type="button"
-              title={barLabelText(p.task, mode)}
-              style={{
-                position: "absolute",
-                left,
-                width,
-                top: CHART_H + 4 + lane * LANE_STRIDE,
-                height: BAR_H,
-                backgroundColor: statusColorVar(p.task.status),
-                opacity: p.task.completed ? 0.45 : 1
-              }}
-              className={cn(
-                "z-[6] cursor-grab overflow-hidden rounded-md border border-border px-1 text-left text-[11px] font-medium text-white shadow-sm active:cursor-grabbing",
-                dragPreview?.taskId === p.task.id && "ring-2 ring-brand-orange"
-              )}
-              onPointerDown={(e) => {
-                const b = clientTaskBounds(p.task);
-                if (!b) {
-                  return;
-                }
+            <ContextMenu key={`${rowKey}-${p.task.id}`}>
+              <ContextMenuTrigger asChild>
+                <button
+                  type="button"
+                  title={barLabelText(p.task, mode)}
+                  style={{
+                    position: "absolute",
+                    left,
+                    width,
+                    top: CHART_H + 4 + lane * LANE_STRIDE,
+                    height: BAR_H,
+                    backgroundColor: statusColorVar(p.task.status),
+                    opacity: p.task.completed ? 0.45 : 1
+                  }}
+                  className={cn(
+                    "z-[6] cursor-grab overflow-hidden rounded-md border border-border px-1 text-left text-[11px] font-medium text-white shadow-sm active:cursor-grabbing",
+                    dragPreview?.taskId === p.task.id && "ring-2 ring-brand-orange"
+                  )}
+                  onPointerDown={(e) => {
+                    const b = clientTaskBounds(p.task);
+                    if (!b) {
+                      return;
+                    }
 
-                handleBarPointerDown(e, p.task, b);
-              }}
-            >
-              <span className="line-clamp-1">{barLabelText(p.task, mode)}</span>
-            </button>
+                    handleBarPointerDown(e, p.task, b);
+                  }}
+                >
+                  <span className="line-clamp-1">{barLabelText(p.task, mode)}</span>
+                </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem onSelect={() => onOpenTask(p.task)}>
+                  <Eye className="h-4 w-4" />
+                  Abrir detalhes da tarefa
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => void toggleTaskCompleted(p.task)}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  {p.task.completed ? "Marcar como nao concluida" : "Marcar como concluida"}
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => void copyTaskLink(p.task)}>
+                  <Copy className="h-4 w-4" />
+                  Copiar link da tarefa
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem variant="destructive" onSelect={() => setTaskPendingDelete(p.task)}>
+                  <Trash2 className="h-4 w-4" />
+                  Excluir a tarefa
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           );
         })}
-        {loads.map((load, i) =>
+        {showEstimatedDays ? loads.map((load, i) =>
           load > 0 ? (
             <span
               key={`${rowKey}-cap-${i}`}
@@ -629,38 +983,19 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               {load >= 10 ? load.toFixed(0) : load.toFixed(1)}
             </span>
           ) : null
-        )}
+        ) : null}
       </>
     );
   }
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-3 overflow-x-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
-          <input
-            type="checkbox"
-            checked={showAllUsers}
-            onChange={(event) => setShowAllUsers(event.target.checked)}
-            className="rounded border-border"
-          />
-          Mostrar toda a equipe
-        </label>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-bg-1 px-3 py-2">
         <div className="flex flex-wrap items-center gap-2">
-          {undatedTasks.length ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="text-xs"
-              onClick={() => setUndatedPanelOpen(true)}
-            >
-              Sem datas ({undatedTasks.length})
-            </Button>
-          ) : null}
           <Button
             type="button"
             variant="secondary"
-            className="text-xs"
+            className="h-8 px-3 text-xs"
             onClick={() => {
               const t = startOfDay(new Date());
               setUnionFrom(format(addDays(t, -21), "yyyy-MM-dd"));
@@ -674,15 +1009,144 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           >
             Hoje
           </Button>
+          <Button
+            type="button"
+            variant={abbreviatedDays ? "primary" : "secondary"}
+            className="h-8 px-3 text-xs"
+            onClick={() => setAbbreviatedDays((value) => !value)}
+          >
+            Dias abreviados
+          </Button>
+          <Button
+            type="button"
+            variant={filtersOpen ? "primary" : "secondary"}
+            className="h-8 px-3 text-xs"
+            onClick={() => setFiltersOpen((value) => !value)}
+          >
+            <Filter size={14} />
+            Filtrar
+          </Button>
+          <div className="flex items-center gap-2 text-xs text-text-secondary">
+            <Group size={14} />
+            <Select value={grouping} onValueChange={(value) => setGrouping(value as WorkloadGrouping)}>
+              <SelectTrigger className="h-8 w-[150px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="assignee">Responsavel</SelectItem>
+                <SelectItem value="section">Secao</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant={showEstimatedDays ? "primary" : "secondary"}
+            className="h-8 px-3 text-xs"
+            onClick={() => setShowEstimatedDays((value) => !value)}
+          >
+            <Hash size={14} />
+            Dias estimados
+          </Button>
+          <Button type="button" variant="secondary" className="h-8 px-3 text-xs" title="Opcoes">
+            <MoreHorizontal size={14} />
+            Opcoes
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {grouping === "assignee" ? (
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-text-secondary">
+              <input
+                type="checkbox"
+                checked={showAllUsers}
+                onChange={(event) => setShowAllUsers(event.target.checked)}
+                className="rounded border-border"
+              />
+              Mostrar toda a equipe
+            </label>
+          ) : null}
+          {undatedTasks.length ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-8 px-3 text-xs"
+              onClick={() => setUndatedPanelOpen(true)}
+            >
+              Sem datas ({undatedTasks.length})
+            </Button>
+          ) : null}
         </div>
       </div>
 
-      {isLoading && !rawTasks.length ? (
-        <LoadingSpinner />
-      ) : (
-        <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-md border border-border bg-bg-1">
+      {filtersOpen ? (
+        <div className="grid gap-2 rounded-md border border-border bg-bg-1 p-3 sm:grid-cols-2 lg:grid-cols-5">
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Secao" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER_VALUE}>Todas as secoes</SelectItem>
+              {sectionOptions.map(([id, label]) => (
+                <SelectItem key={id} value={id}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Responsavel" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER_VALUE}>Todos os responsaveis</SelectItem>
+              {assigneeOptions.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER_VALUE}>Todos os status</SelectItem>
+              {Object.values(TaskStatus).map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Prioridade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER_VALUE}>Todas as prioridades</SelectItem>
+              {Object.values(Priority).map((priority) => (
+                <SelectItem key={priority} value={priority}>
+                  {priority}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={completionFilter} onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Abertas</SelectItem>
+              <SelectItem value="completed">Concluidas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
+      <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-md border border-border bg-bg-1">
           {isFetching ? (
-            <div className="absolute right-2 top-2 z-40 text-xs text-text-muted">Atualizando…</div>
+            <div className="absolute right-2 top-2 z-40 text-xs text-text-muted">Atualizando...</div>
           ) : null}
 
           <div className="flex w-full min-w-0 max-w-full">
@@ -693,32 +1157,32 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               >
                 Total (dias est.)
               </div>
-              {userLayouts.map(({ user, rowH }) => (
+              {workloadRows.map((row) => (
                 <div
-                  key={user.id}
+                  key={row.id}
                   className="flex items-center gap-2 border-b border-border px-3 py-2"
-                  style={{ height: rowH }}
+                  style={{ height: row.rowH }}
                 >
-                  <Avatar name={user.name} imageUrl={user.avatarUrl} className="h-8 w-8 shrink-0" />
+                  {row.avatarName ? (
+                    <Avatar name={row.avatarName} imageUrl={row.avatarUrl} className="h-8 w-8 shrink-0" />
+                  ) : (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-card text-xs font-bold text-text-secondary">
+                      #
+                    </div>
+                  )}
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-text-primary">{user.name}</p>
-                    <p className="truncate text-xs text-text-muted">{user.role}</p>
+                    <p className="truncate text-sm font-medium text-text-primary">{row.label}</p>
+                    {row.sublabel ? <p className="truncate text-xs text-text-muted">{row.sublabel}</p> : null}
                   </div>
                 </div>
               ))}
-              {unassignedLayout ? (
-                <div
-                  className="flex items-center border-b border-border px-3 py-2 text-sm font-medium text-text-secondary"
-                  style={{ height: unassignedLayout.rowH }}
-                >
-                  Sem responsável
-                </div>
-              ) : null}
             </div>
 
             <div
               ref={scrollRef}
-              className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden"
+              data-testid="workload-timeline-scroll"
+              className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain"
+              onWheel={handleTimelineWheel}
               onDragOver={handleTimelineDragOver}
               onDrop={handleTimelineDrop}
             >
@@ -729,6 +1193,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 >
                   {days.map((d, idx) => {
                     const isToday = d === todayKey;
+                    const holidayName = holidayMap.get(d);
+                    const weekDay = getDay(parseYmdToLocalNoon(d));
+                    const isNonWorking = weekDay === 0 || weekDay === 6 || Boolean(holidayName);
                     const prevDay = idx > 0 ? days[idx - 1] : undefined;
                     const showMonth =
                       idx === 0 ||
@@ -738,14 +1205,21 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                       <div
                         key={d}
                         style={{ width: DAY_W, minWidth: DAY_W }}
+                        title={holidayName ?? (isNonWorking ? "Final de semana" : undefined)}
                         className={cn(
                           "flex flex-col items-center justify-center border-r border-border-subtle text-[10px] text-text-muted",
+                          isNonWorking && "bg-white/[0.04]",
+                          holidayName && "bg-brand-orange/10",
                           isToday && "bg-surface-hover text-text-primary"
                         )}
                       >
                         {showMonth ? (
                           <span className="text-[9px] uppercase text-text-muted">
                             {format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR })}
+                          </span>
+                        ) : !abbreviatedDays ? (
+                          <span className="text-[9px] uppercase text-text-muted">
+                            {format(parseYmdToLocalNoon(d), "EEE", { locale: ptBR })}
                           </span>
                         ) : (
                           <span className="h-[12px]" />
@@ -769,8 +1243,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                       className="relative"
                       style={{ width: timelineWidth, minWidth: timelineWidth, height: totalRowH }}
                     >
-                      <MiniLoadChart loads={totalLoads} height={CHART_H} />
-                      {totalLoads.map((load, i) =>
+                      {renderNonWorkingBands(totalRowH, "total")}
+                      {showEstimatedDays ? <MiniLoadChart loads={totalLoads} height={CHART_H} /> : null}
+                      {showEstimatedDays ? totalLoads.map((load, i) =>
                         load > 0 ? (
                           <span
                             key={`tot-cap-${i}`}
@@ -780,50 +1255,27 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                             {load >= 10 ? load.toFixed(0) : load.toFixed(1)}
                           </span>
                         ) : null
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
-                  {userLayouts.map(({ user, positioned, lanes, rowH, rowTasks }) => {
-                    const loads = buildDailyLoadsForTasks(rowTasks, days);
+                  {workloadRows.map((row) => {
+                    const loads = buildDailyLoadsForTasks(row.rowTasks, days, nonWorkingDays);
                     return (
-                      <div key={user.id} className="flex border-b border-border-subtle">
-                        <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: rowH }}>
-                          {renderBars(positioned, lanes, loads, user.id)}
+                      <div key={row.id} className="flex border-b border-border-subtle">
+                        <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: row.rowH }}>
+                          {renderNonWorkingBands(row.rowH, row.id)}
+                          {renderBars(row.positioned, row.lanes, loads, row.id)}
                         </div>
                       </div>
                     );
                   })}
-
-                  {unassignedLayout ? (
-                    <div className="flex border-b border-border-subtle">
-                      <div
-                        className="relative"
-                        style={{
-                          width: timelineWidth,
-                          minWidth: timelineWidth,
-                          height: unassignedLayout.rowH
-                        }}
-                      >
-                        {renderBars(
-                          unassignedLayout.positioned,
-                          unassignedLayout.lanes,
-                          buildDailyLoadsForTasks(
-                            datedTasks.filter((t) => !t.assigneeId),
-                            days
-                          ),
-                          "unassigned"
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
 
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
 
       <WorkloadUndatedPanel
         open={undatedPanelOpen}
@@ -836,6 +1288,52 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           onOpenTask(task);
         }}
       />
+      <Dialog open={Boolean(taskPendingDelete)} onOpenChange={(open) => !open && setTaskPendingDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir tarefa</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-text-secondary">
+            Esta acao remove a tarefa "{taskPendingDelete?.title}" do projeto. Nao e possivel desfazer pela interface.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setTaskPendingDelete(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" disabled={deleteTask.isPending} onClick={() => void confirmDeleteTask()}>
+              Excluir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function mergeTimelineTask(currentTask: TaskWithDiscipline, updatedTask: Task): TaskWithDiscipline {
+  return {
+    ...currentTask,
+    ...updatedTask,
+    discipline: updatedTask.discipline
+      ? {
+          ...currentTask.discipline,
+          ...updatedTask.discipline,
+          type: updatedTask.discipline.type ?? currentTask.discipline.type
+        }
+      : currentTask.discipline,
+    comments: updatedTask.comments ?? currentTask.comments
+  };
+}
+
+function removePendingTaskMove(
+  current: Record<string, PendingTaskMove>,
+  taskId: string
+): Record<string, PendingTaskMove> {
+  if (!(taskId in current)) {
+    return current;
+  }
+
+  const next = { ...current };
+  delete next[taskId];
+  return next;
 }

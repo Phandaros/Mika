@@ -10,7 +10,7 @@ import { TaskDetail } from "../components/task/TaskDetail";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
 import { useRecentActivity } from "../hooks/useRecentActivity";
-import { cn } from "../lib/utils";
+import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
 
 type TaskWithProject = Task & {
   discipline: {
@@ -45,6 +45,7 @@ export function DashboardPage() {
   const { data: projects = [], isLoading } = useProjects();
   const { data: activities = [], isLoading: activityLoading } = useRecentActivity();
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
+  const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [homeTaskTab, setHomeTaskTab] = useState<"next" | "overdue" | "done">("overdue");
 
   const myTasks = useMemo(
@@ -67,9 +68,7 @@ export function DashboardPage() {
     [projects, user?.id]
   );
 
-  const overdueTasks = myTasks.filter(
-    (task) => task.dueDate && !task.completed && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate))
-  );
+  const overdueTasks = myTasks.filter((task) => isOverdue(task));
   const nextTasks = myTasks.filter((task) => !task.completed && !overdueTasks.some((item) => item.id === task.id)).slice(0, 7);
   const completedTasks = myTasks.filter((task) => task.completed);
   const completedThisWeek = completedTasks.filter((task) => {
@@ -88,6 +87,11 @@ export function DashboardPage() {
 
   if (isLoading) {
     return <LoadingSpinner />;
+  }
+
+  function openTaskDetail(task: TaskWithProject) {
+    setTaskDetailOpenVersion((version) => version + 1);
+    setSelectedTask(task);
   }
 
   return (
@@ -121,7 +125,7 @@ export function DashboardPage() {
               Concluidas
             </HomeTaskTab>
           </div>
-          <TaskMiniList tasks={homeTasks} onOpenTask={setSelectedTask} />
+          <TaskMiniList tasks={homeTasks} onOpenTask={openTaskDetail} />
           <Link to="/my-tasks" className="mt-3 inline-flex text-sm font-semibold text-brand-orange hover:text-orange-400">
             Abrir minhas tarefas
           </Link>
@@ -162,7 +166,7 @@ export function DashboardPage() {
           {!activeProjects.length ? <EmptyState title="Nenhum projeto ativo" /> : null}
         </HomeCard>
       </section>
-      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} openVersion={taskDetailOpenVersion} />
     </div>
   );
 }
@@ -252,7 +256,8 @@ function firstName(name: string): string {
 }
 
 function isOverdue(task: Task): boolean {
-  return Boolean(task.dueDate && !task.completed && isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate)));
+  const dueDate = dateOnlyToLocalDate(task.dueDate);
+  return Boolean(dueDate && !task.completed && isBefore(dueDate, new Date()) && !isToday(dueDate));
 }
 
 function dateLabel(date: string | null): string {
@@ -260,10 +265,14 @@ function dateLabel(date: string | null): string {
     return "Sem data";
   }
 
-  const parsed = new Date(date);
+  const parsed = dateOnlyToLocalDate(date);
+  if (!parsed) {
+    return "Sem data";
+  }
+
   if (isToday(parsed)) {
     return "Hoje";
   }
 
-  return format(parsed, "d MMM");
+  return formatDateOnly(date, "d MMM");
 }

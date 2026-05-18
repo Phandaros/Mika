@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Bell,
+  CalendarDays,
   CalendarRange,
   CheckCircle2,
   FolderKanban,
@@ -21,6 +22,7 @@ const navItems = [
   { to: "/", label: "Pagina inicial", icon: Home },
   { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
   { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
+  { to: "/admin/calendar", label: "Calendario", icon: CalendarDays, minRole: Role.ADMIN },
   { to: "/users", label: "Usuarios", icon: Users, minRole: Role.COORDINATOR }
 ];
 

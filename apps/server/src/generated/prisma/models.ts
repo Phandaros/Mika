@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/User.js'
+export type * from './models/CompanyHoliday.js'
 export type * from './models/Notification.js'
 export type * from './models/AsanaWorkspace.js'
 export type * from './models/Team.js'

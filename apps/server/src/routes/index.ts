@@ -1,6 +1,7 @@
 import { Router } from "express";
 import activityRoutes from "./activity.routes.js";
 import authRoutes from "./auth.routes.js";
+import calendarRoutes from "./calendar.routes.js";
 import commentsRoutes from "./comments.routes.js";
 import sectionsRoutes from "./sections.routes.js";
 import notificationsRoutes from "./notifications.routes.js";
@@ -14,6 +15,7 @@ const router = Router();
 
 router.use("/auth", authRoutes);
 router.use(activityRoutes);
+router.use(calendarRoutes);
 router.use(usersRoutes);
 router.use(projectsRoutes);
 router.use(workloadRoutes);
