@@ -162,6 +162,12 @@ function patchTaskForOptimisticUpdate(task: Task, payload: UpdateTaskRequest): T
     ...(payload.startDate !== undefined ? { startDate: payload.startDate } : {}),
     ...(payload.dueDate !== undefined ? { dueDate: payload.dueDate } : {}),
     ...(payload.estimatedDays !== undefined ? { estimatedDays: payload.estimatedDays } : {}),
+    ...(payload.platform !== undefined ? { platform: payload.platform } : {}),
+    ...(payload.taskDiscipline !== undefined ? { taskDiscipline: payload.taskDiscipline } : {}),
+    ...(payload.estimatedTime !== undefined ? { estimatedTime: payload.estimatedTime } : {}),
+    ...(payload.maxDeadline !== undefined ? { maxDeadline: payload.maxDeadline } : {}),
+    ...(payload.conclusionDays !== undefined ? { conclusionDays: payload.conclusionDays } : {}),
+    ...(payload.stage !== undefined ? { stage: payload.stage } : {}),
     ...(payload.completed !== undefined ? { completed: payload.completed } : {})
   };
 }
@@ -380,6 +386,12 @@ export function useCreateTask(projectId: string, sectionId: string) {
         startDate: payload.startDate ?? null,
         dueDate: payload.dueDate ?? null,
         estimatedDays: payload.estimatedDays ?? null,
+        platform: payload.platform ?? null,
+        taskDiscipline: payload.taskDiscipline ?? null,
+        estimatedTime: payload.estimatedTime ?? null,
+        maxDeadline: payload.maxDeadline ?? null,
+        conclusionDays: payload.conclusionDays ?? null,
+        stage: payload.stage ?? null,
         completed: payload.completed ?? false,
         completedAt: null,
         createdAt: new Date().toISOString(),

@@ -228,6 +228,12 @@ model Task {
 
   /// Esforço planejado (dias) para gráficos de carga; independente do Asana.
   estimatedDays Float?
+  platform String?
+  discipline String?
+  estimatedTime Float?
+  maxDeadline DateTime?
+  conclusionDays Float?
+  stage String?
 
   assigneeGid String?
 
@@ -362,6 +368,12 @@ model AsanaCustomField {
   currencyCode        String?
   isGlobalToWorkspace Boolean @default(false)
   createdByGid        String?
+  mikaKey             String?
+  mikaLabel           String?
+  mikaTaskField       Boolean @default(false)
+  mikaSortOrder       Int?
+  mikaListVisible     Boolean @default(true)
+  mikaDetailVisible   Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -374,6 +386,8 @@ model AsanaCustomField {
   @@index([name])
   @@index([type])
   @@index([createdByGid])
+  @@index([mikaKey])
+  @@index([mikaTaskField])
 }
 
 model AsanaCustomFieldEnumOption {

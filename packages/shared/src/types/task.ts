@@ -18,13 +18,26 @@ export interface Task {
   dueDate: string | null;
   /** Dias estimados de esforço (opcional); usado na vista Carga de trabalho. */
   estimatedDays?: number | null;
+  platform?: string | null;
+  taskDiscipline?: string | null;
+  estimatedTime?: number | null;
+  maxDeadline?: string | null;
+  conclusionDays?: number | null;
+  stage?: string | null;
   completed: boolean;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
   customFieldValues?: Array<{
     id: string;
+    customFieldId?: string | null;
+    customFieldGid?: string | null;
     customFieldName: string | null;
+    mikaKey?: string | null;
+    mikaLabel?: string | null;
+    mikaSortOrder?: number | null;
+    mikaListVisible?: boolean;
+    mikaDetailVisible?: boolean;
     type?: string;
     displayValue: string | null;
     enumOptionName: string | null;
@@ -63,9 +76,16 @@ export interface CreateTaskRequest {
   startDate?: string | null;
   dueDate?: string | null;
   estimatedDays?: number | null;
+  platform?: string | null;
+  taskDiscipline?: string | null;
+  estimatedTime?: number | null;
+  maxDeadline?: string | null;
+  conclusionDays?: number | null;
+  stage?: string | null;
   completed?: boolean;
   customFieldValues?: Array<{
-    settingId: string;
+    settingId?: string;
+    mikaKey?: string;
     value: string | number | null;
   }>;
 }
@@ -79,9 +99,16 @@ export interface UpdateTaskRequest {
   startDate?: string | null;
   dueDate?: string | null;
   estimatedDays?: number | null;
+  platform?: string | null;
+  taskDiscipline?: string | null;
+  estimatedTime?: number | null;
+  maxDeadline?: string | null;
+  conclusionDays?: number | null;
+  stage?: string | null;
   completed?: boolean;
   customFieldValues?: Array<{
-    id: string;
+    id?: string;
+    mikaKey?: string;
     value: string | number | null;
   }>;
 }

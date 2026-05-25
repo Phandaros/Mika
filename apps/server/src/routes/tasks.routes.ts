@@ -24,19 +24,28 @@ const taskSchema = z.object({
   startDate: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
   estimatedDays: z.number().nonnegative().nullable().optional(),
+  platform: z.string().trim().nullable().optional(),
+  discipline: z.string().trim().nullable().optional(),
+  taskDiscipline: z.string().trim().nullable().optional(),
+  estimatedTime: z.number().nonnegative().nullable().optional(),
+  maxDeadline: z.string().nullable().optional(),
+  conclusionDays: z.number().nonnegative().nullable().optional(),
+  stage: z.string().trim().nullable().optional(),
   completed: z.boolean().optional()
 });
 
 const createTaskSchema = taskSchema.extend({
   customFieldValues: z.array(z.object({
-    settingId: z.string(),
+    settingId: z.string().optional(),
+    mikaKey: z.string().optional(),
     value: z.union([z.string(), z.number()]).nullable()
   })).optional()
 });
 
 const updateTaskSchema = taskSchema.partial().extend({
   customFieldValues: z.array(z.object({
-    id: z.string(),
+    id: z.string().optional(),
+    mikaKey: z.string().optional(),
     value: z.union([z.string(), z.number()]).nullable()
   })).optional()
 });

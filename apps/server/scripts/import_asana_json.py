@@ -166,6 +166,85 @@ def asana_ref_name(obj: Any) -> str | None:
     return obj.get("name") if isinstance(obj, dict) else None
 
 
+TASK_FIXED_FIELD_ALIASES: dict[str, set[str]] = {
+    "platform": {"plataforma", "platform"},
+    "discipline": {"disciplina", "discipline"},
+    "estimatedTime": {"dias estimados", "estimated time", "estimated days"},
+    "maxDeadline": {"prazo maximo", "maximum deadline", "max deadline"},
+    "conclusionDays": {"dias conclusao", "completion days", "conclusion days"},
+    "stage": {"etapa", "stage"},
+}
+
+TASK_FIXED_FIELD_GIDS: dict[str, set[str]] = {
+    "platform": set(),
+    "discipline": set(),
+    "estimatedTime": set(),
+    "maxDeadline": set(),
+    "conclusionDays": set(),
+    "stage": set(),
+}
+
+
+def normalize_field_key(value: Any) -> str:
+    import unicodedata
+    text = str(value or "").strip().lower()
+    text = "".join(ch for ch in unicodedata.normalize("NFD", text) if unicodedata.category(ch) != "Mn")
+    text = re.sub(r"[_-]+", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def task_fixed_field_key(cf: dict[str, Any]) -> str | None:
+    gid = str(cf.get("gid")) if cf.get("gid") else None
+    name = normalize_field_key(cf.get("name"))
+    for key, aliases in TASK_FIXED_FIELD_ALIASES.items():
+        if name in aliases:
+            return key
+        if gid and gid in TASK_FIXED_FIELD_GIDS.get(key, set()):
+            return key
+    return None
+
+
+def task_custom_field_scalar(cf: dict[str, Any]) -> str | float | None:
+    enum_value = cf.get("enum_value") if isinstance(cf.get("enum_value"), dict) else None
+    if enum_value and enum_value.get("name"):
+        return str(enum_value["name"])
+
+    if cf.get("number_value") is not None:
+        try:
+            return float(cf["number_value"])
+        except (TypeError, ValueError):
+            return None
+
+    date_value = cf.get("date_value") if isinstance(cf.get("date_value"), dict) else None
+    if date_value:
+        return date_value.get("date") or date_value.get("date_time")
+
+    display_value = cf.get("display_value")
+    if display_value is None:
+        return None
+
+    text = str(display_value).strip()
+    return text or None
+
+
+def task_fixed_field_value(key: str, cf: dict[str, Any]) -> str | float | None:
+    value = task_custom_field_scalar(cf)
+    if value is None:
+        return None
+
+    if key in {"estimatedTime", "conclusionDays"}:
+        if isinstance(value, (int, float)):
+            return float(value)
+        parsed = str(value).replace(",", ".")
+        try:
+            return float(parsed)
+        except ValueError:
+            return None
+
+    return str(value).strip() or None
+
+
 def ensure_user(conn: sqlite3.Connection, ref: dict[str, Any] | None, password_hash: str) -> None:
     if not IMPORT_USERS:
         return
@@ -482,25 +561,17 @@ def import_task_relations(conn: sqlite3.Connection, task_records: list[dict[str,
             cf_gid = cf.get("gid")
             if not cf_gid:
                 continue
-            cf_id = get_id_by(conn, "AsanaCustomField", "asanaGid", cf_gid)
-            enum_value = cf.get("enum_value") if isinstance(cf.get("enum_value"), dict) else None
-            enum_gid = enum_value.get("gid") if enum_value else None
-            enum_id = get_id_by(conn, "AsanaCustomFieldEnumOption", "asanaGid", enum_gid) if enum_gid else None
-            insert_or_update(conn, "TaskCustomFieldValue", ["taskId", "customFieldGid"], {
-                "id": new_id(),
-                "taskId": task_id,
-                "customFieldGid": str(cf_gid),
-                "customFieldName": cf.get("name"),
-                "type": cf.get("type") or "unknown",
-                "displayValue": cf.get("display_value"),
-                "precision": cf.get("precision"),
-                "numberValue": cf.get("number_value"),
-                "enumOptionGid": enum_gid,
-                "enumOptionName": enum_value.get("name") if enum_value else None,
-                "enumOptionColor": enum_value.get("color") if enum_value else None,
-                "customFieldId": cf_id,
-                "enumOptionId": enum_id,
-            })
+            fixed_key = task_fixed_field_key(cf)
+            if not fixed_key:
+                continue
+            fixed_value = task_fixed_field_value(fixed_key, cf)
+            if fixed_value is None:
+                continue
+            if fixed_key in table_columns(conn, "Task"):
+                conn.execute(
+                    f'UPDATE "Task" SET {q(fixed_key)} = ?, "updatedAt" = ? WHERE id = ?',
+                    (fixed_value, now_iso(), task_id),
+                )
 
 
 def load_comment_json_records(json_dir: Path) -> list[dict[str, Any]]:
@@ -578,6 +649,7 @@ def main() -> int:
     parser.add_argument("--json-dir", required=True, help="Pasta contendo os JSONs exportados do Asana")
     parser.add_argument("--server-dir", default=".", help="Pasta apps/server. Padrão: diretório atual")
     parser.add_argument("--db", default=None, help="Caminho explícito do SQLite. Se omitido, lê DATABASE_URL do .env")
+    parser.add_argument("--password-hash", default=DEFAULT_PASSWORD_HASH, help="Hash de senha para usuarios importados")
     parser.add_argument("--clear", action="store_true", help="Apaga os dados das tabelas importadas antes de popular")
     parser.add_argument("--import-users", action="store_true", help="Tambem cria/atualiza usuarios do dump. Por padrao, usuarios sao preservados.")
     parser.add_argument("--clear-comments", action="store_true", help="Remove comentarios importados (asanaGid NOT NULL) antes de importar stories")
