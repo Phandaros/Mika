@@ -1,5 +1,6 @@
-import { getDefaultDiscipline, type DisciplineType, type Task } from "shared";
+import { type DisciplineType, type Task } from "shared";
 import { Avatar } from "../shared/Avatar";
+import { DisciplineChip } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { TaskCompletionButton } from "./TaskCompletionButton";
 import { cn, formatDateOnly } from "../../lib/utils";
@@ -28,8 +29,6 @@ export function TaskCard<TTask extends TaskCardTask>({
   onToggleCompletion,
   completionBusy
 }: TaskCardProps<TTask>) {
-  const disciplineColor = task.discipline?.type ? getDefaultDiscipline(task.discipline.type).color : undefined;
-
   return (
     <div
       className={cn(
@@ -60,14 +59,7 @@ export function TaskCard<TTask extends TaskCardTask>({
             {tag.name}
           </span>
         ))}
-        {disciplineName ? (
-          <span
-            className="inline-flex h-6 items-center rounded-md border border-border px-2 text-xs font-semibold text-text-primary"
-            style={disciplineColor ? { borderColor: `${disciplineColor}66`, backgroundColor: `${disciplineColor}22` } : undefined}
-          >
-            {disciplineName}
-          </span>
-        ) : null}
+        {disciplineName ? <DisciplineChip discipline={task.discipline?.name ?? disciplineName} /> : null}
       </div>
       {task.dueDate ? (
         <p className="mt-3 text-xs text-text-secondary">Entrega {formatDateOnly(task.dueDate, "dd/MM/yyyy")}</p>

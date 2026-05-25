@@ -1,22 +1,12 @@
 import { TaskStatus } from "shared";
-import { Badge } from "../ui/badge";
-
-const labels: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: "Backlog",
-  [TaskStatus.TODO]: "A fazer",
-  [TaskStatus.IN_PROGRESS]: "Em andamento",
-  [TaskStatus.IN_REVIEW]: "Em revisão",
-  [TaskStatus.DONE]: "Concluído"
-};
-
-const tones: Record<TaskStatus, "muted" | "blue" | "orange" | "purple" | "green"> = {
-  [TaskStatus.BACKLOG]: "muted",
-  [TaskStatus.TODO]: "blue",
-  [TaskStatus.IN_PROGRESS]: "orange",
-  [TaskStatus.IN_REVIEW]: "purple",
-  [TaskStatus.DONE]: "green"
-};
+import { Chip, taskStatusLabels, taskStatusTokens } from "../shared/Chip";
 
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
-  return <Badge tone={tones[status]}>{labels[status]}</Badge>;
+  const tokens = taskStatusTokens[status];
+
+  return (
+    <Chip bg={tokens.bg} text={tokens.text}>
+      {taskStatusLabels[status]}
+    </Chip>
+  );
 }
