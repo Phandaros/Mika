@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
-import { ExternalLink, FolderKanban, ListFilter, Plus, SlidersHorizontal, X } from "lucide-react";
+import { FolderKanban, ListFilter, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getDefaultDiscipline, ProjectStatus, type Project } from "shared";
+import { ProjectStatus, type Project } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
@@ -16,6 +16,7 @@ export function ProjectsPage() {
   const { data: projects = [], isLoading } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [sortMode, setSortMode] = useState("updatedAt-desc");
@@ -141,37 +142,43 @@ export function ProjectsPage() {
         </ProjectModal>
       ) : null}
 
-      <ProjectsPortfolioTable projects={filteredProjects} />
+      {editingProject ? (
+        <ProjectModal title="Editar projeto" onClose={() => setEditingProject(null)}>
+          <ProjectForm
+            project={normalizeProjectSections(editingProject)}
+            builderSuggestions={builderSuggestions}
+            onCancel={() => setEditingProject(null)}
+            onSaved={() => setEditingProject(null)}
+          />
+        </ProjectModal>
+      ) : null}
+
+      <ProjectsPortfolioTable projects={filteredProjects} onEditProject={setEditingProject} />
       {filteredProjects.length === 0 ? <EmptyState title="Nenhum projeto encontrado" /> : null}
     </div>
   );
 }
 
-function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
+function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project[]; onEditProject: (project: Project) => void }) {
   return (
     <div className="overflow-auto rounded-md border border-border">
-      <table className="w-full min-w-[1160px] border-collapse bg-surface-card text-sm">
+      <table className="w-full min-w-[900px] border-collapse bg-surface-card text-sm">
         <thead className="bg-surface text-left text-text-secondary">
           <tr>
-            <th className="w-[320px] border-r border-border p-3 font-semibold">Nome</th>
+            <th className="w-[360px] border-r border-border p-3 font-semibold">Nome</th>
             <th className="w-[130px] border-r border-border p-3 font-semibold">Plataforma</th>
             <th className="w-[130px] border-r border-border p-3 font-semibold">Área</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Status</th>
-            <th className="w-[260px] border-r border-border p-3 font-semibold">Campos Asana</th>
-            <th className="w-[360px] border-r border-border p-3 font-semibold">Seções</th>
             <th className="w-[120px] border-r border-border p-3 font-semibold">Tarefas</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Entrega</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Atualizado</th>
-            <th className="w-[90px] p-3 font-semibold">Asana</th>
+            <th className="w-[90px] p-3 font-semibold">Editar</th>
           </tr>
         </thead>
         <tbody>
           {projects.map((project) => {
             const taskCount =
               (project.sections ?? project.disciplines)?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
-            const visibleDisciplines = (project.sections ?? project.disciplines)?.slice(0, 3) ?? [];
-            const hiddenDisciplinesCount = Math.max(((project.sections ?? project.disciplines)?.length ?? 0) - visibleDisciplines.length, 0);
-
             return (
               <tr key={project.id} className="border-t border-border hover:bg-surface-hover">
                 <td className="border-r border-border p-3">
@@ -189,54 +196,21 @@ function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
                 <td className="border-r border-border p-3">
                   <Badge tone="orange">{project.status}</Badge>
                 </td>
-                <td className="border-r border-border p-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {project.customFields?.slice(0, 4).map((field) => (
-                      <Badge key={field.id} tone={field.isImportant ? "orange" : "muted"}>
-                        {field.name}
-                      </Badge>
-                    ))}
-                    {(project.customFields?.length ?? 0) > 4 ? <Badge tone="muted">Mais {(project.customFields?.length ?? 0) - 4}</Badge> : null}
-                    {!project.customFields?.length ? <span className="text-text-muted">-</span> : null}
-                  </div>
-                </td>
-                <td className="border-r border-border p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {visibleDisciplines.map((discipline) => {
-                      const catalogItem = getDefaultDiscipline(discipline.type);
-
-                      return (
-                        <span
-                          key={discipline.id}
-                          className="inline-flex h-7 items-center rounded-md px-2 text-xs font-semibold text-brand-black"
-                          style={{ backgroundColor: catalogItem.color }}
-                        >
-                          {discipline.name}
-                        </span>
-                      );
-                    })}
-                    {hiddenDisciplinesCount > 0 ? <Badge tone="muted">Mais {hiddenDisciplinesCount}</Badge> : null}
-                  </div>
-                </td>
                 <td className="border-r border-border p-3 text-text-secondary">{taskCount}</td>
                 <td className="border-r border-border p-3 text-text-secondary">
                   {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : "-"}
                 </td>
                 <td className="border-r border-border p-3 text-text-secondary">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
                 <td className="p-3">
-                  {project.permalinkUrl ? (
-                    <a
-                      href={project.permalinkUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition hover:bg-surface hover:text-brand-orange"
-                      title="Abrir no Asana"
-                    >
-                      <ExternalLink size={16} />
-                    </a>
-                  ) : (
-                    <span className="text-text-muted">-</span>
-                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-8 w-8 px-0 text-text-secondary hover:text-brand-orange"
+                    onClick={() => onEditProject(project)}
+                    title="Editar projeto"
+                  >
+                    <Pencil size={16} />
+                  </Button>
                 </td>
               </tr>
             );
@@ -245,6 +219,13 @@ function ProjectsPortfolioTable({ projects }: { projects: Project[] }) {
       </table>
     </div>
   );
+}
+
+function normalizeProjectSections(project: Project): Project {
+  return {
+    ...project,
+    disciplines: project.disciplines ?? project.sections ?? []
+  };
 }
 
 function ProjectModal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {

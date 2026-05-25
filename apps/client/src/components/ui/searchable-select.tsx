@@ -1,6 +1,7 @@
 import { Check, ChevronDown, Search } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
+import { coloredFieldStyle } from "../shared/statusVisuals";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
@@ -10,6 +11,7 @@ export interface SearchableSelectOption {
   label: string;
   description?: string;
   color?: string | null;
+  avatarUrl?: string | null;
   disabled?: boolean;
   render?: ReactNode;
 }
@@ -84,6 +86,7 @@ export function SearchableSelect({
           variant="secondary"
           className={cn("h-10 w-full justify-between px-3 text-left", className, triggerClassName)}
           disabled={disabled}
+          style={selected?.color ? coloredFieldStyle(selected.color) : undefined}
         >
           <span className={cn("min-w-0 truncate", selected ? "text-text-primary" : "text-text-muted")}>
             {selected ? renderValue?.(selected) ?? selected.render ?? selected.label : placeholder}
@@ -91,7 +94,14 @@ export function SearchableSelect({
           <ChevronDown size={16} className="shrink-0 text-text-muted" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className={cn("w-[var(--radix-popover-trigger-width)] p-2", contentClassName)}>
+      <PopoverContent
+        align="start"
+        onWheel={(event) => event.stopPropagation()}
+        className={cn(
+          "min-w-[var(--radix-popover-trigger-width)] w-[min(360px,calc(100vw-32px))] max-w-[min(420px,calc(100vw-32px))] overflow-x-hidden p-2",
+          contentClassName
+        )}
+      >
         <label className="relative block">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <Input
@@ -102,7 +112,11 @@ export function SearchableSelect({
             autoFocus
           />
         </label>
-        <div className="mt-2 max-h-72 overflow-y-auto">
+        <div
+          className="mt-2 max-h-72 overscroll-contain overflow-y-auto"
+          onWheel={(event) => event.stopPropagation()}
+          onTouchMove={(event) => event.stopPropagation()}
+        >
           {filteredOptions.length > 0 ? (
             <div className="grid gap-1">
               {filteredOptions.map((option) => (
@@ -112,22 +126,15 @@ export function SearchableSelect({
                   disabled={option.disabled}
                   onClick={() => selectOption(option.value)}
                   className={cn(
-                    "flex min-h-9 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50",
+                    "flex min-h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md border border-transparent px-2 py-1.5 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50",
                     option.value === value ? "bg-surface-hover" : ""
                   )}
+                  style={option.color ? coloredFieldStyle(option.color) : undefined}
                 >
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                     {option.value === value ? <Check size={15} className="text-brand-orange" /> : null}
                   </span>
-                  {option.color ? <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: option.color }} /> : null}
-                  <span className="min-w-0 flex-1">
-                    {renderOption?.(option) ?? option.render ?? (
-                      <>
-                        <span className="block truncate">{option.label}</span>
-                        {option.description ? <span className="block truncate text-xs text-text-muted">{option.description}</span> : null}
-                      </>
-                    )}
-                  </span>
+                  {renderOption?.(option) ?? option.render ?? <DefaultOption option={option} />}
                 </button>
               ))}
             </div>
@@ -138,6 +145,44 @@ export function SearchableSelect({
       </PopoverContent>
     </Popover>
   );
+}
+
+function DefaultOption({ option }: { option: SearchableSelectOption }) {
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-2">
+      {option.avatarUrl || option.description ? <OptionAvatar option={option} /> : null}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{option.label}</span>
+        {option.description ? <span className="block truncate text-xs font-medium text-text-muted">{option.description}</span> : null}
+      </span>
+    </span>
+  );
+}
+
+function OptionAvatar({ option }: { option: SearchableSelectOption }) {
+  const fallback = option.label
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+  if (option.avatarUrl) {
+    return <img src={option.avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />;
+  }
+
+  return (
+    <span
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-bold text-text-primary"
+      style={avatarStyle(option.color)}
+    >
+      {fallback || "?"}
+    </span>
+  );
+}
+
+function avatarStyle(color?: string | null): CSSProperties {
+  return color ? coloredFieldStyle(color) : { backgroundColor: "var(--color-surface-hover)" };
 }
 
 function normalize(value: string): string {

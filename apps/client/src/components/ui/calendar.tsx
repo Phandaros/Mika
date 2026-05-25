@@ -1,6 +1,6 @@
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
 
@@ -13,6 +13,7 @@ const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 export function Calendar({ selected, onSelect }: CalendarProps) {
   const [month, setMonth] = useState(() => selected ?? new Date());
+  const today = new Date();
 
   const days = useMemo(() => {
     const monthStart = startOfMonth(month);
@@ -43,6 +44,7 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
       <div className="mt-1 grid grid-cols-7 gap-1">
         {days.map((day) => {
           const isSelected = selected ? isSameDay(day, selected) : false;
+          const isToday = isSameDay(day, today);
 
           return (
             <button
@@ -52,8 +54,10 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
               className={cn(
                 "flex h-8 items-center justify-center rounded-md text-sm transition hover:bg-surface-hover",
                 isSameMonth(day, month) ? "text-text-primary" : "text-text-muted",
-                isSelected ? "bg-brand-orange font-bold text-brand-white hover:bg-brand-orange" : ""
+                isToday ? "font-bold" : "",
+                isSelected ? "bg-brand-orange text-brand-white hover:bg-brand-orange" : ""
               )}
+              style={todayHatchStyle(isToday)}
             >
               {format(day, "d")}
             </button>
@@ -62,4 +66,16 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
       </div>
     </div>
   );
+}
+
+function todayHatchStyle(isToday: boolean): CSSProperties | undefined {
+  if (!isToday) {
+    return undefined;
+  }
+
+  return {
+    backgroundImage:
+      "repeating-linear-gradient(135deg, rgba(255, 111, 0, 0.35) 0 2px, transparent 2px 6px)",
+    boxShadow: "inset 0 0 0 1px rgba(255, 111, 0, 0.65)"
+  };
 }

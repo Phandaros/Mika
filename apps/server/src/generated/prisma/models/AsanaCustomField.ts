@@ -28,10 +28,12 @@ export type AggregateAsanaCustomField = {
 
 export type AsanaCustomFieldAvgAggregateOutputType = {
   precision: number | null
+  mikaSortOrder: number | null
 }
 
 export type AsanaCustomFieldSumAggregateOutputType = {
   precision: number | null
+  mikaSortOrder: number | null
 }
 
 export type AsanaCustomFieldMinAggregateOutputType = {
@@ -45,6 +47,12 @@ export type AsanaCustomFieldMinAggregateOutputType = {
   currencyCode: string | null
   isGlobalToWorkspace: boolean | null
   createdByGid: string | null
+  mikaKey: string | null
+  mikaLabel: string | null
+  mikaTaskField: boolean | null
+  mikaSortOrder: number | null
+  mikaListVisible: boolean | null
+  mikaDetailVisible: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -60,6 +68,12 @@ export type AsanaCustomFieldMaxAggregateOutputType = {
   currencyCode: string | null
   isGlobalToWorkspace: boolean | null
   createdByGid: string | null
+  mikaKey: string | null
+  mikaLabel: string | null
+  mikaTaskField: boolean | null
+  mikaSortOrder: number | null
+  mikaListVisible: boolean | null
+  mikaDetailVisible: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -75,6 +89,12 @@ export type AsanaCustomFieldCountAggregateOutputType = {
   currencyCode: number
   isGlobalToWorkspace: number
   createdByGid: number
+  mikaKey: number
+  mikaLabel: number
+  mikaTaskField: number
+  mikaSortOrder: number
+  mikaListVisible: number
+  mikaDetailVisible: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -83,10 +103,12 @@ export type AsanaCustomFieldCountAggregateOutputType = {
 
 export type AsanaCustomFieldAvgAggregateInputType = {
   precision?: true
+  mikaSortOrder?: true
 }
 
 export type AsanaCustomFieldSumAggregateInputType = {
   precision?: true
+  mikaSortOrder?: true
 }
 
 export type AsanaCustomFieldMinAggregateInputType = {
@@ -100,6 +122,12 @@ export type AsanaCustomFieldMinAggregateInputType = {
   currencyCode?: true
   isGlobalToWorkspace?: true
   createdByGid?: true
+  mikaKey?: true
+  mikaLabel?: true
+  mikaTaskField?: true
+  mikaSortOrder?: true
+  mikaListVisible?: true
+  mikaDetailVisible?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -115,6 +143,12 @@ export type AsanaCustomFieldMaxAggregateInputType = {
   currencyCode?: true
   isGlobalToWorkspace?: true
   createdByGid?: true
+  mikaKey?: true
+  mikaLabel?: true
+  mikaTaskField?: true
+  mikaSortOrder?: true
+  mikaListVisible?: true
+  mikaDetailVisible?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -130,6 +164,12 @@ export type AsanaCustomFieldCountAggregateInputType = {
   currencyCode?: true
   isGlobalToWorkspace?: true
   createdByGid?: true
+  mikaKey?: true
+  mikaLabel?: true
+  mikaTaskField?: true
+  mikaSortOrder?: true
+  mikaListVisible?: true
+  mikaDetailVisible?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -232,6 +272,12 @@ export type AsanaCustomFieldGroupByOutputType = {
   currencyCode: string | null
   isGlobalToWorkspace: boolean
   createdByGid: string | null
+  mikaKey: string | null
+  mikaLabel: string | null
+  mikaTaskField: boolean
+  mikaSortOrder: number | null
+  mikaListVisible: boolean
+  mikaDetailVisible: boolean
   createdAt: Date
   updatedAt: Date
   _count: AsanaCustomFieldCountAggregateOutputType | null
@@ -270,6 +316,12 @@ export type AsanaCustomFieldWhereInput = {
   currencyCode?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
   isGlobalToWorkspace?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
   createdByGid?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaKey?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaLabel?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaTaskField?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
+  mikaSortOrder?: Prisma.IntNullableFilter<"AsanaCustomField"> | number | null
+  mikaListVisible?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
+  mikaDetailVisible?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AsanaCustomField"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AsanaCustomField"> | Date | string
   createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -289,6 +341,12 @@ export type AsanaCustomFieldOrderByWithRelationInput = {
   currencyCode?: Prisma.SortOrderInput | Prisma.SortOrder
   isGlobalToWorkspace?: Prisma.SortOrder
   createdByGid?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaTaskField?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaListVisible?: Prisma.SortOrder
+  mikaDetailVisible?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   createdBy?: Prisma.UserOrderByWithRelationInput
@@ -311,6 +369,12 @@ export type AsanaCustomFieldWhereUniqueInput = Prisma.AtLeast<{
   currencyCode?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
   isGlobalToWorkspace?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
   createdByGid?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaKey?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaLabel?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaTaskField?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
+  mikaSortOrder?: Prisma.IntNullableFilter<"AsanaCustomField"> | number | null
+  mikaListVisible?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
+  mikaDetailVisible?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AsanaCustomField"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AsanaCustomField"> | Date | string
   createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -330,6 +394,12 @@ export type AsanaCustomFieldOrderByWithAggregationInput = {
   currencyCode?: Prisma.SortOrderInput | Prisma.SortOrder
   isGlobalToWorkspace?: Prisma.SortOrder
   createdByGid?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaTaskField?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaListVisible?: Prisma.SortOrder
+  mikaDetailVisible?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AsanaCustomFieldCountOrderByAggregateInput
@@ -353,6 +423,12 @@ export type AsanaCustomFieldScalarWhereWithAggregatesInput = {
   currencyCode?: Prisma.StringNullableWithAggregatesFilter<"AsanaCustomField"> | string | null
   isGlobalToWorkspace?: Prisma.BoolWithAggregatesFilter<"AsanaCustomField"> | boolean
   createdByGid?: Prisma.StringNullableWithAggregatesFilter<"AsanaCustomField"> | string | null
+  mikaKey?: Prisma.StringNullableWithAggregatesFilter<"AsanaCustomField"> | string | null
+  mikaLabel?: Prisma.StringNullableWithAggregatesFilter<"AsanaCustomField"> | string | null
+  mikaTaskField?: Prisma.BoolWithAggregatesFilter<"AsanaCustomField"> | boolean
+  mikaSortOrder?: Prisma.IntNullableWithAggregatesFilter<"AsanaCustomField"> | number | null
+  mikaListVisible?: Prisma.BoolWithAggregatesFilter<"AsanaCustomField"> | boolean
+  mikaDetailVisible?: Prisma.BoolWithAggregatesFilter<"AsanaCustomField"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AsanaCustomField"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AsanaCustomField"> | Date | string
 }
@@ -367,6 +443,12 @@ export type AsanaCustomFieldCreateInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
@@ -386,6 +468,12 @@ export type AsanaCustomFieldUncheckedCreateInput = {
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
   createdByGid?: string | null
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
@@ -403,6 +491,12 @@ export type AsanaCustomFieldUpdateInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
@@ -422,6 +516,12 @@ export type AsanaCustomFieldUncheckedUpdateInput = {
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdByGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
@@ -440,6 +540,12 @@ export type AsanaCustomFieldCreateManyInput = {
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
   createdByGid?: string | null
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -454,6 +560,12 @@ export type AsanaCustomFieldUpdateManyMutationInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -469,6 +581,12 @@ export type AsanaCustomFieldUncheckedUpdateManyInput = {
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdByGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -494,12 +612,19 @@ export type AsanaCustomFieldCountOrderByAggregateInput = {
   currencyCode?: Prisma.SortOrder
   isGlobalToWorkspace?: Prisma.SortOrder
   createdByGid?: Prisma.SortOrder
+  mikaKey?: Prisma.SortOrder
+  mikaLabel?: Prisma.SortOrder
+  mikaTaskField?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrder
+  mikaListVisible?: Prisma.SortOrder
+  mikaDetailVisible?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type AsanaCustomFieldAvgOrderByAggregateInput = {
   precision?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrder
 }
 
 export type AsanaCustomFieldMaxOrderByAggregateInput = {
@@ -513,6 +638,12 @@ export type AsanaCustomFieldMaxOrderByAggregateInput = {
   currencyCode?: Prisma.SortOrder
   isGlobalToWorkspace?: Prisma.SortOrder
   createdByGid?: Prisma.SortOrder
+  mikaKey?: Prisma.SortOrder
+  mikaLabel?: Prisma.SortOrder
+  mikaTaskField?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrder
+  mikaListVisible?: Prisma.SortOrder
+  mikaDetailVisible?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -528,12 +659,19 @@ export type AsanaCustomFieldMinOrderByAggregateInput = {
   currencyCode?: Prisma.SortOrder
   isGlobalToWorkspace?: Prisma.SortOrder
   createdByGid?: Prisma.SortOrder
+  mikaKey?: Prisma.SortOrder
+  mikaLabel?: Prisma.SortOrder
+  mikaTaskField?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrder
+  mikaListVisible?: Prisma.SortOrder
+  mikaDetailVisible?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type AsanaCustomFieldSumOrderByAggregateInput = {
   precision?: Prisma.SortOrder
+  mikaSortOrder?: Prisma.SortOrder
 }
 
 export type AsanaCustomFieldScalarRelationFilter = {
@@ -650,6 +788,12 @@ export type AsanaCustomFieldCreateWithoutCreatedByInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionCreateNestedManyWithoutCustomFieldInput
@@ -667,6 +811,12 @@ export type AsanaCustomFieldUncheckedCreateWithoutCreatedByInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
@@ -713,6 +863,12 @@ export type AsanaCustomFieldScalarWhereInput = {
   currencyCode?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
   isGlobalToWorkspace?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
   createdByGid?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaKey?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaLabel?: Prisma.StringNullableFilter<"AsanaCustomField"> | string | null
+  mikaTaskField?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
+  mikaSortOrder?: Prisma.IntNullableFilter<"AsanaCustomField"> | number | null
+  mikaListVisible?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
+  mikaDetailVisible?: Prisma.BoolFilter<"AsanaCustomField"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AsanaCustomField"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AsanaCustomField"> | Date | string
 }
@@ -727,6 +883,12 @@ export type AsanaCustomFieldCreateWithoutEnumOptionsInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
@@ -745,6 +907,12 @@ export type AsanaCustomFieldUncheckedCreateWithoutEnumOptionsInput = {
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
   createdByGid?: string | null
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutCustomFieldInput
@@ -777,6 +945,12 @@ export type AsanaCustomFieldUpdateWithoutEnumOptionsInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
@@ -795,6 +969,12 @@ export type AsanaCustomFieldUncheckedUpdateWithoutEnumOptionsInput = {
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdByGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutCustomFieldNestedInput
@@ -811,6 +991,12 @@ export type AsanaCustomFieldCreateWithoutProjectSettingsInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
@@ -829,6 +1015,12 @@ export type AsanaCustomFieldUncheckedCreateWithoutProjectSettingsInput = {
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
   createdByGid?: string | null
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
@@ -861,6 +1053,12 @@ export type AsanaCustomFieldUpdateWithoutProjectSettingsInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
@@ -879,6 +1077,12 @@ export type AsanaCustomFieldUncheckedUpdateWithoutProjectSettingsInput = {
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdByGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
@@ -895,6 +1099,12 @@ export type AsanaCustomFieldCreateWithoutTaskValuesInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
@@ -913,6 +1123,12 @@ export type AsanaCustomFieldUncheckedCreateWithoutTaskValuesInput = {
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
   createdByGid?: string | null
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
@@ -945,6 +1161,12 @@ export type AsanaCustomFieldUpdateWithoutTaskValuesInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
@@ -963,6 +1185,12 @@ export type AsanaCustomFieldUncheckedUpdateWithoutTaskValuesInput = {
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdByGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
@@ -979,6 +1207,12 @@ export type AsanaCustomFieldCreateManyCreatedByInput = {
   format?: string | null
   currencyCode?: string | null
   isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -993,6 +1227,12 @@ export type AsanaCustomFieldUpdateWithoutCreatedByInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUpdateManyWithoutCustomFieldNestedInput
@@ -1010,6 +1250,12 @@ export type AsanaCustomFieldUncheckedUpdateWithoutCreatedByInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
@@ -1027,6 +1273,12 @@ export type AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByInput = {
   format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1091,6 +1343,12 @@ export type AsanaCustomFieldSelect<ExtArgs extends runtime.Types.Extensions.Inte
   currencyCode?: boolean
   isGlobalToWorkspace?: boolean
   createdByGid?: boolean
+  mikaKey?: boolean
+  mikaLabel?: boolean
+  mikaTaskField?: boolean
+  mikaSortOrder?: boolean
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   createdBy?: boolean | Prisma.AsanaCustomField$createdByArgs<ExtArgs>
@@ -1111,6 +1369,12 @@ export type AsanaCustomFieldSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   currencyCode?: boolean
   isGlobalToWorkspace?: boolean
   createdByGid?: boolean
+  mikaKey?: boolean
+  mikaLabel?: boolean
+  mikaTaskField?: boolean
+  mikaSortOrder?: boolean
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   createdBy?: boolean | Prisma.AsanaCustomField$createdByArgs<ExtArgs>
@@ -1127,6 +1391,12 @@ export type AsanaCustomFieldSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   currencyCode?: boolean
   isGlobalToWorkspace?: boolean
   createdByGid?: boolean
+  mikaKey?: boolean
+  mikaLabel?: boolean
+  mikaTaskField?: boolean
+  mikaSortOrder?: boolean
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   createdBy?: boolean | Prisma.AsanaCustomField$createdByArgs<ExtArgs>
@@ -1143,11 +1413,17 @@ export type AsanaCustomFieldSelectScalar = {
   currencyCode?: boolean
   isGlobalToWorkspace?: boolean
   createdByGid?: boolean
+  mikaKey?: boolean
+  mikaLabel?: boolean
+  mikaTaskField?: boolean
+  mikaSortOrder?: boolean
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AsanaCustomFieldOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "description" | "type" | "precision" | "format" | "currencyCode" | "isGlobalToWorkspace" | "createdByGid" | "createdAt" | "updatedAt", ExtArgs["result"]["asanaCustomField"]>
+export type AsanaCustomFieldOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "description" | "type" | "precision" | "format" | "currencyCode" | "isGlobalToWorkspace" | "createdByGid" | "mikaKey" | "mikaLabel" | "mikaTaskField" | "mikaSortOrder" | "mikaListVisible" | "mikaDetailVisible" | "createdAt" | "updatedAt", ExtArgs["result"]["asanaCustomField"]>
 export type AsanaCustomFieldInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   createdBy?: boolean | Prisma.AsanaCustomField$createdByArgs<ExtArgs>
   enumOptions?: boolean | Prisma.AsanaCustomField$enumOptionsArgs<ExtArgs>
@@ -1181,6 +1457,12 @@ export type $AsanaCustomFieldPayload<ExtArgs extends runtime.Types.Extensions.In
     currencyCode: string | null
     isGlobalToWorkspace: boolean
     createdByGid: string | null
+    mikaKey: string | null
+    mikaLabel: string | null
+    mikaTaskField: boolean
+    mikaSortOrder: number | null
+    mikaListVisible: boolean
+    mikaDetailVisible: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["asanaCustomField"]>
@@ -1620,6 +1902,12 @@ export interface AsanaCustomFieldFieldRefs {
   readonly currencyCode: Prisma.FieldRef<"AsanaCustomField", 'String'>
   readonly isGlobalToWorkspace: Prisma.FieldRef<"AsanaCustomField", 'Boolean'>
   readonly createdByGid: Prisma.FieldRef<"AsanaCustomField", 'String'>
+  readonly mikaKey: Prisma.FieldRef<"AsanaCustomField", 'String'>
+  readonly mikaLabel: Prisma.FieldRef<"AsanaCustomField", 'String'>
+  readonly mikaTaskField: Prisma.FieldRef<"AsanaCustomField", 'Boolean'>
+  readonly mikaSortOrder: Prisma.FieldRef<"AsanaCustomField", 'Int'>
+  readonly mikaListVisible: Prisma.FieldRef<"AsanaCustomField", 'Boolean'>
+  readonly mikaDetailVisible: Prisma.FieldRef<"AsanaCustomField", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"AsanaCustomField", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AsanaCustomField", 'DateTime'>
 }

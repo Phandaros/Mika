@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
-import { makeLocalAsanaGid, taskInclude, toDisciplineDto } from "../lib/asanaDto.js";
+import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toDisciplineDto } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 interface SectionBody {
@@ -29,7 +29,12 @@ export const listSections: RequestHandler = async (req, res, next) => {
       throw new AppError(404, "Project not found");
     }
 
-    const sections = project.sections.map((section) => toDisciplineDto(section, project.id));
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+    const sections = project.sections.map((section) => toDisciplineDto(section, project.id, taskFieldCatalog));
     res.json({ sections, disciplines: sections });
   } catch (error) {
     next(error);
@@ -54,7 +59,12 @@ export const createSection: RequestHandler = async (req, res, next) => {
       include: { memberships: { include: { task: { include: taskInclude } } } }
     });
 
-    const dto = toDisciplineDto(section, project.id);
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+    const dto = toDisciplineDto(section, project.id, taskFieldCatalog);
     res.status(201).json({ section: dto, discipline: dto });
   } catch (error) {
     next(error);
@@ -77,7 +87,12 @@ export const updateSection: RequestHandler = async (req, res, next) => {
       }
     });
 
-    const dto = toDisciplineDto(section, section.project.id);
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+    const dto = toDisciplineDto(section, section.project.id, taskFieldCatalog);
     res.json({ section: dto, discipline: dto });
   } catch (error) {
     next(error);

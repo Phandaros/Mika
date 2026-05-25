@@ -598,7 +598,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       const { positioned, lanes, rowH } = layoutRowTasks(unassignedTasks, unionFrom, unionTo);
       rows.push({
         id: "unassigned",
-        label: "Sem responsavel",
+        label: "Sem responsável",
         rowTasks: unassignedTasks,
         positioned,
         lanes,
@@ -881,7 +881,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           key={`${rowKey}-non-working-${day}`}
           className={cn(
             "pointer-events-none absolute top-0 z-[1] border-r border-border-subtle",
-            holidayName ? "bg-brand-orange/10" : "bg-white/[0.035]"
+            holidayName ? "bg-brand-orange/10" : "bg-[rgba(244,244,245,0.035)]"
           )}
           title={holidayName ?? "Final de semana"}
           style={{ left: index * DAY_W, width: DAY_W, height: rowHeight }}
@@ -1089,10 +1089,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             value={assigneeFilter}
             options={[
               { value: ALL_FILTER_VALUE, label: "Todos os responsaveis" },
-              ...assigneeOptions.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+              ...assigneeOptions.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
             ]}
             triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar responsavel..."
+            searchPlaceholder="Buscar responsável..."
             onValueChange={setAssigneeFilter}
           />
           <SearchableSelect
@@ -1129,7 +1129,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             value={completionFilter}
             options={[
               { value: "open", label: "Abertas" },
-              { value: "completed", label: "Concluidas" },
+              { value: "completed", label: "Concluídas" },
               { value: "all", label: "Todas" }
             ]}
             triggerClassName="h-9 text-xs"
@@ -1203,7 +1203,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                         title={holidayName ?? (isNonWorking ? "Final de semana" : undefined)}
                         className={cn(
                           "flex flex-col items-center justify-center border-r border-border-subtle text-[10px] text-text-muted",
-                          isNonWorking && "bg-white/[0.04]",
+                          isNonWorking && "bg-[rgba(244,244,245,0.04)]",
                           holidayName && "bg-brand-orange/10",
                           isToday && "bg-surface-hover text-text-primary"
                         )}
@@ -1289,7 +1289,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             <DialogTitle>Excluir tarefa</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-text-secondary">
-            Esta acao remove a tarefa "{taskPendingDelete?.title}" do projeto. Nao e possivel desfazer pela interface.
+            Esta ação remove a tarefa "{taskPendingDelete?.title}" do projeto. Não é possível desfazer pela interface.
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setTaskPendingDelete(null)}>

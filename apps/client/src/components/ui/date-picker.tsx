@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { CalendarDays } from "lucide-react";
+import { useState } from "react";
 import { dateOnlyToLocalDate, localDateToDateOnly } from "../../lib/utils";
 import { Button } from "./button";
 import { Calendar } from "./calendar";
@@ -13,6 +14,9 @@ interface DatePickerProps {
   disabled?: boolean;
   className?: string;
   triggerClassName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSelectComplete?: () => void;
 }
 
 export function DatePicker({
@@ -22,16 +26,32 @@ export function DatePicker({
   placeholder = "Selecionar data",
   disabled,
   className,
-  triggerClassName
+  triggerClassName,
+  open,
+  onOpenChange,
+  onSelectComplete
 }: DatePickerProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const selectedDate = dateOnlyToLocalDate(value);
+  const isControlled = open !== undefined;
+  const popoverOpen = isControlled ? open : internalOpen;
+  const setPopoverOpen = (nextOpen: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
+  };
   const changeValue = (nextValue: string | null) => {
     onChange?.(nextValue);
     onValueChange?.(nextValue);
+    setPopoverOpen(false);
+    if (nextValue) {
+      onSelectComplete?.();
+    }
   };
 
   return (
-    <Popover>
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
       <PopoverTrigger asChild>
         <Button variant="secondary" className={className ?? triggerClassName ?? "h-10 w-full justify-between px-3"} disabled={disabled}>
           <span className={selectedDate ? "text-text-primary" : "text-text-muted"}>
@@ -67,10 +87,23 @@ export function DateRangePicker({
   onStartDateChange,
   onEndDateChange
 }: DateRangePickerProps) {
+  const [endOpen, setEndOpen] = useState(false);
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <DatePicker value={startDate} onChange={onStartDateChange} placeholder="Início" />
-      <DatePicker value={endDate} onChange={onEndDateChange} placeholder="Entrega" />
+      <DatePicker
+        value={startDate}
+        onChange={onStartDateChange}
+        placeholder="Início"
+        onSelectComplete={() => setEndOpen(true)}
+      />
+      <DatePicker
+        value={endDate}
+        onChange={onEndDateChange}
+        placeholder="Entrega"
+        open={endOpen}
+        onOpenChange={setEndOpen}
+      />
     </div>
   );
 }

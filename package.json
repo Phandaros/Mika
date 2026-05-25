@@ -18,6 +18,8 @@
     "desktop:build": "pnpm --filter desktop build"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^22.15.21",
     "turbo": "^2.5.8",
     "typescript": "^5.8.3"
   }

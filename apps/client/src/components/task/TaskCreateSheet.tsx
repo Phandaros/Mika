@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CalendarDays, Flag, FolderKanban, ListTodo, UserRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectCustomField } from "shared";
 import { useProjects } from "../../hooks/useProjects";
@@ -9,9 +9,7 @@ import { useUiStore } from "../../store/uiStore";
 import {
   enumColor,
   PriorityOptionPill,
-  priorityColors,
-  StatusOptionPill,
-  taskStatusColors
+  priorityColors
 } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
 import { DatePicker, DateRangePicker } from "../ui/date-picker";
@@ -31,20 +29,14 @@ import { Textarea } from "../ui/textarea";
 
 type CustomFieldDraft = Record<string, string>;
 
-const statusOptions: Array<{ value: TaskStatus; label: string }> = [
-  { value: TaskStatus.BACKLOG, label: "Backlog" },
-  { value: TaskStatus.TODO, label: "A fazer" },
-  { value: TaskStatus.IN_PROGRESS, label: "Em andamento" },
-  { value: TaskStatus.IN_REVIEW, label: "Em revisão" },
-  { value: TaskStatus.DONE, label: "Concluído" }
-];
-
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
   { value: Priority.MEDIUM, label: "Média" },
   { value: Priority.HIGH, label: "Alta" },
   { value: Priority.URGENT, label: "Urgente" }
 ];
+
+const promotedTaskFieldKeys = new Set(["status", "dias-estimados", "estimated-time"]);
 
 export function TaskCreateSheet() {
   const open = useUiStore((state) => state.taskCreateOpen);
@@ -57,7 +49,6 @@ export function TaskCreateSheet() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
-  const [status, setStatus] = useState<TaskStatus>(TaskStatus.TODO);
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -65,8 +56,11 @@ export function TaskCreateSheet() {
   const [customFieldDraft, setCustomFieldDraft] = useState<CustomFieldDraft>({});
 
   const selectedProject = projects.find((project) => project.id === projectId) ?? null;
-  const sections = selectedProject ? sectionsOf(selectedProject) : [];
+  const sections = useMemo(() => (selectedProject ? sectionsOf(selectedProject) : []), [selectedProject]);
   const selectedSection = sections.find((section) => section.id === sectionId) ?? null;
+  const globalTaskFields = selectedProject?.taskCustomFields?.filter((field) => field.mikaDetailVisible !== false) ?? [];
+  const statusField = globalTaskFields.find((field) => field.mikaKey === "status") ?? null;
+  const lowerCustomFields = globalTaskFields.filter((field) => !isPromotedTaskField(field));
   const createTask = useCreateTask(projectId, sectionId);
 
   useEffect(() => {
@@ -79,13 +73,24 @@ export function TaskCreateSheet() {
     setTitle("");
     setDescription("");
     setAssigneeId("");
-    setStatus(TaskStatus.TODO);
     setPriority(Priority.MEDIUM);
     setStartDate("");
     setDueDate("");
     setEstimatedDays("");
     setCustomFieldDraft({});
   }, [defaults.projectId, defaults.sectionId, open]);
+
+  useEffect(() => {
+    if (!open || !selectedProject) {
+      return;
+    }
+
+    if (sectionId && sections.some((section) => section.id === sectionId)) {
+      return;
+    }
+
+    setSectionId(sections[0]?.id ?? "");
+  }, [open, sectionId, sections, selectedProject]);
 
   const projectOptions = useMemo(
     () =>
@@ -99,13 +104,9 @@ export function TaskCreateSheet() {
     label: project.name,
     description: projectBuilder(project)
   }));
-  const sectionSelectOptions = sections.map((section) => ({
-    value: section.id,
-    label: section.name
-  }));
   const assigneeOptions = [
-    { value: "none", label: "Sem responsavel" },
-    ...users.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+    { value: "none", label: "Sem responsável" },
+    ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
   ];
   const prioritySelectOptions = priorityOptions.map((option) => ({
     value: option.value,
@@ -113,16 +114,23 @@ export function TaskCreateSheet() {
     color: priorityColors[option.value],
     render: <PriorityOptionPill priority={option.value} />
   }));
-  const statusSelectOptions = statusOptions.map((option) => ({
-    value: option.value,
-    label: option.label,
-    color: taskStatusColors[option.value],
-    render: <StatusOptionPill label={option.label} color={taskStatusColors[option.value]} />
-  }));
+  const statusSelectOptions = statusField
+    ? [
+        { value: "none", label: "-" },
+        ...statusField.enumOptions
+          .filter((option) => option.enabled)
+          .map((option) => ({
+            value: option.name,
+            label: option.name,
+            color: enumColor(option.name, option.color)
+          }))
+      ]
+    : [];
 
   function handleProjectChange(nextProjectId: string) {
+    const nextProject = projects.find((project) => project.id === nextProjectId) ?? null;
     setProjectId(nextProjectId);
-    setSectionId("");
+    setSectionId(nextProject ? (sectionsOf(nextProject)[0]?.id ?? "") : "");
     setCustomFieldDraft({});
   }
 
@@ -140,7 +148,7 @@ export function TaskCreateSheet() {
     }
 
     if (!selectedProject || !selectedSection) {
-      toast.error("Selecione o projeto e a seção da tarefa");
+      toast.error("Selecione um projeto com secao disponivel");
       return;
     }
 
@@ -150,11 +158,11 @@ export function TaskCreateSheet() {
       return;
     }
 
-    const customFieldValues = buildCustomFieldPayload(selectedProject.customFields ?? [], customFieldDraft);
+    const customFieldValues = buildCustomFieldPayload(globalTaskFields, customFieldDraft);
     const payload: CreateTaskRequest = {
       title: trimmedTitle,
       description: description.trim() || null,
-      status,
+      status: TaskStatus.TODO,
       priority,
       assigneeId: assigneeId || null,
       startDate: startDate || null,
@@ -180,7 +188,7 @@ export function TaskCreateSheet() {
       >
         <SheetHeader className="border-b border-border px-6 py-5">
           <SheetTitle>Nova tarefa</SheetTitle>
-          <SheetDescription>Defina projeto, seção e campos principais antes de criar.</SheetDescription>
+          <SheetDescription>Defina projeto e campos principais antes de criar.</SheetDescription>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -205,44 +213,35 @@ export function TaskCreateSheet() {
                 />
               </FieldRow>
 
-              <FieldRow icon={<ListTodo size={18} />} label="Seção">
-                <SearchableSelect
-                  value={sectionId}
-                  options={sectionSelectOptions}
-                  placeholder="Selecionar secao"
-                  searchPlaceholder="Buscar secao..."
-                  emptyMessage="Nenhuma secao encontrada"
-                  disabled={!selectedProject}
-                  onValueChange={setSectionId}
-                />
-              </FieldRow>
-
               <FieldRow icon={<UserRound size={18} />} label="Responsável">
                 <SearchableSelect
                   value={assigneeId || "none"}
                   options={assigneeOptions}
-                  placeholder="Sem responsavel"
-                  searchPlaceholder="Buscar responsavel..."
-                  emptyMessage="Nenhum responsavel encontrado"
+                  placeholder="Sem responsável"
+                  searchPlaceholder="Buscar responsável..."
+                  emptyMessage="Nenhum responsável encontrado"
                   onValueChange={(value) => setAssigneeId(value === "none" ? "" : value)}
                 />
               </FieldRow>
 
-              <FieldRow icon={<Flag size={18} />} label="Prioridade">
-                <div className="grid gap-3 sm:grid-cols-2">
+              {statusField ? (
+                <FieldRow icon={<CheckCircle2 size={18} />} label="Status">
                   <SearchableSelect
-                    value={priority}
-                    options={prioritySelectOptions}
-                    searchPlaceholder="Buscar prioridade..."
-                    onValueChange={(value) => setPriority(value as Priority)}
-                  />
-                  <SearchableSelect
-                    value={status}
+                    value={customFieldDraft[statusField.mikaKey ?? statusField.id] || "none"}
                     options={statusSelectOptions}
-                    searchPlaceholder="Buscar status..."
-                    onValueChange={(value) => setStatus(value as TaskStatus)}
+                    searchPlaceholder="Buscar Status..."
+                    onValueChange={(value) => handleCustomFieldChange(statusField.mikaKey ?? statusField.id, value === "none" ? "" : value)}
                   />
-                </div>
+                </FieldRow>
+              ) : null}
+
+              <FieldRow icon={<Flag size={18} />} label="Prioridade">
+                <SearchableSelect
+                  value={priority}
+                  options={prioritySelectOptions}
+                  searchPlaceholder="Buscar prioridade..."
+                  onValueChange={(value) => setPriority(value as Priority)}
+                />
               </FieldRow>
 
               <FieldRow icon={<CalendarDays size={18} />} label="Datas">
@@ -262,6 +261,16 @@ export function TaskCreateSheet() {
                   />
                 </div>
               </FieldRow>
+
+              {lowerCustomFields.map((field) => (
+                <FieldRow key={field.id} icon={<FolderKanban size={18} />} label={field.mikaLabel ?? field.name}>
+                  <CreateCustomField
+                    field={field}
+                    value={customFieldDraft[field.mikaKey ?? field.id] ?? ""}
+                    onChange={(value) => handleCustomFieldChange(field.mikaKey ?? field.id, value)}
+                  />
+                </FieldRow>
+              ))}
             </div>
 
             <Separator className="my-6" />
@@ -276,24 +285,6 @@ export function TaskCreateSheet() {
               />
             </label>
 
-            {selectedProject?.customFields?.length ? (
-              <section className="mt-6">
-                <div className="mb-3">
-                  <h3 className="text-sm font-bold text-text-primary">Campos do Asana</h3>
-                  <p className="mt-1 text-xs text-text-muted">Opcional. Os campos seguem o projeto selecionado.</p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {selectedProject.customFields.map((field) => (
-                    <CreateCustomField
-                      key={field.id}
-                      field={field}
-                      value={customFieldDraft[field.id] ?? ""}
-                      onChange={(value) => handleCustomFieldChange(field.id, value)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
           </div>
 
           <SheetFooter className="border-t border-border bg-surface-card px-6 py-4">
@@ -334,10 +325,8 @@ function CreateCustomField({
   const type = field.type.toLowerCase();
   const enabledOptions = field.enumOptions.filter((option) => option.enabled);
 
-  return (
-    <label className="grid gap-2 rounded-md border border-border bg-surface-card p-3 text-sm font-semibold text-text-secondary">
-      <span className="truncate text-xs uppercase text-text-muted">{field.name}</span>
-      {enabledOptions.length > 0 ? (
+  if (enabledOptions.length > 0) {
+    return (
         <SearchableSelect
           value={value || "none"}
           options={[
@@ -345,27 +334,30 @@ function CreateCustomField({
             ...enabledOptions.map((option) => ({
               value: option.name,
               label: option.name,
-              color: option.color ?? enumColor(option.name)
+              color: enumColor(option.name, option.color)
             }))
           ]}
           triggerClassName="h-9"
           searchPlaceholder={`Buscar ${field.name}...`}
           onValueChange={(next) => onChange(next === "none" ? "" : next)}
         />
-      ) : type === "number" || type === "integer" ? (
-        <DecimalInput value={value} onValueChange={onChange} className="h-9" />
-      ) : type === "date" ? (
-        <DatePicker value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")} triggerClassName="h-9" />
-      ) : (
-        <Input value={value} onChange={(event) => onChange(event.target.value)} className="h-9" />
-      )}
-    </label>
-  );
+    );
+  }
+
+  if (type === "number" || type === "integer") {
+    return <DecimalInput value={value} onValueChange={onChange} className="h-10" />;
+  }
+
+  if (type === "date") {
+    return <DatePicker value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")} />;
+  }
+
+  return <Input value={value} onChange={(event) => onChange(event.target.value)} className="h-10" />;
 }
 
 function buildCustomFieldPayload(fields: ProjectCustomField[], draft: CustomFieldDraft): NonNullable<CreateTaskRequest["customFieldValues"]> {
   return fields.flatMap((field) => {
-    const rawValue = draft[field.id]?.trim();
+    const rawValue = draft[field.mikaKey ?? field.id]?.trim();
     if (!rawValue) {
       return [];
     }
@@ -376,8 +368,12 @@ function buildCustomFieldPayload(fields: ProjectCustomField[], draft: CustomFiel
       return [];
     }
 
-    return [{ settingId: field.id, value }];
+    return [{ mikaKey: field.mikaKey ?? field.id, value }];
   });
+}
+
+function isPromotedTaskField(field: Pick<ProjectCustomField, "mikaKey">): boolean {
+  return Boolean(field.mikaKey && promotedTaskFieldKeys.has(field.mikaKey));
 }
 
 function sectionsOf(project: Project) {

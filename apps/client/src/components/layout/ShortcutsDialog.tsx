@@ -6,7 +6,7 @@ const rows: Array<{ keys: string; desc: string }> = [
   { keys: "Shift ?", desc: "Lista de atalhos" },
   { keys: "G P", desc: "Ir para Projetos" },
   { keys: "G T", desc: "Ir para Minhas tarefas" },
-  { keys: "G D", desc: "Ir para Inicio" },
+  { keys: "G D", desc: "Ir para Início" },
   { keys: "G U", desc: "Ir para Usuarios (coord./admin)" },
   { keys: "C", desc: "Ir para Minhas tarefas (criar rapido)" },
   { keys: "Esc", desc: "Fechar paleta ou esta janela" }

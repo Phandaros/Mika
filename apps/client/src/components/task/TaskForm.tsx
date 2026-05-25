@@ -68,10 +68,10 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
         <SearchableSelect
           value={assigneeId || "none"}
           options={[
-            { value: "none", label: "Sem responsavel" },
-            ...users.map((user) => ({ value: user.id, label: user.name, description: user.email }))
+            { value: "none", label: "Sem responsável" },
+            ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
           ]}
-          searchPlaceholder="Buscar responsavel..."
+          searchPlaceholder="Buscar responsável..."
           onValueChange={(value) => setAssigneeId(value === "none" ? "" : value)}
         />
       </div>

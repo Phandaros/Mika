@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { CompanyHoliday } from "shared";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
+import { DatePicker } from "../components/ui/date-picker";
 import { Input } from "../components/ui/input";
 import {
   useCompanyHolidays,
@@ -69,11 +70,14 @@ export function AdminCalendarPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Input
-            type="number"
-            value={year}
-            min={2020}
-            max={2100}
-            onChange={(event) => setYear(Number(event.target.value))}
+            inputMode="numeric"
+            value={String(year)}
+            onChange={(event) => {
+              const nextYear = Number(event.target.value);
+              if (Number.isFinite(nextYear)) {
+                setYear(nextYear);
+              }
+            }}
             className="h-10 w-28"
             aria-label="Ano"
           />
@@ -178,6 +182,11 @@ function HolidayModal({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!date) {
+      toast.error("Informe a data do feriado");
+      return;
+    }
+
     await onSubmit({ date, name });
   }
 
@@ -191,7 +200,7 @@ function HolidayModal({
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} required />
+          <DatePicker value={date} onValueChange={(value) => setDate(value ?? "")} placeholder="Data do feriado" />
           <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome do feriado" required />
           <Button type="submit" disabled={loading}>
             {holiday ? "Salvar feriado" : "Criar feriado"}

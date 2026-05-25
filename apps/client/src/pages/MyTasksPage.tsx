@@ -91,8 +91,8 @@ export function MyTasksPage() {
     }))
   ];
   const completionOptions = [
-    { value: "open", label: "Nao concluidas" },
-    { value: "completed", label: "Concluidas" },
+    { value: "open", label: "Não concluídas" },
+    { value: "completed", label: "Concluídas" },
     { value: "all", label: "Todas" }
   ];
   const sortOptions = [
@@ -380,8 +380,8 @@ function ListView({
   const openTasks = tasks.filter((task) => !task.completed);
   const completedTasks = tasks.filter((task) => task.completed);
   const groups = [
-    { key: "open", label: "Nao concluidas", tasks: openTasks },
-    { key: "completed", label: "Concluidas", tasks: completedTasks }
+    { key: "open", label: "Não concluídas", tasks: openTasks },
+    { key: "completed", label: "Concluídas", tasks: completedTasks }
   ].filter((group) => group.tasks.length > 0);
 
   return (

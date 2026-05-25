@@ -3,7 +3,14 @@ import type { RequestHandler } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { DisciplineType, ProjectStatus, type DisciplineType as DisciplineTypeValue, type ProjectStatus as ProjectStatusValue } from "../lib/enums.js";
-import { makeLocalAsanaGid, projectInclude, taskInclude, toProjectDto, toTaskDto } from "../lib/asanaDto.js";
+import {
+  makeLocalAsanaGid,
+  projectInclude,
+  taskCustomFieldCatalogInclude,
+  taskInclude,
+  toProjectDto,
+  toTaskDto
+} from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 interface ProjectBody {
@@ -92,12 +99,19 @@ async function syncProjectSections(
 
 export const listProjects: RequestHandler = async (_req, res, next) => {
   try {
-    const projects = await prisma.project.findMany({
-      orderBy: { updatedAt: "desc" },
-      include: projectInclude
-    });
+    const [projects, taskFieldCatalog] = await Promise.all([
+      prisma.project.findMany({
+        orderBy: { updatedAt: "desc" },
+        include: projectInclude
+      }),
+      prisma.asanaCustomField.findMany({
+        where: { mikaTaskField: true },
+        include: taskCustomFieldCatalogInclude,
+        orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+      })
+    ]);
 
-    res.json({ projects: projects.map(toProjectDto) });
+    res.json({ projects: projects.map((project) => toProjectDto(project, taskFieldCatalog)) });
   } catch (error) {
     next(error);
   }
@@ -242,7 +256,12 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
       return rangeOverlaps(bounds, from, to);
     });
 
-    const dtos = filtered.map((task) => toTaskDto(task, resolveWorkloadDisciplineFallback(task, project)));
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+    const dtos = filtered.map((task) => toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog));
 
     res.json({ tasks: dtos });
   } catch (error) {
@@ -261,7 +280,13 @@ export const getProjectById: RequestHandler = async (req, res, next) => {
       throw new AppError(404, "Project not found");
     }
 
-    res.json({ project: toProjectDto(project) });
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+
+    res.json({ project: toProjectDto(project, taskFieldCatalog) });
   } catch (error) {
     next(error);
   }
@@ -292,7 +317,13 @@ export const createProject: RequestHandler = async (req, res, next) => {
       });
     });
 
-    res.status(201).json({ project: toProjectDto(project) });
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+
+    res.status(201).json({ project: toProjectDto(project, taskFieldCatalog) });
   } catch (error) {
     next(error);
   }
@@ -323,7 +354,13 @@ export const updateProject: RequestHandler = async (req, res, next) => {
       });
     });
 
-    res.json({ project: toProjectDto(project) });
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
+
+    res.json({ project: toProjectDto(project, taskFieldCatalog) });
   } catch (error) {
     next(error);
   }

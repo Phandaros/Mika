@@ -106,7 +106,7 @@ export function DashboardPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <MetricPill label="Atribuidas (abertas)" value={String(assignedOpen)} />
-            <MetricPill label="Concluidas esta semana" value={String(completedThisWeek)} />
+            <MetricPill label="Concluídas esta semana" value={String(completedThisWeek)} />
             <MetricPill label="Atrasadas" value={String(overdueTasks.length)} />
           </div>
         </div>
@@ -122,7 +122,7 @@ export function DashboardPage() {
               Atrasadas ({overdueTasks.length})
             </HomeTaskTab>
             <HomeTaskTab active={homeTaskTab === "done"} onClick={() => setHomeTaskTab("done")}>
-              Concluidas
+              Concluídas
             </HomeTaskTab>
           </div>
           <TaskMiniList tasks={homeTasks} onOpenTask={openTaskDetail} />

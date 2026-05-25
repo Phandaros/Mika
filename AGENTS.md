@@ -403,6 +403,9 @@ Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globa
 - ✅ Campos de duração/dias estimados nunca devem usar `input type="number"`; usar input textual decimal compartilhado sem steppers nativos.
 - ✅ Campos de data devem usar o datepicker compartilhado; nunca usar `input type="date"` cru no frontend.
 - ✅ Dropdowns de dados editáveis com lista de opções devem usar o dropdown pesquisável compartilhado.
+- ✅ Inputs, textareas, datepickers e dropdowns editáveis devem ter dark styling próprio; nunca depender de estilo nativo claro do navegador.
+- ✅ Campos enum/status devem usar fundo colorido translúcido no próprio chip/campo, sem bolinha lateral como indicador principal.
+- ✅ Popovers/dropdowns não podem ter scroll horizontal; devem acomodar nome + metadados com truncamento limpo.
 - ✅ Nomes de arquivos em `camelCase` para utilitários, `PascalCase` para componentes React
 - ✅ Nomes de branches: `feat/nome-da-feature`, `fix/descricao`, `chore/descricao`
 - ✅ Manter o Electron como shell nativo seguro, apontando para o Vite dev server em desenvolvimento e para o build estático do client em produção

@@ -2,7 +2,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { taskInclude, toTaskDto } from "../lib/asanaDto.js";
+import { taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { parseWorkloadScope, sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
 
@@ -155,6 +155,11 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
       },
       include: globalWorkloadTaskInclude
     });
+    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
+      where: { mikaTaskField: true },
+      include: taskCustomFieldCatalogInclude,
+      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+    });
 
     const filtered = tasks.filter((task) => {
       if (!taskHasActiveProjectMembership(task)) {
@@ -180,7 +185,7 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
           return null;
         }
 
-        return toTaskDto(task, fallback);
+        return toTaskDto(task, fallback, taskFieldCatalog);
       })
       .filter((row): row is NonNullable<typeof row> => row !== null);
 

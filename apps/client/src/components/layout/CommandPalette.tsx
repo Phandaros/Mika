@@ -86,7 +86,7 @@ export function CommandPalette() {
                       "aria-selected:bg-surface-hover aria-selected:text-text-primary"
                     )}
                   >
-                    <Home size={16} /> Inicio
+                    <Home size={16} /> Início
                   </Command.Item>
                   <Command.Item
                     onSelect={() => go("/projects")}

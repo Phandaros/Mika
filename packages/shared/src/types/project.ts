@@ -20,6 +20,7 @@ export interface Project {
   defaultView?: string | null;
   owner?: import("./user.js").User | null;
   customFields?: ProjectCustomField[];
+  taskCustomFields?: ProjectCustomField[];
   createdAt: string;
   updatedAt: string;
   disciplines?: Discipline[];
@@ -34,6 +35,12 @@ export interface ProjectCustomField {
   name: string;
   description: string | null;
   type: string;
+  mikaKey?: string | null;
+  mikaLabel?: string | null;
+  mikaSortOrder?: number | null;
+  mikaTaskField?: boolean;
+  mikaListVisible?: boolean;
+  mikaDetailVisible?: boolean;
   enumOptions: Array<{
     id: string;
     asanaGid: string;
