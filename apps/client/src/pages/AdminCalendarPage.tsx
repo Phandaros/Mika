@@ -65,7 +65,7 @@ export function AdminCalendarPage() {
           <p className="text-sm font-semibold uppercase text-brand-orange">Administracao</p>
           <h1 className="mt-1 text-3xl font-bold text-text-primary">Calendario corporativo</h1>
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-            Feriados cadastrados aqui aparecem na carga de trabalho e nao recebem dias estimados.
+            Feriados cadastrados aqui aparecem na carga de trabalho e não recebem dias estimados.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

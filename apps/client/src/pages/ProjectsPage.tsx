@@ -119,7 +119,7 @@ export function ProjectsPage() {
                     { value: "name-asc", label: "Nome A-Z" },
                     { value: "endDate-asc", label: "Entrega mais proxima" }
                   ]}
-                  searchPlaceholder="Buscar ordenacao..."
+                  searchPlaceholder="Buscar ordenação..."
                   onValueChange={setSortMode}
                 />
               </PopoverContent>

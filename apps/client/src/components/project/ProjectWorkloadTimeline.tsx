@@ -101,7 +101,7 @@ function utcMsToYmd(ms: number): string {
   return `${y}-${mo}-${da}`;
 }
 
-/** Soma dias no calendario gregoriano; `ymd` e `YYYY-MM-DD` (data civil, sem fuso). */
+/** Soma dias no calendário gregoriano; `ymd` e `YYYY-MM-DD` (data civil, sem fuso). */
 function addCalendarDaysYmd(ymd: string, delta: number): string {
   return utcMsToYmd(ymdToUtcMs(ymd) + delta * MS_PER_DAY);
 }
@@ -133,7 +133,7 @@ function ymdMax(a: string, b: string): string {
   return a >= b ? a : b;
 }
 
-/** So para rotulos do cabecalho (mes/dia no fuso local, meio-dia local evita borda de DST). */
+/** Só para rótulos do cabeçalho (mês/dia no fuso local, meio-dia local evita borda de DST). */
 function parseYmdToLocalNoon(ymd: string): Date {
   const parts = ymd.split("-").map(Number);
   const y = parts[0] ?? 0;
@@ -855,7 +855,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       payload: { completed: !task.completed }
     });
     onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
-    toast.success(task.completed ? "Tarefa reaberta" : "Tarefa concluida");
+    toast.success(task.completed ? "Tarefa reaberta" : "Tarefa concluída");
   }
 
   async function confirmDeleteTask() {
@@ -866,7 +866,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     const task = taskPendingDelete;
     await deleteTask.mutateAsync(task.id);
     setTaskPendingDelete(null);
-    toast.success("Tarefa excluida");
+    toast.success("Tarefa excluída");
   }
 
   function renderNonWorkingBands(rowHeight: number, rowKey: string): ReactNode {
@@ -953,7 +953,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 </ContextMenuItem>
                 <ContextMenuItem onSelect={() => void toggleTaskCompleted(p.task)}>
                   <CheckCircle2 className="h-4 w-4" />
-                  {p.task.completed ? "Marcar como nao concluida" : "Marcar como concluida"}
+                  {p.task.completed ? "Marcar como não concluída" : "Marcar como concluída"}
                 </ContextMenuItem>
                 <ContextMenuItem onSelect={() => void copyTaskLink(p.task)}>
                   <Copy className="h-4 w-4" />
@@ -1026,8 +1026,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             <SearchableSelect
               value={grouping}
               options={[
-                { value: "assignee", label: "Responsavel" },
-                { value: "section", label: "Secao" }
+                { value: "assignee", label: "Responsável" },
+                { value: "section", label: "Seção" }
               ]}
               triggerClassName="h-8 w-[150px] text-xs"
               searchPlaceholder="Buscar agrupamento..."
@@ -1043,9 +1043,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             <Hash size={14} />
             Dias estimados
           </Button>
-          <Button type="button" variant="secondary" className="h-8 px-3 text-xs" title="Opcoes">
+          <Button type="button" variant="secondary" className="h-8 px-3 text-xs" title="Opções">
             <MoreHorizontal size={14} />
-            Opcoes
+            Opções
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1078,17 +1078,17 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           <SearchableSelect
             value={sectionFilter}
             options={[
-              { value: ALL_FILTER_VALUE, label: "Todas as secoes" },
+              { value: ALL_FILTER_VALUE, label: "Todas as seções" },
               ...sectionOptions.map(([id, label]) => ({ value: id, label }))
             ]}
             triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar secao..."
+            searchPlaceholder="Buscar seção..."
             onValueChange={setSectionFilter}
           />
           <SearchableSelect
             value={assigneeFilter}
             options={[
-              { value: ALL_FILTER_VALUE, label: "Todos os responsaveis" },
+              { value: ALL_FILTER_VALUE, label: "Todos os responsáveis" },
               ...assigneeOptions.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
             ]}
             triggerClassName="h-9 text-xs"
@@ -1133,7 +1133,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               { value: "all", label: "Todas" }
             ]}
             triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar conclusao..."
+            searchPlaceholder="Buscar conclusão..."
             onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
           />
         </div>

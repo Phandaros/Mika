@@ -54,7 +54,7 @@ export function NotificationBell() {
           <div className="flex items-center justify-between border-b border-border p-3">
             <div>
               <p className="text-sm font-bold text-text-primary">Notificacoes</p>
-              <p className="text-xs text-text-secondary">{unreadCount} nao lidas</p>
+              <p className="text-xs text-text-secondary">{unreadCount} não lidas</p>
             </div>
             <Button
               variant="ghost"

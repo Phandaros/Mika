@@ -89,7 +89,7 @@ export function WorkloadUndatedPanel({
           </Button>
         </div>
         <p className="shrink-0 border-b border-border-subtle px-4 py-2 text-xs text-text-muted">
-          Arraste uma tarefa para a grade de datas para definir inicio e entrega no mesmo dia.
+          Arraste uma tarefa para a grade de datas para definir início e entrega no mesmo dia.
         </p>
         <ul className="min-h-0 flex-1 list-none space-y-1 overflow-y-auto p-3">
           {sorted.map((task) => (

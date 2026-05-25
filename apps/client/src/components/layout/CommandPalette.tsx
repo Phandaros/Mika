@@ -105,7 +105,7 @@ export function CommandPalette() {
                       onSelect={() => go("/users")}
                       className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                     >
-                      <Users size={16} /> Usuarios
+                      <Users size={16} /> Usuários
                     </Command.Item>
                   ) : null}
                 </Command.Group>

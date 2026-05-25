@@ -76,7 +76,7 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
         />
       </div>
       <fieldset className="grid gap-3 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-semibold text-text-secondary">Data de conclusao</legend>
+        <legend className="px-1 text-sm font-semibold text-text-secondary">Data de conclusão</legend>
         <DateRangePicker
           startDate={startDate}
           endDate={dueDate}

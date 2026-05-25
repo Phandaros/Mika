@@ -45,8 +45,8 @@ const columns: Array<{ status: TaskStatus; label: string }> = [
   { status: TaskStatus.BACKLOG, label: "Backlog" },
   { status: TaskStatus.TODO, label: "A fazer" },
   { status: TaskStatus.IN_PROGRESS, label: "Em andamento" },
-  { status: TaskStatus.IN_REVIEW, label: "Em revisao" },
-  { status: TaskStatus.DONE, label: "Concluido" }
+  { status: TaskStatus.IN_REVIEW, label: "Em revisão" },
+  { status: TaskStatus.DONE, label: "Concluído" }
 ];
 
 export function MyTasksPage() {
@@ -215,7 +215,7 @@ export function MyTasksPage() {
         <div className="flex items-center gap-5 text-sm font-bold text-text-secondary">
           <ViewTab active={view === "list"} icon={<List size={15} />} label="Lista" onClick={() => setView("list")} />
           <ViewTab active={view === "kanban"} icon={<KanbanSquare size={15} />} label="Quadro" onClick={() => setView("kanban")} />
-          <ViewTab active={view === "calendar"} icon={<CalendarDays size={15} />} label="Calendario" onClick={() => setView("calendar")} />
+          <ViewTab active={view === "calendar"} icon={<CalendarDays size={15} />} label="Calendário" onClick={() => setView("calendar")} />
         </div>
       </section>
 
@@ -234,13 +234,13 @@ export function MyTasksPage() {
           </Button>
           {view === "calendar" ? (
             <>
-              <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mes anterior">
+              <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
                 <ChevronLeft size={16} />
               </Button>
               <Button variant="secondary" className="h-8" onClick={() => setMonth(new Date())}>
                 Hoje
               </Button>
-              <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Proximo mes">
+              <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
                 <ChevronRight size={16} />
               </Button>
               <span className="ml-2 text-sm text-text-primary">{format(month, "MMMM yyyy")}</span>
@@ -261,7 +261,7 @@ export function MyTasksPage() {
               value={completionFilter}
               options={completionOptions}
               triggerClassName="h-8 w-40"
-              searchPlaceholder="Buscar conclusao..."
+              searchPlaceholder="Buscar conclusão..."
               onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
             />
           </label>
@@ -281,7 +281,7 @@ export function MyTasksPage() {
               value={sortMode}
               options={sortOptions}
               triggerClassName="h-8 w-36"
-              searchPlaceholder="Buscar ordenacao..."
+              searchPlaceholder="Buscar ordenação..."
               onValueChange={(value) => setSortMode(value as typeof sortMode)}
             />
           </label>
@@ -298,7 +298,7 @@ export function MyTasksPage() {
             <SearchableSelect
               value={selectedCreateTarget || createTarget?.key || disciplineOptions[0]!.key}
               options={disciplineOptions.map((option) => ({ value: option.key, label: option.label }))}
-              searchPlaceholder="Buscar projeto ou secao..."
+              searchPlaceholder="Buscar projeto ou seção..."
               onValueChange={setSelectedCreateTarget}
             />
           ) : null}
@@ -325,7 +325,7 @@ export function MyTasksPage() {
         </div>
       ) : null}
 
-      {myTasks.length === 0 ? <EmptyState title="Voce nao possui tarefas atribuidas" /> : null}
+      {myTasks.length === 0 ? <EmptyState title="Você não possui tarefas atribuídas" /> : null}
       {myTasks.length > 0 && visibleTasks.length === 0 ? <EmptyState title="Nenhuma tarefa corresponde aos filtros" /> : null}
       {view === "list" ? (
         <ListView

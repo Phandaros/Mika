@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { ArrowDown, ArrowDownUp, ArrowUp, Edit3, ExternalLink, Filter, Group, Inbox, Plus, Settings2, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -220,7 +220,7 @@ export function ProjectDetailPage() {
   }
 
   if (!project || !projectId) {
-    return <EmptyState title="Projeto nao encontrado" />;
+    return <EmptyState title="Projeto não encontrado" />;
   }
 
   const taskFormDiscipline = visibleDisciplines[0] ?? disciplines[0] ?? null;
@@ -245,9 +245,9 @@ export function ProjectDetailPage() {
               </a>
             ) : null}
           </div>
-          <p className="mt-2 max-w-3xl text-sm text-text-secondary">{project.description ?? "Sem descricao cadastrada."}</p>
+          <p className="mt-2 max-w-3xl text-sm text-text-secondary">{project.description ?? "Sem descrição cadastrada."}</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-text-secondary">
-            {project.owner?.name ? <span className="rounded-md border border-border px-2 py-1">ResponsÃ¡vel: {project.owner.name}</span> : null}
+            {project.owner?.name ? <span className="rounded-md border border-border px-2 py-1">Responsável: {project.owner.name}</span> : null}
             {project.defaultView ? <span className="rounded-md border border-border px-2 py-1">View: {project.defaultView}</span> : null}
             {project.asanaGid ? <span className="rounded-md border border-border px-2 py-1">GID: {project.asanaGid}</span> : null}
           </div>
@@ -311,7 +311,7 @@ export function ProjectDetailPage() {
       <div className="flex flex-wrap gap-2">
         <ScopeTab active={taskScope === "general"} label="Geral" onClick={() => setTaskScope("general")} />
         <ScopeTab active={taskScope === "civil"} label="Civil" onClick={() => setTaskScope("civil")} />
-        <ScopeTab active={taskScope === "electrical"} label="ElÃ©trica" onClick={() => setTaskScope("electrical")} />
+        <ScopeTab active={taskScope === "electrical"} label="Elétrica" onClick={() => setTaskScope("electrical")} />
       </div>
 
       <div className="min-w-0">
@@ -583,8 +583,8 @@ function ListControls({
     }))
   ];
   const assigneeOptions = [
-    { value: "all", label: "Todos responsaveis" },
-    { value: "none", label: "Sem responsÃ¡vel" },
+    { value: "all", label: "Todos responsáveis" },
+    { value: "none", label: "Sem responsável" },
     ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
   ];
   const priorityOptions = [
@@ -597,8 +597,8 @@ function ListControls({
     }))
   ];
   const completionOptions = [
-    { value: "open", label: "NÃ£o concluÃ­das" },
-    { value: "completed", label: "ConcluÃ­das" },
+    { value: "open", label: "Não concluídas" },
+    { value: "completed", label: "Concluídas" },
     { value: "all", label: "Todas" }
   ];
 
@@ -615,7 +615,7 @@ function ListControls({
           <SearchableSelect
             value={completionFilter}
             options={completionOptions}
-            searchPlaceholder="Buscar conclusao..."
+            searchPlaceholder="Buscar conclusão..."
             onValueChange={(value) => onCompletionFilterChange(value as CompletionFilter)}
           />
           <SearchableSelect
@@ -627,7 +627,7 @@ function ListControls({
           <SearchableSelect
             value={assigneeFilter}
             options={assigneeOptions}
-            searchPlaceholder="Buscar responsÃ¡vel..."
+            searchPlaceholder="Buscar responsável..."
             contentClassName="w-[min(420px,calc(100vw-32px))]"
             onValueChange={onAssigneeFilterChange}
           />
@@ -663,14 +663,14 @@ function ListControls({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 text-sm text-text-secondary">
-          Agrupado por Geral, Civil e Eletrica.
+          Agrupado por Geral, Civil e Elétrica.
         </PopoverContent>
       </Popover>
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="secondary" className="h-10">
             <Settings2 size={15} />
-            Opcoes
+            Opções
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 text-sm text-text-secondary">
@@ -952,7 +952,7 @@ function sortLabel(key: SortKey): string {
   const labels: Record<SortKey, string> = {
     title: "Tarefa",
     stage: "Etapa",
-    assignee: "ResponsÃ¡vel",
+    assignee: "Responsável",
     status: "Status"
   };
 
@@ -1070,7 +1070,7 @@ function groupTasksByScope(tasks: TaskWithDiscipline[]) {
   const groups: Array<{ scope: TaskScope; label: string; color: string; tasks: TaskWithDiscipline[] }> = [
     { scope: "general", label: "Geral", color: "var(--color-text-muted)", tasks: [] },
     { scope: "civil", label: "Civil", color: "var(--disc-hid-text)", tasks: [] },
-    { scope: "electrical", label: "ElÃ©trica", color: "var(--disc-ele-text)", tasks: [] }
+    { scope: "electrical", label: "Elétrica", color: "var(--disc-ele-text)", tasks: [] }
   ];
 
   for (const task of tasks) {

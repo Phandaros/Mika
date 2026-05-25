@@ -22,11 +22,11 @@ import { useUiStore } from "../../store/uiStore";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 const navItems = [
-  { to: "/", label: "Pagina inicial", icon: Home },
+  { to: "/", label: "Página inicial", icon: Home },
   { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
   { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
   { to: "/admin/calendar", label: "Calendario", icon: CalendarDays, minRole: Role.ADMIN },
-  { to: "/users", label: "Usuarios", icon: Users, minRole: Role.COORDINATOR }
+  { to: "/users", label: "Usuários", icon: Users, minRole: Role.COORDINATOR }
 ];
 
 export function Sidebar() {

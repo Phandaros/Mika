@@ -16,8 +16,8 @@ const titles: Record<GlobalWorkloadScope, string> = {
 
 const descriptions: Record<GlobalWorkloadScope, string> = {
   general: "Todas as tarefas com datas, de todos os projetos ativos.",
-  civil: "Tarefas em disciplinas de instalacoes civis (hidraulico, sanitario, PPCI, etc.), todos os projetos.",
-  electrical: "Tarefas em disciplinas eletricas (eletrico, SPDA, telecom, automacao), todos os projetos."
+  civil: "Tarefas em disciplinas de instalações civis (hidráulico, sanitario, PPCI, etc.), todos os projetos.",
+  electrical: "Tarefas em disciplinas elétricas (elétrico, SPDA, telecom, automação), todos os projetos."
 };
 
 export function GlobalWorkloadPage({ scope }: { scope: GlobalWorkloadScope }) {

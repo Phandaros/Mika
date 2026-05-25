@@ -148,7 +148,7 @@ export function TaskCreateSheet() {
     }
 
     if (!selectedProject || !selectedSection) {
-      toast.error("Selecione um projeto com secao disponivel");
+      toast.error("Selecione um projeto com seção disponível");
       return;
     }
 

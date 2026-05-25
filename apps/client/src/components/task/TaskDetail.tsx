@@ -1,4 +1,4 @@
-﻿import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import {
   addMonths,
   eachDayOfInterval,
@@ -45,7 +45,7 @@ type TaskCustomField = NonNullable<Task["customFieldValues"]>[number];
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
-  { value: Priority.MEDIUM, label: "MÃ©dia" },
+  { value: Priority.MEDIUM, label: "Média" },
   { value: Priority.HIGH, label: "Alta" },
   { value: Priority.URGENT, label: "Urgente" }
 ];
@@ -603,7 +603,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
           ) : null}
 
           <section className="mt-8">
-            <h3 className="text-sm font-bold text-text-primary">DescriÃ§Ã£o</h3>
+            <h3 className="text-sm font-bold text-text-primary">Descrição</h3>
             <div className="mt-3 border-b border-border pb-6">
               <Textarea
                 ref={descriptionRef}
@@ -628,20 +628,20 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
           <section className="mt-8">
             <div className="flex items-center gap-2">
               <MessageSquare size={18} className="shrink-0 text-text-secondary" />
-              <h3 className="text-sm font-bold text-text-primary">ComentÃ¡rios</h3>
+              <h3 className="text-sm font-bold text-text-primary">Comentários</h3>
               <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{comments.length}</span>
             </div>
             <div className="mt-4 flex flex-col gap-4">
               {comments.map((item) => (
                 <div key={item.id} className="flex gap-3">
                   <Avatar
-                    name={item.author?.name ?? "UsuÃ¡rio"}
+                    name={item.author?.name ?? "Usuário"}
                     imageUrl={item.author?.avatarUrl}
                     className="mt-0.5 h-8 w-8 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="text-sm font-semibold leading-5 text-text-primary">{item.author?.name ?? "UsuÃ¡rio"}</span>
+                      <span className="text-sm font-semibold leading-5 text-text-primary">{item.author?.name ?? "Usuário"}</span>
                       <span className="text-xs tabular-nums text-text-muted">
                         {format(new Date(item.createdAt), "dd/MM/yyyy HH:mm")}
                       </span>
@@ -650,7 +650,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                   </div>
                 </div>
               ))}
-              {comments.length === 0 ? <p className="text-sm text-text-muted">Nenhum comentÃ¡rio ainda.</p> : null}
+              {comments.length === 0 ? <p className="text-sm text-text-muted">Nenhum comentário ainda.</p> : null}
             </div>
           </section>
         </div>
@@ -660,7 +660,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
           <Textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            placeholder="Adicionar um comentÃ¡rio"
+            placeholder="Adicionar um comentário"
             className="min-h-20 flex-1 resize-none"
           />
           <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
@@ -896,15 +896,15 @@ function taskFieldDisplayLabel(field: TaskCustomField): string {
   }
 
   if (isCompletionStatusField(field)) {
-    return "Status de ConclusÃ£o";
+    return "Status de Conclusão";
   }
 
   if (isMaximumDeadlineField(field)) {
-    return "Prazo MÃ¡ximo";
+    return "Prazo Máximo";
   }
 
   if (isCompletionDaysField(field)) {
-    return "Dias ConclusÃ£o";
+    return "Dias Conclusão";
   }
 
   return field.mikaLabel ?? field.customFieldName ?? "Campo";
@@ -993,7 +993,7 @@ function CompletionDateLabel({ startDate, dueDate }: { startDate: string | Date 
   }
 
   if (startDate) {
-    return <span>InÃ­cio {formatDisplayDate(startDate)}</span>;
+    return <span>Início {formatDisplayDate(startDate)}</span>;
   }
 
   if (dueDate) {
@@ -1067,7 +1067,7 @@ function DateRangePanel({
           <DatePicker
             value={dateInputValue(startDate)}
             onValueChange={(value) => handleStartInputChange(value ?? "")}
-            placeholder="InÃ­cio"
+            placeholder="Início"
           />
           <DatePicker
             value={dateInputValue(endDate)}
@@ -1076,11 +1076,11 @@ function DateRangePanel({
           />
         </div>
         <div className="flex items-center justify-between">
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="MÃªs anterior">
+          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
             <ChevronLeft size={16} />
           </Button>
           <span className="text-sm font-semibold text-text-primary">{formatMonthLabel(month)}</span>
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="PrÃ³ximo mÃªs">
+          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
             <ChevronRight size={16} />
           </Button>
         </div>
