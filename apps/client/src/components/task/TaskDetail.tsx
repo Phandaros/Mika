@@ -16,14 +16,14 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
-import { Priority, type Task, type UpdateTaskRequest } from "shared";
+import { Priority, TaskStatus, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, PlatformChip } from "../shared/Chip";
+import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
@@ -50,7 +50,30 @@ const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.URGENT, label: "Urgente" }
 ];
 
+const platformOptions = [
+  { value: "CAD", label: "CAD" },
+  { value: "REVIT", label: "REVIT" },
+  { value: "COORD", label: "COORD" }
+];
+
+const disciplineOptions = [
+  { value: "ELE", label: "ELE" },
+  { value: "SPDA", label: "SPDA" },
+  { value: "TEL", label: "TEL" },
+  { value: "HID", label: "HID" },
+  { value: "PPCI", label: "PPCI" },
+  { value: "HVAC", label: "HVAC" },
+  { value: "COORD", label: "COORD" },
+  { value: "EP", label: "EP" }
+];
+
 const promotedTaskFieldKeys = new Set(["status", "dias-estimados", "dias-conclusao", "estimated-time"]);
+const compactSelectTriggerClassName =
+  "h-7 min-h-0 w-auto min-w-[84px] justify-start border-transparent bg-transparent px-1.5 text-left hover:bg-[--bg-3]";
+const compactDatePickerClassName =
+  "h-7 min-h-0 w-auto min-w-[112px] justify-between border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3]";
+const compactInputClassName =
+  "h-7 min-h-0 w-[112px] border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3] focus:bg-[--bg-3]";
 
 function isTargetInsidePanelShell(target: Element, asideRef: RefObject<HTMLElement>): boolean {
   const asideEl = asideRef.current;
@@ -447,17 +470,32 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               {
                 key: "status",
                 label: "Status",
-                render: () => <TaskStatusBadge status={visibleTask.status} />
+                render: () => (
+                  <EditableStatusField
+                    value={visibleTask.status}
+                    onSave={(status) => void patchTask({ status })}
+                  />
+                )
               },
               {
                 key: "platform",
                 label: "Plataforma",
-                render: () => <PlatformChip platform={visibleTask.platform} />
+                render: () => (
+                  <EditablePlatformField
+                    value={visibleTask.platform}
+                    onSave={(platform) => void patchTask({ platform })}
+                  />
+                )
               },
               {
                 key: "discipline",
                 label: "Disciplina",
-                render: () => <DisciplineChip discipline={visibleTask.taskDiscipline} />
+                render: () => (
+                  <EditableDisciplineField
+                    value={visibleTask.taskDiscipline}
+                    onSave={(taskDiscipline) => void patchTask({ taskDiscipline })}
+                  />
+                )
               },
               {
                 key: "completion",
@@ -471,22 +509,45 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               {
                 key: "maxDeadline",
                 label: "Prazo Máximo",
-                render: () => <FieldText value={fixedMaxDeadline ? formatDisplayDate(fixedMaxDeadline) : null} />
+                render: () => (
+                  <DatePicker
+                    value={fixedMaxDeadline ?? null}
+                    onValueChange={(maxDeadline) => void patchTask({ maxDeadline })}
+                    placeholder="—"
+                    className={compactDatePickerClassName}
+                  />
+                )
               },
               {
                 key: "estimatedTime",
                 label: "Dias Estimados",
-                render: () => <FieldNumber value={fixedEstimatedTime} />
+                render: () => (
+                  <EditableDecimalField
+                    value={fixedEstimatedTime}
+                    onSave={(estimatedTime) => void patchTask({ estimatedTime, estimatedDays: estimatedTime })}
+                  />
+                )
               },
               {
                 key: "conclusionDays",
                 label: "Dias Conclusão",
-                render: () => <FieldNumber value={fixedConclusionDays} />
+                render: () => (
+                  <EditableDecimalField
+                    value={fixedConclusionDays}
+                    onSave={(conclusionDays) => void patchTask({ conclusionDays })}
+                  />
+                )
               },
               {
                 key: "stage",
                 label: "Etapa",
-                render: () => <FieldText value={fixedStage} />
+                render: () => (
+                  <EditableStageField
+                    value={fixedStage}
+                    stageField={stageField}
+                    onSave={(stage) => void patchTask({ stage })}
+                  />
+                )
               }
             ]}
           />
@@ -727,6 +788,148 @@ function FieldNumber({ value }: { value: number | null | undefined }) {
 
 function EmptyField() {
   return <span className="text-[13px] text-[--color-text-muted]">—</span>;
+}
+
+function EditableStatusField({ value, onSave }: { value: TaskStatus; onSave: (value: TaskStatus) => void }) {
+  return (
+    <SearchableSelect
+      value={value}
+      options={Object.values(TaskStatus).map((status) => ({
+        value: status,
+        label: taskStatusLabels[status],
+        render: <TaskStatusBadge status={status} />
+      }))}
+      searchPlaceholder="Buscar status..."
+      triggerClassName={compactSelectTriggerClassName}
+      contentClassName="min-w-[220px] max-w-[320px]"
+      onValueChange={(nextValue) => onSave(nextValue as TaskStatus)}
+    />
+  );
+}
+
+function EditablePlatformField({ value, onSave }: { value: string | null | undefined; onSave: (value: string | null) => void }) {
+  return (
+    <SearchableSelect
+      value={value ?? "none"}
+      options={[
+        { value: "none", label: "Sem plataforma", render: <EmptyField /> },
+        ...platformOptions.map((option) => ({
+          ...option,
+          render: <PlatformChip platform={option.value} />
+        }))
+      ]}
+      searchPlaceholder="Buscar plataforma..."
+      triggerClassName={compactSelectTriggerClassName}
+      contentClassName="min-w-[220px] max-w-[320px]"
+      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
+    />
+  );
+}
+
+function EditableDisciplineField({ value, onSave }: { value: string | null | undefined; onSave: (value: string | null) => void }) {
+  return (
+    <SearchableSelect
+      value={value ?? "none"}
+      options={[
+        { value: "none", label: "Sem disciplina", render: <EmptyField /> },
+        ...disciplineOptions.map((option) => ({
+          ...option,
+          render: <DisciplineChip discipline={option.value} />
+        }))
+      ]}
+      searchPlaceholder="Buscar disciplina..."
+      triggerClassName={compactSelectTriggerClassName}
+      contentClassName="min-w-[220px] max-w-[320px]"
+      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
+    />
+  );
+}
+
+function EditableDecimalField({ value, onSave }: { value: number | null | undefined; onSave: (value: number | null) => void }) {
+  const initialValue = value == null ? "" : formatDecimal(value);
+  const [draft, setDraft] = useState(initialValue);
+
+  useEffect(() => {
+    setDraft(initialValue);
+  }, [initialValue]);
+
+  return (
+    <DecimalInput
+      value={draft}
+      onValueChange={setDraft}
+      onBlur={() => {
+        const parsed = parseDecimalInput(draft);
+        const nextValue = parsed === null || Number.isNaN(parsed) ? null : parsed;
+        if (nextValue !== (value ?? null)) {
+          onSave(nextValue);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        }
+      }}
+      className={cn(compactInputClassName, "font-mono text-[12px]")}
+      placeholder="—"
+    />
+  );
+}
+
+function EditableStageField({
+  value,
+  stageField,
+  onSave
+}: {
+  value: string | null | undefined;
+  stageField: TaskCustomField | null;
+  onSave: (value: string | null) => void;
+}) {
+  const enumOptions = stageField?.enumOptions?.filter((option) => option.name) ?? [];
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  if (enumOptions.length > 0) {
+    return (
+      <SearchableSelect
+        value={value ?? "none"}
+        options={[
+          { value: "none", label: "Sem etapa", render: <EmptyField /> },
+          ...enumOptions.map((option) => ({
+            value: option.name,
+            label: option.name,
+            color: enumColor(option.name, option.color)
+          }))
+        ]}
+        searchPlaceholder="Buscar etapa..."
+        triggerClassName={compactSelectTriggerClassName}
+        contentClassName="min-w-[220px] max-w-[320px]"
+        onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
+      />
+    );
+  }
+
+  return (
+    <Input
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={() => {
+        const nextValue = draft.trim() || null;
+        if (nextValue !== (value ?? null)) {
+          onSave(nextValue);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        }
+      }}
+      className={cn(compactInputClassName, "w-[220px]")}
+      placeholder="—"
+    />
+  );
 }
 
 function FieldPanel({ children }: { children: ReactNode }) {

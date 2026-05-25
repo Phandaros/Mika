@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -47,6 +48,7 @@ const LANE_STRIDE = BAR_H + BAR_GAP;
 const NAME_COL = 192;
 const EXTENSION_DAYS = 28;
 const SCROLL_EDGE = 100;
+const SMOOTH_WHEEL_DURATION_MS = 130;
 const ALL_FILTER_VALUE = "__all__";
 
 type TaskWithDiscipline = Task & {
@@ -62,6 +64,16 @@ type TaskWithDiscipline = Task & {
 type PendingTaskMove = {
   startDate: string | null;
   dueDate: string | null;
+  assigneeId?: string | null;
+};
+
+type DragPreview = {
+  taskId: string;
+  deltaDays: number;
+  pixelOffset: number;
+  pixelOffsetY: number;
+  targetAssigneeId: string | null;
+  targetRowOffset: number;
 };
 
 type WorkloadGrouping = "assignee" | "section";
@@ -364,7 +376,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [showAllUsers, setShowAllUsers] = useState(false);
   const [undatedPanelOpen, setUndatedPanelOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [abbreviatedDays, setAbbreviatedDays] = useState(true);
   const [showEstimatedDays, setShowEstimatedDays] = useState(true);
   const [grouping, setGrouping] = useState<WorkloadGrouping>("assignee");
   const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER_VALUE);
@@ -372,12 +383,17 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE);
   const [sectionFilter, setSectionFilter] = useState<string>(ALL_FILTER_VALUE);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
-  const [dragPreview, setDragPreview] = useState<{ taskId: string; deltaDays: number } | null>(null);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
   const [taskPendingDelete, setTaskPendingDelete] = useState<TaskWithDiscipline | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollAdjust = useRef(0);
   const scrollReady = useRef(false);
+  const smoothWheelStart = useRef(0);
+  const smoothWheelTarget = useRef<number | null>(null);
+  const smoothWheelFrame = useRef<number | null>(null);
+  const smoothWheelStartTime = useRef<number | null>(null);
+  const smoothWheelIntent = useRef(0);
   const extendingLeft = useRef(false);
   const extendingRight = useRef(false);
   const deleteTask = useDeleteTask(projectId);
@@ -427,7 +443,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
         const rawStart = toYmd(task.startDate);
         const rawDue = toYmd(task.dueDate);
-        if (rawStart === pendingMove.startDate && rawDue === pendingMove.dueDate) {
+        const rawAssigneeId = task.assigneeId ?? null;
+        const pendingAssigneeId = pendingMove.assigneeId ?? rawAssigneeId;
+        if (
+          rawStart === pendingMove.startDate &&
+          rawDue === pendingMove.dueDate &&
+          rawAssigneeId === pendingAssigneeId
+        ) {
           delete next[task.id];
           changed = true;
         }
@@ -663,6 +685,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     if (el && delta !== 0) {
       el.scrollLeft += delta;
+      smoothWheelStart.current += delta;
+      if (smoothWheelTarget.current !== null) {
+        smoothWheelTarget.current += delta;
+      }
       pendingScrollAdjust.current = 0;
     }
   }, [unionFrom, rawTasks]);
@@ -687,21 +713,101 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     return () => el.removeEventListener("scroll", onScroll);
   }, [maybeExtendTimeline]);
 
-  function handleTimelineWheel(event: ReactWheelEvent<HTMLDivElement>) {
-    const box = event.currentTarget;
-    const shiftHorizontalDelta = event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : 0;
-    const horizontalDelta = shiftHorizontalDelta || event.deltaX;
+  useEffect(() => {
+    return () => {
+      if (smoothWheelFrame.current !== null) {
+        window.cancelAnimationFrame(smoothWheelFrame.current);
+      }
+    };
+  }, []);
 
-    if (horizontalDelta === 0) {
+  function clampTimelineScroll(box: HTMLDivElement, value: number) {
+    const max = Math.max(0, box.scrollWidth - box.clientWidth);
+    return Math.min(Math.max(0, value), max);
+  }
+
+  function clearSmoothWheelFrame() {
+    smoothWheelTarget.current = null;
+    smoothWheelFrame.current = null;
+    smoothWheelStartTime.current = null;
+    smoothWheelIntent.current = 0;
+  }
+
+  function cancelSmoothWheelScroll() {
+    if (smoothWheelFrame.current !== null) {
+      window.cancelAnimationFrame(smoothWheelFrame.current);
+    }
+    clearSmoothWheelFrame();
+  }
+
+  function easeOutExpo(t: number) {
+    return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  }
+
+  function runSmoothWheelScroll(frameTime: number) {
+    const box = scrollRef.current;
+    const target = smoothWheelTarget.current;
+
+    if (!box || target === null) {
+      clearSmoothWheelFrame();
       return;
     }
 
-    if (shiftHorizontalDelta !== 0) {
-      event.preventDefault();
-      box.scrollLeft += shiftHorizontalDelta;
+    const nextTarget = clampTimelineScroll(box, target);
+    const startTime = smoothWheelStartTime.current ?? frameTime;
+    const progress = Math.min(Math.max((frameTime - startTime) / SMOOTH_WHEEL_DURATION_MS, 0), 1);
+    const nextScrollLeft = smoothWheelStart.current + (nextTarget - smoothWheelStart.current) * easeOutExpo(progress);
+
+    smoothWheelStartTime.current = startTime;
+    smoothWheelTarget.current = nextTarget;
+    box.scrollLeft = nextScrollLeft;
+    maybeExtendTimeline(box, nextTarget < smoothWheelStart.current ? "left" : "right");
+
+    if (progress >= 1) {
+      box.scrollLeft = nextTarget;
+      maybeExtendTimeline(box, smoothWheelIntent.current < 0 ? "left" : "right");
+      clearSmoothWheelFrame();
+      return;
     }
 
-    maybeExtendTimeline(box, horizontalDelta < 0 ? "left" : "right");
+    smoothWheelFrame.current = window.requestAnimationFrame(runSmoothWheelScroll);
+  }
+
+  function scheduleSmoothWheelScroll() {
+    if (smoothWheelFrame.current !== null) {
+      return;
+    }
+
+    smoothWheelFrame.current = window.requestAnimationFrame(runSmoothWheelScroll);
+  }
+
+  function handleTimelineWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    const box = event.currentTarget;
+    const shouldTranslateShiftWheel = event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX);
+
+    if (!shouldTranslateShiftWheel) {
+      cancelSmoothWheelScroll();
+      if (event.deltaX !== 0) {
+        maybeExtendTimeline(box, event.deltaX < 0 ? "left" : "right");
+      }
+      return;
+    }
+
+    if (event.deltaY === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const baseTarget = smoothWheelTarget.current ?? box.scrollLeft;
+    const nextTarget = clampTimelineScroll(box, baseTarget + event.deltaY);
+    smoothWheelStart.current = box.scrollLeft;
+    smoothWheelStartTime.current = null;
+    smoothWheelIntent.current += event.deltaY;
+    smoothWheelTarget.current = nextTarget;
+
+    maybeExtendTimeline(box, event.deltaY < 0 ? "left" : "right");
+    scheduleSmoothWheelScroll();
   }
 
   function handleTimelineDragOver(event: DragEvent<HTMLDivElement>) {
@@ -755,6 +861,34 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       });
   }
 
+  function assigneeIdForRow(rowId: string): string | null {
+    return rowId === "unassigned" ? null : rowId;
+  }
+
+  function workloadRowAtClientY(clientY: number): { assigneeId: string | null; rowTop: number } | null {
+    if (grouping !== "assignee") {
+      return null;
+    }
+
+    const box = scrollRef.current;
+    if (!box) {
+      return null;
+    }
+
+    const y = clientY - box.getBoundingClientRect().top;
+    let rowTop = HEADER_H + totalRowH;
+
+    for (const row of workloadRows) {
+      const rowBottom = rowTop + row.rowH;
+      if (y >= rowTop && y < rowBottom) {
+        return { assigneeId: assigneeIdForRow(row.id), rowTop };
+      }
+      rowTop = rowBottom;
+    }
+
+    return null;
+  }
+
   function handleBarPointerDown(
     ev: ReactPointerEvent<HTMLButtonElement>,
     task: TaskWithDiscipline,
@@ -768,7 +902,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     ev.stopPropagation();
     const pointerId = ev.pointerId;
     const originX = ev.clientX;
+    const originY = ev.clientY;
+    const originRow = workloadRowAtClientY(originY);
+    const originRowTop = originRow?.rowTop ?? 0;
+    const originalAssigneeId = task.assigneeId ?? null;
     let deltaDays = 0;
+    let targetAssigneeId = originalAssigneeId;
+    let targetRowOffset = 0;
     let moved = false;
 
     function onMove(e: PointerEvent) {
@@ -776,14 +916,29 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         return;
       }
 
-      const next = Math.round((e.clientX - originX) / DAY_W);
-      if (Math.abs(e.clientX - originX) > 4) {
+      const pixelOffset = e.clientX - originX;
+      const pixelOffsetY = e.clientY - originY;
+      const next = Math.round(pixelOffset / DAY_W);
+      const targetRow = workloadRowAtClientY(e.clientY);
+      if (targetRow) {
+        targetAssigneeId = targetRow.assigneeId;
+        targetRowOffset = targetRow.rowTop - originRowTop;
+      }
+
+      if (Math.abs(pixelOffset) > 4 || Math.abs(pixelOffsetY) > 4) {
         moved = true;
       }
 
-      if (next !== deltaDays) {
+      if (moved) {
         deltaDays = next;
-        setDragPreview({ taskId: task.id, deltaDays: next });
+        setDragPreview({
+          taskId: task.id,
+          deltaDays: next,
+          pixelOffset,
+          pixelOffsetY,
+          targetAssigneeId,
+          targetRowOffset
+        });
       }
     }
 
@@ -807,22 +962,32 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         return;
       }
 
-      if (deltaDays === 0) {
+      const assigneeChanged = targetAssigneeId !== originalAssigneeId;
+
+      if (deltaDays === 0 && !assigneeChanged) {
         setDragPreview(null);
         return;
       }
 
       const newStart = addCalendarDaysYmd(bounds.start, deltaDays);
       const newEnd = addCalendarDaysYmd(bounds.end, deltaDays);
+      const payload: UpdateTaskRequest = { startDate: newStart, dueDate: newEnd };
+      if (assigneeChanged) {
+        payload.assigneeId = targetAssigneeId;
+      }
       setPendingTaskMoves((current) => ({
         ...current,
-        [task.id]: { startDate: newStart, dueDate: newEnd }
+        [task.id]: {
+          startDate: newStart,
+          dueDate: newEnd,
+          ...(assigneeChanged ? { assigneeId: targetAssigneeId } : {})
+        }
       }));
       setDragPreview(null);
       void updateTask
         .mutateAsync({
           id: task.id,
-          payload: { startDate: newStart, dueDate: newEnd }
+          payload
         })
         .then((updatedTask) => {
           onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
@@ -906,9 +1071,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         {positioned.map((p, i) => {
           const { startIdx, endIdx } = p.clip;
           const lane = lanes[i] ?? 0;
-          const offsetDays = dragPreview?.taskId === p.task.id ? dragPreview.deltaDays : 0;
+          const activeDragPreview = dragPreview?.taskId === p.task.id ? dragPreview : null;
+          const previewAssigneeChanged =
+            activeDragPreview !== null && activeDragPreview.targetAssigneeId !== (p.task.assigneeId ?? null);
           const span = endIdx - startIdx + 1;
-          const left = (startIdx + offsetDays) * DAY_W + 2;
+          const left = startIdx * DAY_W + 2;
+          const previewLeft = activeDragPreview ? (startIdx + activeDragPreview.deltaDays) * DAY_W + 2 : left;
           const width = span * DAY_W - 4;
 
           if (width <= 0 || left + width < 0 || left > timelineWidth) {
@@ -916,7 +1084,22 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           }
 
           return (
-            <ContextMenu key={`${rowKey}-${p.task.id}`}>
+            <Fragment key={`${rowKey}-${p.task.id}`}>
+              {activeDragPreview && (activeDragPreview.deltaDays !== 0 || previewAssigneeChanged) ? (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute z-[5] rounded-md border border-dashed border-brand-orange/50 bg-brand-orange/10"
+                  style={{
+                    left: previewLeft,
+                    width,
+                    top: CHART_H + 4 + lane * LANE_STRIDE + activeDragPreview.targetRowOffset,
+                    height: BAR_H,
+                    transition:
+                      "left 120ms var(--ease-out-expo), top 120ms var(--ease-out-expo), opacity 120ms var(--ease-out-expo)"
+                  }}
+                />
+              ) : null}
+              <ContextMenu>
               <ContextMenuTrigger asChild>
                 <button
                   type="button"
@@ -928,11 +1111,20 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     top: CHART_H + 4 + lane * LANE_STRIDE,
                     height: BAR_H,
                     backgroundColor: statusColorVar(p.task.status),
-                    opacity: p.task.completed ? 0.45 : 1
+                    opacity: p.task.completed && !activeDragPreview ? 0.45 : 1,
+                    transform: activeDragPreview
+                      ? `translate3d(${activeDragPreview.pixelOffset}px, ${activeDragPreview.pixelOffsetY - 2}px, 0) scale(1.025)`
+                      : undefined,
+                    transition: activeDragPreview
+                      ? "opacity 120ms var(--ease-out-expo), box-shadow 120ms var(--ease-out-expo), border-color 120ms var(--ease-out-expo)"
+                      : "transform 180ms var(--ease-out-expo), opacity 120ms var(--ease-out-expo), box-shadow 160ms var(--ease-out-expo), border-color 120ms var(--ease-out-expo)",
+                    willChange: activeDragPreview ? "transform" : undefined
                   }}
                   className={cn(
-                    "z-[6] cursor-grab overflow-hidden rounded-md border border-border px-1 text-left text-[11px] font-medium text-white shadow-sm active:cursor-grabbing",
-                    dragPreview?.taskId === p.task.id && "ring-2 ring-brand-orange"
+                    "z-[6] cursor-grab select-none overflow-hidden rounded-md border border-border px-1 text-left text-[11px] font-medium text-white shadow-sm outline-none active:cursor-grabbing",
+                    "transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-bg-1",
+                    activeDragPreview &&
+                      "z-[18] cursor-grabbing border-brand-orange/60 shadow-2xl ring-2 ring-brand-orange/70"
                   )}
                   onPointerDown={(e) => {
                     const b = clientTaskBounds(p.task);
@@ -965,7 +1157,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   Excluir a tarefa
                 </ContextMenuItem>
               </ContextMenuContent>
-            </ContextMenu>
+              </ContextMenu>
+            </Fragment>
           );
         })}
         {showEstimatedDays ? loads.map((load, i) =>
@@ -992,6 +1185,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             variant="secondary"
             className="h-8 px-3 text-xs"
             onClick={() => {
+              cancelSmoothWheelScroll();
               const t = startOfDay(new Date());
               setUnionFrom(format(addDays(t, -21), "yyyy-MM-dd"));
               setUnionTo(format(addDays(t, 84), "yyyy-MM-dd"));
@@ -1003,14 +1197,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             }}
           >
             Hoje
-          </Button>
-          <Button
-            type="button"
-            variant={abbreviatedDays ? "primary" : "secondary"}
-            className="h-8 px-3 text-xs"
-            onClick={() => setAbbreviatedDays((value) => !value)}
-          >
-            Dias abreviados
           </Button>
           <Button
             type="button"
@@ -1155,7 +1341,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               {workloadRows.map((row) => (
                 <div
                   key={row.id}
-                  className="flex items-center gap-2 border-b border-border px-3 py-2"
+                  className={cn(
+                    "flex items-center gap-2 border-b border-border px-3 py-2 transition-colors duration-150",
+                    dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-brand-orange/10"
+                  )}
                   style={{ height: row.rowH }}
                 >
                   {row.avatarName ? (
@@ -1177,6 +1366,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               ref={scrollRef}
               data-testid="workload-timeline-scroll"
               className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain"
+              onPointerDownCapture={cancelSmoothWheelScroll}
               onWheel={handleTimelineWheel}
               onDragOver={handleTimelineDragOver}
               onDrop={handleTimelineDrop}
@@ -1208,18 +1398,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                           isToday && "bg-surface-hover text-text-primary"
                         )}
                       >
-                        {showMonth ? (
-                          <span className="text-[9px] uppercase text-text-muted">
-                            {format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR })}
-                          </span>
-                        ) : !abbreviatedDays ? (
-                          <span className="text-[9px] uppercase text-text-muted">
-                            {format(parseYmdToLocalNoon(d), "EEE", { locale: ptBR })}
-                          </span>
-                        ) : (
-                          <span className="h-[12px]" />
-                        )}
-                        <span className="font-semibold text-text-secondary">{format(parseYmdToLocalNoon(d), "d")}</span>
+                        <span className="h-2.5 text-[9px] leading-none uppercase text-text-muted">
+                          {showMonth ? format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR }) : ""}
+                        </span>
+                        <span className="text-[9px] leading-none uppercase text-text-muted">
+                          {format(parseYmdToLocalNoon(d), "EEE", { locale: ptBR })}
+                        </span>
+                        <span className="font-semibold leading-none text-text-secondary">{format(parseYmdToLocalNoon(d), "d")}</span>
                       </div>
                     );
                   })}
@@ -1257,7 +1442,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   {workloadRows.map((row) => {
                     const loads = buildDailyLoadsForTasks(row.rowTasks, days, nonWorkingDays);
                     return (
-                      <div key={row.id} className="flex border-b border-border-subtle">
+                      <div
+                        key={row.id}
+                        className={cn(
+                          "flex border-b border-border-subtle transition-colors duration-150",
+                          dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-brand-orange/10"
+                        )}
+                      >
                         <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: row.rowH }}>
                           {renderNonWorkingBands(row.rowH, row.id)}
                           {renderBars(row.positioned, row.lanes, loads, row.id)}
