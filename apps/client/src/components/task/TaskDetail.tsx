@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+﻿import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import {
   addMonths,
   eachDayOfInterval,
@@ -15,15 +15,18 @@ import {
   startOfWeek
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Circle, Flag, FolderKanban, MessageSquare, Send, UserRound, X, BarChart2 } from "lucide-react";
-import { Priority, TaskStatus, type Task, type UpdateTaskRequest } from "shared";
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
+import { Priority, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
-import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../../hooks/useTasks";
+import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
+import { CompletionStatusChip, DisciplineChip, PlatformChip } from "../shared/Chip";
+import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
+import { TaskStatusBadge } from "./TaskStatusBadge";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
@@ -37,22 +40,39 @@ interface TaskDetailProps {
   openVersion?: number;
 }
 
-type EditableField = "assignee" | "status" | "priority" | "completionDate" | null;
+type EditableField = "assignee" | "priority" | "completionDate" | null;
+type TaskCustomField = NonNullable<Task["customFieldValues"]>[number];
 
-const statusOptions: Array<{ value: TaskStatus; label: string; color: string }> = [
-  { value: TaskStatus.BACKLOG, label: "Backlog", color: "var(--color-status-backlog)" },
-  { value: TaskStatus.TODO, label: "A fazer", color: "var(--color-status-todo)" },
-  { value: TaskStatus.IN_PROGRESS, label: "Em andamento", color: "var(--color-status-in-progress)" },
-  { value: TaskStatus.IN_REVIEW, label: "Em revisão", color: "var(--color-status-in-review)" },
-  { value: TaskStatus.DONE, label: "Concluído", color: "var(--color-status-done)" }
+const priorityOptions: Array<{ value: Priority; label: string }> = [
+  { value: Priority.LOW, label: "Baixa" },
+  { value: Priority.MEDIUM, label: "MÃ©dia" },
+  { value: Priority.HIGH, label: "Alta" },
+  { value: Priority.URGENT, label: "Urgente" }
 ];
 
-const priorityOptions: Array<{ value: Priority; label: string; color: string }> = [
-  { value: Priority.LOW, label: "Baixa", color: "var(--color-priority-low)" },
-  { value: Priority.MEDIUM, label: "Media", color: "var(--color-priority-medium)" },
-  { value: Priority.HIGH, label: "Alta", color: "var(--color-priority-high)" },
-  { value: Priority.URGENT, label: "Urgente", color: "var(--color-priority-urgent)" }
-];
+const promotedTaskFieldKeys = new Set(["status", "dias-estimados", "dias-conclusao", "estimated-time"]);
+
+function isTargetInsidePanelShell(target: Element, asideRef: RefObject<HTMLElement>): boolean {
+  const asideEl = asideRef.current;
+  if (asideEl?.contains(target)) {
+    return true;
+  }
+
+  return Boolean(target.closest('[data-mika-popover-content="true"], [data-radix-popper-content-wrapper]'));
+}
+
+function isPointInsideOpenPopover(clientX: number, clientY: number): boolean {
+  const popovers = document.querySelectorAll('[data-mika-popover-content="true"], [data-radix-popper-content-wrapper]');
+
+  for (const popover of popovers) {
+    const rect = popover.getBoundingClientRect();
+    if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) {
   const { user } = useAuth();
@@ -65,7 +85,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-  const [estimatedDraft, setEstimatedDraft] = useState("");
   const [comment, setComment] = useState("");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const completionDateTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -77,7 +96,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const projectId = visibleTask?.discipline?.projectId ?? "";
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
-  const updateTaskStatus = useUpdateTaskStatus(projectId);
   const updateTaskCompletion = useUpdateTaskCompletion(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
@@ -118,9 +136,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     setIsEditingTitle(false);
     setDescriptionDraft(task.description ?? "");
     setTitleDraft(task.title);
-    setEstimatedDraft(
-      task.estimatedDays === undefined || task.estimatedDays === null ? "" : String(task.estimatedDays)
-    );
     setIsOpen(false);
     const frame = window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => setIsOpen(true));
@@ -145,18 +160,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     }
 
     const updatedTask = await updateTask.mutateAsync({ id: currentTask.id, payload });
-    setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
-    setOpenField(null);
-  }
-
-  async function patchTaskStatus(status: TaskStatus) {
-    const currentTask = visibleTask;
-
-    if (!currentTask) {
-      return;
-    }
-
-    const updatedTask = await updateTaskStatus.mutateAsync({ id: currentTask.id, status });
     setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
     setOpenField(null);
   }
@@ -191,14 +194,14 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     setIsEditingTitle(false);
   }
 
-  async function handleCustomFieldSave(fieldId: string, value: string | number | null) {
+  async function handleCustomFieldSave(field: NonNullable<Task["customFieldValues"]>[number], value: string | number | null) {
     const normalized =
       value === null || value === ""
         ? null
         : typeof value === "number"
           ? value
           : String(value).trim() || null;
-    await patchTask({ customFieldValues: [{ id: fieldId, value: normalized }] });
+    await patchTask({ customFieldValues: [{ id: field.id, mikaKey: field.mikaKey ?? undefined, value: normalized }] });
   }
 
   function openCompletionDate() {
@@ -266,12 +269,44 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
       return undefined;
     }
 
-    function isTargetInsidePanelShell(target: Element): boolean {
-      const asideEl = asideRef.current;
-      if (asideEl?.contains(target)) {
-        return true;
+    const currentTask = visibleTask;
+
+    function handleTaskPanelEscape(event: globalThis.KeyboardEvent) {
+      if (event.key !== "Escape" || event.defaultPrevented) {
+        return;
       }
-      return Boolean(target.closest('[role="listbox"][data-state="open"]'));
+
+      if (openField) {
+        event.preventDefault();
+        setOpenField(null);
+        return;
+      }
+
+      if (isEditingTitle) {
+        event.preventDefault();
+        setTitleDraft(currentTask.title);
+        setIsEditingTitle(false);
+        return;
+      }
+
+      if (isEditingDescription) {
+        event.preventDefault();
+        setDescriptionDraft(currentTask.description ?? "");
+        setIsEditingDescription(false);
+        return;
+      }
+
+      event.preventDefault();
+      requestClose();
+    }
+
+    document.addEventListener("keydown", handleTaskPanelEscape);
+    return () => document.removeEventListener("keydown", handleTaskPanelEscape);
+  }, [isEditingDescription, isEditingTitle, isOpen, openField, visibleTask]);
+
+  useEffect(() => {
+    if (!visibleTask || !isOpen) {
+      return undefined;
     }
 
     function handlePointerDownCapture(event: PointerEvent) {
@@ -279,7 +314,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
         return;
       }
 
-      if (isTargetInsidePanelShell(event.target)) {
+      if (isTargetInsidePanelShell(event.target, asideRef) || isPointInsideOpenPopover(event.clientX, event.clientY)) {
         return;
       }
 
@@ -300,6 +335,28 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   if (!visibleTask) {
     return null;
   }
+
+  const visibleCustomFields = visibleTask.customFieldValues?.filter((field) => field.mikaDetailVisible !== false) ?? [];
+  const stageField = visibleCustomFields.find(isStageField) ?? null;
+  const completionDaysField = visibleCustomFields.find(isCompletionDaysField) ?? null;
+  const maximumDeadlineField = visibleCustomFields.find(isMaximumDeadlineField) ?? null;
+  const lowerCustomFields = visibleCustomFields
+    .filter(
+      (field) =>
+        !isPromotedTaskField(field) &&
+        !isPlatformField(field) &&
+        !isStageField(field) &&
+        !isDisciplineField(field) &&
+        !isCompletionStatusField(field) &&
+        !isEstimatedTimeField(field) &&
+        !isCompletionDaysField(field) &&
+        !isMaximumDeadlineField(field)
+    )
+    .sort(compareTaskDetailFields);
+  const fixedMaxDeadline = visibleTask.maxDeadline ?? fieldDisplayValue(maximumDeadlineField);
+  const fixedEstimatedTime = visibleTask.estimatedTime ?? visibleTask.estimatedDays ?? fieldNumberValue(visibleCustomFields.find(isEstimatedTimeField));
+  const fixedConclusionDays = visibleTask.conclusionDays ?? fieldNumberValue(completionDaysField);
+  const fixedStage = visibleTask.stage ?? fieldDisplayValue(stageField);
 
   function requestClose() {
     setIsOpen(false);
@@ -385,21 +442,56 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
             )}
           />
 
-          <div className="mt-6 grid gap-4 text-sm">
-            <DetailRow icon={visibleTask.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />} label="Situação">
-              <button
-                type="button"
-                onClick={() => void patchTaskCompletion(!visibleTask.completed)}
-                className={cn(
-                  "inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-left font-semibold transition hover:bg-surface-hover",
-                  visibleTask.completed ? "text-green-300" : "text-text-secondary"
-                )}
-              >
-                {visibleTask.completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                {visibleTask.completed ? "Concluida" : "Nao concluida"}
-              </button>
-            </DetailRow>
+          <TaskFixedFieldGrid
+            fields={[
+              {
+                key: "status",
+                label: "Status",
+                render: () => <TaskStatusBadge status={visibleTask.status} />
+              },
+              {
+                key: "platform",
+                label: "Plataforma",
+                render: () => <PlatformChip platform={visibleTask.platform} />
+              },
+              {
+                key: "discipline",
+                label: "Disciplina",
+                render: () => <DisciplineChip discipline={visibleTask.taskDiscipline} />
+              },
+              {
+                key: "completion",
+                label: "Status de Conclusão",
+                render: () => (
+                  <button type="button" onClick={() => void patchTaskCompletion(!visibleTask.completed)}>
+                    <CompletionStatusChip completed={visibleTask.completed} />
+                  </button>
+                )
+              },
+              {
+                key: "maxDeadline",
+                label: "Prazo Máximo",
+                render: () => <FieldText value={fixedMaxDeadline ? formatDisplayDate(fixedMaxDeadline) : null} />
+              },
+              {
+                key: "estimatedTime",
+                label: "Dias Estimados",
+                render: () => <FieldNumber value={fixedEstimatedTime} />
+              },
+              {
+                key: "conclusionDays",
+                label: "Dias Conclusão",
+                render: () => <FieldNumber value={fixedConclusionDays} />
+              },
+              {
+                key: "stage",
+                label: "Etapa",
+                render: () => <FieldText value={fixedStage} />
+              }
+            ]}
+          />
 
+          <div className="mt-6 grid gap-4 text-sm">
             <DetailRow icon={<UserRound size={18} />} label="Responsável">
               <button
                 type="button"
@@ -412,7 +504,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                     <span className="font-medium text-text-primary">{visibleTask.assignee.name}</span>
                   </>
                 ) : (
-                  <span className="text-text-secondary">Sem responsavel</span>
+                  <span className="text-text-secondary">Sem responsável</span>
                 )}
               </button>
               {openField === "assignee" ? (
@@ -422,7 +514,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                     onClick={() => void patchTask({ assigneeId: null })}
                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
                   >
-                    Sem responsavel
+                    Sem responsável
                   </button>
                   {users.map((item) => (
                     <button
@@ -433,31 +525,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                     >
                       <Avatar name={item.name} imageUrl={item.avatarUrl} className="h-7 w-7" />
                       <span className="font-medium text-text-primary">{item.name}</span>
-                    </button>
-                  ))}
-                </FieldPanel>
-              ) : null}
-            </DetailRow>
-
-            <DetailRow icon={<CheckCircle2 size={18} />} label="Status">
-              <button
-                type="button"
-                onClick={() => setOpenField(openField === "status" ? null : "status")}
-                className="flex min-h-10 w-full items-center rounded-md px-2 text-left transition hover:bg-surface-hover"
-              >
-                <StatusPill status={visibleTask.status} />
-              </button>
-              {openField === "status" ? (
-                <FieldPanel>
-                  {statusOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => void patchTaskStatus(option.value)}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:bg-surface-hover"
-                    >
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: option.color }} />
-                      {option.label}
                     </button>
                   ))}
                 </FieldPanel>
@@ -481,8 +548,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                       onClick={() => void patchTask({ priority: option.value })}
                       className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:bg-surface-hover"
                     >
-                      <Flag size={15} style={{ color: option.color }} />
-                      {option.label}
+                      <PriorityBadge priority={option.value} />
                     </button>
                   ))}
                 </FieldPanel>
@@ -514,43 +580,15 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               ) : null}
             </DetailRow>
 
-            <DetailRow icon={<BarChart2 size={18} />} label="Dias estimados">
-              <DecimalInput
-                value={estimatedDraft}
-                onValueChange={setEstimatedDraft}
-                onBlur={() => {
-                  const parsed = parseDecimalInput(estimatedDraft);
-                  const normalized = parsed === null || Number.isNaN(parsed) ? null : parsed;
-                  const current = visibleTask.estimatedDays ?? null;
-                  if (normalized !== current) {
-                    void patchTask({ estimatedDays: normalized });
-                  }
-                }}
-                className="h-10 border-border bg-brand-black/60"
-                placeholder="Opcional"
-              />
-            </DetailRow>
-
-            <DetailRow icon={<FolderKanban size={18} />} label="Disciplina">
-              <span className="text-text-primary">{visibleTask.discipline?.name ?? "Sem disciplina"}</span>
-            </DetailRow>
+            {lowerCustomFields.map((field) => (
+              <DetailRow key={field.mikaKey ?? field.id} icon={<FolderKanban size={18} />} label={taskFieldDisplayLabel(field)}>
+                <EditableCustomField
+                  field={field}
+                  onSave={(value) => void handleCustomFieldSave(field, value)}
+                />
+              </DetailRow>
+            ))}
           </div>
-
-          {visibleTask.customFieldValues?.length ? (
-            <section className="mt-8">
-              <h3 className="text-sm font-bold text-text-primary">Campos</h3>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {visibleTask.customFieldValues.map((field) => (
-                  <EditableCustomField
-                    key={field.id}
-                    field={field}
-                    onSave={(value) => void handleCustomFieldSave(field.id, value)}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
-
           {visibleTask.tags?.length ? (
             <section className="mt-8">
               <h3 className="text-sm font-bold text-text-primary">Tags</h3>
@@ -565,7 +603,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
           ) : null}
 
           <section className="mt-8">
-            <h3 className="text-sm font-bold text-text-primary">Descrição</h3>
+            <h3 className="text-sm font-bold text-text-primary">DescriÃ§Ã£o</h3>
             <div className="mt-3 border-b border-border pb-6">
               <Textarea
                 ref={descriptionRef}
@@ -590,20 +628,20 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
           <section className="mt-8">
             <div className="flex items-center gap-2">
               <MessageSquare size={18} className="shrink-0 text-text-secondary" />
-              <h3 className="text-sm font-bold text-text-primary">Comentários</h3>
+              <h3 className="text-sm font-bold text-text-primary">ComentÃ¡rios</h3>
               <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{comments.length}</span>
             </div>
             <div className="mt-4 flex flex-col gap-4">
               {comments.map((item) => (
                 <div key={item.id} className="flex gap-3">
                   <Avatar
-                    name={item.author?.name ?? "Usuário"}
+                    name={item.author?.name ?? "UsuÃ¡rio"}
                     imageUrl={item.author?.avatarUrl}
                     className="mt-0.5 h-8 w-8 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="text-sm font-semibold leading-5 text-text-primary">{item.author?.name ?? "Usuário"}</span>
+                      <span className="text-sm font-semibold leading-5 text-text-primary">{item.author?.name ?? "UsuÃ¡rio"}</span>
                       <span className="text-xs tabular-nums text-text-muted">
                         {format(new Date(item.createdAt), "dd/MM/yyyy HH:mm")}
                       </span>
@@ -612,7 +650,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                   </div>
                 </div>
               ))}
-              {comments.length === 0 ? <p className="text-sm text-text-muted">Nenhum comentário ainda.</p> : null}
+              {comments.length === 0 ? <p className="text-sm text-text-muted">Nenhum comentÃ¡rio ainda.</p> : null}
             </div>
           </section>
         </div>
@@ -622,7 +660,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
           <Textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            placeholder="Adicionar um comentário"
+            placeholder="Adicionar um comentÃ¡rio"
             className="min-h-20 flex-1 resize-none"
           />
           <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
@@ -636,18 +674,63 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
 
 function DetailRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
-    <div className="relative grid grid-cols-[128px_minmax(0,1fr)] items-start gap-3">
-      <div className="flex items-center gap-2 pt-2 text-text-secondary">
-        {icon}
-        <span>{label}</span>
+    <div className="relative grid min-h-10 grid-cols-[136px_minmax(0,1fr)] items-start gap-2">
+      <div className="flex min-h-10 items-center gap-2 text-text-secondary">
+        <span className="shrink-0">{icon}</span>
+        <span className="min-w-0 leading-5">{label}</span>
       </div>
-      <div className="min-w-0 pt-2">{children}</div>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
 
+function TaskFixedFieldGrid({
+  fields
+}: {
+  fields: Array<{
+    key: string;
+    label: string;
+    render: () => ReactNode;
+  }>;
+}) {
+  return (
+    <div className="mt-6 grid grid-cols-[140px_1fr] gap-x-4" data-testid="task-detail-field-grid">
+      {fields.map((field) => (
+        <Fragment key={field.key}>
+          <div className="flex min-h-[32px] items-center border-b border-[--color-border-subtle]">
+            <span className="text-[13px] font-normal text-[--color-text-secondary]">{field.label}</span>
+          </div>
+          <div className="flex min-h-[32px] items-center border-b border-[--color-border-subtle]">
+            {field.render()}
+          </div>
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+function FieldText({ value }: { value: string | null | undefined }) {
+  return value ? (
+    <span className="min-w-0 truncate text-[13px] text-[--color-text-primary]">{value}</span>
+  ) : (
+    <EmptyField />
+  );
+}
+
+function FieldNumber({ value }: { value: number | null | undefined }) {
+  return value != null ? (
+    <span className="font-mono text-[12px] text-[--color-text-primary]">{formatDecimal(value)}</span>
+  ) : (
+    <EmptyField />
+  );
+}
+
+function EmptyField() {
+  return <span className="text-[13px] text-[--color-text-muted]">—</span>;
+}
+
 function FieldPanel({ children }: { children: ReactNode }) {
-  return <div className="absolute left-32 top-11 z-50 grid max-h-72 w-64 gap-1 overflow-y-auto rounded-md border border-border bg-surface-card p-2 shadow-2xl">{children}</div>;
+  return <div className="absolute left-36 top-11 z-50 grid max-h-72 w-64 gap-1 overflow-y-auto rounded-md border border-border bg-surface-card p-2 shadow-2xl">{children}</div>;
 }
 
 function EditableCustomField({
@@ -658,7 +741,7 @@ function EditableCustomField({
   onSave: (value: string | number | null) => void;
 }) {
   const asanaType = (field.type ?? "").toLowerCase();
-  const label = field.customFieldName ?? "Campo";
+  const label = field.mikaLabel ?? field.customFieldName ?? "Campo";
   const nameLower = label.toLowerCase();
   const isPlatform = nameLower.includes("plataforma") || nameLower.includes("platform");
 
@@ -693,87 +776,211 @@ function EditableCustomField({
     setDateValue(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "");
   }, [field.displayValue, field.enumOptionName, field.numberValue, field.id]);
 
-  const shellClass =
-    "grid gap-2 rounded-md border border-border bg-surface-card p-3 text-sm font-semibold text-text-secondary";
-
   if (asanaType === "number" || asanaType === "integer") {
     return (
-      <label className={shellClass}>
-        <span className="text-xs uppercase text-text-muted">{label}</span>
-        <DecimalInput
-          value={numValue}
-          onValueChange={setNumValue}
-          onBlur={() => {
-            const parsed = parseDecimalInput(numValue);
-            void onSave(parsed === null || Number.isNaN(parsed) ? null : parsed);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur();
-            }
-          }}
-        />
-      </label>
-    );
-  }
-
-  if (asanaType === "date") {
-    return (
-      <label className={shellClass}>
-        <span className="text-xs uppercase text-text-muted">{label}</span>
-        <DatePicker
-          value={dateValue}
-          onValueChange={(nextValue) => {
-            const value = nextValue ?? "";
-            setDateValue(value);
-            void onSave(value || null);
-          }}
-          className="h-9 w-full justify-between px-3"
-        />
-      </label>
-    );
-  }
-
-  if (showEnumSelect) {
-    return (
-      <label className={shellClass}>
-        <span className="text-xs uppercase text-text-muted">{label}</span>
-        <SearchableSelect
-          value={enumValue || "none"}
-          options={[
-            { value: "none", label: "?" },
-            ...normalizedEnumOptions.map((option) => ({
-              value: option.name,
-              label: option.name,
-              color: option.color ?? enumColor(option.name)
-            }))
-          ]}
-          searchPlaceholder={"Buscar " + label + "..."}
-          triggerClassName="h-9"
-          onValueChange={(next) => {
-            setEnumValue(next === "none" ? "" : next);
-            void onSave(next === "none" ? null : next);
-          }}
-        />
-      </label>
-    );
-  }
-
-  return (
-    <label className={shellClass}>
-      <span className="text-xs uppercase text-text-muted">{label}</span>
-      <Input
-        value={textValue}
-        onChange={(event) => setTextValue(event.target.value)}
-        onBlur={() => onSave(textValue)}
+      <DecimalInput
+        value={numValue}
+        onValueChange={setNumValue}
+        onBlur={() => {
+          const parsed = parseDecimalInput(numValue);
+          void onSave(parsed === null || Number.isNaN(parsed) ? null : parsed);
+        }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.currentTarget.blur();
           }
         }}
       />
-    </label>
+    );
+  }
+
+  if (asanaType === "date") {
+    return (
+      <DatePicker
+        value={dateValue}
+        onValueChange={(nextValue) => {
+          const value = nextValue ?? "";
+          setDateValue(value);
+          void onSave(value || null);
+        }}
+      />
+    );
+  }
+
+  if (showEnumSelect) {
+    return (
+      <SearchableSelect
+        value={enumValue || "none"}
+        options={[
+          { value: "none", label: "?" },
+          ...normalizedEnumOptions.map((option) => ({
+            value: option.name,
+            label: option.name,
+            color: enumColor(option.name, option.color)
+          }))
+        ]}
+        searchPlaceholder={"Buscar " + label + "..."}
+        onValueChange={(next) => {
+          setEnumValue(next === "none" ? "" : next);
+          void onSave(next === "none" ? null : next);
+        }}
+      />
+    );
+  }
+
+  return (
+    <Input
+      value={textValue}
+      onChange={(event) => setTextValue(event.target.value)}
+      onBlur={() => onSave(textValue)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        }
+      }}
+    />
   );
+}
+
+function InlineCustomStatusField({
+  field,
+  onSave
+}: {
+  field: NonNullable<Task["customFieldValues"]>[number];
+  onSave: (value: string | number | null) => void;
+}) {
+  const value = field.enumOptionName ?? field.displayValue ?? "none";
+  const options = [
+    { value: "none", label: "-" },
+    ...(field.enumOptions ?? []).map((option) => ({
+      value: option.name,
+      label: option.name,
+      color: enumColor(option.name, option.color)
+    }))
+  ];
+
+  return (
+    <SearchableSelect
+      value={value}
+      options={options}
+      searchPlaceholder="Buscar Status..."
+      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
+    />
+  );
+}
+
+function compareTaskDetailFields(a: TaskCustomField, b: TaskCustomField): number {
+  const byKnownOrder = taskDetailFieldOrder(a) - taskDetailFieldOrder(b);
+  if (byKnownOrder !== 0) {
+    return byKnownOrder;
+  }
+
+  return (a.mikaSortOrder ?? Number.MAX_SAFE_INTEGER) - (b.mikaSortOrder ?? Number.MAX_SAFE_INTEGER);
+}
+
+function taskDetailFieldOrder(field: TaskCustomField): number {
+  if (isPlatformField(field)) {
+    return 10;
+  }
+
+  if (isCompletionStatusField(field)) {
+    return 20;
+  }
+
+  return 50;
+}
+
+function taskFieldDisplayLabel(field: TaskCustomField): string {
+  if (isPlatformField(field)) {
+    return "Plataforma";
+  }
+
+  if (isCompletionStatusField(field)) {
+    return "Status de ConclusÃ£o";
+  }
+
+  if (isMaximumDeadlineField(field)) {
+    return "Prazo MÃ¡ximo";
+  }
+
+  if (isCompletionDaysField(field)) {
+    return "Dias ConclusÃ£o";
+  }
+
+  return field.mikaLabel ?? field.customFieldName ?? "Campo";
+}
+
+function isPromotedTaskField(field: Pick<TaskCustomField, "mikaKey">): boolean {
+  return Boolean(field.mikaKey && promotedTaskFieldKeys.has(field.mikaKey));
+}
+
+function isStageField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["etapa", "stage"]);
+}
+
+function isDisciplineField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["disciplina", "discipline"]);
+}
+
+function isPlatformField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["plataforma", "platform"]);
+}
+
+function isCompletionStatusField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["status de conclusao", "completion status"]);
+}
+
+function isMaximumDeadlineField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["prazo maximo", "maximum deadline"]);
+}
+
+function isCompletionDaysField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["dias conclusao", "completion days"]);
+}
+
+function isEstimatedTimeField(field: Pick<TaskCustomField, "mikaKey" | "mikaLabel" | "customFieldName">): boolean {
+  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["dias estimados", "estimated time", "estimated days"]);
+}
+
+function fieldDisplayValue(field: TaskCustomField | null | undefined): string | null {
+  return field?.displayValue ?? field?.enumOptionName ?? (field?.numberValue != null ? String(field.numberValue) : null);
+}
+
+function fieldNumberValue(field: TaskCustomField | null | undefined): number | null {
+  if (!field) {
+    return null;
+  }
+
+  if (field.numberValue != null) {
+    return field.numberValue;
+  }
+
+  const value = field.displayValue ?? field.enumOptionName;
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value.replace(",", "."));
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function fieldIdentityMatches(
+  mikaKey: string | null | undefined,
+  mikaLabel: string | null | undefined,
+  name: string | null | undefined,
+  normalizedMatches: string[]
+): boolean {
+  return [mikaKey, mikaLabel, name].some((value) => Boolean(value && normalizedMatches.includes(normalizeFieldName(value))));
+}
+
+function normalizeFieldName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .trim();
 }
 
 function CompletionDateLabel({ startDate, dueDate }: { startDate: string | Date | null; dueDate: string | Date | null }) {
@@ -786,7 +993,7 @@ function CompletionDateLabel({ startDate, dueDate }: { startDate: string | Date 
   }
 
   if (startDate) {
-    return <span>Inicio {formatDisplayDate(startDate)}</span>;
+    return <span>InÃ­cio {formatDisplayDate(startDate)}</span>;
   }
 
   if (dueDate) {
@@ -857,23 +1064,23 @@ function DateRangePanel({
     <div ref={panelRef} className="absolute left-32 top-11 z-50 w-80 rounded-md border border-border bg-surface-card shadow-2xl">
       <div className="grid gap-3 p-3">
         <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
+          <DatePicker
             value={dateInputValue(startDate)}
-            onChange={(event) => handleStartInputChange(event.target.value)}
+            onValueChange={(value) => handleStartInputChange(value ?? "")}
+            placeholder="InÃ­cio"
           />
-          <Input
-            type="date"
+          <DatePicker
             value={dateInputValue(endDate)}
-            onChange={(event) => handleEndInputChange(event.target.value)}
+            onValueChange={(value) => handleEndInputChange(value ?? "")}
+            placeholder="Entrega"
           />
         </div>
         <div className="flex items-center justify-between">
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
+          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="MÃªs anterior">
             <ChevronLeft size={16} />
           </Button>
           <span className="text-sm font-semibold text-text-primary">{formatMonthLabel(month)}</span>
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
+          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="PrÃ³ximo mÃªs">
             <ChevronRight size={16} />
           </Button>
         </div>
@@ -942,24 +1149,13 @@ function formatDisplayDate(date: string | Date): string {
   return format(date, "dd/MM/yyyy");
 }
 
+function formatDecimal(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
 function formatMonthLabel(date: Date): string {
   const label = format(date, "MMMM 'de' yyyy", { locale: ptBR });
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-}
-
-function StatusPill({ status }: { status: TaskStatus }) {
-  const fallback = statusOptions[0];
-  const option = statusOptions.find((item) => item.value === status) ?? fallback;
-  if (!option) {
-    return null;
-  }
-
-  return (
-    <span className="inline-flex h-7 items-center gap-2 rounded-md border border-border px-2 text-xs font-semibold text-text-primary">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: option.color }} />
-      {option.label}
-    </span>
-  );
 }
 
 function PriorityPill({ priority }: { priority: Priority }) {
@@ -969,10 +1165,5 @@ function PriorityPill({ priority }: { priority: Priority }) {
     return null;
   }
 
-  return (
-    <span className="inline-flex h-7 items-center gap-2 rounded-md border border-border px-2 text-xs font-semibold text-text-primary">
-      <Flag size={14} style={{ color: option.color }} />
-      {option.label}
-    </span>
-  );
+  return <PriorityBadge priority={option.value} />;
 }
