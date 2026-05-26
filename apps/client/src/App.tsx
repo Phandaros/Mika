@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { BrowserRouter, HashRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { LoadingSpinner } from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
@@ -65,8 +65,10 @@ function AdminRoute() {
 }
 
 export function App() {
+  const Router = window.mkProjetos?.isDesktop === true ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<PrivateRoute />}>
@@ -89,6 +91,6 @@ export function App() {
           </Route>
         </Route>
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }

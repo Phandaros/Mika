@@ -1,11 +1,33 @@
 import { useState, type FormEvent } from "react";
+import axios from "axios";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import logoUrl from "../assets/logo.svg";
 import { useAuth } from "../hooks/useAuth";
 import { desktopServerPlaceholder, getSocketBaseUrl, updateDesktopServerUrl } from "../lib/runtimeConfig";
+import { resetNotificationSocket } from "../lib/socket";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+
+function loginErrorMessage(error: unknown, isDesktop: boolean): string {
+  if (error instanceof TypeError) {
+    return "Endereço do servidor inválido. Informe o IP ou nome do servidor.";
+  }
+
+  if (axios.isAxiosError(error)) {
+    if (!error.response) {
+      return isDesktop
+        ? "Não foi possível conectar ao servidor. Confira o IP ou nome informado."
+        : "Não foi possível conectar ao servidor.";
+    }
+
+    if (error.response.status === 401) {
+      return "Credenciais inválidas";
+    }
+  }
+
+  return "Não foi possível entrar. Tente novamente.";
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -27,12 +49,13 @@ export function LoginPage() {
     try {
       if (isDesktop) {
         await updateDesktopServerUrl(serverUrl);
+        resetNotificationSocket();
       }
 
       await login(email, password);
       navigate("/", { replace: true });
-    } catch {
-      toast.error("Credenciais inválidas");
+    } catch (error) {
+      toast.error(loginErrorMessage(error, isDesktop));
     } finally {
       setLoading(false);
     }

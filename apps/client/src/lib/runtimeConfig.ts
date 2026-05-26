@@ -25,7 +25,8 @@ function isLocalHostname(hostname: string): boolean {
 }
 
 function normalizeServerUrl(serverUrl: string): string {
-  const withProtocol = /^https?:\/\//i.test(serverUrl) ? serverUrl : `http://${serverUrl}`;
+  const trimmedServerUrl = serverUrl.trim();
+  const withProtocol = /^https?:\/\//i.test(trimmedServerUrl) ? trimmedServerUrl : `http://${trimmedServerUrl}`;
   const parsedUrl = new URL(withProtocol);
   parsedUrl.pathname = "";
   parsedUrl.search = "";
@@ -86,7 +87,8 @@ export async function updateDesktopServerUrl(serverUrl: string): Promise<void> {
     return;
   }
 
-  const savedServerUrl = await window.mkProjetos.setServerUrl(serverUrl);
+  const normalizedServerUrl = normalizeServerUrl(serverUrl);
+  const savedServerUrl = await window.mkProjetos.setServerUrl(normalizedServerUrl);
   socketBaseUrl = normalizeServerUrl(savedServerUrl);
   apiBaseUrl = `${socketBaseUrl}/api/v1`;
 }

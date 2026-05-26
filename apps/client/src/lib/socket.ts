@@ -11,10 +11,19 @@ interface ClientToServerEvents {
 }
 
 let notificationSocket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+let notificationSocketBaseUrl = "";
 
 export function getNotificationSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+  const baseUrl = getSocketBaseUrl();
+
+  if (notificationSocket && notificationSocketBaseUrl !== baseUrl) {
+    notificationSocket.disconnect();
+    notificationSocket = null;
+  }
+
   if (!notificationSocket) {
-    notificationSocket = io(`${getSocketBaseUrl()}/notifications`, {
+    notificationSocketBaseUrl = baseUrl;
+    notificationSocket = io(`${baseUrl}/notifications`, {
       autoConnect: false,
       withCredentials: true
     });
@@ -35,4 +44,10 @@ export function connectNotificationSocket(userId: string): void {
 
 export function disconnectNotificationSocket(): void {
   notificationSocket?.disconnect();
+}
+
+export function resetNotificationSocket(): void {
+  notificationSocket?.disconnect();
+  notificationSocket = null;
+  notificationSocketBaseUrl = "";
 }
