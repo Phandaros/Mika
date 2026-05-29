@@ -205,8 +205,11 @@ export function normalizeRole(role: string): string {
 }
 
 export function normalizeStatus(task: Pick<TaskRecord, "completed" | "localStatus" | "assigneeStatus">): string {
-  if (task.localStatus && Object.values(TaskStatus).includes(task.localStatus as (typeof TaskStatus)[keyof typeof TaskStatus])) {
-    return task.localStatus;
+  if (task.localStatus) {
+    const normalized = normalizePersistedTaskStatus(task.localStatus);
+    if (normalized) {
+      return normalized;
+    }
   }
 
   if (task.assigneeStatus === "upcoming") {
@@ -214,10 +217,45 @@ export function normalizeStatus(task: Pick<TaskRecord, "completed" | "localStatu
   }
 
   if (task.assigneeStatus === "later") {
-    return TaskStatus.BACKLOG;
+    return TaskStatus.ON_SCHEDULE;
   }
 
   return TaskStatus.TODO;
+}
+
+export function normalizePersistedTaskStatus(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (Object.values(TaskStatus).includes(value as (typeof TaskStatus)[keyof typeof TaskStatus]) && value !== TaskStatus.OVERDUE) {
+    return value;
+  }
+
+  const legacyStatusMap: Record<string, string> = {
+    BACKLOG: TaskStatus.ON_SCHEDULE,
+    TODO: TaskStatus.TODO,
+    IN_PROGRESS: TaskStatus.IN_PROGRESS,
+    IN_REVIEW: TaskStatus.AWAITING_REVIEW,
+    DONE: TaskStatus.FINISHED
+  };
+
+  return legacyStatusMap[value] ?? null;
+}
+
+function todayDateOnly(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function publicTaskStatus(task: Pick<TaskRecord, "completed" | "localStatus" | "assigneeStatus" | "dueOn" | "dueAt">): string {
+  const normalized = normalizeStatus(task);
+  const dueDate = dateOnlyString(task.dueOn) ?? dateOnlyFromDate(task.dueAt);
+
+  if (!task.completed && dueDate && dueDate < todayDateOnly()) {
+    return TaskStatus.OVERDUE;
+  }
+
+  return normalized;
 }
 
 export function normalizePriority(value: string | null | undefined): string {
@@ -285,7 +323,7 @@ export function toTaskDto(
     title: task.name,
     description: task.notes,
     htmlDescription: task.htmlNotes,
-    status: normalizeStatus(task),
+    status: publicTaskStatus(task),
     priority: normalizePriority(task.priority),
     assigneeId: task.assignee?.id ?? null,
     assigneeGid: task.assigneeGid,

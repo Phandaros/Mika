@@ -68,11 +68,11 @@ async function main(): Promise<void> {
   }
 
   const demoTasks: Array<{ name: string; status: string; priority: string; sectionIdx: number }> = [
-    { name: "Levantar pontos de agua fria", status: TaskStatus.BACKLOG, priority: Priority.MEDIUM, sectionIdx: 0 },
+    { name: "Levantar pontos de agua fria", status: TaskStatus.ON_SCHEDULE, priority: Priority.MEDIUM, sectionIdx: 0 },
     { name: "Compatibilizar shaft hidraulico", status: TaskStatus.TODO, priority: Priority.HIGH, sectionIdx: 0 },
     { name: "Revisar prumadas sanitarias", status: TaskStatus.IN_PROGRESS, priority: Priority.URGENT, sectionIdx: 1 },
-    { name: "Conferir memorial PPCI", status: TaskStatus.IN_REVIEW, priority: Priority.HIGH, sectionIdx: 1 },
-    { name: "Enviar prancha de sprinklers", status: TaskStatus.DONE, priority: Priority.LOW, sectionIdx: 2 }
+    { name: "Conferir memorial PPCI", status: TaskStatus.AWAITING_REVIEW, priority: Priority.HIGH, sectionIdx: 1 },
+    { name: "Enviar prancha de sprinklers", status: TaskStatus.FINISHED, priority: Priority.LOW, sectionIdx: 2 }
   ];
 
   for (const row of demoTasks) {
@@ -89,8 +89,8 @@ async function main(): Promise<void> {
         localStatus: row.status,
         priority: row.priority,
         assigneeGid: admin.asanaGid,
-        completed: row.status === TaskStatus.DONE,
-        completedAtAsana: row.status === TaskStatus.DONE ? new Date() : null
+        completed: [TaskStatus.IN_ANALYSIS, TaskStatus.AWAITING_REVIEW, TaskStatus.FINISHED].includes(row.status),
+        completedAtAsana: [TaskStatus.IN_ANALYSIS, TaskStatus.AWAITING_REVIEW, TaskStatus.FINISHED].includes(row.status) ? new Date() : null
       }
     });
 

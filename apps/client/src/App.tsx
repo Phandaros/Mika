@@ -3,6 +3,7 @@ import { BrowserRouter, HashRouter, Navigate, Outlet, Route, Routes } from "reac
 import { AppShell } from "./components/layout/AppShell";
 import { LoadingSpinner } from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
+import { useDesktopUpdater } from "./hooks/useDesktopUpdater";
 import { AdminCalendarPage } from "./pages/AdminCalendarPage";
 import { GlobalWorkloadPage } from "./pages/GlobalWorkloadPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -66,6 +67,7 @@ function AdminRoute() {
 
 export function App() {
   const Router = window.mkProjetos?.isDesktop === true ? HashRouter : BrowserRouter;
+  useDesktopUpdater();
 
   return (
     <Router>

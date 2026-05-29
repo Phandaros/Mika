@@ -31,7 +31,7 @@ export function TaskForm({ projectId, disciplineId, users }: TaskFormProps) {
     await createTask.mutateAsync({
       title,
       description: description || null,
-      status: TaskStatus.BACKLOG,
+      status: TaskStatus.TODO,
       priority,
       assigneeId: assigneeId || null,
       startDate: startDate || null,

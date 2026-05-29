@@ -8,11 +8,12 @@
     "prebuild": "pnpm --filter client build",
     "dev": "tsc -p tsconfig.json && node -e \"const url=process.env.VITE_DEV_SERVER_URL||'http://localhost:5173'; const start=Date.now(); const retry=()=>fetch(url).then(()=>process.exit(0)).catch(()=>Date.now()-start>30000?process.exit(1):setTimeout(retry,500)); retry();\" && electron .",
     "build": "tsc -p tsconfig.json && electron-builder",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src --ext .ts,.cts",
     "test": "node -e \"process.exit(0)\""
   },
   "dependencies": {
-    "client": "workspace:*"
+    "client": "workspace:*",
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "@mk/eslint-config": "workspace:*",

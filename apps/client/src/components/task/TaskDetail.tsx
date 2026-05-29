@@ -19,11 +19,11 @@ import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanb
 import { Priority, TaskStatus, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
-import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
+import { useUpdateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../shared/Chip";
+import { DisciplineChip, PlatformChip, taskStatusLabels, writableTaskStatuses } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
@@ -119,7 +119,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const projectId = visibleTask?.discipline?.projectId ?? "";
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
-  const updateTaskCompletion = useUpdateTaskCompletion(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
 
@@ -183,18 +182,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     }
 
     const updatedTask = await updateTask.mutateAsync({ id: currentTask.id, payload });
-    setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
-    setOpenField(null);
-  }
-
-  async function patchTaskCompletion(completed: boolean) {
-    const currentTask = visibleTask;
-
-    if (!currentTask) {
-      return;
-    }
-
-    const updatedTask = await updateTaskCompletion.mutateAsync({ id: currentTask.id, completed });
     setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
     setOpenField(null);
   }
@@ -498,15 +485,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                 )
               },
               {
-                key: "completion",
-                label: "Status de Conclusão",
-                render: () => (
-                  <button type="button" onClick={() => void patchTaskCompletion(!visibleTask.completed)}>
-                    <CompletionStatusChip completed={visibleTask.completed} />
-                  </button>
-                )
-              },
-              {
                 key: "maxDeadline",
                 label: "Prazo Máximo",
                 render: () => (
@@ -794,7 +772,7 @@ function EditableStatusField({ value, onSave }: { value: TaskStatus; onSave: (va
   return (
     <SearchableSelect
       value={value}
-      options={Object.values(TaskStatus).map((status) => ({
+      options={writableTaskStatuses.map((status) => ({
         value: status,
         label: taskStatusLabels[status],
         render: <TaskStatusBadge status={status} />
@@ -1096,10 +1074,6 @@ function taskDetailFieldOrder(field: TaskCustomField): number {
 function taskFieldDisplayLabel(field: TaskCustomField): string {
   if (isPlatformField(field)) {
     return "Plataforma";
-  }
-
-  if (isCompletionStatusField(field)) {
-    return "Status de Conclusão";
   }
 
   if (isMaximumDeadlineField(field)) {

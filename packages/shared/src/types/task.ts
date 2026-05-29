@@ -82,7 +82,6 @@ export interface CreateTaskRequest {
   maxDeadline?: string | null;
   conclusionDays?: number | null;
   stage?: string | null;
-  completed?: boolean;
   customFieldValues?: Array<{
     settingId?: string;
     mikaKey?: string;
@@ -105,7 +104,6 @@ export interface UpdateTaskRequest {
   maxDeadline?: string | null;
   conclusionDays?: number | null;
   stage?: string | null;
-  completed?: boolean;
   customFieldValues?: Array<{
     id?: string;
     mikaKey?: string;

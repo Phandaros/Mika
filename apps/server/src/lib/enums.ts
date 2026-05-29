@@ -45,11 +45,14 @@ export const DisciplineStatus = {
 export type DisciplineStatus = (typeof DisciplineStatus)[keyof typeof DisciplineStatus];
 
 export const TaskStatus = {
-  BACKLOG: "BACKLOG",
   TODO: "TODO",
+  ON_SCHEDULE: "ON_SCHEDULE",
+  OVERDUE: "OVERDUE",
   IN_PROGRESS: "IN_PROGRESS",
-  IN_REVIEW: "IN_REVIEW",
-  DONE: "DONE"
+  AWAITING_REVIEW: "AWAITING_REVIEW",
+  IN_ANALYSIS: "IN_ANALYSIS",
+  AWAITING_DEFINITION: "AWAITING_DEFINITION",
+  FINISHED: "FINISHED"
 } as const;
 
 export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];

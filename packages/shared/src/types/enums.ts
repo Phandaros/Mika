@@ -37,11 +37,14 @@ export enum DisciplineStatus {
 }
 
 export enum TaskStatus {
-  BACKLOG = "BACKLOG",
   TODO = "TODO",
+  ON_SCHEDULE = "ON_SCHEDULE",
+  OVERDUE = "OVERDUE",
   IN_PROGRESS = "IN_PROGRESS",
-  IN_REVIEW = "IN_REVIEW",
-  DONE = "DONE"
+  AWAITING_REVIEW = "AWAITING_REVIEW",
+  IN_ANALYSIS = "IN_ANALYSIS",
+  AWAITING_DEFINITION = "AWAITING_DEFINITION",
+  FINISHED = "FINISHED"
 }
 
 export enum Priority {

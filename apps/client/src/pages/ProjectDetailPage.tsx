@@ -7,14 +7,13 @@ import { ProjectWorkloadTimeline } from "../components/project/ProjectWorkloadTi
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
-import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
+import { DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
 import {
   enumColor,
   PriorityOptionPill,
   priorityColors
 } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
-import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
@@ -25,7 +24,7 @@ import { Input } from "../components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useProject, useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
+import { useCreateTask, useUpdateTask, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import { cn, formatDateOnly } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
@@ -46,11 +45,14 @@ type TaskWithDiscipline = Task & {
 };
 
 const columns: Array<{ status: TaskStatus; label: string }> = [
-  { status: TaskStatus.BACKLOG, label: "BACKLOG" },
   { status: TaskStatus.TODO, label: "A FAZER" },
+  { status: TaskStatus.ON_SCHEDULE, label: "NO CRONOGRAMA" },
+  { status: TaskStatus.OVERDUE, label: "ATRASADO" },
   { status: TaskStatus.IN_PROGRESS, label: "EM ANDAMENTO" },
-  { status: TaskStatus.IN_REVIEW, label: "EM REVISAO" },
-  { status: TaskStatus.DONE, label: "CONCLUIDO" }
+  { status: TaskStatus.AWAITING_REVIEW, label: "AGUARDANDO REVISAO" },
+  { status: TaskStatus.IN_ANALYSIS, label: "EM ANALISE" },
+  { status: TaskStatus.AWAITING_DEFINITION, label: "AGUARDANDO DEFINICAO" },
+  { status: TaskStatus.FINISHED, label: "FINALIZADO" }
 ];
 
 function tasksFromDisciplines(sections: Section[]): TaskWithDiscipline[] {
@@ -89,7 +91,6 @@ export function ProjectDetailPage() {
   const { data: project, isLoading, isFetching } = useProject(projectId);
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
-  const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
   const [activeTab, setActiveTab] = useState<ProjectTab>("kanban");
   const [taskScope, setTaskScope] = useState<TaskScope>("general");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -208,7 +209,7 @@ export function ProjectDetailPage() {
 
     const nextStatus = result.destination.droppableId as TaskStatus;
 
-    if (nextStatus === result.source.droppableId) {
+    if (nextStatus === result.source.droppableId || nextStatus === TaskStatus.OVERDUE) {
       return;
     }
 
@@ -321,10 +322,8 @@ export function ProjectDetailPage() {
             disciplineId={taskFormDiscipline?.id ?? null}
             tasks={disciplineFilteredTasks}
             isLoading={isTasksLoading}
-            completionBusy={updateTaskCompletion.isPending}
             onDragEnd={handleDragEnd}
             onOpenTask={openTaskDetail}
-            onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
           />
         ) : null}
         {activeTab === "list" ? (
@@ -334,11 +333,9 @@ export function ProjectDetailPage() {
             users={users}
             customFieldDefinitions={project.taskCustomFields ?? []}
             isLoading={isTasksLoading}
-            completionBusy={updateTaskCompletion.isPending}
             sortKey={sortKey}
             sortDirection={sortDirection}
             onSort={handleSort}
-            onTaskCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
             onTaskAssigneeChange={(taskId, assigneeId) =>
               void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } })
             }
@@ -371,19 +368,15 @@ function KanbanView({
   disciplineId,
   tasks,
   isLoading,
-  completionBusy,
   onDragEnd,
-  onOpenTask,
-  onCompletionChange
+  onOpenTask
 }: {
   projectId: string;
   disciplineId: string | null;
   tasks: TaskWithDiscipline[];
   isLoading: boolean;
-  completionBusy?: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
-  onCompletionChange: (task: TaskWithDiscipline) => void;
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -400,9 +393,7 @@ function KanbanView({
                 label={column.label}
                 tasks={columnTasks}
                 isLoading={isLoading}
-                completionBusy={completionBusy}
                 onOpenTask={onOpenTask}
-                onCompletionChange={onCompletionChange}
               />
             );
           })}
@@ -427,9 +418,7 @@ function KanbanColumn({
   label,
   tasks,
   isLoading,
-  completionBusy,
-  onOpenTask,
-  onCompletionChange
+  onOpenTask
 }: {
   projectId: string;
   disciplineId: string | null;
@@ -437,18 +426,17 @@ function KanbanColumn({
   label: string;
   tasks: TaskWithDiscipline[];
   isLoading: boolean;
-  completionBusy?: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
-  onCompletionChange: (task: TaskWithDiscipline) => void;
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState("");
   const createTask = useCreateTask(projectId, disciplineId ?? "");
+  const canCreateInColumn = status !== TaskStatus.OVERDUE;
 
   async function submitTask() {
     const trimmedTitle = title.trim();
 
-    if (!disciplineId || trimmedTitle.length < 2) {
+    if (!disciplineId || !canCreateInColumn || trimmedTitle.length < 2) {
       return;
     }
 
@@ -494,8 +482,6 @@ function KanbanColumn({
                           task={task}
                           disciplineName={task.discipline.name}
                           onOpen={onOpenTask}
-                          onToggleCompletion={onCompletionChange}
-                          completionBusy={completionBusy}
                         />
                       </div>
                     )}
@@ -523,7 +509,7 @@ function KanbanColumn({
                   }
                 }}
                 placeholder="Titulo da tarefa"
-                disabled={!disciplineId || createTask.isPending}
+                disabled={!disciplineId || !canCreateInColumn || createTask.isPending}
                 autoFocus
               />
             ) : (
@@ -531,7 +517,7 @@ function KanbanColumn({
                 variant="ghost"
                 className="w-full justify-start px-2"
                 onClick={() => setIsAdding(true)}
-                disabled={!disciplineId}
+                disabled={!disciplineId || !canCreateInColumn}
               >
                 <Plus size={16} />
                 Adicionar tarefa
@@ -686,11 +672,9 @@ function ListView({
   tasks,
   users,
   isLoading,
-  completionBusy,
   sortKey,
   sortDirection,
   onSort,
-  onTaskCompletionChange,
   onOpenTask
 }: {
   disciplines: Section[];
@@ -698,11 +682,9 @@ function ListView({
   users: User[];
   customFieldDefinitions: ProjectCustomField[];
   isLoading: boolean;
-  completionBusy?: boolean;
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
-  onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
   onTaskCustomFieldChange: (taskId: string, fieldId: string, mikaKey: string | undefined, value: string | number | null) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
@@ -731,7 +713,6 @@ function ListView({
               <col className="w-[90px]" />
               <col className="w-[100px]" />
               <col className="w-[120px]" />
-              <col className="w-[120px]" />
               <col className="w-[90px]" />
               <col className="w-[90px]" />
               <col className="w-[80px]" />
@@ -744,7 +725,6 @@ function ListView({
                 <SortableHeader label="Status" sortKey="status" sortDirection={sortDirection} active={sortKey === "status"} onSort={onSort} />
                 <StaticHeader label="Plataforma" align="center" />
                 <StaticHeader label="Disciplina" align="center" />
-                <StaticHeader label="Status Conclusão" align="center" />
                 <StaticHeader label="Prazo Máximo" />
                 <StaticHeader label="Dias Estimados" align="right" />
                 <StaticHeader label="Dias Conclusão" align="right" />
@@ -758,8 +738,6 @@ function ListView({
                   label={group.label}
                   tasks={group.tasks}
                   userById={userById}
-                  completionBusy={completionBusy}
-                  onTaskCompletionChange={onTaskCompletionChange}
                   onOpenTask={onOpenTask}
                 />
               ))}
@@ -776,18 +754,14 @@ function GroupedScopeRows({
   label,
   tasks,
   userById,
-  completionBusy,
-  onTaskCompletionChange,
   onOpenTask
 }: {
   label: string;
   tasks: TaskWithDiscipline[];
   userById: Map<string, User>;
-  completionBusy?: boolean;
-  onTaskCompletionChange: (task: TaskWithDiscipline) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
 }) {
-  const columnSpan = 11;
+  const columnSpan = 10;
 
   return (
     <>
@@ -816,11 +790,6 @@ function GroupedScopeRows({
             >
               <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
                 <div className="flex min-w-0 items-center gap-2">
-                  <TaskCompletionButton
-                    completed={task.completed}
-                    disabled={completionBusy}
-                    onToggle={() => onTaskCompletionChange(task)}
-                  />
                   <button
                     type="button"
                     onClick={() => onOpenTask(task)}
@@ -850,7 +819,6 @@ function GroupedScopeRows({
               <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><TaskStatusBadge status={task.status} /></td>
               <td className="px-3 py-2 text-center">{task.platform ? <PlatformChip platform={task.platform} /> : <EmptyCell />}</td>
               <td className="px-3 py-2 text-center">{task.taskDiscipline ? <DisciplineChip discipline={task.taskDiscipline} /> : <EmptyCell />}</td>
-              <td className="px-3 py-2 text-center"><CompletionStatusChip completed={task.completed} /></td>
               <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><DateCell value={task.maxDeadline} /></td>
               <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-primary]"><NumberCell value={task.estimatedTime} /></td>
               <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-primary]"><NumberCell value={task.conclusionDays} /></td>

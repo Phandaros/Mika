@@ -16,20 +16,36 @@ interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: "Backlog",
   [TaskStatus.TODO]: "A fazer",
+  [TaskStatus.ON_SCHEDULE]: "No Cronograma",
+  [TaskStatus.OVERDUE]: "Atrasado",
   [TaskStatus.IN_PROGRESS]: "Em andamento",
-  [TaskStatus.IN_REVIEW]: "Em revisão",
-  [TaskStatus.DONE]: "Concluído"
+  [TaskStatus.AWAITING_REVIEW]: "Aguardando Revisão",
+  [TaskStatus.IN_ANALYSIS]: "Em Análise",
+  [TaskStatus.AWAITING_DEFINITION]: "Aguardando Definição",
+  [TaskStatus.FINISHED]: "Finalizado"
 };
 
 export const taskStatusTokens: Record<TaskStatus, { bg: string; text: string }> = {
-  [TaskStatus.BACKLOG]: { bg: "--status-todo-bg", text: "--status-todo-text" },
-  [TaskStatus.TODO]: { bg: "--status-scheduled-bg", text: "--status-scheduled-text" },
+  [TaskStatus.TODO]: { bg: "--status-todo-bg", text: "--status-todo-text" },
+  [TaskStatus.ON_SCHEDULE]: { bg: "--status-scheduled-bg", text: "--status-scheduled-text" },
+  [TaskStatus.OVERDUE]: { bg: "--status-late-bg", text: "--status-late-text" },
   [TaskStatus.IN_PROGRESS]: { bg: "--status-inprogress-bg", text: "--status-inprogress-text" },
-  [TaskStatus.IN_REVIEW]: { bg: "--status-review-bg", text: "--status-review-text" },
-  [TaskStatus.DONE]: { bg: "--status-done-bg", text: "--status-done-text" }
+  [TaskStatus.AWAITING_REVIEW]: { bg: "--status-review-bg", text: "--status-review-text" },
+  [TaskStatus.IN_ANALYSIS]: { bg: "--status-analysis-bg", text: "--status-analysis-text" },
+  [TaskStatus.AWAITING_DEFINITION]: { bg: "--status-waiting-bg", text: "--status-waiting-text" },
+  [TaskStatus.FINISHED]: { bg: "--status-done-bg", text: "--status-done-text" }
 };
+
+export const writableTaskStatuses: TaskStatus[] = [
+  TaskStatus.TODO,
+  TaskStatus.ON_SCHEDULE,
+  TaskStatus.IN_PROGRESS,
+  TaskStatus.AWAITING_REVIEW,
+  TaskStatus.IN_ANALYSIS,
+  TaskStatus.AWAITING_DEFINITION,
+  TaskStatus.FINISHED
+];
 
 export const priorityLabels: Record<Priority, string> = {
   [Priority.LOW]: "Baixa",

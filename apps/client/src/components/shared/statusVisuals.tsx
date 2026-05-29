@@ -16,11 +16,14 @@ import { PriorityBadge } from "./PriorityBadge";
 export { priorityLabels, taskStatusLabels };
 
 export const taskStatusColors: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: tokenColorValue(taskStatusTokens[TaskStatus.BACKLOG].bg, taskStatusTokens[TaskStatus.BACKLOG].text),
   [TaskStatus.TODO]: tokenColorValue(taskStatusTokens[TaskStatus.TODO].bg, taskStatusTokens[TaskStatus.TODO].text),
+  [TaskStatus.ON_SCHEDULE]: tokenColorValue(taskStatusTokens[TaskStatus.ON_SCHEDULE].bg, taskStatusTokens[TaskStatus.ON_SCHEDULE].text),
+  [TaskStatus.OVERDUE]: tokenColorValue(taskStatusTokens[TaskStatus.OVERDUE].bg, taskStatusTokens[TaskStatus.OVERDUE].text),
   [TaskStatus.IN_PROGRESS]: tokenColorValue(taskStatusTokens[TaskStatus.IN_PROGRESS].bg, taskStatusTokens[TaskStatus.IN_PROGRESS].text),
-  [TaskStatus.IN_REVIEW]: tokenColorValue(taskStatusTokens[TaskStatus.IN_REVIEW].bg, taskStatusTokens[TaskStatus.IN_REVIEW].text),
-  [TaskStatus.DONE]: tokenColorValue(taskStatusTokens[TaskStatus.DONE].bg, taskStatusTokens[TaskStatus.DONE].text)
+  [TaskStatus.AWAITING_REVIEW]: tokenColorValue(taskStatusTokens[TaskStatus.AWAITING_REVIEW].bg, taskStatusTokens[TaskStatus.AWAITING_REVIEW].text),
+  [TaskStatus.IN_ANALYSIS]: tokenColorValue(taskStatusTokens[TaskStatus.IN_ANALYSIS].bg, taskStatusTokens[TaskStatus.IN_ANALYSIS].text),
+  [TaskStatus.AWAITING_DEFINITION]: tokenColorValue(taskStatusTokens[TaskStatus.AWAITING_DEFINITION].bg, taskStatusTokens[TaskStatus.AWAITING_DEFINITION].text),
+  [TaskStatus.FINISHED]: tokenColorValue(taskStatusTokens[TaskStatus.FINISHED].bg, taskStatusTokens[TaskStatus.FINISHED].text)
 };
 
 export const priorityColors: Record<Priority, string> = {
@@ -57,20 +60,32 @@ export function enumColor(name: string, fallback?: string | null): string {
     return taskStatusColors[TaskStatus.TODO];
   }
 
+  if (normalized.includes("cronograma") || normalized.includes("schedule")) {
+    return taskStatusColors[TaskStatus.ON_SCHEDULE];
+  }
+
+  if (normalized.includes("atras") || normalized.includes("overdue")) {
+    return taskStatusColors[TaskStatus.OVERDUE];
+  }
+
   if (normalized.includes("andamento") || normalized.includes("progress")) {
     return taskStatusColors[TaskStatus.IN_PROGRESS];
   }
 
   if (normalized.includes("revis") || normalized.includes("review")) {
-    return taskStatusColors[TaskStatus.IN_REVIEW];
+    return taskStatusColors[TaskStatus.AWAITING_REVIEW];
+  }
+
+  if (normalized.includes("analise") || normalized.includes("analysis")) {
+    return taskStatusColors[TaskStatus.IN_ANALYSIS];
+  }
+
+  if (normalized.includes("defin") || normalized.includes("waiting")) {
+    return taskStatusColors[TaskStatus.AWAITING_DEFINITION];
   }
 
   if (normalized.includes("conclu") || normalized.includes("final")) {
-    return taskStatusColors[TaskStatus.DONE];
-  }
-
-  if (normalized.includes("backlog")) {
-    return taskStatusColors[TaskStatus.BACKLOG];
+    return taskStatusColors[TaskStatus.FINISHED];
   }
 
   return tokenColorValue("--disc-none-bg", "--disc-none-text");

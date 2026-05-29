@@ -17,16 +17,16 @@ import { TaskStatus, type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Avatar } from "../components/shared/Avatar";
+import { writableTaskStatuses } from "../components/shared/Chip";
 import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
-import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
+import { useCreateTask, useUpdateTask } from "../hooks/useTasks";
 import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
@@ -42,11 +42,14 @@ type TaskWithProject = Task & {
 };
 
 const columns: Array<{ status: TaskStatus; label: string }> = [
-  { status: TaskStatus.BACKLOG, label: "Backlog" },
   { status: TaskStatus.TODO, label: "A fazer" },
+  { status: TaskStatus.ON_SCHEDULE, label: "No Cronograma" },
+  { status: TaskStatus.OVERDUE, label: "Atrasado" },
   { status: TaskStatus.IN_PROGRESS, label: "Em andamento" },
-  { status: TaskStatus.IN_REVIEW, label: "Em revisão" },
-  { status: TaskStatus.DONE, label: "Concluído" }
+  { status: TaskStatus.AWAITING_REVIEW, label: "Aguardando Revisão" },
+  { status: TaskStatus.IN_ANALYSIS, label: "Em Análise" },
+  { status: TaskStatus.AWAITING_DEFINITION, label: "Aguardando Definição" },
+  { status: TaskStatus.FINISHED, label: "Finalizado" }
 ];
 
 export function MyTasksPage() {
@@ -65,7 +68,6 @@ export function MyTasksPage() {
   const [draftTitle, setDraftTitle] = useState("");
   const [selectedCreateTarget, setSelectedCreateTarget] = useState("");
   const updateTask = useUpdateTask("");
-  const updateTaskCompletion = useUpdateTaskCompletion("");
   const disciplineOptions = useMemo(
     () =>
       projects.flatMap((project) =>
@@ -163,6 +165,10 @@ export function MyTasksPage() {
 
   function handleDragEnd(result: DropResult) {
     if (!result.destination || result.destination.droppableId === result.source.droppableId) {
+      return;
+    }
+
+    if (result.destination.droppableId === TaskStatus.OVERDUE) {
       return;
     }
 
@@ -330,19 +336,15 @@ export function MyTasksPage() {
       {view === "list" ? (
         <ListView
           tasks={visibleTasks}
-          completionBusy={updateTaskCompletion.isPending}
           onOpenTask={openTaskDetail}
           onStatusChange={(task, status) => void updateTask.mutateAsync({ id: task.id, payload: { status } })}
-          onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
         />
       ) : null}
       {view === "kanban" ? (
         <KanbanView
           tasks={visibleTasks}
-          completionBusy={updateTaskCompletion.isPending}
           onDragEnd={handleDragEnd}
           onOpenTask={openTaskDetail}
-          onCompletionChange={(task) => void updateTaskCompletion.mutateAsync({ id: task.id, completed: !task.completed })}
         />
       ) : null}
       {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
@@ -366,16 +368,12 @@ function ViewTab({ active, icon, label, onClick }: { active: boolean; icon: Reac
 
 function ListView({
   tasks,
-  completionBusy,
   onOpenTask,
-  onStatusChange,
-  onCompletionChange
+  onStatusChange
 }: {
   tasks: TaskWithProject[];
-  completionBusy?: boolean;
   onOpenTask: (task: TaskWithProject) => void;
   onStatusChange: (task: TaskWithProject, status: TaskStatus) => void;
-  onCompletionChange: (task: TaskWithProject) => void;
 }) {
   const openTasks = tasks.filter((task) => !task.completed);
   const completedTasks = tasks.filter((task) => task.completed);
@@ -407,11 +405,6 @@ function ListView({
                 <tr key={task.id} className={cn("h-7 border-b border-border hover:bg-surface-hover", task.completed ? "opacity-70" : "")}>
                   <td className="p-1.5">
                     <div className="flex max-w-full items-center gap-2">
-                      <TaskCompletionButton
-                        completed={task.completed}
-                        disabled={completionBusy}
-                        onToggle={() => onCompletionChange(task)}
-                      />
                       <button
                         type="button"
                         onClick={() => onOpenTask(task)}
@@ -430,7 +423,7 @@ function ListView({
                   <td className="border-l border-border p-1.5">
                     <SearchableSelect
                       value={task.status}
-                      options={Object.values(TaskStatus).map((status) => ({
+                      options={writableTaskStatuses.map((status) => ({
                         value: status,
                         label: statusLabel(status),
                         color: taskStatusColors[status],
@@ -453,16 +446,12 @@ function ListView({
 
 function KanbanView({
   tasks,
-  completionBusy,
   onDragEnd,
-  onOpenTask,
-  onCompletionChange
+  onOpenTask
 }: {
   tasks: TaskWithProject[];
-  completionBusy?: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithProject) => void;
-  onCompletionChange: (task: TaskWithProject) => void;
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -494,8 +483,6 @@ function KanbanView({
                                 task={task}
                                 disciplineName={task.discipline.name}
                                 onOpen={onOpenTask}
-                                onToggleCompletion={onCompletionChange}
-                                completionBusy={completionBusy}
                               />
                             </div>
                           )}
@@ -558,11 +545,14 @@ function statusLabel(status: TaskStatus): string {
 
 function calendarColor(status: TaskStatus): string {
   const colors: Record<TaskStatus, string> = {
-    [TaskStatus.BACKLOG]: "var(--color-status-backlog)",
     [TaskStatus.TODO]: "var(--color-status-todo)",
+    [TaskStatus.ON_SCHEDULE]: "var(--color-status-on-schedule)",
+    [TaskStatus.OVERDUE]: "var(--color-status-overdue)",
     [TaskStatus.IN_PROGRESS]: "var(--color-status-in-progress)",
-    [TaskStatus.IN_REVIEW]: "var(--color-status-in-review)",
-    [TaskStatus.DONE]: "var(--color-status-done)"
+    [TaskStatus.AWAITING_REVIEW]: "var(--color-status-awaiting-review)",
+    [TaskStatus.IN_ANALYSIS]: "var(--color-status-in-analysis)",
+    [TaskStatus.AWAITING_DEFINITION]: "var(--color-status-awaiting-definition)",
+    [TaskStatus.FINISHED]: "var(--color-status-finished)"
   };
 
   return colors[status];

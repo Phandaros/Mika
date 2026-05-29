@@ -1,4 +1,5 @@
 import http from "node:http";
+import path from "node:path";
 import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
@@ -20,6 +21,25 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.use(
+  "/binaries/desktop/win",
+  express.static(path.resolve(env.DESKTOP_RELEASE_DIR), {
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith("latest.yml")) {
+        res.setHeader("Cache-Control", "no-store");
+        return;
+      }
+
+      res.setHeader("Cache-Control", "public, max-age=3600");
+    }
+  })
+);
+
+app.use("/binaries/desktop/win", (_req, res) => {
+  res.status(404).json({ error: "Binary not found" });
 });
 
 app.use("/api/v1", apiRoutes);

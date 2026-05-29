@@ -14,11 +14,14 @@ import { Priority, TaskStatus } from "../lib/enums.js";
 import { validateBody } from "../middleware/validate.js";
 
 const router = Router();
+const persistedTaskStatusSchema = z.nativeEnum(TaskStatus).refine((status) => status !== TaskStatus.OVERDUE, {
+  message: "Status atrasado e calculado automaticamente"
+});
 
 const taskSchema = z.object({
   title: z.string().min(2),
   description: z.string().nullable().optional(),
-  status: z.nativeEnum(TaskStatus).optional(),
+  status: persistedTaskStatusSchema.optional(),
   priority: z.nativeEnum(Priority).optional(),
   assigneeId: z.string().nullable().optional(),
   startDate: z.string().nullable().optional(),
@@ -30,8 +33,7 @@ const taskSchema = z.object({
   estimatedTime: z.number().nonnegative().nullable().optional(),
   maxDeadline: z.string().nullable().optional(),
   conclusionDays: z.number().nonnegative().nullable().optional(),
-  stage: z.string().trim().nullable().optional(),
-  completed: z.boolean().optional()
+  stage: z.string().trim().nullable().optional()
 });
 
 const createTaskSchema = taskSchema.extend({
@@ -51,7 +53,7 @@ const updateTaskSchema = taskSchema.partial().extend({
 });
 
 const taskStatusSchema = z.object({
-  status: z.nativeEnum(TaskStatus)
+  status: persistedTaskStatusSchema
 });
 
 const taskCompletionSchema = z.object({

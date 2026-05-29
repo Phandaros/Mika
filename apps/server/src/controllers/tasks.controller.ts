@@ -2,7 +2,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
 import { Priority, TaskStatus, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
-import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
+import { makeLocalAsanaGid, normalizePersistedTaskStatus, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
 
@@ -26,7 +26,6 @@ interface TaskBody {
   maxDeadline?: string | null;
   conclusionDays?: number | null;
   stage?: string | null;
-  completed?: boolean;
   customFieldValues?: Array<{
     id?: string;
     settingId?: string;
@@ -53,6 +52,21 @@ function dateOnly(value: string | null | undefined): string | null | undefined {
   }
 
   return value.slice(0, 10);
+}
+
+const completingTaskStatuses = new Set<TaskStatusValue>([TaskStatus.IN_ANALYSIS, TaskStatus.AWAITING_REVIEW, TaskStatus.FINISHED]);
+
+function taskStatusCompletes(status: TaskStatusValue): boolean {
+  return completingTaskStatuses.has(status);
+}
+
+function completionDateForStatus(status: TaskStatusValue, currentCompletedAt?: Date | null): Date | null {
+  return taskStatusCompletes(status) ? currentCompletedAt ?? new Date() : null;
+}
+
+function writableStatus(value: TaskStatusValue | string | null | undefined): TaskStatusValue {
+  const normalized = normalizePersistedTaskStatus(value) as TaskStatusValue | null;
+  return normalized ?? TaskStatus.TODO;
 }
 
 async function assigneeGid(tx: Prisma.TransactionClient, userId: string | null | undefined): Promise<string | null | undefined> {
@@ -302,12 +316,13 @@ export const createTask: RequestHandler = async (req, res, next) => {
         throw new AppError(404, "Section not found");
       }
 
+      const status = writableStatus(body.status);
       const createdTask = await tx.task.create({
         data: {
           asanaGid: makeLocalAsanaGid("task"),
           name: body.title,
           notes: body.description,
-          localStatus: body.status ?? TaskStatus.BACKLOG,
+          localStatus: status,
           priority: body.priority ?? Priority.MEDIUM,
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
@@ -319,8 +334,8 @@ export const createTask: RequestHandler = async (req, res, next) => {
           maxDeadline: body.maxDeadline === undefined ? undefined : body.maxDeadline ? new Date(body.maxDeadline) : null,
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,
           stage: body.stage,
-          completed: body.completed ?? false,
-          completedAtAsana: body.completed ? new Date() : null
+          completed: taskStatusCompletes(status),
+          completedAtAsana: completionDateForStatus(status)
         }
       });
 
@@ -427,18 +442,20 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { assigneeGid: true }
+      select: { assigneeGid: true, localStatus: true, completedAtAsana: true }
     });
 
     const task = await prisma.$transaction(async (tx) => {
-      const completed = body.completed;
+      const status = body.status === undefined ? undefined : writableStatus(body.status);
+      const effectiveStatus = status ?? writableStatus(existing?.localStatus);
+      const completed = taskStatusCompletes(effectiveStatus);
 
       await tx.task.update({
         where: { id: taskId },
         data: {
           name: body.title,
           notes: body.description,
-          localStatus: body.status,
+          localStatus: status,
           priority: body.priority,
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
@@ -451,8 +468,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,
           stage: body.stage,
           completed,
-          completedAtAsana:
-            completed === undefined ? undefined : completed ? new Date() : null
+          completedAtAsana: completionDateForStatus(effectiveStatus, existing?.completedAtAsana)
         }
       });
 
@@ -517,10 +533,13 @@ export const deleteTask: RequestHandler = async (req, res, next) => {
 export const updateTaskStatus: RequestHandler = async (req, res, next) => {
   try {
     const body = req.body as StatusBody;
+    const status = writableStatus(body.status);
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        localStatus: body.status
+        localStatus: status,
+        completed: taskStatusCompletes(status),
+        completedAtAsana: completionDateForStatus(status)
       },
       include: taskInclude
     });
@@ -530,7 +549,7 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
         userId: task.assignee.id,
         type: "TASK_UPDATED",
         title: "Status da tarefa",
-        message: `${task.name}: ${body.status}`,
+        message: `${task.name}: ${status}`,
         taskId: task.id
       });
     }
@@ -546,11 +565,13 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
 export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
   try {
     const body = req.body as CompletionBody;
+    const status = body.completed ? TaskStatus.FINISHED : TaskStatus.TODO;
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        completed: body.completed,
-        completedAtAsana: body.completed ? new Date() : null
+        localStatus: status,
+        completed: taskStatusCompletes(status),
+        completedAtAsana: completionDateForStatus(status)
       },
       include: taskInclude
     });

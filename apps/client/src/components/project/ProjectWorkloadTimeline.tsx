@@ -20,12 +20,13 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Priority, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { CheckCircle2, Copy, Eye, Filter, Group, Hash, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, Eye, Filter, Group, Hash, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { cn, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
+import { taskStatusLabels } from "../shared/Chip";
 import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
 import {
@@ -172,16 +173,22 @@ export function clientTaskBounds(task: Task): { start: string; end: string } | n
 
 function statusColorVar(status: string): string {
   switch (status) {
-    case TaskStatus.BACKLOG:
-      return "var(--color-status-backlog)";
     case TaskStatus.TODO:
       return "var(--color-status-todo)";
+    case TaskStatus.ON_SCHEDULE:
+      return "var(--color-status-on-schedule)";
+    case TaskStatus.OVERDUE:
+      return "var(--color-status-overdue)";
     case TaskStatus.IN_PROGRESS:
       return "var(--color-status-in-progress)";
-    case TaskStatus.IN_REVIEW:
-      return "var(--color-status-in-review)";
-    case TaskStatus.DONE:
-      return "var(--color-status-done)";
+    case TaskStatus.AWAITING_REVIEW:
+      return "var(--color-status-awaiting-review)";
+    case TaskStatus.IN_ANALYSIS:
+      return "var(--color-status-in-analysis)";
+    case TaskStatus.AWAITING_DEFINITION:
+      return "var(--color-status-awaiting-definition)";
+    case TaskStatus.FINISHED:
+      return "var(--color-status-finished)";
     default:
       return "var(--color-status-todo)";
   }
@@ -1014,15 +1021,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     toast.success("Link da tarefa copiado");
   }
 
-  async function toggleTaskCompleted(task: TaskWithDiscipline) {
-    const updatedTask = await updateTask.mutateAsync({
-      id: task.id,
-      payload: { completed: !task.completed }
-    });
-    onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
-    toast.success(task.completed ? "Tarefa reaberta" : "Tarefa concluída");
-  }
-
   async function confirmDeleteTask() {
     if (!taskPendingDelete) {
       return;
@@ -1142,10 +1140,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 <ContextMenuItem onSelect={() => onOpenTask(p.task)}>
                   <Eye className="h-4 w-4" />
                   Abrir detalhes da tarefa
-                </ContextMenuItem>
-                <ContextMenuItem onSelect={() => void toggleTaskCompleted(p.task)}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  {p.task.completed ? "Marcar como não concluída" : "Marcar como concluída"}
                 </ContextMenuItem>
                 <ContextMenuItem onSelect={() => void copyTaskLink(p.task)}>
                   <Copy className="h-4 w-4" />
@@ -1287,9 +1281,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               { value: ALL_FILTER_VALUE, label: "Todos os status" },
               ...Object.values(TaskStatus).map((status) => ({
                 value: status,
-                label: status,
+                label: taskStatusLabels[status],
                 color: taskStatusColors[status],
-                render: <StatusOptionPill label={status} color={taskStatusColors[status]} />
+                render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
               }))
             ]}
             triggerClassName="h-9 text-xs"

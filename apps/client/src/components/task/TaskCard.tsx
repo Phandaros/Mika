@@ -2,7 +2,6 @@ import { type DisciplineType, type Task } from "shared";
 import { Avatar } from "../shared/Avatar";
 import { DisciplineChip } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
-import { TaskCompletionButton } from "./TaskCompletionButton";
 import { cn, formatDateOnly } from "../../lib/utils";
 
 export type TaskCardTask = Task & {
@@ -18,16 +17,12 @@ interface TaskCardProps<TTask extends TaskCardTask> {
   task: TTask;
   disciplineName?: string;
   onOpen?: (task: TTask) => void;
-  onToggleCompletion?: (task: TTask) => void;
-  completionBusy?: boolean;
 }
 
 export function TaskCard<TTask extends TaskCardTask>({
   task,
   disciplineName,
-  onOpen,
-  onToggleCompletion,
-  completionBusy
+  onOpen
 }: TaskCardProps<TTask>) {
   return (
     <div
@@ -38,12 +33,6 @@ export function TaskCard<TTask extends TaskCardTask>({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
-          <TaskCompletionButton
-            completed={task.completed}
-            disabled={completionBusy}
-            onToggle={() => onToggleCompletion?.(task)}
-            className="mt-0.5"
-          />
           <button type="button" onClick={() => onOpen?.(task)} className="min-w-0 text-left">
             <h3 className={cn("text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
               {task.title}

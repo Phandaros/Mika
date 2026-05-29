@@ -5,7 +5,17 @@ interface DesktopApi {
   isDesktop: true;
   getServerUrl: () => Promise<string>;
   setServerUrl: (serverUrl: string) => Promise<string>;
+  onUpdateEvent: (listener: (updateEvent: DesktopUpdateEvent) => void) => () => void;
+  restartAndInstallUpdate: () => Promise<void>;
 }
+
+export type DesktopUpdateEvent =
+  | { type: "checking" }
+  | { type: "available"; version: string }
+  | { type: "not-available"; version: string }
+  | { type: "download-progress"; percent: number }
+  | { type: "downloaded"; version: string }
+  | { type: "error"; message: string };
 
 declare global {
   interface Window {

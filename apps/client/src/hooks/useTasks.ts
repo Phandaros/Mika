@@ -168,7 +168,6 @@ function patchTaskForOptimisticUpdate(task: Task, payload: UpdateTaskRequest): T
     ...(payload.maxDeadline !== undefined ? { maxDeadline: payload.maxDeadline } : {}),
     ...(payload.conclusionDays !== undefined ? { conclusionDays: payload.conclusionDays } : {}),
     ...(payload.stage !== undefined ? { stage: payload.stage } : {}),
-    ...(payload.completed !== undefined ? { completed: payload.completed } : {})
   };
 }
 
@@ -379,7 +378,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
         disciplineId: sectionId,
         title: payload.title,
         description: payload.description ?? null,
-        status: payload.status ?? TaskStatusValue.BACKLOG,
+        status: payload.status ?? TaskStatusValue.TODO,
         priority: payload.priority ?? Priority.MEDIUM,
         assigneeId: payload.assigneeId ?? null,
         creatorId: "",
@@ -392,7 +391,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
         maxDeadline: payload.maxDeadline ?? null,
         conclusionDays: payload.conclusionDays ?? null,
         stage: payload.stage ?? null,
-        completed: payload.completed ?? false,
+        completed: false,
         completedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

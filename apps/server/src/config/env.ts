@@ -10,7 +10,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   CLIENT_URL: z.string().url(),
   UPLOAD_DIR: z.string().min(1).default("./uploads"),
-  MAX_FILE_SIZE_MB: z.coerce.number().int().positive().default(50)
+  MAX_FILE_SIZE_MB: z.coerce.number().int().positive().default(50),
+  DESKTOP_RELEASE_DIR: z.string().min(1).default("./binaries/desktop/win")
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

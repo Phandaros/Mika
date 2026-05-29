@@ -13,6 +13,7 @@ out/
 # Runtime data
 data/
 uploads/
+binaries/
 *.db
 *.db-journal
 *.sqlite

@@ -2,12 +2,29 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, ipcMain, nativeTheme, shell } from "electron";
+import electronUpdater from "electron-updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const devServerUrl = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:5173";
 const appName = process.env.ELECTRON_APP_NAME ?? "MK Projetos";
 const defaultServerUrl = "http://DESKTOP-TP1SBGH:3001";
 const configFileName = "mk-projetos.ini";
+const updateFeedPath = "/binaries/desktop/win";
+const updateCheckIntervalMs = 6 * 60 * 60 * 1000;
+const maxDownloadDelayMs = 60 * 1000;
+const { autoUpdater } = electronUpdater;
+
+type DesktopUpdateEvent =
+  | { type: "checking" }
+  | { type: "available"; version: string }
+  | { type: "not-available"; version: string }
+  | { type: "download-progress"; percent: number }
+  | { type: "downloaded"; version: string }
+  | { type: "error"; message: string };
+
+let isCheckingForUpdates = false;
+let updateCheckTimer: NodeJS.Timeout | null = null;
+let updateDownloadTimer: NodeJS.Timeout | null = null;
 
 app.setName(appName);
 
@@ -79,6 +96,97 @@ function clientIndexPath(): string {
 function registerIpcHandlers(): void {
   ipcMain.handle("mk-projetos:get-server-url", async () => readServerUrlConfig());
   ipcMain.handle("mk-projetos:set-server-url", async (_event, serverUrl: string) => writeServerUrlConfig(serverUrl));
+  ipcMain.handle("mk-projetos:restart-and-install-update", () => {
+    autoUpdater.quitAndInstall(false, true);
+  });
+}
+
+function emitUpdateEvent(updateEvent: DesktopUpdateEvent): void {
+  for (const browserWindow of BrowserWindow.getAllWindows()) {
+    browserWindow.webContents.send("mk-projetos:update-event", updateEvent);
+  }
+}
+
+function updateFeedUrl(serverUrl: string): string {
+  return `${normalizeServerUrl(serverUrl)}${updateFeedPath}`;
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return "Não foi possível verificar atualizações";
+}
+
+function scheduleUpdateDownload(): void {
+  if (updateDownloadTimer) {
+    return;
+  }
+
+  const downloadDelayMs = Math.floor(Math.random() * maxDownloadDelayMs);
+  updateDownloadTimer = setTimeout(() => {
+    updateDownloadTimer = null;
+    void autoUpdater.downloadUpdate().catch((error: unknown) => {
+      emitUpdateEvent({ type: "error", message: errorMessage(error) });
+    });
+  }, downloadDelayMs);
+}
+
+async function checkForDesktopUpdates(): Promise<void> {
+  if (!app.isPackaged || isCheckingForUpdates) {
+    return;
+  }
+
+  isCheckingForUpdates = true;
+  emitUpdateEvent({ type: "checking" });
+
+  try {
+    autoUpdater.setFeedURL({
+      provider: "generic",
+      url: updateFeedUrl(await readServerUrlConfig())
+    });
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    emitUpdateEvent({ type: "error", message: errorMessage(error) });
+  } finally {
+    isCheckingForUpdates = false;
+  }
+}
+
+function startDesktopAutoUpdater(): void {
+  if (!app.isPackaged) {
+    return;
+  }
+
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on("update-available", (info) => {
+    emitUpdateEvent({ type: "available", version: info.version });
+    scheduleUpdateDownload();
+  });
+
+  autoUpdater.on("update-not-available", (info) => {
+    emitUpdateEvent({ type: "not-available", version: info.version });
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    emitUpdateEvent({ type: "download-progress", percent: progress.percent });
+  });
+
+  autoUpdater.on("update-downloaded", (event) => {
+    emitUpdateEvent({ type: "downloaded", version: event.version });
+  });
+
+  autoUpdater.on("error", (error) => {
+    emitUpdateEvent({ type: "error", message: errorMessage(error) });
+  });
+
+  void checkForDesktopUpdates();
+  updateCheckTimer = setInterval(() => {
+    void checkForDesktopUpdates();
+  }, updateCheckIntervalMs);
 }
 
 async function createWindow(): Promise<void> {
@@ -92,7 +200,7 @@ async function createWindow(): Promise<void> {
     title: appName,
     backgroundColor: "#111111",
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true
@@ -127,6 +235,7 @@ async function createWindow(): Promise<void> {
 app.whenReady().then(async () => {
   registerIpcHandlers();
   await createWindow();
+  startDesktopAutoUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -136,6 +245,16 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
+  if (updateCheckTimer) {
+    clearInterval(updateCheckTimer);
+    updateCheckTimer = null;
+  }
+
+  if (updateDownloadTimer) {
+    clearTimeout(updateDownloadTimer);
+    updateDownloadTimer = null;
+  }
+
   if (process.platform !== "darwin") {
     app.quit();
   }

@@ -84,11 +84,14 @@
   --plat-none-bg: rgba(71,85,105,0.12);
   --plat-none-text: #64748b;
 
-  --color-status-backlog: var(--status-todo-text);
-  --color-status-todo: var(--status-scheduled-text);
+  --color-status-todo: var(--status-todo-text);
+  --color-status-on-schedule: var(--status-scheduled-text);
+  --color-status-overdue: var(--status-late-text);
   --color-status-in-progress: var(--status-inprogress-text);
-  --color-status-in-review: var(--status-review-text);
-  --color-status-done: var(--status-done-text);
+  --color-status-awaiting-review: var(--status-review-text);
+  --color-status-in-analysis: var(--status-analysis-text);
+  --color-status-awaiting-definition: var(--status-waiting-text);
+  --color-status-finished: var(--status-done-text);
 
   --color-priority-low: var(--priority-low-text);
   --color-priority-medium: var(--priority-medium-text);
