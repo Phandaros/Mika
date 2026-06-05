@@ -24,8 +24,8 @@ const updateHolidaySchema = createHolidaySchema.partial();
 
 router.use(auth);
 router.get("/calendar/holidays", listCompanyHolidays);
-router.post("/calendar/holidays", requireRole(Role.ADMIN), validateBody(createHolidaySchema), createCompanyHoliday);
-router.patch("/calendar/holidays/:id", requireRole(Role.ADMIN), validateBody(updateHolidaySchema), updateCompanyHoliday);
-router.delete("/calendar/holidays/:id", requireRole(Role.ADMIN), deleteCompanyHoliday);
+router.post("/calendar/holidays", requireRole(Role.COORDINATOR), validateBody(createHolidaySchema), createCompanyHoliday);
+router.patch("/calendar/holidays/:id", requireRole(Role.COORDINATOR), validateBody(updateHolidaySchema), updateCompanyHoliday);
+router.delete("/calendar/holidays/:id", requireRole(Role.COORDINATOR), deleteCompanyHoliday);
 
 export default router;

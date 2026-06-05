@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { CreateUserRequest, User } from "shared";
+import type { CreateUserRequest, UpdateUserRequest, User } from "shared";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
 
@@ -30,6 +30,18 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: async (payload: CreateUserRequest) => {
       const response = await api.post<UserResponse>("/users", payload);
+      return response.data.user;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+    }
+  });
+}
+
+export function useUpdateUser() {
+  return useMutation({
+    mutationFn: async ({ userId, payload }: { userId: string; payload: UpdateUserRequest }) => {
+      const response = await api.patch<UserResponse>(`/users/${userId}`, payload);
       return response.data.user;
     },
     onSuccess: async () => {

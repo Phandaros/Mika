@@ -25,7 +25,7 @@ const navItems = [
   { to: "/", label: "Página inicial", icon: Home },
   { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
   { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
-  { to: "/admin/calendar", label: "Calendario", icon: CalendarDays, minRole: Role.ADMIN },
+  { to: "/admin/calendar", label: "Calendario", icon: CalendarDays, minRole: Role.COORDINATOR },
   { to: "/users", label: "Usuários", icon: Users, minRole: Role.COORDINATOR }
 ];
 

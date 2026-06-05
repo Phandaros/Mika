@@ -1,22 +1,28 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, RotateCcw, X } from "lucide-react";
-import { Role, type CreateUserRequest } from "shared";
+import { Pencil, Plus, X } from "lucide-react";
+import { Role, type CreateUserRequest, type UpdateUserRequest, type User } from "shared";
 import { Avatar } from "../components/shared/Avatar";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "../components/ui/searchable-select";
-import { useCreateUser, useDeactivateUser, useResetUserPassword, useUsers } from "../hooks/useUsers";
+import { useCreateUser, useDeactivateUser, useUpdateUser, useUsers } from "../hooks/useUsers";
+
+const ROLE_OPTIONS = [Role.ADMIN, Role.COORDINATOR, Role.DESIGNER, Role.INTERN].map((role) => ({
+  value: role,
+  label: roleLabel(role)
+}));
 
 export function UsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: users = [], isLoading } = useUsers();
   const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
   const deactivateUser = useDeactivateUser();
-  const resetPassword = useResetUserPassword();
 
   useEffect(() => {
     if (searchParams.get("new") === "1") {
@@ -34,9 +40,10 @@ export function UsersPage() {
     toast.success("Usuário criado");
   }
 
-  async function handleResetPassword(userId: string) {
-    const result = await resetPassword.mutateAsync(userId);
-    toast.success(`Senha temporária: ${result.temporaryPassword}`, { duration: 10000 });
+  async function handleUpdate(userId: string, payload: UpdateUserRequest) {
+    await updateUser.mutateAsync({ userId, payload });
+    setEditingUser(null);
+    toast.success("Usuário atualizado");
   }
 
   return (
@@ -58,13 +65,19 @@ export function UsersPage() {
         </UserModal>
       ) : null}
 
+      {editingUser ? (
+        <UserModal title="Editar usuário" onClose={() => setEditingUser(null)}>
+          <EditUserForm user={editingUser} onSubmit={handleUpdate} loading={updateUser.isPending} />
+        </UserModal>
+      ) : null}
+
       <div className="overflow-hidden rounded-md border border-border">
         <table className="w-full min-w-[820px] border-collapse bg-surface-card text-sm">
           <thead className="bg-surface">
             <tr className="text-left text-text-secondary">
               <th className="p-3">Usuário</th>
               <th className="p-3">Email</th>
-              <th className="p-3">Perfil</th>
+              <th className="p-3">Cargo</th>
               <th className="p-3">Status</th>
               <th className="p-3 text-right">Ações</th>
             </tr>
@@ -83,14 +96,9 @@ export function UsersPage() {
                 <td className="p-3 text-text-secondary">{user.isActive ? "Ativo" : "Inativo"}</td>
                 <td className="p-3">
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="secondary"
-                      className="h-9"
-                      disabled={resetPassword.isPending}
-                      onClick={() => void handleResetPassword(user.id)}
-                    >
-                      <RotateCcw size={15} />
-                      Resetar senha
+                    <Button variant="secondary" className="h-9" onClick={() => setEditingUser(user)}>
+                      <Pencil size={15} />
+                      Editar
                     </Button>
                     <Button
                       variant="danger"
@@ -124,19 +132,98 @@ function CreateUserForm({ onSubmit, loading }: { onSubmit: (payload: CreateUserR
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
-      <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome" required />
-      <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" required />
-      <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha inicial" required />
-      <SearchableSelect
-        value={role}
-        options={Object.values(Role).map((option) => ({ value: option, label: roleLabel(option) }))}
-        searchPlaceholder="Buscar perfil..."
-        onValueChange={(value) => setRole(value as Role)}
-      />
+      <FieldLabel label="Nome">
+        <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome" required />
+      </FieldLabel>
+      <FieldLabel label="Email">
+        <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" required />
+      </FieldLabel>
+      <FieldLabel label="Senha inicial">
+        <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha inicial" required />
+      </FieldLabel>
+      <FieldLabel label="Cargo">
+        <SearchableSelect value={role} options={ROLE_OPTIONS} searchPlaceholder="Buscar cargo..." onValueChange={(value) => setRole(value as Role)} />
+      </FieldLabel>
       <Button type="submit" disabled={loading}>
         Criar usuário
       </Button>
     </form>
+  );
+}
+
+function EditUserForm({
+  user,
+  onSubmit,
+  loading
+}: {
+  user: User;
+  onSubmit: (userId: string, payload: UpdateUserRequest) => Promise<void>;
+  loading: boolean;
+}) {
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>(user.role);
+  const [isActive, setIsActive] = useState(user.isActive);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const payload: UpdateUserRequest = {
+      name,
+      email,
+      role,
+      isActive
+    };
+
+    if (password.trim()) {
+      payload.password = password;
+    }
+
+    await onSubmit(user.id, payload);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <FieldLabel label="Nome">
+        <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome" required />
+      </FieldLabel>
+      <FieldLabel label="Email">
+        <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" required />
+      </FieldLabel>
+      <FieldLabel label="Nova senha">
+        <Input
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Deixe em branco para manter"
+          minLength={6}
+        />
+      </FieldLabel>
+      <FieldLabel label="Cargo">
+        <SearchableSelect value={role} options={ROLE_OPTIONS} searchPlaceholder="Buscar cargo..." onValueChange={(value) => setRole(value as Role)} />
+      </FieldLabel>
+      <label className="flex items-center justify-between rounded-md border border-border bg-brand-black px-3 py-2 text-sm text-text-primary">
+        <span>Status ativo</span>
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-brand-orange"
+          checked={isActive}
+          onChange={(event) => setIsActive(event.target.checked)}
+        />
+      </label>
+      <Button type="submit" disabled={loading}>
+        Salvar alterações
+      </Button>
+    </form>
+  );
+}
+
+function FieldLabel({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="grid gap-2 text-sm font-medium text-text-secondary">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }
 

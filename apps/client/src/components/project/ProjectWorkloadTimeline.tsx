@@ -18,7 +18,7 @@ import {
   startOfDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { Priority, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
+import { Priority, Role, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Copy, Eye, Filter, Group, Hash, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -50,8 +50,11 @@ const LANE_STRIDE = BAR_H + BAR_GAP;
 const NAME_COL = 192;
 const EXTENSION_DAYS = 28;
 const SCROLL_EDGE = 100;
-const SMOOTH_WHEEL_DURATION_MS = 130;
+const SMOOTH_WHEEL_FRICTION = 0.82;
+const SMOOTH_WHEEL_MIN_VELOCITY = 0.35;
+const SMOOTH_WHEEL_VELOCITY_SCALE = 1 - SMOOTH_WHEEL_FRICTION;
 const ALL_FILTER_VALUE = "__all__";
+const WEEKDAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
 
 type TaskWithDiscipline = Task & {
   discipline: {
@@ -202,6 +205,17 @@ function barLabelText(task: TaskWithDiscipline, mode: "project" | "global"): str
   }
 
   return task.title;
+}
+
+function roleLabel(role: User["role"]): string {
+  const labels: Record<Role, string> = {
+    [Role.ADMIN]: "Gerente",
+    [Role.COORDINATOR]: "Coordenador",
+    [Role.DESIGNER]: "Projetista",
+    [Role.INTERN]: "Estagiário"
+  };
+
+  return labels[role] ?? role;
 }
 
 function clipToViewport(
@@ -397,10 +411,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollAdjust = useRef(0);
   const scrollReady = useRef(false);
-  const smoothWheelStart = useRef(0);
-  const smoothWheelTarget = useRef<number | null>(null);
+  const smoothWheelVelocity = useRef(0);
   const smoothWheelFrame = useRef<number | null>(null);
-  const smoothWheelStartTime = useRef<number | null>(null);
   const smoothWheelIntent = useRef(0);
   const extendingLeft = useRef(false);
   const extendingRight = useRef(false);
@@ -613,7 +625,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return {
         id: user.id,
         label: user.name,
-        sublabel: user.role,
+        sublabel: roleLabel(user.role),
         avatarName: user.name,
         avatarUrl: user.avatarUrl,
         rowTasks,
@@ -693,10 +705,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     if (el && delta !== 0) {
       el.scrollLeft += delta;
-      smoothWheelStart.current += delta;
-      if (smoothWheelTarget.current !== null) {
-        smoothWheelTarget.current += delta;
-      }
       pendingScrollAdjust.current = 0;
     }
   }, [unionFrom, rawTasks]);
@@ -735,9 +743,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   }
 
   function clearSmoothWheelFrame() {
-    smoothWheelTarget.current = null;
+    smoothWheelVelocity.current = 0;
     smoothWheelFrame.current = null;
-    smoothWheelStartTime.current = null;
     smoothWheelIntent.current = 0;
   }
 
@@ -748,36 +755,31 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     clearSmoothWheelFrame();
   }
 
-  function easeOutExpo(t: number) {
-    return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
-  }
-
-  function runSmoothWheelScroll(frameTime: number) {
+  function runSmoothWheelScroll() {
     const box = scrollRef.current;
-    const target = smoothWheelTarget.current;
+    const velocity = smoothWheelVelocity.current;
 
-    if (!box || target === null) {
+    if (!box) {
       clearSmoothWheelFrame();
       return;
     }
 
-    const nextTarget = clampTimelineScroll(box, target);
-    const startTime = smoothWheelStartTime.current ?? frameTime;
-    const progress = Math.min(Math.max((frameTime - startTime) / SMOOTH_WHEEL_DURATION_MS, 0), 1);
-    const nextScrollLeft = smoothWheelStart.current + (nextTarget - smoothWheelStart.current) * easeOutExpo(progress);
-
-    smoothWheelStartTime.current = startTime;
-    smoothWheelTarget.current = nextTarget;
-    box.scrollLeft = nextScrollLeft;
-    maybeExtendTimeline(box, nextTarget < smoothWheelStart.current ? "left" : "right");
-
-    if (progress >= 1) {
-      box.scrollLeft = nextTarget;
+    if (Math.abs(velocity) < SMOOTH_WHEEL_MIN_VELOCITY) {
       maybeExtendTimeline(box, smoothWheelIntent.current < 0 ? "left" : "right");
       clearSmoothWheelFrame();
       return;
     }
 
+    const direction = velocity < 0 ? "left" : "right";
+    const nextScrollLeft = clampTimelineScroll(box, box.scrollLeft + velocity);
+
+    box.scrollLeft = nextScrollLeft;
+    maybeExtendTimeline(box, direction);
+
+    const hitEdge =
+      (velocity < 0 && nextScrollLeft <= 0) || (velocity > 0 && nextScrollLeft >= box.scrollWidth - box.clientWidth);
+
+    smoothWheelVelocity.current = hitEdge ? 0 : velocity * SMOOTH_WHEEL_FRICTION;
     smoothWheelFrame.current = window.requestAnimationFrame(runSmoothWheelScroll);
   }
 
@@ -807,12 +809,11 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     event.preventDefault();
 
-    const baseTarget = smoothWheelTarget.current ?? box.scrollLeft;
-    const nextTarget = clampTimelineScroll(box, baseTarget + event.deltaY);
-    smoothWheelStart.current = box.scrollLeft;
-    smoothWheelStartTime.current = null;
+    if (smoothWheelFrame.current === null) {
+      smoothWheelIntent.current = 0;
+    }
     smoothWheelIntent.current += event.deltaY;
-    smoothWheelTarget.current = nextTarget;
+    smoothWheelVelocity.current += event.deltaY * SMOOTH_WHEEL_VELOCITY_SCALE;
 
     maybeExtendTimeline(box, event.deltaY < 0 ? "left" : "right");
     scheduleSmoothWheelScroll();
@@ -1398,7 +1399,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                           {showMonth ? format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR }) : ""}
                         </span>
                         <span className="text-[9px] leading-none uppercase text-text-muted">
-                          {format(parseYmdToLocalNoon(d), "EEE", { locale: ptBR })}
+                          {WEEKDAY_LABELS[weekDay]}
                         </span>
                         <span className="font-semibold leading-none text-text-secondary">{format(parseYmdToLocalNoon(d), "d")}</span>
                       </div>

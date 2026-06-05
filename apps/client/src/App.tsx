@@ -16,6 +16,8 @@ import { UserProfilePage } from "./pages/UserProfilePage";
 import { UsersPage } from "./pages/UsersPage";
 import { Role } from "shared";
 
+const AUTH_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+
 function PrivateRoute() {
   const { user, refreshSession } = useAuth();
   const [checked, setChecked] = useState(false);
@@ -58,16 +60,31 @@ function CoordinatorRoute() {
   return allowed ? <Outlet /> : <Navigate to="/" replace />;
 }
 
-function AdminRoute() {
+function AdminPermissionRoute() {
   const { user } = useAuth();
-  const allowed = user?.role === Role.ADMIN;
+  const allowed = user?.role === Role.ADMIN || user?.role === Role.COORDINATOR;
 
   return allowed ? <Outlet /> : <Navigate to="/" replace />;
 }
 
 export function App() {
   const Router = window.mkProjetos?.isDesktop === true ? HashRouter : BrowserRouter;
+  const { user, refreshSession } = useAuth();
   useDesktopUpdater();
+
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refreshSession({ silent: true });
+    }, AUTH_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [refreshSession, user]);
 
   return (
     <Router>
@@ -85,7 +102,7 @@ export function App() {
             <Route element={<CoordinatorRoute />}>
               <Route path="/users" element={<UsersPage />} />
             </Route>
-            <Route element={<AdminRoute />}>
+            <Route element={<AdminPermissionRoute />}>
               <Route path="/admin/calendar" element={<AdminCalendarPage />} />
             </Route>
             <Route path="/users/:userId" element={<UserProfilePage />} />

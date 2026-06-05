@@ -245,6 +245,15 @@ def task_fixed_field_value(key: str, cf: dict[str, Any]) -> str | float | None:
     return str(value).strip() or None
 
 
+def infer_mk_role(name: str | None, email: str | None) -> str:
+    identity = f"{name or ''} {email or ''}".casefold()
+    if "pedro" in identity:
+        return "ADMIN"
+    if any(person in identity for person in ["leonardo", "christian", "willian"]):
+        return "COORDINATOR"
+    return "DESIGNER"
+
+
 def ensure_user(conn: sqlite3.Connection, ref: dict[str, Any] | None, password_hash: str) -> None:
     if not IMPORT_USERS:
         return
@@ -261,7 +270,7 @@ def ensure_user(conn: sqlite3.Connection, ref: dict[str, Any] | None, password_h
         "email": email,
         "name": name,
         "passwordHash": password_hash,
-        "role": "MEMBER",
+        "role": infer_mk_role(name, email),
         "isActive": 1,
         "photo21x21": photo.get("image_21x21"),
         "photo27x27": photo.get("image_27x27"),

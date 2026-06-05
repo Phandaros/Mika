@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "shared";
+import { Role, type User } from "shared";
 import { Avatar } from "../components/shared/Avatar";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { api } from "../lib/api";
@@ -33,7 +33,7 @@ export function UserProfilePage() {
       <div className="flex items-center gap-4">
         <Avatar name={user.name} imageUrl={user.avatarUrl} className="h-16 w-16 text-lg" />
         <div>
-          <p className="text-sm font-semibold uppercase text-brand-orange">{user.role}</p>
+          <p className="text-sm font-semibold uppercase text-brand-orange">{roleLabel(user.role)}</p>
           <h1 className="mt-1 text-3xl font-bold text-text-primary">{user.name}</h1>
           <p className="mt-1 text-text-secondary">{user.email}</p>
         </div>
@@ -54,4 +54,15 @@ export function UserProfilePage() {
       </div>
     </div>
   );
+}
+
+function roleLabel(role: Role): string {
+  const labels: Record<Role, string> = {
+    [Role.ADMIN]: "Gerente",
+    [Role.COORDINATOR]: "Coordenador",
+    [Role.DESIGNER]: "Projetista",
+    [Role.INTERN]: "Estagiário"
+  };
+
+  return labels[role];
 }

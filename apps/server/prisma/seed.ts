@@ -5,6 +5,31 @@ import { Priority, Role, TaskStatus } from "../src/lib/enums.js";
 
 const ADMIN_EMAIL = "admin@mkengenharia.eng.br";
 
+async function applyMkRoles(): Promise<void> {
+  await prisma.user.updateMany({
+    where: {
+      OR: [{ name: { contains: "Pedro" } }, { email: { contains: "pedro" } }]
+    },
+    data: { role: Role.ADMIN }
+  });
+
+  for (const name of ["Leonardo", "Christian", "Willian"]) {
+    await prisma.user.updateMany({
+      where: {
+        OR: [{ name: { contains: name } }, { email: { contains: name.toLowerCase() } }]
+      },
+      data: { role: Role.COORDINATOR }
+    });
+  }
+
+  await prisma.user.updateMany({
+    where: {
+      role: { notIn: [Role.ADMIN, Role.COORDINATOR, Role.INTERN] }
+    },
+    data: { role: Role.DESIGNER }
+  });
+}
+
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash("admin123", 10);
 
@@ -36,6 +61,8 @@ async function main(): Promise<void> {
       asanaGid: makeLocalAsanaGid("user")
     }
   });
+
+  await applyMkRoles();
 
   const projectCount = await prisma.project.count();
   if (projectCount > 0 || !admin.asanaGid) {
