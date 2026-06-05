@@ -37,6 +37,7 @@ import {
   ContextMenuTrigger
 } from "../ui/context-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
 import { WORKLOAD_TASK_DRAG_MIME, WorkloadUndatedPanel } from "./WorkloadUndatedPanel";
 
@@ -389,7 +390,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [priorityFilter, setPriorityFilter] = useState<string>(ALL_FILTER_VALUE);
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE);
   const [sectionFilter, setSectionFilter] = useState<string>(ALL_FILTER_VALUE);
-  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
   const [taskPendingDelete, setTaskPendingDelete] = useState<TaskWithDiscipline | null>(null);
@@ -1192,15 +1193,82 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           >
             Hoje
           </Button>
-          <Button
-            type="button"
-            variant={filtersOpen ? "primary" : "secondary"}
-            className="h-8 px-3 text-xs"
-            onClick={() => setFiltersOpen((value) => !value)}
-          >
-            <Filter size={14} />
-            Filtrar
-          </Button>
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button type="button" variant={filtersOpen ? "primary" : "secondary"} className="h-8 px-3 text-xs">
+                <Filter size={14} />
+                Filtrar
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-[min(920px,calc(100vw-32px))] gap-2 p-3 sm:grid-cols-2 lg:grid-cols-5">
+              <SearchableSelect
+                value={sectionFilter}
+                options={[
+                  { value: ALL_FILTER_VALUE, label: "Todas as seções" },
+                  ...sectionOptions.map(([id, label]) => ({ value: id, label }))
+                ]}
+                triggerClassName="h-9 text-xs"
+                searchPlaceholder="Buscar seção..."
+                onValueChange={setSectionFilter}
+              />
+              <SearchableSelect
+                value={assigneeFilter}
+                options={[
+                  { value: ALL_FILTER_VALUE, label: "Todos os responsáveis" },
+                  ...assigneeOptions.map((user) => ({
+                    value: user.id,
+                    label: user.name,
+                    description: user.email,
+                    avatarUrl: user.avatarUrl
+                  }))
+                ]}
+                triggerClassName="h-9 text-xs"
+                searchPlaceholder="Buscar responsável..."
+                onValueChange={setAssigneeFilter}
+              />
+              <SearchableSelect
+                value={statusFilter}
+                options={[
+                  { value: ALL_FILTER_VALUE, label: "Todos os status" },
+                  ...Object.values(TaskStatus).map((status) => ({
+                    value: status,
+                    label: taskStatusLabels[status],
+                    color: taskStatusColors[status],
+                    render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
+                  }))
+                ]}
+                triggerClassName="h-9 text-xs"
+                searchPlaceholder="Buscar status..."
+                onValueChange={setStatusFilter}
+              />
+              <SearchableSelect
+                value={priorityFilter}
+                options={[
+                  { value: ALL_FILTER_VALUE, label: "Todas as prioridades" },
+                  ...Object.values(Priority).map((priority) => ({
+                    value: priority,
+                    label: priority,
+                    color: priorityColors[priority],
+                    render: <PriorityOptionPill priority={priority} />
+                  }))
+                ]}
+                triggerClassName="h-9 text-xs"
+                searchPlaceholder="Buscar prioridade..."
+                onValueChange={setPriorityFilter}
+              />
+              <SearchableSelect
+                value={completionFilter}
+                options={[
+                  { value: "all", label: "Todas" },
+                  { value: "open", label: "Abertas" },
+                  { value: "completed", label: "Concluídas" }
+                ]}
+                triggerClassName="h-9 text-xs"
+                searchPlaceholder="Buscar conclusão..."
+                onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
+              />
+            </PopoverContent>
+          </Popover>
           <div className="flex items-center gap-2 text-xs text-text-secondary">
             <Group size={14} />
             <SearchableSelect
@@ -1252,72 +1320,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           ) : null}
         </div>
       </div>
-
-      {filtersOpen ? (
-        <div className="grid gap-2 rounded-md border border-border bg-bg-1 p-3 sm:grid-cols-2 lg:grid-cols-5">
-          <SearchableSelect
-            value={sectionFilter}
-            options={[
-              { value: ALL_FILTER_VALUE, label: "Todas as seções" },
-              ...sectionOptions.map(([id, label]) => ({ value: id, label }))
-            ]}
-            triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar seção..."
-            onValueChange={setSectionFilter}
-          />
-          <SearchableSelect
-            value={assigneeFilter}
-            options={[
-              { value: ALL_FILTER_VALUE, label: "Todos os responsáveis" },
-              ...assigneeOptions.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
-            ]}
-            triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar responsável..."
-            onValueChange={setAssigneeFilter}
-          />
-          <SearchableSelect
-            value={statusFilter}
-            options={[
-              { value: ALL_FILTER_VALUE, label: "Todos os status" },
-              ...Object.values(TaskStatus).map((status) => ({
-                value: status,
-                label: taskStatusLabels[status],
-                color: taskStatusColors[status],
-                render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
-              }))
-            ]}
-            triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar status..."
-            onValueChange={setStatusFilter}
-          />
-          <SearchableSelect
-            value={priorityFilter}
-            options={[
-              { value: ALL_FILTER_VALUE, label: "Todas as prioridades" },
-              ...Object.values(Priority).map((priority) => ({
-                value: priority,
-                label: priority,
-                color: priorityColors[priority],
-                render: <PriorityOptionPill priority={priority} />
-              }))
-            ]}
-            triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar prioridade..."
-            onValueChange={setPriorityFilter}
-          />
-          <SearchableSelect
-            value={completionFilter}
-            options={[
-              { value: "open", label: "Abertas" },
-              { value: "completed", label: "Concluídas" },
-              { value: "all", label: "Todas" }
-            ]}
-            triggerClassName="h-9 text-xs"
-            searchPlaceholder="Buscar conclusão..."
-            onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
-          />
-        </div>
-      ) : null}
 
       <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-md border border-border bg-bg-1">
           {isFetching ? (

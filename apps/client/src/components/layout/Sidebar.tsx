@@ -50,7 +50,7 @@ export function Sidebar() {
       )}
     >
       <div className="flex h-14 items-center gap-3 border-b border-border-subtle px-4">
-        <img src={logoUrl} alt="MK Projetos" className="h-9 w-auto" />
+        <img src={logoUrl} alt="Mika" className="h-9 w-auto" />
         <Popover open={createOpen} onOpenChange={setCreateOpen}>
           <PopoverTrigger asChild>
             <button

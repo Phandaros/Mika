@@ -6,7 +6,7 @@ import electronUpdater from "electron-updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const devServerUrl = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:5173";
-const appName = process.env.ELECTRON_APP_NAME ?? "MK Projetos";
+const appName = process.env.ELECTRON_APP_NAME ?? "Mika";
 const defaultServerUrl = "http://DESKTOP-TP1SBGH:3001";
 const configFileName = "mk-projetos.ini";
 const updateFeedPath = "/binaries/desktop/win";
