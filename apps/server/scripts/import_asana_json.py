@@ -167,6 +167,7 @@ def asana_ref_name(obj: Any) -> str | None:
 
 
 TASK_FIXED_FIELD_ALIASES: dict[str, set[str]] = {
+    "status": {"status"},
     "platform": {"plataforma", "platform"},
     "discipline": {"disciplina", "discipline"},
     "estimatedTime": {"dias estimados", "estimated time", "estimated days"},
@@ -176,12 +177,26 @@ TASK_FIXED_FIELD_ALIASES: dict[str, set[str]] = {
 }
 
 TASK_FIXED_FIELD_GIDS: dict[str, set[str]] = {
+    "status": set(),
     "platform": set(),
     "discipline": set(),
     "estimatedTime": set(),
     "maxDeadline": set(),
     "conclusionDays": set(),
     "stage": set(),
+}
+
+TASK_LEGACY_STATUS_MAP: dict[str, str | None] = {
+    "a fazer": "TODO",
+    "no cronograma": "ON_SCHEDULE",
+    "em andamento": "IN_PROGRESS",
+    "aguardando revisao": "AWAITING_REVIEW",
+    "em analise": "IN_ANALYSIS",
+    "aguardando definicao": "AWAITING_DEFINITION",
+    "aguardando aprovacao": "AWAITING_DEFINITION",
+    "finalizado": "FINISHED",
+    "finalizada": "FINISHED",
+    "atrasado": None,
 }
 
 
@@ -243,6 +258,12 @@ def task_fixed_field_value(key: str, cf: dict[str, Any]) -> str | float | None:
             return None
 
     return str(value).strip() or None
+
+
+def mika_status_from_asana(value: str | float | None) -> str | None:
+    if value is None:
+        return None
+    return TASK_LEGACY_STATUS_MAP.get(normalize_field_key(value))
 
 
 def infer_mk_role(name: str | None, email: str | None) -> str:
@@ -566,6 +587,12 @@ def import_task_relations(conn: sqlite3.Connection, task_records: list[dict[str,
             if tag_gid and exists_by(conn, "Tag", "asanaGid", tag_gid):
                 insert_or_update(conn, "TaskTag", ["taskId", "tagGid"], {"id": new_id(), "taskId": task_id, "tagGid": tag_gid})
 
+        if boolv(t.get("completed")):
+            conn.execute(
+                'UPDATE "Task" SET "localStatus" = ?, "updatedAt" = ? WHERE id = ?',
+                ("FINISHED", now_iso(), task_id),
+            )
+
         for cf in t.get("custom_fields") or []:
             cf_gid = cf.get("gid")
             if not cf_gid:
@@ -575,6 +602,14 @@ def import_task_relations(conn: sqlite3.Connection, task_records: list[dict[str,
                 continue
             fixed_value = task_fixed_field_value(fixed_key, cf)
             if fixed_value is None:
+                continue
+            if fixed_key == "status":
+                mika_status = mika_status_from_asana(fixed_value)
+                if mika_status is not None and not boolv(t.get("completed")):
+                    conn.execute(
+                        'UPDATE "Task" SET "localStatus" = ?, "updatedAt" = ? WHERE id = ?',
+                        (mika_status, now_iso(), task_id),
+                    )
                 continue
             if fixed_key in table_columns(conn, "Task"):
                 conn.execute(

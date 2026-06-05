@@ -1,13 +1,18 @@
-import { ChevronLeft, ChevronRight, LogOut, Menu, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, Menu, RefreshCw, Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import type { UpdaterState } from "../../hooks/useUpdater";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { Button } from "../ui/button";
 import { NotificationBell } from "./NotificationBell";
 
-export function Header() {
+interface HeaderProps {
+  updater: UpdaterState;
+}
+
+export function Header({ updater }: HeaderProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
@@ -66,6 +71,17 @@ export function Header() {
         </form>
       </div>
       <div className="flex items-center gap-2">
+        {updater.isElectron ? (
+          <Button
+            variant="ghost"
+            className="h-9 w-9 px-0"
+            onClick={updater.checkNow}
+            disabled={updater.status === "checking"}
+            title={updater.status === "checking" ? "Verificando atualizacoes" : "Verificar atualizacoes"}
+          >
+            <RefreshCw size={17} className={updater.status === "checking" ? "animate-spin" : undefined} />
+          </Button>
+        ) : null}
         <NotificationBell />
         {user ? (
           <button

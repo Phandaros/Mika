@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import {
   addMonths,
   eachDayOfInterval,
@@ -15,10 +15,11 @@ import {
   startOfWeek
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
-import { Priority, TaskStatus, type Task, type UpdateTaskRequest } from "shared";
+import { CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
+import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
+import { useProjects } from "../../hooks/useProjects";
 import { useUpdateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
@@ -31,6 +32,7 @@ import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
 
@@ -117,6 +119,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const projectId = visibleTask?.discipline?.projectId ?? "";
+  const { data: projects = [] } = useProjects();
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
@@ -367,7 +370,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const fixedEstimatedTime = visibleTask.estimatedTime ?? visibleTask.estimatedDays ?? fieldNumberValue(visibleCustomFields.find(isEstimatedTimeField));
   const fixedConclusionDays = visibleTask.conclusionDays ?? fieldNumberValue(completionDaysField);
   const fixedStage = visibleTask.stage ?? fieldDisplayValue(stageField);
-
   function requestClose() {
     setIsOpen(false);
     if (closePanelTimeoutRef.current != null) {
@@ -454,6 +456,20 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
 
           <TaskFixedFieldGrid
             fields={[
+              {
+                key: "projects",
+                label: "Projetos",
+                render: () => (
+                  <EditableProjectsField
+                    projects={projects}
+                    selectedMemberships={visibleTask.projects?.map((project) => ({
+                      projectId: project.id,
+                      sectionId: project.sectionId ?? null
+                    })) ?? []}
+                    onSave={(projectMemberships) => void patchTask({ projectMemberships })}
+                  />
+                )
+              },
               {
                 key: "status",
                 label: "Status",
@@ -766,6 +782,130 @@ function FieldNumber({ value }: { value: number | null | undefined }) {
 
 function EmptyField() {
   return <span className="text-[13px] text-[--color-text-muted]">—</span>;
+}
+
+function EditableProjectsField({
+  projects,
+  selectedMemberships,
+  onSave
+}: {
+  projects: Project[];
+  selectedMemberships: NonNullable<UpdateTaskRequest["projectMemberships"]>;
+  onSave: (value: NonNullable<UpdateTaskRequest["projectMemberships"]>) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selectedByProjectId = useMemo(
+    () => new Map(selectedMemberships.map((membership) => [membership.projectId, membership])),
+    [selectedMemberships]
+  );
+  const selectedIds = useMemo(() => new Set(selectedByProjectId.keys()), [selectedByProjectId]);
+  const selectedNames = projects.filter((project) => selectedIds.has(project.id)).map((project) => project.name);
+  const filteredProjects = useMemo(() => {
+    const normalizedQuery = normalizeFieldName(query);
+
+    return projects
+      .filter((project) => !normalizedQuery || normalizeFieldName(project.name).includes(normalizedQuery))
+      .sort((a, b) => {
+        const selectedDelta = Number(selectedIds.has(b.id)) - Number(selectedIds.has(a.id));
+        return selectedDelta || a.name.localeCompare(b.name, "pt-BR");
+      });
+  }, [projects, query, selectedIds]);
+
+  function toggleProject(projectId: string) {
+    const current = selectedByProjectId.get(projectId);
+    const next = selectedMemberships.filter((membership) => membership.projectId !== projectId);
+
+    if (!current) {
+      next.push({ projectId, sectionId: null });
+    }
+
+    onSave(next);
+  }
+
+  function updateProjectSection(projectId: string, sectionId: string | null) {
+    const exists = selectedByProjectId.has(projectId);
+    const next = selectedMemberships.map((membership) =>
+      membership.projectId === projectId ? { ...membership, sectionId } : membership
+    );
+
+    if (!exists) {
+      next.push({ projectId, sectionId });
+    }
+
+    onSave(next);
+  }
+
+  return (
+    <Popover onOpenChange={(open) => !open && setQuery("")}>
+      <PopoverTrigger asChild>
+        <Button variant="secondary" className={cn(compactSelectTriggerClassName, "max-w-full")}>
+          <span className="min-w-0 truncate text-text-primary">
+            {selectedNames.length > 0 ? selectedNames.join(", ") : "Selecionar"}
+          </span>
+          {selectedNames.length > 1 ? (
+            <span className="ml-2 shrink-0 rounded bg-bg-3 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
+              {selectedNames.length}
+            </span>
+          ) : null}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(420px,calc(100vw-32px))] overflow-x-hidden p-2">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Buscar projeto..."
+          className="h-9"
+          autoFocus
+        />
+        <div className="mt-2 max-h-72 overflow-y-auto overscroll-contain">
+          {filteredProjects.length > 0 ? (
+            <div className="grid gap-1">
+              {filteredProjects.map((project) => {
+                const selected = selectedIds.has(project.id);
+                const sections = project.sections ?? project.disciplines ?? [];
+                const membership = selectedByProjectId.get(project.id);
+
+                return (
+                  <div
+                    key={project.id}
+                    className={cn(
+                      "grid min-w-0 gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm text-text-primary transition hover:bg-surface-hover",
+                      selected && "bg-surface-hover"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleProject(project.id)}
+                      className="flex min-h-7 w-full min-w-0 items-center gap-2 overflow-hidden text-left font-semibold"
+                    >
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                        {selected ? <Check size={15} className="text-brand-orange" /> : null}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{project.name}</span>
+                    </button>
+                    {selected ? (
+                      <SearchableSelect
+                        value={membership?.sectionId ?? "none"}
+                        options={[
+                          { value: "none", label: "Sem secao" },
+                          ...sections.map((section) => ({ value: section.id, label: section.name }))
+                        ]}
+                        triggerClassName="h-8 min-w-0 text-xs"
+                        searchPlaceholder="Buscar secao..."
+                        onValueChange={(value) => updateProjectSection(project.id, value === "none" ? null : value)}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="px-3 py-6 text-center text-sm text-text-muted">Nenhum projeto encontrado</div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function EditableStatusField({ value, onSave }: { value: TaskStatus; onSave: (value: TaskStatus) => void }) {

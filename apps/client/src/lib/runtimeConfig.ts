@@ -1,3 +1,5 @@
+import type { DownloadProgress, UpdateInfo } from "shared";
+
 const DEFAULT_SERVER_HOST = (import.meta.env.VITE_DEFAULT_SERVER_HOST as string | undefined)?.trim() || "";
 const SERVER_PORT = "3001";
 
@@ -5,21 +7,23 @@ interface DesktopApi {
   isDesktop: true;
   getServerUrl: () => Promise<string>;
   setServerUrl: (serverUrl: string) => Promise<string>;
-  onUpdateEvent: (listener: (updateEvent: DesktopUpdateEvent) => void) => () => void;
-  restartAndInstallUpdate: () => Promise<void>;
 }
 
-export type DesktopUpdateEvent =
-  | { type: "checking" }
-  | { type: "available"; version: string }
-  | { type: "not-available"; version: string }
-  | { type: "download-progress"; percent: number }
-  | { type: "downloaded"; version: string }
-  | { type: "error"; message: string };
+interface UpdaterApi {
+  checkForUpdates: () => Promise<void>;
+  installUpdate: (fileName: string) => Promise<void>;
+  onUpdateAvailable: (callback: (info: UpdateInfo) => void) => void;
+  onUpToDate: (callback: (versionInfo: { version: string }) => void) => void;
+  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
+  onReadyToInstall: (callback: (fileInfo: { filePath: string }) => void) => void;
+  onError: (callback: (error: { message: string }) => void) => void;
+  removeAllListeners: () => void;
+}
 
 declare global {
   interface Window {
     mkProjetos?: DesktopApi;
+    updaterAPI?: UpdaterApi;
   }
 }
 

@@ -21,6 +21,8 @@ const persistedTaskStatusSchema = z.nativeEnum(TaskStatus).refine((status) => st
 const taskSchema = z.object({
   title: z.string().min(2),
   description: z.string().nullable().optional(),
+  projectId: z.string().nullable().optional(),
+  sectionId: z.string().nullable().optional(),
   status: persistedTaskStatusSchema.optional(),
   priority: z.nativeEnum(Priority).optional(),
   assigneeId: z.string().nullable().optional(),
@@ -45,6 +47,11 @@ const createTaskSchema = taskSchema.extend({
 });
 
 const updateTaskSchema = taskSchema.partial().extend({
+  projectIds: z.array(z.string()).min(1).optional(),
+  projectMemberships: z.array(z.object({
+    projectId: z.string(),
+    sectionId: z.string().nullable().optional()
+  })).optional(),
   customFieldValues: z.array(z.object({
     id: z.string().optional(),
     mikaKey: z.string().optional(),
@@ -64,6 +71,7 @@ router.use(auth);
 router.get("/sections/:sectionId/tasks", listTasks);
 router.get("/disciplines/:disciplineId/tasks", listTasks);
 router.get("/tasks/:id", getTaskById);
+router.post("/tasks", validateBody(createTaskSchema), createTask);
 router.post("/sections/:sectionId/tasks", validateBody(createTaskSchema), createTask);
 router.post("/disciplines/:disciplineId/tasks", validateBody(createTaskSchema), createTask);
 router.patch("/tasks/:id", validateBody(updateTaskSchema), updateTask);

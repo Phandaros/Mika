@@ -6,6 +6,7 @@ import logoUrl from "../assets/logo.svg";
 import { useAuth } from "../hooks/useAuth";
 import { desktopServerPlaceholder, getSocketBaseUrl, updateDesktopServerUrl } from "../lib/runtimeConfig";
 import { resetNotificationSocket } from "../lib/socket";
+import { getLastLoginEmail } from "../store/authStore";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
@@ -32,7 +33,7 @@ function loginErrorMessage(error: unknown, isDesktop: boolean): string {
 export function LoginPage() {
   const navigate = useNavigate();
   const { login, user } = useAuth();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => getLastLoginEmail());
   const [password, setPassword] = useState("");
   const [serverUrl, setServerUrl] = useState(getSocketBaseUrl());
   const [loading, setLoading] = useState(false);

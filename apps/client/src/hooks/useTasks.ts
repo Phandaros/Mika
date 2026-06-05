@@ -168,6 +168,9 @@ function patchTaskForOptimisticUpdate(task: Task, payload: UpdateTaskRequest): T
     ...(payload.maxDeadline !== undefined ? { maxDeadline: payload.maxDeadline } : {}),
     ...(payload.conclusionDays !== undefined ? { conclusionDays: payload.conclusionDays } : {}),
     ...(payload.stage !== undefined ? { stage: payload.stage } : {}),
+    ...(payload.projectIds !== undefined
+      ? { projects: task.projects?.filter((project) => payload.projectIds?.includes(project.id)) }
+      : {}),
   };
 }
 
@@ -366,7 +369,9 @@ export function useTasks(sectionId: string | undefined) {
 export function useCreateTask(projectId: string, sectionId: string) {
   return useMutation({
     mutationFn: async (payload: CreateTaskRequest) => {
-      const response = await api.post<TaskResponse>(`/sections/${sectionId}/tasks`, payload);
+      const response = sectionId
+        ? await api.post<TaskResponse>(`/sections/${sectionId}/tasks`, payload)
+        : await api.post<TaskResponse>("/tasks", payload);
       return response.data.task;
     },
     onMutate: async (payload) => {
@@ -375,7 +380,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
       const previousProject = queryClient.getQueryData<Project>(["projects", projectId]);
       const optimisticTask: Task = {
         id: `optimistic-${Date.now()}`,
-        disciplineId: sectionId,
+        disciplineId: sectionId || "uncategorized",
         title: payload.title,
         description: payload.description ?? null,
         status: payload.status ?? TaskStatusValue.TODO,
@@ -442,8 +447,12 @@ export function useCreateTask(projectId: string, sectionId: string) {
       });
     },
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
-      await queryClient.invalidateQueries({ queryKey: ["sections", sectionId, "tasks"] });
+      if (projectId) {
+        await queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
+      }
+      if (sectionId) {
+        await queryClient.invalidateQueries({ queryKey: ["sections", sectionId, "tasks"] });
+      }
       invalidateWorkloadTaskQueries(projectId);
     }
   });
@@ -503,8 +512,8 @@ export function useUpdateTask(projectId: string) {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
     },
-    onSettled: async () => {
-      if (!projectId) {
+    onSettled: async (_data, _error, variables) => {
+      if (!projectId || variables.payload.projectIds !== undefined || variables.payload.projectMemberships !== undefined) {
         await queryClient.invalidateQueries({ queryKey: ["projects"] });
       }
     }

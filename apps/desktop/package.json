@@ -7,17 +7,18 @@
   "scripts": {
     "prebuild": "pnpm --filter client build",
     "dev": "tsc -p tsconfig.json && node -e \"const url=process.env.VITE_DEV_SERVER_URL||'http://localhost:5173'; const start=Date.now(); const retry=()=>fetch(url).then(()=>process.exit(0)).catch(()=>Date.now()-start>30000?process.exit(1):setTimeout(retry,500)); retry();\" && electron .",
-    "build": "tsc -p tsconfig.json && electron-builder",
+    "build": "tsc -p tsconfig.json && electron-builder --config electron-builder.config.ts",
     "lint": "eslint src --ext .ts,.cts",
     "test": "node -e \"process.exit(0)\""
   },
   "dependencies": {
     "client": "workspace:*",
-    "electron-updater": "^6.8.3"
+    "semver": "^7.8.2"
   },
   "devDependencies": {
     "@mk/eslint-config": "workspace:*",
     "@types/node": "^22.15.21",
+    "@types/semver": "^7.7.1",
     "electron": "^42.0.0",
     "electron-builder": "^26.0.12",
     "eslint": "^8.57.1",

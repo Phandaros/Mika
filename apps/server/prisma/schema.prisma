@@ -213,7 +213,8 @@ model Task {
   numSubtasks    Int      @default(0)
 
   /// Campo local opcional para sua aplicação, sem depender do Asana.
-  localStatus String?
+  /// Status Mika opcional, preservado na coluna legado `localStatus`.
+  mikaStatus String? @map("localStatus")
   priority    String?
 
   /// Datas completas do Asana.

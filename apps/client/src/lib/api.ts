@@ -32,7 +32,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isRefreshRoute) {
       originalRequest._retry = true;
-      const refreshed = await useAuthStore.getState().refreshSession();
+      const refreshed = await useAuthStore.getState().refreshSession({ silent: true });
 
       if (refreshed) {
         const token = useAuthStore.getState().accessToken;

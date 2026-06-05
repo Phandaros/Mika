@@ -7,9 +7,9 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-  type WheelEvent as ReactWheelEvent
+  type ReactNode
 } from "react";
 import {
   addDays,
@@ -20,11 +20,13 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Priority, Role, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { Copy, Eye, Filter, Group, Hash, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, Eye, Filter, Group, Hash, MoreHorizontal, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { cn, toDateOnly } from "../../lib/utils";
+import { workloadTaskLabel } from "../../lib/workloadTaskLabel";
+import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { taskStatusLabels } from "../shared/Chip";
 import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../shared/statusVisuals";
@@ -94,6 +96,12 @@ type WorkloadRow = {
   positioned: PositionedTask[];
   lanes: number[];
   rowH: number;
+};
+
+type EmptyCellContext = {
+  rowId: string;
+  date: string;
+  assigneeId: string | null;
 };
 
 function toYmd(value: string | null | undefined): string | null {
@@ -196,15 +204,6 @@ function statusColorVar(status: string): string {
     default:
       return "var(--color-status-todo)";
   }
-}
-
-function barLabelText(task: TaskWithDiscipline, mode: "project" | "global"): string {
-  const pn = task.discipline?.projectName;
-  if (mode === "global" && pn) {
-    return `[${pn}] ${task.title}`;
-  }
-
-  return task.title;
 }
 
 function roleLabel(role: User["role"]): string {
@@ -392,6 +391,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
   const mode = props.mode === "global" ? "global" : "project";
   const { users, isActive, onOpenTask, onTaskUpdated, updateTask } = props;
+  const openTaskCreate = useUiStore((state) => state.openTaskCreate);
   const today = startOfDay(new Date());
   const [unionFrom, setUnionFrom] = useState(() => format(addDays(today, -21), "yyyy-MM-dd"));
   const [unionTo, setUnionTo] = useState(() => format(addDays(today, 84), "yyyy-MM-dd"));
@@ -408,6 +408,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
   const [taskPendingDelete, setTaskPendingDelete] = useState<TaskWithDiscipline | null>(null);
+  const [emptyCellContext, setEmptyCellContext] = useState<EmptyCellContext | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollAdjust = useRef(0);
   const scrollReady = useRef(false);
@@ -730,6 +731,48 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   }, [maybeExtendTimeline]);
 
   useEffect(() => {
+    const el = scrollRef.current;
+
+    if (!el) {
+      return undefined;
+    }
+
+    const box = el;
+
+    function onWheel(event: WheelEvent) {
+      const shouldTranslateShiftWheel = event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX);
+
+      if (!shouldTranslateShiftWheel) {
+        cancelSmoothWheelScroll();
+        if (event.deltaX !== 0) {
+          maybeExtendTimeline(box, event.deltaX < 0 ? "left" : "right");
+        }
+        return;
+      }
+
+      if (event.deltaY === 0) {
+        return;
+      }
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      if (smoothWheelFrame.current === null) {
+        smoothWheelIntent.current = 0;
+      }
+      smoothWheelIntent.current += event.deltaY;
+      smoothWheelVelocity.current += event.deltaY * SMOOTH_WHEEL_VELOCITY_SCALE;
+
+      maybeExtendTimeline(box, event.deltaY < 0 ? "left" : "right");
+      scheduleSmoothWheelScroll();
+    }
+
+    box.addEventListener("wheel", onWheel, { passive: false });
+    return () => box.removeEventListener("wheel", onWheel);
+  }, [maybeExtendTimeline]);
+
+  useEffect(() => {
     return () => {
       if (smoothWheelFrame.current !== null) {
         window.cancelAnimationFrame(smoothWheelFrame.current);
@@ -791,34 +834,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     smoothWheelFrame.current = window.requestAnimationFrame(runSmoothWheelScroll);
   }
 
-  function handleTimelineWheel(event: ReactWheelEvent<HTMLDivElement>) {
-    const box = event.currentTarget;
-    const shouldTranslateShiftWheel = event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX);
-
-    if (!shouldTranslateShiftWheel) {
-      cancelSmoothWheelScroll();
-      if (event.deltaX !== 0) {
-        maybeExtendTimeline(box, event.deltaX < 0 ? "left" : "right");
-      }
-      return;
-    }
-
-    if (event.deltaY === 0) {
-      return;
-    }
-
-    event.preventDefault();
-
-    if (smoothWheelFrame.current === null) {
-      smoothWheelIntent.current = 0;
-    }
-    smoothWheelIntent.current += event.deltaY;
-    smoothWheelVelocity.current += event.deltaY * SMOOTH_WHEEL_VELOCITY_SCALE;
-
-    maybeExtendTimeline(box, event.deltaY < 0 ? "left" : "right");
-    scheduleSmoothWheelScroll();
-  }
-
   function handleTimelineDragOver(event: DragEvent<HTMLDivElement>) {
     if (!Array.from(event.dataTransfer.types).includes(WORKLOAD_TASK_DRAG_MIME)) {
       return;
@@ -872,6 +887,90 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
   function assigneeIdForRow(rowId: string): string | null {
     return rowId === "unassigned" ? null : rowId;
+  }
+
+  function timelineDateAtClientX(clientX: number): string | null {
+    const box = scrollRef.current;
+    if (!box) {
+      return null;
+    }
+
+    const rect = box.getBoundingClientRect();
+    const x = clientX - rect.left + box.scrollLeft;
+    const idx = Math.floor(x / DAY_W);
+    return days[idx] ?? null;
+  }
+
+  function handleEmptyRowContextMenu(event: ReactMouseEvent<HTMLDivElement>, row: WorkloadRow) {
+    if (event.target instanceof Element && event.target.closest("[data-workload-task-bar='true']")) {
+      return;
+    }
+
+    const date = timelineDateAtClientX(event.clientX);
+    if (!date) {
+      setEmptyCellContext(null);
+      return;
+    }
+
+    setEmptyCellContext({
+      rowId: row.id,
+      date,
+      assigneeId: grouping === "assignee" ? assigneeIdForRow(row.id) : null
+    });
+  }
+
+  function createTaskFromEmptyCell() {
+    if (!emptyCellContext) {
+      return;
+    }
+
+    openTaskCreate({
+      projectId,
+      assigneeId: emptyCellContext.assigneeId,
+      startDate: emptyCellContext.date,
+      dueDate: emptyCellContext.date
+    });
+  }
+
+  function recalculatedDueDate(startDate: string, estimatedDays: number): string {
+    const targetWorkDays = Math.max(1, Math.ceil(estimatedDays));
+    let current = startDate;
+    let counted = 0;
+
+    while (counted < targetWorkDays) {
+      if (!nonWorkingDays.has(current)) {
+        counted += 1;
+      }
+
+      if (counted < targetWorkDays) {
+        current = addCalendarDaysYmd(current, 1);
+      }
+    }
+
+    return current;
+  }
+
+  async function recalculateTaskDates(task: TaskWithDiscipline) {
+    const startDate = toYmd(task.startDate);
+    const estimatedDays = task.estimatedDays ?? task.estimatedTime ?? null;
+    if (!startDate || estimatedDays == null || estimatedDays <= 0) {
+      return;
+    }
+
+    const dueDate = recalculatedDueDate(startDate, estimatedDays);
+    setPendingTaskMoves((current) => ({
+      ...current,
+      [task.id]: { startDate, dueDate }
+    }));
+
+    try {
+      const updatedTask = await updateTask.mutateAsync({ id: task.id, payload: { startDate, dueDate } });
+      onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
+      toast.success("Datas recalculadas");
+    } catch {
+      setPendingTaskMoves((current) => removePendingTaskMove(current, task.id));
+      toast.error("Nao foi possivel recalcular as datas");
+    }
   }
 
   function workloadRowAtClientY(clientY: number): { assigneeId: string | null; rowTop: number } | null {
@@ -1078,6 +1177,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           const left = startIdx * DAY_W + 2;
           const previewLeft = activeDragPreview ? (startIdx + activeDragPreview.deltaDays) * DAY_W + 2 : left;
           const width = span * DAY_W - 4;
+          const estimatedDays = p.task.estimatedDays ?? p.task.estimatedTime ?? null;
+          const canRecalculateDates = Boolean(toYmd(p.task.startDate) && estimatedDays != null && estimatedDays > 0);
 
           if (width <= 0 || left + width < 0 || left > timelineWidth) {
             return null;
@@ -1103,7 +1204,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               <ContextMenuTrigger asChild>
                 <button
                   type="button"
-                  title={barLabelText(p.task, mode)}
+                  data-workload-task-bar="true"
+                  title={workloadTaskLabel(p.task, mode)}
                   style={{
                     position: "absolute",
                     left,
@@ -1134,8 +1236,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
                     handleBarPointerDown(e, p.task, b);
                   }}
+                  onContextMenu={() => setEmptyCellContext(null)}
                 >
-                  <span className="line-clamp-1">{barLabelText(p.task, mode)}</span>
+                  <span className="line-clamp-1">{workloadTaskLabel(p.task, mode)}</span>
                 </button>
               </ContextMenuTrigger>
               <ContextMenuContent>
@@ -1146,6 +1249,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 <ContextMenuItem onSelect={() => void copyTaskLink(p.task)}>
                   <Copy className="h-4 w-4" />
                   Copiar link da tarefa
+                </ContextMenuItem>
+                <ContextMenuItem disabled={!canRecalculateDates} onSelect={() => void recalculateTaskDates(p.task)}>
+                  <RefreshCw className="h-4 w-4" />
+                  Recalcular datas
                 </ContextMenuItem>
                 <ContextMenuSeparator />
                 <ContextMenuItem variant="destructive" onSelect={() => setTaskPendingDelete(p.task)}>
@@ -1364,7 +1471,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               data-testid="workload-timeline-scroll"
               className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain"
               onPointerDownCapture={cancelSmoothWheelScroll}
-              onWheel={handleTimelineWheel}
               onDragOver={handleTimelineDragOver}
               onDrop={handleTimelineDrop}
             >
@@ -1439,18 +1545,28 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   {workloadRows.map((row) => {
                     const loads = buildDailyLoadsForTasks(row.rowTasks, days, nonWorkingDays);
                     return (
-                      <div
-                        key={row.id}
-                        className={cn(
-                          "flex border-b border-border-subtle transition-colors duration-150",
-                          dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-brand-orange/10"
-                        )}
-                      >
-                        <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: row.rowH }}>
-                          {renderNonWorkingBands(row.rowH, row.id)}
-                          {renderBars(row.positioned, row.lanes, loads, row.id)}
-                        </div>
-                      </div>
+                      <ContextMenu key={row.id}>
+                        <ContextMenuTrigger asChild>
+                          <div
+                            className={cn(
+                              "flex border-b border-border-subtle transition-colors duration-150",
+                              dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-brand-orange/10"
+                            )}
+                            onContextMenu={(event) => handleEmptyRowContextMenu(event, row)}
+                          >
+                            <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: row.rowH }}>
+                              {renderNonWorkingBands(row.rowH, row.id)}
+                              {renderBars(row.positioned, row.lanes, loads, row.id)}
+                            </div>
+                          </div>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem disabled={emptyCellContext?.rowId !== row.id} onSelect={createTaskFromEmptyCell}>
+                            <Plus className="h-4 w-4" />
+                            Criar tarefa aqui
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     );
                   })}
 
@@ -1464,7 +1580,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         open={undatedPanelOpen}
         onClose={() => setUndatedPanelOpen(false)}
         tasks={undatedTasks}
-        labelForTask={(task) => barLabelText(task, mode)}
+        labelForTask={(task) => workloadTaskLabel(task, mode)}
         statusColorFor={statusColorVar}
         onOpenTask={(task) => {
           setUndatedPanelOpen(false);

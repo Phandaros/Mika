@@ -2084,7 +2084,7 @@ export const TaskScalarFieldEnum = {
   liked: 'liked',
   numLikes: 'numLikes',
   numSubtasks: 'numSubtasks',
-  localStatus: 'localStatus',
+  mikaStatus: 'mikaStatus',
   priority: 'priority',
   dueAt: 'dueAt',
   completedAtAsana: 'completedAtAsana',

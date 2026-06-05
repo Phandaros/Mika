@@ -57,6 +57,13 @@ export interface Task {
   assignee?: User | null;
   creator?: User;
   comments?: Comment[];
+  projects?: Array<{
+    id: string;
+    asanaGid: string;
+    name: string;
+    sectionId?: string;
+    sectionName?: string;
+  }>;
   discipline?: {
     id: string;
     name: string;
@@ -70,6 +77,8 @@ export interface Task {
 export interface CreateTaskRequest {
   title: string;
   description?: string | null;
+  projectId?: string | null;
+  sectionId?: string | null;
   status?: TaskStatus;
   priority?: Priority;
   assigneeId?: string | null;
@@ -104,6 +113,11 @@ export interface UpdateTaskRequest {
   maxDeadline?: string | null;
   conclusionDays?: number | null;
   stage?: string | null;
+  projectIds?: string[];
+  projectMemberships?: Array<{
+    projectId: string;
+    sectionId?: string | null;
+  }>;
   customFieldValues?: Array<{
     id?: string;
     mikaKey?: string;

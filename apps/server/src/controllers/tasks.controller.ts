@@ -2,7 +2,8 @@ import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
 import { Priority, TaskStatus, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
-import { makeLocalAsanaGid, normalizePersistedTaskStatus, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
+import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
+import { completionDateForStatus, taskStatusCompletes, writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
 
@@ -26,6 +27,13 @@ interface TaskBody {
   maxDeadline?: string | null;
   conclusionDays?: number | null;
   stage?: string | null;
+  projectId?: string | null;
+  sectionId?: string | null;
+  projectIds?: string[];
+  projectMemberships?: Array<{
+    projectId: string;
+    sectionId?: string | null;
+  }>;
   customFieldValues?: Array<{
     id?: string;
     settingId?: string;
@@ -54,19 +62,8 @@ function dateOnly(value: string | null | undefined): string | null | undefined {
   return value.slice(0, 10);
 }
 
-const completingTaskStatuses = new Set<TaskStatusValue>([TaskStatus.IN_ANALYSIS, TaskStatus.AWAITING_REVIEW, TaskStatus.FINISHED]);
-
-function taskStatusCompletes(status: TaskStatusValue): boolean {
-  return completingTaskStatuses.has(status);
-}
-
-function completionDateForStatus(status: TaskStatusValue, currentCompletedAt?: Date | null): Date | null {
-  return taskStatusCompletes(status) ? currentCompletedAt ?? new Date() : null;
-}
-
 function writableStatus(value: TaskStatusValue | string | null | undefined): TaskStatusValue {
-  const normalized = normalizePersistedTaskStatus(value) as TaskStatusValue | null;
-  return normalized ?? TaskStatus.TODO;
+  return writableTaskStatus(value);
 }
 
 async function assigneeGid(tx: Prisma.TransactionClient, userId: string | null | undefined): Promise<string | null | undefined> {
@@ -246,6 +243,183 @@ async function taskFieldCatalog() {
   });
 }
 
+async function syncTaskProjectMemberships(
+  tx: Prisma.TransactionClient,
+  taskId: string,
+  projectIds: string[] | undefined
+): Promise<void> {
+  if (projectIds === undefined) {
+    return;
+  }
+
+  const uniqueProjectIds = [...new Set(projectIds)];
+  if (uniqueProjectIds.length === 0) {
+    throw new AppError(400, "A tarefa precisa estar vinculada a pelo menos um projeto");
+  }
+
+  const projects = await tx.project.findMany({
+    where: { id: { in: uniqueProjectIds } },
+    select: { id: true, asanaGid: true, name: true }
+  });
+
+  if (projects.length !== uniqueProjectIds.length) {
+    throw new AppError(400, "Um ou mais projetos selecionados nao existem");
+  }
+
+  const targetProjectGids = new Set(projects.map((project) => project.asanaGid));
+  const existingMemberships = await tx.taskMembership.findMany({
+    where: { taskId },
+    include: {
+      section: true,
+      project: true
+    }
+  });
+
+  for (const membership of existingMemberships) {
+    const membershipProjectGid = membership.section?.projectGid ?? membership.projectGid;
+    if (!membershipProjectGid || !targetProjectGids.has(membershipProjectGid)) {
+      await tx.taskMembership.delete({ where: { id: membership.id } });
+    }
+  }
+
+  const remainingProjectGids = new Set(
+    existingMemberships
+      .map((membership) => membership.section?.projectGid ?? membership.projectGid)
+      .filter((projectGid): projectGid is string => Boolean(projectGid && targetProjectGids.has(projectGid)))
+  );
+
+  for (const project of projects) {
+    if (remainingProjectGids.has(project.asanaGid)) {
+      continue;
+    }
+
+    await tx.taskMembership.create({
+      data: {
+        taskId,
+        projectGid: project.asanaGid,
+        projectName: project.name,
+        sectionGid: null,
+        sectionName: null
+      }
+    });
+  }
+}
+
+async function syncTaskProjectSectionMemberships(
+  tx: Prisma.TransactionClient,
+  taskId: string,
+  projectMemberships: Array<{ projectId: string; sectionId?: string | null }> | undefined
+): Promise<void> {
+  if (projectMemberships === undefined) {
+    return;
+  }
+
+  const uniqueMemberships = [...new Map(projectMemberships.map((item) => [`${item.projectId}:${item.sectionId ?? ""}`, item])).values()];
+  const projectIds = [...new Set(uniqueMemberships.map((item) => item.projectId))];
+  const sectionIds = [...new Set(uniqueMemberships.map((item) => item.sectionId).filter((id): id is string => Boolean(id)))];
+
+  const [projects, sections] = await Promise.all([
+    tx.project.findMany({
+      where: { id: { in: projectIds } },
+      select: { id: true, asanaGid: true, name: true }
+    }),
+    sectionIds.length
+      ? tx.section.findMany({
+          where: { id: { in: sectionIds } },
+          include: { project: { select: { id: true, asanaGid: true, name: true } } }
+        })
+      : Promise.resolve([])
+  ]);
+
+  if (projects.length !== projectIds.length) {
+    throw new AppError(400, "Um ou mais projetos selecionados nao existem");
+  }
+
+  if (sections.length !== sectionIds.length) {
+    throw new AppError(400, "Uma ou mais secoes selecionadas nao existem");
+  }
+
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const sectionById = new Map(sections.map((section) => [section.id, section]));
+  await tx.taskMembership.deleteMany({ where: { taskId } });
+
+  for (const membership of uniqueMemberships) {
+    const project = projectById.get(membership.projectId);
+    if (!project) {
+      continue;
+    }
+
+    const section = membership.sectionId ? sectionById.get(membership.sectionId) : null;
+    if (section && section.project.id !== project.id) {
+      throw new AppError(400, "A secao selecionada nao pertence ao projeto");
+    }
+
+    await tx.taskMembership.create({
+      data: {
+        taskId,
+        projectGid: section ? section.project.asanaGid : project.asanaGid,
+        projectName: section ? section.project.name : project.name,
+        sectionGid: section?.asanaGid ?? null,
+        sectionName: section?.name ?? null
+      }
+    });
+  }
+}
+
+async function createOptionalTaskMembership(
+  tx: Prisma.TransactionClient,
+  taskId: string,
+  body: TaskBody,
+  routeSectionId: string
+): Promise<void> {
+  const requestedSectionId = body.sectionId || routeSectionId;
+
+  if (requestedSectionId) {
+    const section = await tx.section.findUnique({
+      where: { id: requestedSectionId },
+      include: { project: true }
+    });
+
+    if (!section) {
+      throw new AppError(404, "Section not found");
+    }
+
+    await tx.taskMembership.create({
+      data: {
+        taskId,
+        projectGid: section.projectGid,
+        projectName: section.project.name,
+        sectionGid: section.asanaGid,
+        sectionName: section.name
+      }
+    });
+    return;
+  }
+
+  if (!body.projectId) {
+    return;
+  }
+
+  const project = await tx.project.findUnique({
+    where: { id: body.projectId },
+    select: { asanaGid: true, name: true }
+  });
+
+  if (!project) {
+    throw new AppError(404, "Project not found");
+  }
+
+  await tx.taskMembership.create({
+    data: {
+      taskId,
+      projectGid: project.asanaGid,
+      projectName: project.name,
+      sectionGid: null,
+      sectionName: null
+    }
+  });
+}
+
 export const listTasks: RequestHandler = async (req, res, next) => {
   try {
     const section = await prisma.section.findUnique({
@@ -305,24 +479,16 @@ export const getTaskById: RequestHandler = async (req, res, next) => {
 export const createTask: RequestHandler = async (req, res, next) => {
   try {
     const body = req.body as Required<Pick<TaskBody, "title">> & TaskBody;
+    const routeSectionId = sectionIdFromReq(req);
 
     const task = await prisma.$transaction(async (tx) => {
-      const section = await tx.section.findUnique({
-        where: { id: sectionIdFromReq(req) },
-        include: { project: true }
-      });
-
-      if (!section) {
-        throw new AppError(404, "Section not found");
-      }
-
       const status = writableStatus(body.status);
       const createdTask = await tx.task.create({
         data: {
           asanaGid: makeLocalAsanaGid("task"),
           name: body.title,
           notes: body.description,
-          localStatus: status,
+          mikaStatus: status,
           priority: body.priority ?? Priority.MEDIUM,
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
@@ -339,15 +505,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
         }
       });
 
-      await tx.taskMembership.create({
-        data: {
-          taskId: createdTask.id,
-          projectGid: section.projectGid,
-          projectName: section.project.name,
-          sectionGid: section.asanaGid,
-          sectionName: section.name
-        }
-      });
+      await createOptionalTaskMembership(tx, createdTask.id, body, routeSectionId);
 
       if (body.customFieldValues) {
         for (const field of body.customFieldValues) {
@@ -369,7 +527,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
             }
           });
 
-          if (!setting || setting.projectId !== section.project.id) {
+          if (!setting || (body.projectId && setting.projectId !== body.projectId)) {
             continue;
           }
 
@@ -442,12 +600,12 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { assigneeGid: true, localStatus: true, completedAtAsana: true }
+      select: { assigneeGid: true, mikaStatus: true, completedAtAsana: true }
     });
 
     const task = await prisma.$transaction(async (tx) => {
       const status = body.status === undefined ? undefined : writableStatus(body.status);
-      const effectiveStatus = status ?? writableStatus(existing?.localStatus);
+      const effectiveStatus = status ?? writableStatus(existing?.mikaStatus);
       const completed = taskStatusCompletes(effectiveStatus);
 
       await tx.task.update({
@@ -455,7 +613,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
         data: {
           name: body.title,
           notes: body.description,
-          localStatus: status,
+          mikaStatus: status,
           priority: body.priority,
           assigneeGid: await assigneeGid(tx, body.assigneeId),
           startOn: dateOnly(body.startDate),
@@ -471,6 +629,12 @@ export const updateTask: RequestHandler = async (req, res, next) => {
           completedAtAsana: completionDateForStatus(effectiveStatus, existing?.completedAtAsana)
         }
       });
+
+      if (body.projectMemberships !== undefined) {
+        await syncTaskProjectSectionMemberships(tx, taskId, body.projectMemberships);
+      } else {
+        await syncTaskProjectMemberships(tx, taskId, body.projectIds);
+      }
 
       if (body.customFieldValues) {
         for (const field of body.customFieldValues) {
@@ -537,7 +701,7 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        localStatus: status,
+        mikaStatus: status,
         completed: taskStatusCompletes(status),
         completedAtAsana: completionDateForStatus(status)
       },
@@ -569,7 +733,7 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        localStatus: status,
+        mikaStatus: status,
         completed: taskStatusCompletes(status),
         completedAtAsana: completionDateForStatus(status)
       },

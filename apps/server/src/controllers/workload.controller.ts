@@ -70,6 +70,10 @@ function rangeOverlaps(bounds: { start: string; end: string }, from: string, to:
 }
 
 function taskHasActiveProjectMembership(task: GlobalWorkloadTaskRecord): boolean {
+  if (task.memberships.length === 0) {
+    return true;
+  }
+
   return task.memberships.some((m) => {
     const proj = m.section?.project ?? m.project;
     return Boolean(proj && !proj.archived);
@@ -78,6 +82,10 @@ function taskHasActiveProjectMembership(task: GlobalWorkloadTaskRecord): boolean
 
 function taskMatchesScope(task: GlobalWorkloadTaskRecord, scope: WorkloadScope): boolean {
   if (scope === "general") {
+    if (task.memberships.length === 0) {
+      return true;
+    }
+
     return task.memberships.some((m) => {
       const proj = m.section?.project ?? m.project;
       return Boolean(proj && !proj.archived);
@@ -147,11 +155,20 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
     const tasks = await prisma.task.findMany({
       where: {
         parentId: null,
-        memberships: {
-          some: {
-            OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }]
-          }
-        }
+        ...(scope === "general"
+          ? {
+              OR: [
+                { memberships: { none: {} } },
+                { memberships: { some: { OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }] } } }
+              ]
+            }
+          : {
+              memberships: {
+                some: {
+                  OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }]
+                }
+              }
+            })
       },
       include: globalWorkloadTaskInclude
     });
@@ -181,11 +198,7 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
     const dtos = filtered
       .map((task) => {
         const fallback = resolveGlobalWorkloadFallback(task);
-        if (!fallback) {
-          return null;
-        }
-
-        return toTaskDto(task, fallback, taskFieldCatalog);
+        return toTaskDto(task, fallback ?? undefined, taskFieldCatalog);
       })
       .filter((row): row is NonNullable<typeof row> => row !== null);
 

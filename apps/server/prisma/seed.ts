@@ -113,7 +113,7 @@ async function main(): Promise<void> {
         asanaGid: makeLocalAsanaGid("task"),
         name: row.name,
         notes: "Tarefa exemplo criada pelo seed.",
-        localStatus: row.status,
+        mikaStatus: row.status,
         priority: row.priority,
         assigneeGid: admin.asanaGid,
         completed: [TaskStatus.IN_ANALYSIS, TaskStatus.AWAITING_REVIEW, TaskStatus.FINISHED].includes(row.status),

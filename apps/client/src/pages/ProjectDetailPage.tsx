@@ -290,8 +290,7 @@ export function ProjectDetailPage() {
             Editar projeto
           </Button>
           <Button
-            onClick={() => openTaskCreate({ projectId, sectionId: taskFormDiscipline?.id })}
-            disabled={!taskFormDiscipline}
+            onClick={() => openTaskCreate({ projectId })}
           >
             <Plus size={16} />
             Criar tarefa

@@ -130,7 +130,11 @@ const workloadTaskInclude = {
   assignee: taskInclude.assignee,
   memberships: {
     include: {
-      section: true,
+      section: {
+        include: {
+          project: true
+        }
+      },
       project: true
     }
   },

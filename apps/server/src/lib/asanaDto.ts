@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "../generated/prisma/client.js";
-import { DisciplineStatus, DisciplineType, Priority, ProjectStatus, TaskStatus } from "./enums.js";
+import { DisciplineStatus, DisciplineType, Priority, ProjectStatus } from "./enums.js";
+import { publicTaskStatus } from "./taskStatus.js";
 
 export const userSelect = {
   id: true,
@@ -23,7 +24,11 @@ export const taskInclude = {
   assignee: { select: userSelect },
   memberships: {
     include: {
-      section: true,
+      section: {
+        include: {
+          project: true
+        }
+      },
       project: true
     }
   },
@@ -204,60 +209,6 @@ export function normalizeRole(role: string): string {
   return ["ADMIN", "COORDINATOR", "DESIGNER", "INTERN"].includes(role) ? role : "DESIGNER";
 }
 
-export function normalizeStatus(task: Pick<TaskRecord, "completed" | "localStatus" | "assigneeStatus">): string {
-  if (task.localStatus) {
-    const normalized = normalizePersistedTaskStatus(task.localStatus);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  if (task.assigneeStatus === "upcoming") {
-    return TaskStatus.TODO;
-  }
-
-  if (task.assigneeStatus === "later") {
-    return TaskStatus.ON_SCHEDULE;
-  }
-
-  return TaskStatus.TODO;
-}
-
-export function normalizePersistedTaskStatus(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-
-  if (Object.values(TaskStatus).includes(value as (typeof TaskStatus)[keyof typeof TaskStatus]) && value !== TaskStatus.OVERDUE) {
-    return value;
-  }
-
-  const legacyStatusMap: Record<string, string> = {
-    BACKLOG: TaskStatus.ON_SCHEDULE,
-    TODO: TaskStatus.TODO,
-    IN_PROGRESS: TaskStatus.IN_PROGRESS,
-    IN_REVIEW: TaskStatus.AWAITING_REVIEW,
-    DONE: TaskStatus.FINISHED
-  };
-
-  return legacyStatusMap[value] ?? null;
-}
-
-function todayDateOnly(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function publicTaskStatus(task: Pick<TaskRecord, "completed" | "localStatus" | "assigneeStatus" | "dueOn" | "dueAt">): string {
-  const normalized = normalizeStatus(task);
-  const dueDate = dateOnlyString(task.dueOn) ?? dateOnlyFromDate(task.dueAt);
-
-  if (!task.completed && dueDate && dueDate < todayDateOnly()) {
-    return TaskStatus.OVERDUE;
-  }
-
-  return normalized;
-}
-
 export function normalizePriority(value: string | null | undefined): string {
   if (value && Object.values(Priority).includes(value as (typeof Priority)[keyof typeof Priority])) {
     return value;
@@ -274,6 +225,45 @@ function dateOnlyFromDate(value: Date | null | undefined): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
+function taskProjectDtos(task: TaskRecord) {
+  const projects = new Map<string, {
+    id: string;
+    asanaGid: string;
+    name: string;
+    sectionId?: string;
+    sectionName?: string;
+  }>();
+
+  for (const membership of task.memberships) {
+    const project = membership.section?.project ?? membership.project;
+    const asanaGid = project?.asanaGid ?? membership.projectGid;
+    const name = project?.name ?? membership.projectName;
+
+    if (!asanaGid || !name) {
+      continue;
+    }
+
+    const current = projects.get(asanaGid);
+    if (!current || (!current.sectionId && membership.section)) {
+      projects.set(asanaGid, {
+        id: project?.id ?? asanaGid,
+        asanaGid,
+        name,
+        ...(membership.section
+          ? {
+              sectionId: membership.section.id,
+              sectionName: membership.section.name
+            }
+          : membership.sectionName
+            ? { sectionName: membership.sectionName }
+            : {})
+      });
+    }
+  }
+
+  return [...projects.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+}
+
 export function toTaskDto(
   task: TaskRecord,
   fallbackSection?: { id: string; name: string; projectId: string; projectName?: string | null },
@@ -281,7 +271,7 @@ export function toTaskDto(
 ) {
   const membership = task.memberships[0];
   const section = membership?.section;
-  const project = membership?.project;
+  const project = section?.project ?? membership?.project;
   const disciplineId = fallbackSection?.id ?? section?.id ?? "uncategorized";
   const disciplineName = fallbackSection?.name ?? section?.name ?? membership?.sectionName ?? "Sem secao";
   const projectId = fallbackSection?.projectId ?? project?.id ?? membership?.projectGid ?? "";
@@ -346,6 +336,7 @@ export function toTaskDto(
     comments: [],
     customFieldValues,
     tags: task.tags.map((item) => item.tag),
+    projects: taskProjectDtos(task),
     discipline: {
       id: disciplineId,
       name: disciplineName,

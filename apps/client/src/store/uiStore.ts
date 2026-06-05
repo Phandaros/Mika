@@ -8,12 +8,15 @@ interface UiState {
   taskCreateDefaults: {
     projectId?: string;
     sectionId?: string;
+    assigneeId?: string | null;
+    startDate?: string | null;
+    dueDate?: string | null;
   };
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setShortcutsDialogOpen: (open: boolean) => void;
-  openTaskCreate: (defaults?: { projectId?: string; sectionId?: string }) => void;
+  openTaskCreate: (defaults?: { projectId?: string; sectionId?: string; assigneeId?: string | null; startDate?: string | null; dueDate?: string | null }) => void;
   setTaskCreateOpen: (open: boolean) => void;
 }
 

@@ -1,8 +1,9 @@
 {
-  "appId": "br.eng.mk.mkprojetos",
+  "appId": "com.mkengenharia.mika",
   "productName": "Mika",
+  "artifactName": "MikaSetup-${version}.${ext}",
   "directories": {
-    "output": "release"
+    "output": "dist"
   },
   "files": [
     "dist/**",
@@ -14,20 +15,22 @@
       "to": "client"
     }
   ],
-  "publish": [
-    {
-      "provider": "generic",
-      "url": "http://localhost:3001/binaries/desktop/win"
-    }
-  ],
+  "publish": null,
   "win": {
-    "target": "nsis",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
     "signAndEditExecutable": false,
     "forceCodeSigning": false
   },
   "nsis": {
     "oneClick": false,
-    "perMachine": true,
-    "allowToChangeInstallationDirectory": true
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Mika"
   }
 }

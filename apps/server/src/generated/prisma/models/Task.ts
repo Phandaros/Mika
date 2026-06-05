@@ -54,7 +54,7 @@ export type TaskMinAggregateOutputType = {
   liked: boolean | null
   numLikes: number | null
   numSubtasks: number | null
-  localStatus: string | null
+  mikaStatus: string | null
   priority: string | null
   dueAt: Date | null
   completedAtAsana: Date | null
@@ -89,7 +89,7 @@ export type TaskMaxAggregateOutputType = {
   liked: boolean | null
   numLikes: number | null
   numSubtasks: number | null
-  localStatus: string | null
+  mikaStatus: string | null
   priority: string | null
   dueAt: Date | null
   completedAtAsana: Date | null
@@ -124,7 +124,7 @@ export type TaskCountAggregateOutputType = {
   liked: number
   numLikes: number
   numSubtasks: number
-  localStatus: number
+  mikaStatus: number
   priority: number
   dueAt: number
   completedAtAsana: number
@@ -177,7 +177,7 @@ export type TaskMinAggregateInputType = {
   liked?: true
   numLikes?: true
   numSubtasks?: true
-  localStatus?: true
+  mikaStatus?: true
   priority?: true
   dueAt?: true
   completedAtAsana?: true
@@ -212,7 +212,7 @@ export type TaskMaxAggregateInputType = {
   liked?: true
   numLikes?: true
   numSubtasks?: true
-  localStatus?: true
+  mikaStatus?: true
   priority?: true
   dueAt?: true
   completedAtAsana?: true
@@ -247,7 +247,7 @@ export type TaskCountAggregateInputType = {
   liked?: true
   numLikes?: true
   numSubtasks?: true
-  localStatus?: true
+  mikaStatus?: true
   priority?: true
   dueAt?: true
   completedAtAsana?: true
@@ -369,7 +369,7 @@ export type TaskGroupByOutputType = {
   liked: boolean
   numLikes: number
   numSubtasks: number
-  localStatus: string | null
+  mikaStatus: string | null
   priority: string | null
   dueAt: Date | null
   completedAtAsana: Date | null
@@ -427,7 +427,7 @@ export type TaskWhereInput = {
   liked?: Prisma.BoolFilter<"Task"> | boolean
   numLikes?: Prisma.IntFilter<"Task"> | number
   numSubtasks?: Prisma.IntFilter<"Task"> | number
-  localStatus?: Prisma.StringNullableFilter<"Task"> | string | null
+  mikaStatus?: Prisma.StringNullableFilter<"Task"> | string | null
   priority?: Prisma.StringNullableFilter<"Task"> | string | null
   dueAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   completedAtAsana?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
@@ -471,7 +471,7 @@ export type TaskOrderByWithRelationInput = {
   liked?: Prisma.SortOrder
   numLikes?: Prisma.SortOrder
   numSubtasks?: Prisma.SortOrder
-  localStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   priority?: Prisma.SortOrderInput | Prisma.SortOrder
   dueAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAtAsana?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -518,7 +518,7 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   liked?: Prisma.BoolFilter<"Task"> | boolean
   numLikes?: Prisma.IntFilter<"Task"> | number
   numSubtasks?: Prisma.IntFilter<"Task"> | number
-  localStatus?: Prisma.StringNullableFilter<"Task"> | string | null
+  mikaStatus?: Prisma.StringNullableFilter<"Task"> | string | null
   priority?: Prisma.StringNullableFilter<"Task"> | string | null
   dueAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   completedAtAsana?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
@@ -562,7 +562,7 @@ export type TaskOrderByWithAggregationInput = {
   liked?: Prisma.SortOrder
   numLikes?: Prisma.SortOrder
   numSubtasks?: Prisma.SortOrder
-  localStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  mikaStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   priority?: Prisma.SortOrderInput | Prisma.SortOrder
   dueAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAtAsana?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -605,7 +605,7 @@ export type TaskScalarWhereWithAggregatesInput = {
   liked?: Prisma.BoolWithAggregatesFilter<"Task"> | boolean
   numLikes?: Prisma.IntWithAggregatesFilter<"Task"> | number
   numSubtasks?: Prisma.IntWithAggregatesFilter<"Task"> | number
-  localStatus?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  mikaStatus?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   priority?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   dueAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Task"> | Date | string | null
   completedAtAsana?: Prisma.DateTimeNullableWithAggregatesFilter<"Task"> | Date | string | null
@@ -640,7 +640,7 @@ export type TaskCreateInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -682,7 +682,7 @@ export type TaskUncheckedCreateInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -724,7 +724,7 @@ export type TaskUpdateInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -766,7 +766,7 @@ export type TaskUncheckedUpdateInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -808,7 +808,7 @@ export type TaskCreateManyInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -843,7 +843,7 @@ export type TaskUpdateManyMutationInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -876,7 +876,7 @@ export type TaskUncheckedUpdateManyInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -926,7 +926,7 @@ export type TaskCountOrderByAggregateInput = {
   liked?: Prisma.SortOrder
   numLikes?: Prisma.SortOrder
   numSubtasks?: Prisma.SortOrder
-  localStatus?: Prisma.SortOrder
+  mikaStatus?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueAt?: Prisma.SortOrder
   completedAtAsana?: Prisma.SortOrder
@@ -969,7 +969,7 @@ export type TaskMaxOrderByAggregateInput = {
   liked?: Prisma.SortOrder
   numLikes?: Prisma.SortOrder
   numSubtasks?: Prisma.SortOrder
-  localStatus?: Prisma.SortOrder
+  mikaStatus?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueAt?: Prisma.SortOrder
   completedAtAsana?: Prisma.SortOrder
@@ -1004,7 +1004,7 @@ export type TaskMinOrderByAggregateInput = {
   liked?: Prisma.SortOrder
   numLikes?: Prisma.SortOrder
   numSubtasks?: Prisma.SortOrder
-  localStatus?: Prisma.SortOrder
+  mikaStatus?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   dueAt?: Prisma.SortOrder
   completedAtAsana?: Prisma.SortOrder
@@ -1252,7 +1252,7 @@ export type TaskCreateWithoutAssigneeInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1293,7 +1293,7 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1362,7 +1362,7 @@ export type TaskScalarWhereInput = {
   liked?: Prisma.BoolFilter<"Task"> | boolean
   numLikes?: Prisma.IntFilter<"Task"> | number
   numSubtasks?: Prisma.IntFilter<"Task"> | number
-  localStatus?: Prisma.StringNullableFilter<"Task"> | string | null
+  mikaStatus?: Prisma.StringNullableFilter<"Task"> | string | null
   priority?: Prisma.StringNullableFilter<"Task"> | string | null
   dueAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   completedAtAsana?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
@@ -1397,7 +1397,7 @@ export type TaskCreateWithoutSubtasksInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1438,7 +1438,7 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1484,7 +1484,7 @@ export type TaskCreateWithoutParentInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1525,7 +1525,7 @@ export type TaskUncheckedCreateWithoutParentInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1586,7 +1586,7 @@ export type TaskUpdateWithoutSubtasksInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1627,7 +1627,7 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1684,7 +1684,7 @@ export type TaskCreateWithoutCommentsInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1725,7 +1725,7 @@ export type TaskUncheckedCreateWithoutCommentsInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1782,7 +1782,7 @@ export type TaskUpdateWithoutCommentsInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1823,7 +1823,7 @@ export type TaskUncheckedUpdateWithoutCommentsInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1864,7 +1864,7 @@ export type TaskCreateWithoutMembershipsInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1905,7 +1905,7 @@ export type TaskUncheckedCreateWithoutMembershipsInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -1962,7 +1962,7 @@ export type TaskUpdateWithoutMembershipsInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2003,7 +2003,7 @@ export type TaskUncheckedUpdateWithoutMembershipsInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2044,7 +2044,7 @@ export type TaskCreateWithoutFollowersInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2085,7 +2085,7 @@ export type TaskUncheckedCreateWithoutFollowersInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2142,7 +2142,7 @@ export type TaskUpdateWithoutFollowersInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2183,7 +2183,7 @@ export type TaskUncheckedUpdateWithoutFollowersInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2224,7 +2224,7 @@ export type TaskCreateWithoutLikesInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2265,7 +2265,7 @@ export type TaskUncheckedCreateWithoutLikesInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2322,7 +2322,7 @@ export type TaskUpdateWithoutLikesInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2363,7 +2363,7 @@ export type TaskUncheckedUpdateWithoutLikesInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2404,7 +2404,7 @@ export type TaskCreateWithoutTagsInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2445,7 +2445,7 @@ export type TaskUncheckedCreateWithoutTagsInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2502,7 +2502,7 @@ export type TaskUpdateWithoutTagsInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2543,7 +2543,7 @@ export type TaskUncheckedUpdateWithoutTagsInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2584,7 +2584,7 @@ export type TaskCreateWithoutCustomFieldValuesInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2625,7 +2625,7 @@ export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2682,7 +2682,7 @@ export type TaskUpdateWithoutCustomFieldValuesInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2723,7 +2723,7 @@ export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2764,7 +2764,7 @@ export type TaskCreateManyAssigneeInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2798,7 +2798,7 @@ export type TaskUpdateWithoutAssigneeInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2839,7 +2839,7 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2880,7 +2880,7 @@ export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2914,7 +2914,7 @@ export type TaskCreateManyParentInput = {
   liked?: boolean
   numLikes?: number
   numSubtasks?: number
-  localStatus?: string | null
+  mikaStatus?: string | null
   priority?: string | null
   dueAt?: Date | string | null
   completedAtAsana?: Date | string | null
@@ -2948,7 +2948,7 @@ export type TaskUpdateWithoutParentInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2989,7 +2989,7 @@ export type TaskUncheckedUpdateWithoutParentInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3030,7 +3030,7 @@ export type TaskUncheckedUpdateManyWithoutParentInput = {
   liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   numLikes?: Prisma.IntFieldUpdateOperationsInput | number
   numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
-  localStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3149,7 +3149,7 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   liked?: boolean
   numLikes?: boolean
   numSubtasks?: boolean
-  localStatus?: boolean
+  mikaStatus?: boolean
   priority?: boolean
   dueAt?: boolean
   completedAtAsana?: boolean
@@ -3194,7 +3194,7 @@ export type TaskSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   liked?: boolean
   numLikes?: boolean
   numSubtasks?: boolean
-  localStatus?: boolean
+  mikaStatus?: boolean
   priority?: boolean
   dueAt?: boolean
   completedAtAsana?: boolean
@@ -3231,7 +3231,7 @@ export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   liked?: boolean
   numLikes?: boolean
   numSubtasks?: boolean
-  localStatus?: boolean
+  mikaStatus?: boolean
   priority?: boolean
   dueAt?: boolean
   completedAtAsana?: boolean
@@ -3268,7 +3268,7 @@ export type TaskSelectScalar = {
   liked?: boolean
   numLikes?: boolean
   numSubtasks?: boolean
-  localStatus?: boolean
+  mikaStatus?: boolean
   priority?: boolean
   dueAt?: boolean
   completedAtAsana?: boolean
@@ -3291,7 +3291,7 @@ export type TaskSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "localStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
+export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
 export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
@@ -3340,8 +3340,9 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     numSubtasks: number
     /**
      * Campo local opcional para sua aplicação, sem depender do Asana.
+     * Status Mika opcional, preservado na coluna legado `localStatus`.
      */
-    localStatus: string | null
+    mikaStatus: string | null
     priority: string | null
     /**
      * Datas completas do Asana.
@@ -3817,7 +3818,7 @@ export interface TaskFieldRefs {
   readonly liked: Prisma.FieldRef<"Task", 'Boolean'>
   readonly numLikes: Prisma.FieldRef<"Task", 'Int'>
   readonly numSubtasks: Prisma.FieldRef<"Task", 'Int'>
-  readonly localStatus: Prisma.FieldRef<"Task", 'String'>
+  readonly mikaStatus: Prisma.FieldRef<"Task", 'String'>
   readonly priority: Prisma.FieldRef<"Task", 'String'>
   readonly dueAt: Prisma.FieldRef<"Task", 'DateTime'>
   readonly completedAtAsana: Prisma.FieldRef<"Task", 'DateTime'>
