@@ -10,6 +10,7 @@
     "predev:server": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$port=3001; $ids=(Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($id in $ids) { if ($id -and $id -ne $PID) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } }\"",
     "dev:server": "pnpm --filter server dev",
     "build": "turbo run build",
+    "start:prod": "turbo run build --filter=client --filter=server && cross-env NODE_ENV=production pnpm --filter server start",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "db:push": "pnpm --filter server prisma db push",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^22.15.21",
+    "cross-env": "^10.1.0",
     "execa": "^9.6.1",
     "turbo": "^2.5.8",
     "typescript": "^5.8.3"

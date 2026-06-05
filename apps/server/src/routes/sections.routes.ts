@@ -22,28 +22,28 @@ const sectionSchema = z.object({
 
 const updateSectionSchema = sectionSchema.partial();
 
-router.use(auth);
-
-router.get("/projects/:projectId/sections", listSections);
-router.get("/projects/:projectId/disciplines", listSections);
+router.get("/projects/:projectId/sections", auth, listSections);
+router.get("/projects/:projectId/disciplines", auth, listSections);
 
 router.post(
   "/projects/:projectId/sections",
+  auth,
   requireRole(Role.COORDINATOR),
   validateBody(sectionSchema),
   createSection
 );
 router.post(
   "/projects/:projectId/disciplines",
+  auth,
   requireRole(Role.COORDINATOR),
   validateBody(sectionSchema),
   createSection
 );
 
-router.patch("/sections/:id", validateBody(updateSectionSchema), updateSection);
-router.patch("/disciplines/:id", validateBody(updateSectionSchema), updateSection);
+router.patch("/sections/:id", auth, validateBody(updateSectionSchema), updateSection);
+router.patch("/disciplines/:id", auth, validateBody(updateSectionSchema), updateSection);
 
-router.delete("/sections/:id", requireRole(Role.COORDINATOR), deleteSection);
-router.delete("/disciplines/:id", requireRole(Role.COORDINATOR), deleteSection);
+router.delete("/sections/:id", auth, requireRole(Role.COORDINATOR), deleteSection);
+router.delete("/disciplines/:id", auth, requireRole(Role.COORDINATOR), deleteSection);
 
 export default router;

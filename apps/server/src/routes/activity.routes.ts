@@ -4,7 +4,6 @@ import { auth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(auth);
-router.get("/activity/recent", listRecentActivity);
+router.get("/activity/recent", auth, listRecentActivity);
 
 export default router;

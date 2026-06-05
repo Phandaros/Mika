@@ -22,10 +22,21 @@ const createHolidaySchema = z.object({
 
 const updateHolidaySchema = createHolidaySchema.partial();
 
-router.use(auth);
-router.get("/calendar/holidays", listCompanyHolidays);
-router.post("/calendar/holidays", requireRole(Role.COORDINATOR), validateBody(createHolidaySchema), createCompanyHoliday);
-router.patch("/calendar/holidays/:id", requireRole(Role.COORDINATOR), validateBody(updateHolidaySchema), updateCompanyHoliday);
-router.delete("/calendar/holidays/:id", requireRole(Role.COORDINATOR), deleteCompanyHoliday);
+router.get("/calendar/holidays", auth, listCompanyHolidays);
+router.post(
+  "/calendar/holidays",
+  auth,
+  requireRole(Role.COORDINATOR),
+  validateBody(createHolidaySchema),
+  createCompanyHoliday
+);
+router.patch(
+  "/calendar/holidays/:id",
+  auth,
+  requireRole(Role.COORDINATOR),
+  validateBody(updateHolidaySchema),
+  updateCompanyHoliday
+);
+router.delete("/calendar/holidays/:id", auth, requireRole(Role.COORDINATOR), deleteCompanyHoliday);
 
 export default router;

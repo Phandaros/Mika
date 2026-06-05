@@ -8,9 +8,8 @@ import { auth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(auth);
-router.get("/notifications", listNotifications);
-router.patch("/notifications/read-all", markAllNotificationsRead);
-router.patch("/notifications/:id/read", markNotificationRead);
+router.get("/notifications", auth, listNotifications);
+router.patch("/notifications/read-all", auth, markAllNotificationsRead);
+router.patch("/notifications/:id/read", auth, markNotificationRead);
 
 export default router;

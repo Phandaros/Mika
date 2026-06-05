@@ -67,16 +67,15 @@ const taskCompletionSchema = z.object({
   completed: z.boolean()
 });
 
-router.use(auth);
-router.get("/sections/:sectionId/tasks", listTasks);
-router.get("/disciplines/:disciplineId/tasks", listTasks);
-router.get("/tasks/:id", getTaskById);
-router.post("/tasks", validateBody(createTaskSchema), createTask);
-router.post("/sections/:sectionId/tasks", validateBody(createTaskSchema), createTask);
-router.post("/disciplines/:disciplineId/tasks", validateBody(createTaskSchema), createTask);
-router.patch("/tasks/:id", validateBody(updateTaskSchema), updateTask);
-router.delete("/tasks/:id", deleteTask);
-router.patch("/tasks/:id/status", validateBody(taskStatusSchema), updateTaskStatus);
-router.patch("/tasks/:id/completed", validateBody(taskCompletionSchema), updateTaskCompletion);
+router.get("/sections/:sectionId/tasks", auth, listTasks);
+router.get("/disciplines/:disciplineId/tasks", auth, listTasks);
+router.get("/tasks/:id", auth, getTaskById);
+router.post("/tasks", auth, validateBody(createTaskSchema), createTask);
+router.post("/sections/:sectionId/tasks", auth, validateBody(createTaskSchema), createTask);
+router.post("/disciplines/:disciplineId/tasks", auth, validateBody(createTaskSchema), createTask);
+router.patch("/tasks/:id", auth, validateBody(updateTaskSchema), updateTask);
+router.delete("/tasks/:id", auth, deleteTask);
+router.patch("/tasks/:id/status", auth, validateBody(taskStatusSchema), updateTaskStatus);
+router.patch("/tasks/:id/completed", auth, validateBody(taskCompletionSchema), updateTaskCompletion);
 
 export default router;

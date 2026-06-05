@@ -1,5 +1,6 @@
 import http from "node:http";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
@@ -12,6 +13,9 @@ import mikeAuthRoutes from "./modules/mike/auth/mike-auth.router.js";
 
 const app = express();
 const server = http.createServer(app);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
 initSocket(server, env.CLIENT_URL);
 
@@ -22,6 +26,10 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(clientDistPath));
+}
 
 app.use(
   "/binaries/desktop/win",
@@ -44,6 +52,15 @@ app.use("/binaries/desktop/win", (_req, res) => {
 
 app.use("/api/v1", apiRoutes);
 app.use("/api/mike/auth", mikeAuthRoutes);
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+if (process.env.NODE_ENV === "production") {
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+}
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Route not found" });

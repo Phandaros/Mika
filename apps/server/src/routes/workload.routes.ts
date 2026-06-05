@@ -4,7 +4,6 @@ import { auth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(auth);
-router.get("/workload/tasks", listGlobalWorkloadTasks);
+router.get("/workload/tasks", auth, listGlobalWorkloadTasks);
 
 export default router;

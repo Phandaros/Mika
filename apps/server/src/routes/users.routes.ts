@@ -32,12 +32,11 @@ const updateUserSchema = z.object({
   isActive: z.boolean().optional()
 });
 
-router.use(auth);
-router.get("/users", listUsers);
-router.get("/users/:id", getUserById);
-router.post("/users", requireRole(Role.COORDINATOR), validateBody(createUserSchema), createUser);
-router.patch("/users/:id", requireRole(Role.COORDINATOR), validateBody(updateUserSchema), updateUser);
-router.patch("/users/:id/reset-password", requireRole(Role.COORDINATOR), resetUserPassword);
-router.delete("/users/:id", requireRole(Role.COORDINATOR), deleteUser);
+router.get("/users", auth, listUsers);
+router.get("/users/:id", auth, getUserById);
+router.post("/users", auth, requireRole(Role.COORDINATOR), validateBody(createUserSchema), createUser);
+router.patch("/users/:id", auth, requireRole(Role.COORDINATOR), validateBody(updateUserSchema), updateUser);
+router.patch("/users/:id/reset-password", auth, requireRole(Role.COORDINATOR), resetUserPassword);
+router.delete("/users/:id", auth, requireRole(Role.COORDINATOR), deleteUser);
 
 export default router;

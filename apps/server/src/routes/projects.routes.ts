@@ -30,12 +30,11 @@ const projectSchema = z.object({
 
 const updateProjectSchema = projectSchema.partial();
 
-router.use(auth);
-router.get("/projects", listProjects);
-router.get("/projects/:id/workload-tasks", listWorkloadTasks);
-router.get("/projects/:id", getProjectById);
-router.post("/projects", requireRole(Role.COORDINATOR), validateBody(projectSchema), createProject);
-router.patch("/projects/:id", requireRole(Role.COORDINATOR), validateBody(updateProjectSchema), updateProject);
-router.delete("/projects/:id", requireRole(Role.ADMIN), deleteProject);
+router.get("/projects", auth, listProjects);
+router.get("/projects/:id/workload-tasks", auth, listWorkloadTasks);
+router.get("/projects/:id", auth, getProjectById);
+router.post("/projects", auth, requireRole(Role.COORDINATOR), validateBody(projectSchema), createProject);
+router.patch("/projects/:id", auth, requireRole(Role.COORDINATOR), validateBody(updateProjectSchema), updateProject);
+router.delete("/projects/:id", auth, requireRole(Role.ADMIN), deleteProject);
 
 export default router;

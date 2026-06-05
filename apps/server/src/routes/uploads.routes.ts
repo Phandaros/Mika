@@ -20,9 +20,8 @@ const upload = multer({
   }
 });
 
-router.use(auth);
-router.post("/tasks/:taskId/attachments", upload.single("file"), uploadAttachment);
-router.get("/attachments/:id/download", downloadAttachment);
-router.delete("/attachments/:id", deleteAttachment);
+router.post("/tasks/:taskId/attachments", auth, upload.single("file"), uploadAttachment);
+router.get("/attachments/:id/download", auth, downloadAttachment);
+router.delete("/attachments/:id", auth, deleteAttachment);
 
 export default router;
