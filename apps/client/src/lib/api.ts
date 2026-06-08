@@ -28,10 +28,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as RetriableRequestConfig | undefined;
-    const isRefreshRoute = originalRequest?.url?.includes("/auth/refresh") ?? false;
+    const requestUrl = originalRequest?.url ?? "";
+    const isRefreshRoute = requestUrl.includes("/auth/refresh");
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isRefreshRoute) {
       originalRequest._retry = true;
+
       const refreshed = await useAuthStore.getState().refreshSession({ silent: true });
 
       if (refreshed) {
@@ -43,6 +45,7 @@ api.interceptors.response.use(
         }
 
         originalRequest.headers = headers;
+        originalRequest.baseURL = getApiBaseUrl();
         return api(originalRequest);
       }
     }

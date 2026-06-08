@@ -20,21 +20,27 @@ const AUTH_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 function PrivateRoute() {
   const { user, refreshSession } = useAuth();
-  const [checked, setChecked] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
+    if (user) {
+      setIsCheckingSession(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
     async function bootstrap() {
-      if (!user) {
-        await refreshSession();
-      }
+      await refreshSession();
 
       if (mounted) {
-        setChecked(true);
+        setIsCheckingSession(false);
       }
     }
 
+    setIsCheckingSession(true);
     void bootstrap();
 
     return () => {
@@ -42,7 +48,7 @@ function PrivateRoute() {
     };
   }, [refreshSession, user]);
 
-  if (!checked) {
+  if (isCheckingSession) {
     return <LoadingSpinner />;
   }
 
@@ -82,6 +88,30 @@ export function App() {
 
     return () => {
       window.clearInterval(intervalId);
+    };
+  }, [refreshSession, user]);
+
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    function refreshVisibleSession() {
+      if (document.visibilityState === "visible") {
+        void refreshSession({ silent: true });
+      }
+    }
+
+    function refreshOnlineSession() {
+      void refreshSession({ silent: true });
+    }
+
+    document.addEventListener("visibilitychange", refreshVisibleSession);
+    window.addEventListener("online", refreshOnlineSession);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshVisibleSession);
+      window.removeEventListener("online", refreshOnlineSession);
     };
   }, [refreshSession, user]);
 

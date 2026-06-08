@@ -1,23 +1,38 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { CalendarDays, CheckCircle2, Flag, FolderKanban, UserRound, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { format } from "date-fns";
+import { CalendarDays, Check, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectCustomField } from "shared";
 import { useProjects } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
+import { dateOnlyToLocalDate } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
-import { PriorityOptionPill, enumColor, priorityColors, taskStatusColors, taskStatusLabels } from "../shared/statusVisuals";
-import { writableTaskStatuses } from "../shared/Chip";
-import { TaskStatusBadge } from "./TaskStatusBadge";
+import { Avatar } from "../shared/Avatar";
+import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels, taskStatusOptions } from "../shared/Chip";
+import { PriorityBadge } from "../shared/PriorityBadge";
+import { enumColor } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
-import { DatePicker, DateRangePicker } from "../ui/date-picker";
+import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
-import { Sheet, SheetContent, SheetFooter } from "../ui/sheet";
 import { Textarea } from "../ui/textarea";
+import { TaskStatusBadge } from "./TaskStatusBadge";
+import {
+  compactDatePickerClassName,
+  compactInputClassName,
+  compactSelectTriggerClassName,
+  DetailRow,
+  EmptyField,
+  FieldPanel,
+  TaskFixedFieldGrid,
+  TaskPanelShell
+} from "./TaskPanelPrimitives";
 
 type CustomFieldDraft = Record<string, string>;
+type OpenCreateField = "assignee" | "priority" | null;
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
@@ -58,12 +73,13 @@ const promotedTaskFieldKeys = new Set([
   "discipline"
 ]);
 
-const compactSelectTriggerClassName =
-  "h-7 min-h-0 w-auto min-w-[112px] justify-start border-transparent bg-transparent px-1.5 text-left hover:bg-[--bg-3]";
-const compactDatePickerClassName =
-  "h-7 min-h-0 w-auto min-w-[112px] justify-between border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3]";
-const compactInputClassName =
-  "h-7 min-h-0 w-[112px] border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3] focus:bg-[--bg-3]";
+function isTargetInsidePanelShell(target: Element, aside: HTMLElement | null): boolean {
+  if (aside?.contains(target)) {
+    return true;
+  }
+
+  return Boolean(target.closest('[data-mika-popover-content="true"], [data-radix-popper-content-wrapper]'));
+}
 
 export function TaskCreateSheet() {
   const open = useUiStore((state) => state.taskCreateOpen);
@@ -87,11 +103,13 @@ export function TaskCreateSheet() {
   const [taskDiscipline, setTaskDiscipline] = useState("");
   const [stage, setStage] = useState("");
   const [customFieldDraft, setCustomFieldDraft] = useState<CustomFieldDraft>({});
+  const [openField, setOpenField] = useState<OpenCreateField>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const asideRef = useRef<HTMLElement>(null);
 
   const selectedProject = projects.find((project) => project.id === projectId) ?? null;
-  const sections = useMemo(() => (selectedProject ? sectionsOf(selectedProject) : []), [selectedProject]);
-  const selectedSection = sections.find((section) => section.id === sectionId) ?? null;
+  const selectedAssignee = users.find((user) => user.id === assigneeId) ?? null;
+  const selectedPriority = priorityOptions.find((option) => option.value === priority) ?? null;
   const globalTaskFields = selectedProject?.taskCustomFields?.filter((field) => field.mikaDetailVisible !== false) ?? [];
   const stageField = globalTaskFields.find((field) => fieldIdentityMatches(field, ["etapa", "stage"])) ?? null;
   const lowerCustomFields = globalTaskFields.filter((field) => !isPromotedTaskField(field));
@@ -118,6 +136,7 @@ export function TaskCreateSheet() {
     setTaskDiscipline("");
     setStage("");
     setCustomFieldDraft({});
+    setOpenField(null);
   }, [defaults.assigneeId, defaults.dueDate, defaults.projectId, defaults.sectionId, defaults.startDate, open]);
 
   useEffect(() => {
@@ -130,59 +149,51 @@ export function TaskCreateSheet() {
   }, [open]);
 
   useEffect(() => {
-    if (!open || !projectId || sections.length === 0) {
-      return;
+    if (!open) {
+      return undefined;
     }
 
-    if (!sectionId || !sections.some((section) => section.id === sectionId)) {
-      const nextSectionId = defaultSectionId(sections);
-      setSectionId(nextSectionId);
-      setStage(sections.find((section) => section.id === nextSectionId)?.name ?? "");
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+      }
     }
-  }, [open, projectId, sectionId, sections]);
 
-  const projectSelectOptions = [
-    { value: "none", label: "Sem projeto" },
-    ...[...projects].sort((a, b) => a.name.localeCompare(b.name)).map((project) => ({
-      value: project.id,
-      label: project.name,
-      description: projectBuilder(project)
-    }))
-  ];
-  const sectionSelectOptions = sections.map((section) => ({
-    value: section.id,
-    label: section.name
-  }));
-  const assigneeOptions = [
-    { value: "none", label: "Sem responsável" },
-    ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
-  ];
+    function handlePointerDown(event: PointerEvent) {
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      if (isTargetInsidePanelShell(event.target, asideRef.current)) {
+        return;
+      }
+
+      setOpen(false);
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [open, setOpen]);
+
   const statusSelectOptions = [
-    { value: "none", label: "Sem status" },
-    ...writableTaskStatuses.map((option) => ({
+    { value: "none", label: "Sem status", render: <EmptyField /> },
+    ...taskStatusOptions.map((option) => ({
       value: option,
       label: taskStatusLabels[option],
-      color: taskStatusColors[option],
+      disabled: option === TaskStatus.OVERDUE,
       render: <TaskStatusBadge status={option} />
     }))
   ];
-  const prioritySelectOptions = [
-    { value: "none", label: "Sem prioridade" },
-    ...priorityOptions.map((option) => ({
-      value: option.value,
-      label: option.label,
-      color: priorityColors[option.value],
-      render: <PriorityOptionPill priority={option.value} />
-    }))
-  ];
 
-  function handleProjectChange(nextProjectId: string) {
-    const value = nextProjectId === "none" ? "" : nextProjectId;
-    const project = projects.find((item) => item.id === value) ?? null;
-    const nextSections = project ? sectionsOf(project) : [];
-    setProjectId(value);
-    setSectionId(defaultSectionId(nextSections));
-    setStage("");
+  function handleProjectChange(nextProjectId: string, nextSectionId: string | null = null) {
+    setProjectId(nextProjectId);
+    setSectionId(nextSectionId ?? "");
+    setStage(nextSectionId ? sectionsOf(projects.find((project) => project.id === nextProjectId)).find((section) => section.id === nextSectionId)?.name ?? "" : "");
     setCustomFieldDraft({});
   }
 
@@ -199,20 +210,15 @@ export function TaskCreateSheet() {
       return;
     }
 
-    if (!projectId || !sectionId) {
-      toast.error("Selecione projeto e seção");
-      return;
-    }
-
     const parsedDays = parseDecimalInput(estimatedDays);
     if (parsedDays !== null && Number.isNaN(parsedDays)) {
-      toast.error("Informe uma duracao estimada valida");
+      toast.error("Informe uma duração estimada válida");
       return;
     }
 
     const parsedConclusionDays = parseDecimalInput(conclusionDays);
     if (parsedConclusionDays !== null && Number.isNaN(parsedConclusionDays)) {
-      toast.error("Informe dias de conclusao validos");
+      toast.error("Informe dias de conclusão válidos");
       return;
     }
 
@@ -220,8 +226,8 @@ export function TaskCreateSheet() {
     const payload: CreateTaskRequest = {
       title: trimmedTitle,
       description: description.trim() || null,
-      projectId,
-      sectionId,
+      projectId: projectId || null,
+      sectionId: sectionId || null,
       ...(status ? { status: status as TaskStatus } : {}),
       ...(priority ? { priority: priority as Priority } : {}),
       assigneeId: assigneeId || null,
@@ -233,7 +239,7 @@ export function TaskCreateSheet() {
       conclusionDays: parsedConclusionDays,
       platform: platform || null,
       taskDiscipline: taskDiscipline || null,
-      stage: stage || selectedSection?.name || null,
+      stage: stage || null,
       customFieldValues: customFieldValues.length > 0 ? customFieldValues : undefined
     };
 
@@ -242,250 +248,444 @@ export function TaskCreateSheet() {
       toast.success("Tarefa criada");
       setOpen(false);
     } catch {
-      toast.error("Nao foi possivel criar a tarefa");
+      toast.error("Não foi possível criar a tarefa");
     }
   }
 
+  if (!open) {
+    return null;
+  }
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent
-        side="right"
-        className="flex h-full w-full max-w-2xl flex-col border-l border-border bg-surface p-0 sm:max-w-2xl"
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-          titleInputRef.current?.focus();
-        }}
-      >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <CheckCircle2 size={18} />
-            <span>Tarefa</span>
-          </div>
-          <Button variant="ghost" className="h-9 w-9 px-0" onClick={() => setOpen(false)} title="Fechar">
-            <X size={18} />
+    <TaskPanelShell
+      isOpen={open}
+      asideRef={asideRef}
+      onClose={() => setOpen(false)}
+      footer={
+        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-card px-6 py-4">
+          <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="task-create-form" disabled={createTask.isPending}>
+            Criar tarefa
           </Button>
         </div>
+      }
+    >
+      <form id="task-create-form" onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <Input
+          ref={titleInputRef}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Nome da tarefa"
+          className="h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight text-text-primary focus:border-brand-orange focus:bg-brand-black focus:px-2"
+          autoFocus
+        />
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-            <Input
-              ref={titleInputRef}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Nome da tarefa"
-              className="h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight focus:border-brand-orange focus:bg-brand-black focus:px-2"
-              autoFocus
-            />
-
-            <TaskFixedFieldGrid
-              fields={[
-                {
-                  key: "projects",
-                  label: "Projetos",
-                  render: () => (
-                    <SearchableSelect
-                      value={projectId || "none"}
-                      options={projectSelectOptions}
-                      searchPlaceholder="Buscar projeto..."
-                      triggerClassName={compactSelectTriggerClassName}
-                      contentClassName="min-w-[260px] max-w-[420px]"
-                      onValueChange={handleProjectChange}
-                    />
-                  )
-                },
-                {
-                  key: "section",
-                  label: "Seção",
-                  render: () => (
-                    <SearchableSelect
-                      value={sectionId}
-                      options={sectionSelectOptions}
-                      searchPlaceholder="Buscar seção..."
-                      triggerClassName={compactSelectTriggerClassName}
-                      contentClassName="min-w-[260px] max-w-[420px]"
-                      disabled={!projectId || sections.length === 0}
-                      onValueChange={(value) => {
-                        setSectionId(value);
-                        setStage(sections.find((section) => section.id === value)?.name ?? "");
-                      }}
-                    />
-                  )
-                },
-                {
-                  key: "status",
-                  label: "Status",
-                  render: () => (
-                    <SearchableSelect
-                      value={status || "none"}
-                      options={statusSelectOptions}
-                      searchPlaceholder="Buscar status..."
-                      triggerClassName={compactSelectTriggerClassName}
-                      contentClassName="min-w-[220px] max-w-[320px]"
-                      showSelectionIndicator={false}
-                      onValueChange={(value) => setStatus(value === "none" ? "" : value)}
-                    />
-                  )
-                },
-                {
-                  key: "platform",
-                  label: "Plataforma",
-                  render: () => (
-                    <SearchableSelect
-                      value={platform || "none"}
-                      options={[{ value: "none", label: "Sem plataforma" }, ...platformOptions]}
-                      searchPlaceholder="Buscar plataforma..."
-                      triggerClassName={compactSelectTriggerClassName}
-                      contentClassName="min-w-[220px] max-w-[320px]"
-                      onValueChange={(value) => setPlatform(value === "none" ? "" : value)}
-                    />
-                  )
-                },
-                {
-                  key: "discipline",
-                  label: "Disciplina",
-                  render: () => (
-                    <SearchableSelect
-                      value={taskDiscipline || "none"}
-                      options={[{ value: "none", label: "Sem disciplina" }, ...disciplineOptions]}
-                      searchPlaceholder="Buscar disciplina..."
-                      triggerClassName={compactSelectTriggerClassName}
-                      contentClassName="min-w-[220px] max-w-[320px]"
-                      onValueChange={(value) => setTaskDiscipline(value === "none" ? "" : value)}
-                    />
-                  )
-                },
-                {
-                  key: "maxDeadline",
-                  label: "Prazo Maximo",
-                  render: () => (
-                    <DatePicker value={maxDeadline || null} onValueChange={(value) => setMaxDeadline(value ?? "")} placeholder="-" className={compactDatePickerClassName} />
-                  )
-                },
-                {
-                  key: "estimatedTime",
-                  label: "Dias Estimados",
-                  render: () => <DecimalInput value={estimatedDays} onValueChange={setEstimatedDays} placeholder="-" className={compactInputClassName} />
-                },
-                {
-                  key: "conclusionDays",
-                  label: "Dias Conclusão",
-                  render: () => <DecimalInput value={conclusionDays} onValueChange={setConclusionDays} placeholder="-" className={compactInputClassName} />
-                },
-                {
-                  key: "stage",
-                  label: "Etapa",
-                  render: () => stageField ? <CreateCustomField field={stageField} value={stage} onChange={setStage} compact /> : <EmptyField />
-                }
-              ]}
-            />
-
-            <div className="mt-6 grid gap-4 text-sm">
-              <DetailRow icon={<UserRound size={18} />} label="Responsavel">
-                <SearchableSelect
-                  value={assigneeId || "none"}
-                  options={assigneeOptions}
-                  searchPlaceholder="Buscar responsável..."
-                  triggerClassName="min-h-10 w-full justify-start border-transparent bg-transparent px-2 text-left hover:bg-surface-hover"
-                  contentClassName="min-w-[260px] max-w-[420px]"
-                  onValueChange={(value) => setAssigneeId(value === "none" ? "" : value)}
+        <TaskFixedFieldGrid
+          fields={[
+            {
+              key: "projects",
+              label: "Projetos",
+              render: () => (
+                <CreateProjectsField
+                  projects={projects}
+                  projectId={projectId}
+                  sectionId={sectionId}
+                  onChange={handleProjectChange}
                 />
-              </DetailRow>
-
-              <DetailRow icon={<Flag size={18} />} label="Prioridade">
+              )
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: () => (
                 <SearchableSelect
-                  value={priority || "none"}
-                  options={prioritySelectOptions}
-                  searchPlaceholder="Buscar prioridade..."
-                  triggerClassName="min-h-10 w-full justify-start border-transparent bg-transparent px-2 text-left hover:bg-surface-hover"
+                  value={status || "none"}
+                  options={statusSelectOptions}
+                  searchPlaceholder="Buscar status..."
+                  triggerClassName={compactSelectTriggerClassName}
                   contentClassName="min-w-[220px] max-w-[320px]"
-                  onValueChange={(value) => setPriority(value === "none" ? "" : value)}
+                  showSelectionIndicator={false}
+                  onValueChange={(value) => setStatus(value === "none" ? "" : value)}
                 />
-              </DetailRow>
-
-              <DetailRow icon={<CalendarDays size={18} />} label="Prazo">
-                <DateRangePicker
-                  startDate={startDate}
-                  endDate={dueDate}
-                  onStartDateChange={(value) => setStartDate(value ?? "")}
-                  onEndDateChange={(value) => setDueDate(value ?? "")}
+              )
+            },
+            {
+              key: "platform",
+              label: "Plataforma",
+              render: () => (
+                <SearchableSelect
+                  value={platform || "none"}
+                  options={[
+                    { value: "none", label: "Sem plataforma", render: <EmptyField /> },
+                    ...platformOptions.map((option) => ({ ...option, render: <PlatformChip platform={option.value} /> }))
+                  ]}
+                  searchPlaceholder="Buscar plataforma..."
+                  triggerClassName={compactSelectTriggerClassName}
+                  contentClassName="min-w-[220px] max-w-[320px]"
+                  onValueChange={(value) => setPlatform(value === "none" ? "" : value)}
                 />
-              </DetailRow>
-
-              {lowerCustomFields.map((field) => (
-                <DetailRow key={field.id} icon={<FolderKanban size={18} />} label={field.mikaLabel ?? field.name}>
-                  <CreateCustomField
-                    field={field}
-                    value={customFieldDraft[field.mikaKey ?? field.id] ?? ""}
-                    onChange={(value) => handleCustomFieldChange(field.mikaKey ?? field.id, value)}
-                  />
-                </DetailRow>
-              ))}
-            </div>
-
-            <section className="mt-8">
-              <h3 className="text-sm font-bold text-text-primary">Descricao</h3>
-              <div className="mt-3 border-b border-border pb-6">
-                <Textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Do que se trata esta tarefa?"
-                  className="min-h-28 resize-none overflow-hidden border-transparent bg-transparent focus:border-brand-orange focus:bg-brand-black"
+              )
+            },
+            {
+              key: "discipline",
+              label: "Disciplina",
+              render: () => (
+                <SearchableSelect
+                  value={taskDiscipline || "none"}
+                  options={[
+                    { value: "none", label: "Sem disciplina", render: <EmptyField /> },
+                    ...disciplineOptions.map((option) => ({ ...option, render: <DisciplineChip discipline={option.value} /> }))
+                  ]}
+                  searchPlaceholder="Buscar disciplina..."
+                  triggerClassName={compactSelectTriggerClassName}
+                  contentClassName="min-w-[220px] max-w-[320px]"
+                  onValueChange={(value) => setTaskDiscipline(value === "none" ? "" : value)}
                 />
-              </div>
-            </section>
+              )
+            },
+            {
+              key: "completionStatus",
+              label: "Status de Conclusão",
+              render: () => <CompletionStatusChip completed={false} />
+            },
+            {
+              key: "maxDeadline",
+              label: "Prazo Máximo",
+              render: () => (
+                <DatePicker
+                  value={maxDeadline || null}
+                  onValueChange={(value) => setMaxDeadline(value ?? "")}
+                  placeholder="—"
+                  className={compactDatePickerClassName}
+                />
+              )
+            },
+            {
+              key: "estimatedTime",
+              label: "Dias Estimados",
+              render: () => (
+                <DecimalInput
+                  value={estimatedDays}
+                  onValueChange={setEstimatedDays}
+                  placeholder="—"
+                  className={`${compactInputClassName} font-mono text-[12px]`}
+                />
+              )
+            },
+            {
+              key: "conclusionDays",
+              label: "Dias Conclusão",
+              render: () => (
+                <DecimalInput
+                  value={conclusionDays}
+                  onValueChange={setConclusionDays}
+                  placeholder="—"
+                  className={`${compactInputClassName} font-mono text-[12px]`}
+                />
+              )
+            },
+            {
+              key: "stage",
+              label: "Etapa",
+              render: () => (
+                <CreateStageField
+                  field={stageField}
+                  value={stage}
+                  onChange={setStage}
+                />
+              )
+            }
+          ]}
+        />
+
+        <div className="mt-6 grid gap-4 text-sm">
+          <DetailRow icon={<UserRound size={18} />} label="Responsável">
+            <button
+              type="button"
+              onClick={() => setOpenField(openField === "assignee" ? null : "assignee")}
+              className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left transition hover:bg-surface-hover"
+            >
+              {selectedAssignee ? (
+                <>
+                  <Avatar name={selectedAssignee.name} imageUrl={selectedAssignee.avatarUrl} className="h-7 w-7" />
+                  <span className="font-medium text-text-primary">{selectedAssignee.name}</span>
+                </>
+              ) : (
+                <span className="text-text-secondary">Sem responsável</span>
+              )}
+            </button>
+            {openField === "assignee" ? (
+              <FieldPanel>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssigneeId("");
+                    setOpenField(null);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
+                >
+                  Sem responsável
+                </button>
+                {users.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setAssigneeId(item.id);
+                      setOpenField(null);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition hover:bg-surface-hover"
+                  >
+                    <Avatar name={item.name} imageUrl={item.avatarUrl} className="h-7 w-7" />
+                    <span className="font-medium text-text-primary">{item.name}</span>
+                  </button>
+                ))}
+              </FieldPanel>
+            ) : null}
+          </DetailRow>
+
+          <DetailRow icon={<Flag size={18} />} label="Prioridade">
+            <button
+              type="button"
+              onClick={() => setOpenField(openField === "priority" ? null : "priority")}
+              className="flex min-h-10 w-full items-center rounded-md px-2 text-left transition hover:bg-surface-hover"
+            >
+              {selectedPriority ? <PriorityBadge priority={selectedPriority.value} /> : <span className="text-text-secondary">Sem prioridade</span>}
+            </button>
+            {openField === "priority" ? (
+              <FieldPanel>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPriority("");
+                    setOpenField(null);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
+                >
+                  Sem prioridade
+                </button>
+                {priorityOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setPriority(option.value);
+                      setOpenField(null);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:bg-surface-hover"
+                  >
+                    <PriorityBadge priority={option.value} />
+                  </button>
+                ))}
+              </FieldPanel>
+            ) : null}
+          </DetailRow>
+
+          <DetailRow icon={<CalendarDays size={18} />} label="Prazo">
+            <CreateDateRangeField
+              startDate={startDate}
+              dueDate={dueDate}
+              onStartDateChange={setStartDate}
+              onDueDateChange={setDueDate}
+            />
+          </DetailRow>
+
+          {lowerCustomFields.map((field) => (
+            <DetailRow key={field.id} icon={<FolderKanban size={18} />} label={field.mikaLabel ?? field.name}>
+              <CreateCustomField
+                field={field}
+                value={customFieldDraft[field.mikaKey ?? field.id] ?? ""}
+                onChange={(value) => handleCustomFieldChange(field.mikaKey ?? field.id, value)}
+              />
+            </DetailRow>
+          ))}
+        </div>
+
+        <section className="mt-8">
+          <h3 className="text-sm font-bold text-text-primary">Descrição</h3>
+          <div className="mt-3 border-b border-border pb-6">
+            <Textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Do que se trata esta tarefa?"
+              className="min-h-28 resize-none overflow-hidden border-transparent bg-transparent focus:border-brand-orange focus:bg-brand-black"
+            />
           </div>
-
-          <SheetFooter className="border-t border-border bg-surface-card px-6 py-4">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={createTask.isPending}>
-              Criar tarefa
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
+        </section>
+      </form>
+    </TaskPanelShell>
   );
 }
 
-function TaskFixedFieldGrid({
-  fields
+function CreateProjectsField({
+  projects,
+  projectId,
+  sectionId,
+  onChange
 }: {
-  fields: Array<{
-    key: string;
-    label: string;
-    render: () => ReactNode;
-  }>;
+  projects: Project[];
+  projectId: string;
+  sectionId: string;
+  onChange: (projectId: string, sectionId?: string | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selectedProject = projects.find((project) => project.id === projectId) ?? null;
+  const filteredProjects = useMemo(() => {
+    const normalizedQuery = normalizeFieldName(query);
+
+    return [...projects]
+      .filter((project) => !normalizedQuery || normalizeFieldName(project.name).includes(normalizedQuery))
+      .sort((a, b) => {
+        const selectedDelta = Number(b.id === projectId) - Number(a.id === projectId);
+        return selectedDelta || a.name.localeCompare(b.name, "pt-BR");
+      });
+  }, [projectId, projects, query]);
+
+  return (
+    <Popover onOpenChange={(open) => !open && setQuery("")}>
+      <PopoverTrigger asChild>
+        <Button variant="secondary" className={`${compactSelectTriggerClassName} max-w-full`}>
+          <span className="min-w-0 truncate text-text-primary">{selectedProject ? selectedProject.name : "Selecionar"}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(420px,calc(100vw-32px))] overflow-x-hidden p-2">
+        <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar projeto..." className="h-9" autoFocus />
+        <div className="mt-2 max-h-72 overflow-y-auto overscroll-contain">
+          {filteredProjects.length > 0 ? (
+            <div className="grid gap-1">
+              <button
+                type="button"
+                onClick={() => onChange("", null)}
+                className="flex min-h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
+              >
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center">{!projectId ? <Check size={15} className="text-brand-orange" /> : null}</span>
+                <span className="min-w-0 flex-1 truncate">Sem projeto</span>
+              </button>
+              {filteredProjects.map((project) => {
+                const selected = project.id === projectId;
+                const sections = sectionsOf(project);
+
+                return (
+                  <div
+                    key={project.id}
+                    className={`grid min-w-0 gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm text-text-primary transition hover:bg-surface-hover ${selected ? "bg-surface-hover" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onChange(selected ? "" : project.id, null)}
+                      className="flex min-h-7 w-full min-w-0 items-center gap-2 overflow-hidden text-left font-semibold"
+                    >
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center">{selected ? <Check size={15} className="text-brand-orange" /> : null}</span>
+                      <span className="min-w-0 flex-1 truncate">{project.name}</span>
+                    </button>
+                    {selected ? (
+                      <SearchableSelect
+                        value={sectionId || "none"}
+                        options={[
+                          { value: "none", label: "Sem seção", render: <EmptyField /> },
+                          ...sections.map((section) => ({ value: section.id, label: section.name }))
+                        ]}
+                        triggerClassName="h-8 min-w-0 text-xs"
+                        searchPlaceholder="Buscar seção..."
+                        onValueChange={(value) => onChange(project.id, value === "none" ? null : value)}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="px-3 py-6 text-center text-sm text-text-muted">Nenhum projeto encontrado</div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function CreateDateRangeField({
+  startDate,
+  dueDate,
+  onStartDateChange,
+  onDueDateChange
+}: {
+  startDate: string;
+  dueDate: string;
+  onStartDateChange: (value: string) => void;
+  onDueDateChange: (value: string) => void;
 }) {
   return (
-    <div className="mt-6 grid grid-cols-[140px_1fr] gap-x-4">
-      {fields.map((field) => (
-        <div key={field.key} className="contents">
-          <div className="flex min-h-[32px] items-center border-b border-[--color-border-subtle]">
-            <span className="text-[13px] font-normal text-[--color-text-secondary]">{field.label}</span>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
+          <CompletionDateLabel startDate={startDate} dueDate={dueDate} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 p-3">
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <DatePicker value={startDate || null} onValueChange={(value) => onStartDateChange(value ?? "")} placeholder="Início" />
+            <DatePicker value={dueDate || null} onValueChange={(value) => onDueDateChange(value ?? "")} placeholder="Entrega" />
           </div>
-          <div className="flex min-h-[32px] items-center border-b border-[--color-border-subtle]">{field.render()}</div>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-8 justify-self-start"
+            onClick={() => {
+              onStartDateChange("");
+              onDueDateChange("");
+            }}
+          >
+            Apagar
+          </Button>
         </div>
-      ))}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
-function DetailRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-  return (
-    <div className="relative grid min-h-10 grid-cols-[136px_minmax(0,1fr)] items-start gap-2">
-      <div className="flex min-h-10 items-center gap-2 text-text-secondary">
-        <span className="shrink-0">{icon}</span>
-        <span className="min-w-0 leading-5">{label}</span>
-      </div>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
+function CompletionDateLabel({ startDate, dueDate }: { startDate: string | null; dueDate: string | null }) {
+  if (startDate && dueDate) {
+    return <span>{formatDisplayDate(startDate)} - {formatDisplayDate(dueDate)}</span>;
+  }
+
+  if (startDate) {
+    return <span>Início {formatDisplayDate(startDate)}</span>;
+  }
+
+  if (dueDate) {
+    return <span>Entrega {formatDisplayDate(dueDate)}</span>;
+  }
+
+  return <span className="text-text-secondary">Sem data</span>;
 }
 
-function EmptyField() {
-  return <span className="text-[13px] text-[--color-text-muted]">-</span>;
+function formatDisplayDate(value: string): string {
+  const date = dateOnlyToLocalDate(value);
+  return date ? format(date, "dd/MM/yyyy") : "";
+}
+
+function CreateStageField({
+  field,
+  value,
+  onChange
+}: {
+  field: ProjectCustomField | null;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return field ? (
+    <CreateCustomField field={field} value={value} onChange={onChange} compact />
+  ) : (
+    <Input
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className={`${compactInputClassName} w-[220px]`}
+      placeholder="—"
+    />
+  );
 }
 
 function CreateCustomField({
@@ -507,7 +707,7 @@ function CreateCustomField({
       <SearchableSelect
         value={value || "none"}
         options={[
-          { value: "none", label: "-" },
+          { value: "none", label: "—", render: <EmptyField /> },
           ...enabledOptions.map((option) => ({
             value: option.name,
             label: option.name,
@@ -572,24 +772,8 @@ function isPromotedTaskField(field: Pick<ProjectCustomField, "mikaKey" | "mikaLa
   ]);
 }
 
-function sectionsOf(project: Project) {
-  return project.sections ?? project.disciplines ?? [];
-}
-
-function defaultSectionId(sections: ReturnType<typeof sectionsOf>) {
-  return sections.find((section) => normalizeSectionName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
-}
-
-function normalizeSectionName(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function projectBuilder(project: { builder?: string | null; client?: string | null }) {
-  return project.builder ?? project.client ?? undefined;
+function sectionsOf(project: Project | null | undefined) {
+  return project?.sections ?? project?.disciplines ?? [];
 }
 
 function fieldIdentityMatches(field: Pick<ProjectCustomField, "mikaKey" | "mikaLabel" | "name">, normalizedMatches: string[]): boolean {

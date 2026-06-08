@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import {
   addMonths,
   eachDayOfInterval,
@@ -15,7 +15,7 @@ import {
   startOfWeek
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound, X } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound } from "lucide-react";
 import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
@@ -35,6 +35,17 @@ import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
+import {
+  compactDatePickerClassName,
+  compactInputClassName,
+  compactSelectTriggerClassName,
+  DetailRow,
+  EmptyField,
+  FieldPanel,
+  formatDecimal,
+  TaskFixedFieldGrid,
+  TaskPanelShell
+} from "./TaskPanelPrimitives";
 
 interface TaskDetailProps {
   task: Task | null;
@@ -70,13 +81,6 @@ const disciplineOptions = [
 ];
 
 const promotedTaskFieldKeys = new Set(["status", "dias-estimados", "dias-conclusao", "estimated-time"]);
-const compactSelectTriggerClassName =
-  "h-7 min-h-0 w-auto min-w-[84px] justify-start border-transparent bg-transparent px-1.5 text-left hover:bg-[--bg-3]";
-const compactDatePickerClassName =
-  "h-7 min-h-0 w-auto min-w-[112px] justify-between border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3]";
-const compactInputClassName =
-  "h-7 min-h-0 w-[112px] border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3] focus:bg-[--bg-3]";
-
 function isTargetInsidePanelShell(target: Element, asideRef: RefObject<HTMLElement>): boolean {
   const asideEl = asideRef.current;
   if (asideEl?.contains(target)) {
@@ -114,7 +118,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const completionDateTriggerRef = useRef<HTMLButtonElement | null>(null);
   const completionDatePanelRef = useRef<HTMLDivElement | null>(null);
-  const asideRef = useRef<HTMLElement | null>(null);
+  const asideRef = useRef<HTMLElement>(null);
   const closePanelTimeoutRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -416,30 +420,25 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   }
 
   return (
-    <div
-      className={cn(
-        "pointer-events-none fixed inset-0 z-40 bg-brand-black/60 transition-opacity duration-500 ease-out",
-        isOpen ? "opacity-100" : "opacity-0"
-      )}
-      aria-hidden={!isOpen}
-    >
-      <aside
-        ref={asideRef}
-        className={cn(
-          "pointer-events-auto fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-500 ease-out-expo will-change-transform",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <CheckCircle2 size={18} />
-            <span>Tarefa</span>
-          </div>
-          <Button variant="ghost" className="h-9 w-9 px-0" onClick={requestClose} title="Fechar">
-            <X size={18} />
+    <TaskPanelShell
+      isOpen={isOpen}
+      asideRef={asideRef}
+      onClose={requestClose}
+      footer={
+        <form onSubmit={handleCommentSubmit} className="flex items-start gap-3 border-t border-border p-5">
+          {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
+          <Textarea
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Adicionar um comentário"
+            className="min-h-20 flex-1 resize-none"
+          />
+          <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
+            <Send size={16} />
           </Button>
-        </div>
-
+        </form>
+      }
+    >
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           <Input
             value={isEditingTitle ? titleDraft : visibleTask.title}
@@ -730,79 +729,8 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
             </div>
           </section>
         </div>
-
-        <form onSubmit={handleCommentSubmit} className="flex items-start gap-3 border-t border-border p-5">
-          {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
-          <Textarea
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder="Adicionar um comentário"
-            className="min-h-20 flex-1 resize-none"
-          />
-          <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
-            <Send size={16} />
-          </Button>
-        </form>
-      </aside>
-    </div>
+    </TaskPanelShell>
   );
-}
-
-function DetailRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-  return (
-    <div className="relative grid min-h-10 grid-cols-[136px_minmax(0,1fr)] items-start gap-2">
-      <div className="flex min-h-10 items-center gap-2 text-text-secondary">
-        <span className="shrink-0">{icon}</span>
-        <span className="min-w-0 leading-5">{label}</span>
-      </div>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
-}
-
-function TaskFixedFieldGrid({
-  fields
-}: {
-  fields: Array<{
-    key: string;
-    label: string;
-    render: () => ReactNode;
-  }>;
-}) {
-  return (
-    <div className="mt-6 grid grid-cols-[140px_1fr] gap-x-4" data-testid="task-detail-field-grid">
-      {fields.map((field) => (
-        <Fragment key={field.key}>
-          <div className="flex min-h-[32px] items-center border-b border-[--color-border-subtle]">
-            <span className="text-[13px] font-normal text-[--color-text-secondary]">{field.label}</span>
-          </div>
-          <div className="flex min-h-[32px] items-center border-b border-[--color-border-subtle]">
-            {field.render()}
-          </div>
-        </Fragment>
-      ))}
-    </div>
-  );
-}
-
-function FieldText({ value }: { value: string | null | undefined }) {
-  return value ? (
-    <span className="min-w-0 truncate text-[13px] text-[--color-text-primary]">{value}</span>
-  ) : (
-    <EmptyField />
-  );
-}
-
-function FieldNumber({ value }: { value: number | null | undefined }) {
-  return value != null ? (
-    <span className="font-mono text-[12px] text-[--color-text-primary]">{formatDecimal(value)}</span>
-  ) : (
-    <EmptyField />
-  );
-}
-
-function EmptyField() {
-  return <span className="text-[13px] text-[--color-text-muted]">—</span>;
 }
 
 function EditableProjectsField({
@@ -1090,10 +1018,6 @@ function EditableStageField({
   );
 }
 
-function FieldPanel({ children }: { children: ReactNode }) {
-  return <div className="absolute left-36 top-11 z-50 grid max-h-72 w-64 gap-1 overflow-y-auto rounded-md border border-border bg-surface-card p-2 shadow-2xl">{children}</div>;
-}
-
 function EditableCustomField({
   field,
   onSave
@@ -1199,33 +1123,6 @@ function EditableCustomField({
           event.currentTarget.blur();
         }
       }}
-    />
-  );
-}
-
-function InlineCustomStatusField({
-  field,
-  onSave
-}: {
-  field: NonNullable<Task["customFieldValues"]>[number];
-  onSave: (value: string | number | null) => void;
-}) {
-  const value = field.enumOptionName ?? field.displayValue ?? "none";
-  const options = [
-    { value: "none", label: "-" },
-    ...(field.enumOptions ?? []).map((option) => ({
-      value: option.name,
-      label: option.name,
-      color: enumColor(option.name, option.color)
-    }))
-  ];
-
-  return (
-    <SearchableSelect
-      value={value}
-      options={options}
-      searchPlaceholder="Buscar Status..."
-      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
     />
   );
 }
@@ -1508,10 +1405,6 @@ function formatDisplayDate(date: string | Date): string {
   }
 
   return format(date, "dd/MM/yyyy");
-}
-
-function formatDecimal(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function formatMonthLabel(date: Date): string {

@@ -11,6 +11,8 @@ const AUTH_CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 const AUTH_CACHE_EXPIRES_AT_KEY = "mkProjetos.authCacheExpiresAt";
 const LAST_LOGIN_EMAIL_KEY = "mkProjetos.lastLoginEmail";
 
+let refreshSessionPromise: Promise<boolean> | null = null;
+
 interface RefreshSessionOptions {
   silent?: boolean;
 }
@@ -61,6 +63,10 @@ function clearAuthCache(): void {
   removeLocalStorage(AUTH_CACHE_EXPIRES_AT_KEY);
 }
 
+function isConfirmedAuthFailure(error: unknown): boolean {
+  return axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403);
+}
+
 export function getLastLoginEmail(): string {
   return readLocalStorage(LAST_LOGIN_EMAIL_KEY);
 }
@@ -98,31 +104,42 @@ export const useAuthStore = create<AuthState>((set) => ({
     clearAuthCache();
     set({ user: null, accessToken: null });
   },
-  refreshSession: async (options = {}) => {
+  refreshSession: (options = {}) => {
     if (!options.silent) {
       set({ isBootstrapping: true });
     }
 
-    try {
-      const response = await axios.post<AuthResponse>(
-        `${getApiBaseUrl()}/auth/refresh`,
-        {},
-        { withCredentials: true }
-      );
+    if (!refreshSessionPromise) {
+      refreshSessionPromise = (async () => {
+        try {
+          const response = await axios.post<AuthResponse>(
+            `${getApiBaseUrl()}/auth/refresh`,
+            {},
+            { withCredentials: true }
+          );
 
-      renewAuthCache();
-      set({ user: response.data.user, accessToken: response.data.accessToken });
-      connectNotificationSocket(response.data.user.id);
-      return true;
-    } catch {
-      disconnectNotificationSocket();
-      clearAuthCache();
-      set({ user: null, accessToken: null });
-      return false;
-    } finally {
+          renewAuthCache();
+          set({ user: response.data.user, accessToken: response.data.accessToken });
+          connectNotificationSocket(response.data.user.id);
+          return true;
+        } catch (error) {
+          if (isConfirmedAuthFailure(error)) {
+            disconnectNotificationSocket();
+            clearAuthCache();
+            set({ user: null, accessToken: null });
+          }
+
+          return false;
+        } finally {
+          refreshSessionPromise = null;
+        }
+      })();
+    }
+
+    return refreshSessionPromise.finally(() => {
       if (!options.silent) {
         set({ isBootstrapping: false });
       }
-    }
+    });
   }
 }));
