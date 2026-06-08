@@ -37,15 +37,26 @@ export const taskStatusTokens: Record<TaskStatus, { bg: string; text: string }> 
   [TaskStatus.FINISHED]: { bg: "--status-done-bg", text: "--status-done-text" }
 };
 
-export const writableTaskStatuses: TaskStatus[] = [
+export const taskStatusOptions: TaskStatus[] = [
   TaskStatus.TODO,
   TaskStatus.ON_SCHEDULE,
+  TaskStatus.OVERDUE,
   TaskStatus.IN_PROGRESS,
   TaskStatus.AWAITING_REVIEW,
   TaskStatus.IN_ANALYSIS,
   TaskStatus.AWAITING_DEFINITION,
   TaskStatus.FINISHED
 ];
+
+export const writableTaskStatuses: TaskStatus[] = taskStatusOptions.filter((status) => status !== TaskStatus.OVERDUE);
+
+export function editableTaskStatusOptions(task: { status: TaskStatus; completed: boolean; dueDate: string | null }): TaskStatus[] {
+  if (isOpenOverdueTask(task)) {
+    return [TaskStatus.OVERDUE, TaskStatus.AWAITING_DEFINITION];
+  }
+
+  return writableTaskStatuses;
+}
 
 export const priorityLabels: Record<Priority, string> = {
   [Priority.LOW]: "Baixa",
@@ -158,6 +169,14 @@ function normalizeEnumKey(value: string | null | undefined): string {
     .replace(/[\s-]+/g, "_")
     .toUpperCase()
     .trim();
+}
+
+function isOpenOverdueTask(task: { completed: boolean; dueDate: string | null }): boolean {
+  return !task.completed && Boolean(task.dueDate && task.dueDate.slice(0, 10) < todayDateOnly());
+}
+
+function todayDateOnly(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function normalizeDiscipline(value: string | null | undefined): string {

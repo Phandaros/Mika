@@ -11,6 +11,7 @@ import { MyTasksPage } from "./pages/MyTasksPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { SprintBoardPage } from "./pages/SprintBoardPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { UsersPage } from "./pages/UsersPage";
 import { Role } from "shared";
@@ -98,6 +99,8 @@ export function App() {
             <Route path="/workloads/eletrico" element={<GlobalWorkloadPage scope="electrical" />} />
             <Route path="/my-tasks" element={<MyTasksPage />} />
             <Route element={<CoordinatorRoute />}>
+              <Route path="/sprint/civil" element={<SprintBoardPage scope="civil" />} />
+              <Route path="/sprint/eletrico" element={<SprintBoardPage scope="electrical" />} />
               <Route path="/users" element={<UsersPage />} />
             </Route>
             <Route element={<AdminPermissionRoute />}>

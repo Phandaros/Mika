@@ -17,7 +17,7 @@ import { TaskStatus, type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Avatar } from "../components/shared/Avatar";
-import { writableTaskStatuses } from "../components/shared/Chip";
+import { editableTaskStatusOptions } from "../components/shared/Chip";
 import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskDetail } from "../components/task/TaskDetail";
@@ -278,6 +278,7 @@ export function MyTasksPage() {
               options={statusOptions}
               triggerClassName="h-8 w-40"
               searchPlaceholder="Buscar status..."
+              showSelectionIndicator={false}
               onValueChange={setStatusFilter}
             />
           </label>
@@ -423,7 +424,7 @@ function ListView({
                   <td className="border-l border-border p-1.5">
                     <SearchableSelect
                       value={task.status}
-                      options={writableTaskStatuses.map((status) => ({
+                      options={editableTaskStatusOptions(task).map((status) => ({
                         value: status,
                         label: statusLabel(status),
                         color: taskStatusColors[status],
@@ -431,6 +432,7 @@ function ListView({
                       }))}
                       triggerClassName="h-7 w-40 py-0"
                       searchPlaceholder="Buscar status..."
+                      showSelectionIndicator={false}
                       onValueChange={(value) => onStatusChange(task, value as TaskStatus)}
                     />
                   </td>

@@ -21,7 +21,7 @@ type CustomFieldDraft = Record<string, string>;
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
-  { value: Priority.MEDIUM, label: "Media" },
+  { value: Priority.MEDIUM, label: "Média" },
   { value: Priority.HIGH, label: "Alta" },
   { value: Priority.URGENT, label: "Urgente" }
 ];
@@ -145,7 +145,7 @@ export function TaskCreateSheet() {
     }))
   ];
   const assigneeOptions = [
-    { value: "none", label: "Sem responsavel" },
+    { value: "none", label: "Sem responsável" },
     ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
   ];
   const statusSelectOptions = [
@@ -306,6 +306,7 @@ export function TaskCreateSheet() {
                       searchPlaceholder="Buscar status..."
                       triggerClassName={compactSelectTriggerClassName}
                       contentClassName="min-w-[220px] max-w-[320px]"
+                      showSelectionIndicator={false}
                       onValueChange={(value) => setStatus(value === "none" ? "" : value)}
                     />
                   )
@@ -352,7 +353,7 @@ export function TaskCreateSheet() {
                 },
                 {
                   key: "conclusionDays",
-                  label: "Dias Conclusao",
+                  label: "Dias Conclusão",
                   render: () => <DecimalInput value={conclusionDays} onValueChange={setConclusionDays} placeholder="-" className={compactInputClassName} />
                 },
                 {
@@ -368,7 +369,7 @@ export function TaskCreateSheet() {
                 <SearchableSelect
                   value={assigneeId || "none"}
                   options={assigneeOptions}
-                  searchPlaceholder="Buscar responsavel..."
+                  searchPlaceholder="Buscar responsável..."
                   triggerClassName="min-h-10 w-full justify-start border-transparent bg-transparent px-2 text-left hover:bg-surface-hover"
                   contentClassName="min-w-[260px] max-w-[420px]"
                   onValueChange={(value) => setAssigneeId(value === "none" ? "" : value)}

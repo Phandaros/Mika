@@ -1,9 +1,9 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
-import { Priority, TaskStatus, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
+import { Priority, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
 import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
-import { completionDateForStatus, taskStatusCompletes, writableTaskStatus } from "../lib/taskStatus.js";
+import { writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
 
@@ -500,8 +500,8 @@ export const createTask: RequestHandler = async (req, res, next) => {
           maxDeadline: body.maxDeadline === undefined ? undefined : body.maxDeadline ? new Date(body.maxDeadline) : null,
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,
           stage: body.stage,
-          completed: taskStatusCompletes(status),
-          completedAtAsana: completionDateForStatus(status)
+          completed: false,
+          completedAtAsana: null
         }
       });
 
@@ -600,13 +600,11 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { assigneeGid: true, mikaStatus: true, completedAtAsana: true }
+      select: { assigneeGid: true }
     });
 
     const task = await prisma.$transaction(async (tx) => {
       const status = body.status === undefined ? undefined : writableStatus(body.status);
-      const effectiveStatus = status ?? writableStatus(existing?.mikaStatus);
-      const completed = taskStatusCompletes(effectiveStatus);
 
       await tx.task.update({
         where: { id: taskId },
@@ -624,9 +622,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
           estimatedTime: body.estimatedTime === undefined ? undefined : body.estimatedTime,
           maxDeadline: body.maxDeadline === undefined ? undefined : body.maxDeadline ? new Date(body.maxDeadline) : null,
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,
-          stage: body.stage,
-          completed,
-          completedAtAsana: completionDateForStatus(effectiveStatus, existing?.completedAtAsana)
+          stage: body.stage
         }
       });
 
@@ -701,9 +697,7 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        mikaStatus: status,
-        completed: taskStatusCompletes(status),
-        completedAtAsana: completionDateForStatus(status)
+        mikaStatus: status
       },
       include: taskInclude
     });
@@ -729,13 +723,11 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
 export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
   try {
     const body = req.body as CompletionBody;
-    const status = body.completed ? TaskStatus.FINISHED : TaskStatus.TODO;
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        mikaStatus: status,
-        completed: taskStatusCompletes(status),
-        completedAtAsana: completionDateForStatus(status)
+        completed: body.completed,
+        completedAtAsana: body.completed ? new Date() : null
       },
       include: taskInclude
     });

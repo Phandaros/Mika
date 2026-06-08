@@ -20,11 +20,11 @@ import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest }
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { useProjects } from "../../hooks/useProjects";
-import { useUpdateTask } from "../../hooks/useTasks";
+import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
-import { DisciplineChip, PlatformChip, taskStatusLabels, writableTaskStatuses } from "../shared/Chip";
+import { CompletionStatusChip, DisciplineChip, PlatformChip, editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
@@ -122,6 +122,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const { data: projects = [] } = useProjects();
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
+  const updateTaskCompletion = useUpdateTaskCompletion(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
 
@@ -187,6 +188,17 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     const updatedTask = await updateTask.mutateAsync({ id: currentTask.id, payload });
     setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
     setOpenField(null);
+  }
+
+  async function patchTaskCompletion(completed: boolean) {
+    const currentTask = visibleTask;
+
+    if (!currentTask) {
+      return;
+    }
+
+    const updatedTask = await updateTaskCompletion.mutateAsync({ id: currentTask.id, completed });
+    setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
   }
 
   async function handleDescriptionSave() {
@@ -475,7 +487,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                 label: "Status",
                 render: () => (
                   <EditableStatusField
-                    value={visibleTask.status}
+                    task={visibleTask}
                     onSave={(status) => void patchTask({ status })}
                   />
                 )
@@ -497,6 +509,16 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                   <EditableDisciplineField
                     value={visibleTask.taskDiscipline}
                     onSave={(taskDiscipline) => void patchTask({ taskDiscipline })}
+                  />
+                )
+              },
+              {
+                key: "completionStatus",
+                label: "Status de Conclusão",
+                render: () => (
+                  <EditableCompletionStatusField
+                    completed={visibleTask.completed}
+                    onSave={(completed) => void patchTaskCompletion(completed)}
                   />
                 )
               },
@@ -908,11 +930,11 @@ function EditableProjectsField({
   );
 }
 
-function EditableStatusField({ value, onSave }: { value: TaskStatus; onSave: (value: TaskStatus) => void }) {
+function EditableStatusField({ task, onSave }: { task: Task; onSave: (value: TaskStatus) => void }) {
   return (
     <SearchableSelect
-      value={value}
-      options={writableTaskStatuses.map((status) => ({
+      value={task.status}
+      options={editableTaskStatusOptions(task).map((status) => ({
         value: status,
         label: taskStatusLabels[status],
         render: <TaskStatusBadge status={status} />
@@ -920,7 +942,24 @@ function EditableStatusField({ value, onSave }: { value: TaskStatus; onSave: (va
       searchPlaceholder="Buscar status..."
       triggerClassName={compactSelectTriggerClassName}
       contentClassName="min-w-[220px] max-w-[320px]"
+      showSelectionIndicator={false}
       onValueChange={(nextValue) => onSave(nextValue as TaskStatus)}
+    />
+  );
+}
+
+function EditableCompletionStatusField({ completed, onSave }: { completed: boolean; onSave: (value: boolean) => void }) {
+  return (
+    <SearchableSelect
+      value={completed ? "completed" : "open"}
+      options={[
+        { value: "open", label: "Aberta", render: <CompletionStatusChip completed={false} /> },
+        { value: "completed", label: "Concluída", render: <CompletionStatusChip completed /> }
+      ]}
+      searchPlaceholder="Buscar conclusão..."
+      triggerClassName={compactSelectTriggerClassName}
+      contentClassName="min-w-[220px] max-w-[320px]"
+      onValueChange={(nextValue) => onSave(nextValue === "completed")}
     />
   );
 }

@@ -62,10 +62,17 @@ function browserServerUrl(): string {
 
     if (!isLocalHostname(currentHostname) && isLocalHostname(parsedEnvUrl.hostname)) {
       parsedEnvUrl.hostname = currentHostname;
-      parsedEnvUrl.port = SERVER_PORT;
-      parsedEnvUrl.pathname = "";
-      return trimTrailingSlash(parsedEnvUrl.toString());
     }
+
+    parsedEnvUrl.pathname = "";
+    parsedEnvUrl.search = "";
+    parsedEnvUrl.hash = "";
+
+    if (!parsedEnvUrl.port) {
+      parsedEnvUrl.port = SERVER_PORT;
+    }
+
+    return trimTrailingSlash(parsedEnvUrl.toString());
   }
 
   const hostname = currentHostname || DEFAULT_SERVER_HOST || "localhost";

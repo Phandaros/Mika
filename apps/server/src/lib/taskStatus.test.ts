@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TaskStatus } from "./enums.js";
-import { normalizeLegacyAsanaTaskStatus, normalizePersistedTaskStatus, publicTaskStatus } from "./taskStatus.js";
+import {
+  normalizeLegacyAsanaTaskStatus,
+  normalizePersistedTaskStatus,
+  publicTaskStatus,
+  taskStatusCompletes,
+  writableTaskStatus
+} from "./taskStatus.js";
 
 describe("task status compatibility", () => {
   it("maps legacy Asana status names to Mika statuses", () => {
@@ -14,13 +20,67 @@ describe("task status compatibility", () => {
     expect(normalizeLegacyAsanaTaskStatus("Finalizada")).toBe(TaskStatus.FINISHED);
   });
 
-  it("uses completed=true as finished even when Mika status is old TODO", () => {
+  it("does not complete tasks when operational status is review or analysis", () => {
+    expect(taskStatusCompletes(TaskStatus.AWAITING_REVIEW)).toBe(false);
+    expect(taskStatusCompletes(TaskStatus.IN_ANALYSIS)).toBe(false);
+    expect(taskStatusCompletes(TaskStatus.FINISHED)).toBe(true);
+  });
+
+  it("keeps Mika status separate from completed=true", () => {
     expect(
       publicTaskStatus({
         completed: true,
-        mikaStatus: TaskStatus.TODO,
+        mikaStatus: TaskStatus.AWAITING_REVIEW,
         assigneeStatus: null,
         dueOn: null,
+        dueAt: null
+      })
+    ).toBe(TaskStatus.AWAITING_REVIEW);
+  });
+
+  it("uses completed=true as finished for legacy tasks without Mika status", () => {
+    expect(
+      publicTaskStatus({
+        completed: true,
+        mikaStatus: null,
+        assigneeStatus: null,
+        dueOn: null,
+        dueAt: null
+      })
+    ).toBe(TaskStatus.FINISHED);
+  });
+
+  it("moves open past-due tasks to overdue when status is not awaiting definition", () => {
+    expect(
+      publicTaskStatus({
+        completed: false,
+        mikaStatus: TaskStatus.IN_PROGRESS,
+        assigneeStatus: null,
+        dueOn: yesterdayDateOnly(),
+        dueAt: null
+      })
+    ).toBe(TaskStatus.OVERDUE);
+  });
+
+  it("keeps open past-due tasks in awaiting definition", () => {
+    expect(
+      publicTaskStatus({
+        completed: false,
+        mikaStatus: TaskStatus.AWAITING_DEFINITION,
+        assigneeStatus: null,
+        dueOn: yesterdayDateOnly(),
+        dueAt: null
+      })
+    ).toBe(TaskStatus.AWAITING_DEFINITION);
+  });
+
+  it("does not move completed past-due tasks to overdue", () => {
+    expect(
+      publicTaskStatus({
+        completed: true,
+        mikaStatus: null,
+        assigneeStatus: null,
+        dueOn: yesterdayDateOnly(),
         dueAt: null
       })
     ).toBe(TaskStatus.FINISHED);
@@ -30,5 +90,12 @@ describe("task status compatibility", () => {
     expect(normalizeLegacyAsanaTaskStatus("Atrasado")).toBe(TaskStatus.OVERDUE);
     expect(normalizePersistedTaskStatus("Atrasado")).toBeNull();
     expect(normalizePersistedTaskStatus(TaskStatus.OVERDUE)).toBeNull();
+    expect(writableTaskStatus(TaskStatus.OVERDUE)).toBe(TaskStatus.TODO);
   });
 });
+
+function yesterdayDateOnly(): string {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().slice(0, 10);
+}

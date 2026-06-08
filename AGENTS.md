@@ -409,6 +409,8 @@ Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globa
 - ✅ Nomes de arquivos em `camelCase` para utilitários, `PascalCase` para componentes React
 - ✅ Nomes de branches: `feat/nome-da-feature`, `fix/descricao`, `chore/descricao`
 - ✅ Manter o Electron como shell nativo seguro, apontando para o Vite dev server em desenvolvimento e para o build estático do client em produção
+- ✅ Em desenvolvimento, testar UI sempre pelo client Vite em `http://localhost:5173` ou `http://desktop-tp1sbgh:5173`. O server dev roda em `PORT=3101`; a produção LAN fica em `3001`.
+- ✅ Ao testar features com Codex/Playwright/browser, abrir primeiro a porta `5173` (Vite). Não usar `http://localhost:3001/` para UI durante desenvolvimento; `3001` é o server de produção.
 
 ### Convenção de commits (Conventional Commits)
 ```
@@ -426,8 +428,11 @@ docs: atualiza AGENTS.md com rotas de upload
 // package.json (root)
 {
   "scripts": {
-    "dev":     "turbo run dev",
+    "dev":     "cross-env NODE_ENV=development PORT=3101 CLIENT_URL=http://localhost:5173 VITE_API_URL=http://localhost:3101/api/v1 VITE_SOCKET_URL=http://localhost:3101 turbo run dev --filter=server --filter=client",
+    "dev:client": "cross-env VITE_API_URL=http://localhost:3101/api/v1 VITE_SOCKET_URL=http://localhost:3101 pnpm --filter client dev",
+    "dev:server": "cross-env NODE_ENV=development PORT=3101 CLIENT_URL=http://localhost:5173 pnpm --filter server dev",
     "build":   "turbo run build",
+    "start:prod": "turbo run build --filter=client --filter=server && cross-env NODE_ENV=production pnpm --filter server start",
     "lint":    "turbo run lint",
     "test":    "turbo run test",
     "db:push": "pnpm --filter server prisma db push",
@@ -439,6 +444,13 @@ docs: atualiza AGENTS.md com rotas de upload
   }
 }
 ```
+
+### Fluxo dev + prod na mesma máquina
+
+- Produção LAN: `pnpm start:prod` usa `PORT=3001` e serve o build estático do client pelo Express em `http://desktop-tp1sbgh:3001/`.
+- Desenvolvimento paralelo: `pnpm dev` usa `PORT=3101` para o server dev e `5173` para o Vite. Acesse sempre `http://desktop-tp1sbgh:5173/`.
+- Não rode comandos que matem a porta `3001` enquanto a equipe estiver usando a produção. Scripts de dev devem limpar apenas `3101` e `5173`.
+- Alterações em `src/` não afetam a produção até rodar novo build e reiniciar `pnpm start:prod`.
 
 ```json
 // apps/server/package.json scripts

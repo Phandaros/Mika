@@ -7,6 +7,7 @@ import {
   FolderKanban,
   Home,
   Inbox,
+  KanbanSquare,
   ListTodo,
   Plus,
   Target,
@@ -117,7 +118,14 @@ export function Sidebar() {
       </nav>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <SidebarSection title="Insights" items={[{ label: "Relatorios", icon: BarChart3, to: "/projects" }, { label: "Metas", icon: Target, to: "/" }]} />
-        <SidebarSection title="Projetos" items={[{ label: "Projetos ativos", icon: FolderKanban, to: "/projects" }]} />
+        <SidebarSection
+          title="Projetos"
+          items={[
+            { label: "Projetos ativos", icon: FolderKanban, to: "/projects" },
+            { label: "Civil - Sprint Board", icon: KanbanSquare, to: "/sprint/civil", minRole: Role.COORDINATOR },
+            { label: "Elétrico - Sprint Board", icon: KanbanSquare, to: "/sprint/eletrico", minRole: Role.COORDINATOR }
+          ].filter((item) => !item.minRole || (user && roleWeight[user.role] >= roleWeight[item.minRole]))}
+        />
         <SidebarSection
           title="Workloads"
           items={[
@@ -147,7 +155,7 @@ function SidebarSection({
   items
 }: {
   title: string;
-  items: Array<{ label: string; icon: typeof Home; color?: string; to?: string }>;
+  items: Array<{ label: string; icon: typeof Home; color?: string; to?: string; minRole?: Role }>;
 }) {
   return (
     <section className="mb-5">

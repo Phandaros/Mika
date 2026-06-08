@@ -1,4 +1,4 @@
-import { useMutation, useQueries, useQuery, type QueryKey } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueries, useQuery, type QueryKey } from "@tanstack/react-query";
 import { addMonths, endOfMonth, format, startOfMonth } from "date-fns";
 import { Priority, TaskStatus as TaskStatusValue } from "shared";
 import type {
@@ -13,6 +13,18 @@ import { queryClient } from "../lib/queryClient";
 
 interface TasksResponse {
   tasks: Task[];
+}
+
+interface SprintTasksResponse {
+  tasks: Task[];
+  nextCursor: string | null;
+}
+
+interface SprintSummaryResponse {
+  total: number;
+  active: number;
+  completed: number;
+  byStatus: Record<TaskStatus, number>;
 }
 
 interface TaskResponse {
@@ -119,11 +131,7 @@ function updateTaskInProjectCache(projectId: string, updatedTask: Task) {
   );
 
   queryClient.setQueriesData<Task[]>(
-    {
-      predicate: (query) =>
-        Array.isArray(query.queryKey) &&
-        (query.queryKey[0] === "projectWorkloadTasks" || query.queryKey[0] === "globalWorkloadTasks")
-    },
+    { predicate: workloadQueryPredicate },
     (currentTasks) => currentTasks?.map((task) => (task.id === updatedTask.id ? mergeTask(task, updatedTask) : task))
   );
 }
@@ -133,6 +141,10 @@ function workloadQueryPredicate(query: { queryKey: QueryKey }): boolean {
     Array.isArray(query.queryKey) &&
     (query.queryKey[0] === "projectWorkloadTasks" || query.queryKey[0] === "globalWorkloadTasks")
   );
+}
+
+function sprintBoardQueryPredicate(query: { queryKey: QueryKey }): boolean {
+  return Array.isArray(query.queryKey) && (query.queryKey[0] === "sprintBoardTasks" || query.queryKey[0] === "sprintBoardSummary");
 }
 
 function invalidateWorkloadTaskQueries(projectId?: string) {
@@ -149,6 +161,10 @@ function invalidateWorkloadTaskQueries(projectId?: string) {
       return query.queryKey[0] === "projectWorkloadTasks" && (!projectId || query.queryKey[1] === projectId);
     }
   });
+}
+
+function invalidateSprintBoardTaskQueries() {
+  void queryClient.invalidateQueries({ predicate: sprintBoardQueryPredicate });
 }
 
 function patchTaskForOptimisticUpdate(task: Task, payload: UpdateTaskRequest): Task {
@@ -355,6 +371,32 @@ export function useGlobalWorkloadTaskChunks(
   };
 }
 
+export function useSprintBoardSummary(scope: "civil" | "electrical") {
+  return useQuery({
+    queryKey: ["sprintBoardSummary", scope],
+    queryFn: async () => {
+      const response = await api.get<SprintSummaryResponse>("/sprint/summary", {
+        params: { scope }
+      });
+      return response.data;
+    }
+  });
+}
+
+export function useSprintBoardColumnTasks(scope: "civil" | "electrical", status: TaskStatus) {
+  return useInfiniteQuery({
+    queryKey: ["sprintBoardTasks", scope, status],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const response = await api.get<SprintTasksResponse>("/sprint/tasks", {
+        params: { scope, status, cursor: pageParam }
+      });
+      return response.data;
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined
+  });
+}
+
 export function useTasks(sectionId: string | undefined) {
   return useQuery({
     queryKey: ["sections", sectionId, "tasks"],
@@ -454,6 +496,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
         await queryClient.invalidateQueries({ queryKey: ["sections", sectionId, "tasks"] });
       }
       invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
     }
   });
 }
@@ -511,6 +554,7 @@ export function useUpdateTask(projectId: string) {
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
     },
     onSettled: async (_data, _error, variables) => {
       if (!projectId || variables.payload.projectIds !== undefined || variables.payload.projectMemberships !== undefined) {
@@ -529,6 +573,7 @@ export function useUpdateTaskStatus(projectId: string) {
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
     }
   });
 }
@@ -542,6 +587,7 @@ export function useUpdateTaskCompletion(projectId: string) {
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
     }
   });
 }
@@ -571,6 +617,7 @@ export function useDeleteTask(projectId?: string) {
         tasks?.filter((task) => task.id !== taskId)
       );
       invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
     }
   });
 }

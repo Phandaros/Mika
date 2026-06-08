@@ -76,11 +76,25 @@ type PendingTaskMove = {
 
 type DragPreview = {
   taskId: string;
+  kind: "move" | "resize-start" | "resize-end";
+  startDate: string;
+  dueDate: string;
   deltaDays: number;
   pixelOffset: number;
   pixelOffsetY: number;
   targetAssigneeId: string | null;
   targetRowOffset: number;
+};
+
+type QueuedTaskMove = {
+  task: TaskWithDiscipline;
+  payload: UpdateTaskRequest;
+  visual: PendingTaskMove;
+};
+
+type TaskMoveQueueEntry = {
+  inFlight: QueuedTaskMove | null;
+  pending: QueuedTaskMove | null;
 };
 
 type WorkloadGrouping = "assignee" | "section";
@@ -417,6 +431,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const smoothWheelIntent = useRef(0);
   const extendingLeft = useRef(false);
   const extendingRight = useRef(false);
+  const taskMoveQueues = useRef<Record<string, TaskMoveQueueEntry>>({});
   const deleteTask = useDeleteTask(projectId);
 
   useEffect(() => {
@@ -843,6 +858,68 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     event.dataTransfer.dropEffect = "move";
   }
 
+  function samePendingTaskMove(a: PendingTaskMove | undefined, b: PendingTaskMove): boolean {
+    return (
+      a?.startDate === b.startDate &&
+      a.dueDate === b.dueDate &&
+      (a.assigneeId ?? null) === (b.assigneeId ?? null)
+    );
+  }
+
+  function removePendingTaskMoveIfCurrent(taskId: string, expected: PendingTaskMove) {
+    setPendingTaskMoves((current) =>
+      samePendingTaskMove(current[taskId], expected) ? removePendingTaskMove(current, taskId) : current
+    );
+  }
+
+  function setQueuedTaskMove(taskId: string, visual: PendingTaskMove) {
+    setPendingTaskMoves((current) => ({
+      ...current,
+      [taskId]: visual
+    }));
+  }
+
+  function queueTaskMove(task: TaskWithDiscipline, payload: UpdateTaskRequest, visual: PendingTaskMove) {
+    setQueuedTaskMove(task.id, visual);
+    const currentEntry = taskMoveQueues.current[task.id] ?? { inFlight: null, pending: null };
+    const move: QueuedTaskMove = { task, payload, visual };
+
+    if (currentEntry.inFlight) {
+      taskMoveQueues.current[task.id] = { ...currentEntry, pending: move };
+      return;
+    }
+
+    taskMoveQueues.current[task.id] = { inFlight: move, pending: null };
+    void flushTaskMoveQueue(task.id);
+  }
+
+  async function flushTaskMoveQueue(taskId: string) {
+    const entry = taskMoveQueues.current[taskId];
+    const move = entry?.inFlight;
+    if (!entry || !move) {
+      return;
+    }
+
+    try {
+      const updatedTask = await updateTask.mutateAsync({ id: taskId, payload: move.payload });
+      onTaskUpdated?.(mergeTimelineTask(move.task, updatedTask));
+      removePendingTaskMoveIfCurrent(taskId, move.visual);
+    } catch {
+      const latestEntry = taskMoveQueues.current[taskId];
+      if (!latestEntry?.pending) {
+        removePendingTaskMoveIfCurrent(taskId, move.visual);
+      }
+    } finally {
+      const latestEntry = taskMoveQueues.current[taskId];
+      if (latestEntry?.pending) {
+        taskMoveQueues.current[taskId] = { inFlight: latestEntry.pending, pending: null };
+        void flushTaskMoveQueue(taskId);
+      } else if (latestEntry) {
+        delete taskMoveQueues.current[taskId];
+      }
+    }
+  }
+
   function handleTimelineDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     const id = event.dataTransfer.getData(WORKLOAD_TASK_DRAG_MIME);
@@ -867,22 +944,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return;
     }
 
-    setPendingTaskMoves((current) => ({
-      ...current,
-      [id]: { startDate: ymd, dueDate: ymd }
-    }));
+    const task = tasks.find((item) => item.id === id);
+    if (!task) {
+      return;
+    }
 
-    void updateTask
-      .mutateAsync({ id, payload: { startDate: ymd, dueDate: ymd } })
-      .then((updatedTask) => {
-        const originalTask = tasks.find((task) => task.id === updatedTask.id);
-        if (originalTask) {
-          onTaskUpdated?.(mergeTimelineTask(originalTask, updatedTask));
-        }
-      })
-      .catch(() => {
-        setPendingTaskMoves((current) => removePendingTaskMove(current, id));
-      });
+    queueTaskMove(task, { startDate: ymd, dueDate: ymd }, { startDate: ymd, dueDate: ymd });
   }
 
   function assigneeIdForRow(rowId: string): string | null {
@@ -950,7 +1017,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     return current;
   }
 
-  async function recalculateTaskDates(task: TaskWithDiscipline) {
+  function recalculateTaskDates(task: TaskWithDiscipline) {
     const startDate = toYmd(task.startDate);
     const estimatedDays = task.estimatedDays ?? task.estimatedTime ?? null;
     if (!startDate || estimatedDays == null || estimatedDays <= 0) {
@@ -958,19 +1025,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     const dueDate = recalculatedDueDate(startDate, estimatedDays);
-    setPendingTaskMoves((current) => ({
-      ...current,
-      [task.id]: { startDate, dueDate }
-    }));
-
-    try {
-      const updatedTask = await updateTask.mutateAsync({ id: task.id, payload: { startDate, dueDate } });
-      onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
-      toast.success("Datas recalculadas");
-    } catch {
-      setPendingTaskMoves((current) => removePendingTaskMove(current, task.id));
-      toast.error("Nao foi possivel recalcular as datas");
-    }
+    queueTaskMove(task, { startDate, dueDate }, { startDate, dueDate });
+    toast.success("Datas recalculadas");
   }
 
   function workloadRowAtClientY(clientY: number): { assigneeId: string | null; rowTop: number } | null {
@@ -998,9 +1054,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   }
 
   function handleBarPointerDown(
-    ev: ReactPointerEvent<HTMLButtonElement>,
+    ev: ReactPointerEvent<HTMLElement>,
     task: TaskWithDiscipline,
-    bounds: { start: string; end: string }
+    bounds: { start: string; end: string },
+    kind: DragPreview["kind"] = "move"
   ) {
     if (ev.button !== 0) {
       return;
@@ -1014,7 +1071,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     const originRow = workloadRowAtClientY(originY);
     const originRowTop = originRow?.rowTop ?? 0;
     const originalAssigneeId = task.assigneeId ?? null;
-    let deltaDays = 0;
+    let targetStartDate = bounds.start;
+    let targetDueDate = bounds.end;
     let targetAssigneeId = originalAssigneeId;
     let targetRowOffset = 0;
     let moved = false;
@@ -1027,10 +1085,17 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       const pixelOffset = e.clientX - originX;
       const pixelOffsetY = e.clientY - originY;
       const next = Math.round(pixelOffset / DAY_W);
-      const targetRow = workloadRowAtClientY(e.clientY);
-      if (targetRow) {
-        targetAssigneeId = targetRow.assigneeId;
-        targetRowOffset = targetRow.rowTop - originRowTop;
+      const box = scrollRef.current;
+      if (box) {
+        maybeExtendTimeline(box, kind === "resize-start" ? "left" : kind === "resize-end" ? "right" : "both");
+      }
+
+      if (kind === "move") {
+        const targetRow = workloadRowAtClientY(e.clientY);
+        if (targetRow) {
+          targetAssigneeId = targetRow.assigneeId;
+          targetRowOffset = targetRow.rowTop - originRowTop;
+        }
       }
 
       if (Math.abs(pixelOffset) > 4 || Math.abs(pixelOffsetY) > 4) {
@@ -1038,12 +1103,25 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       }
 
       if (moved) {
-        deltaDays = next;
+        if (kind === "resize-start") {
+          targetStartDate = ymdMin(addCalendarDaysYmd(bounds.start, next), bounds.end);
+          targetDueDate = bounds.end;
+        } else if (kind === "resize-end") {
+          targetStartDate = bounds.start;
+          targetDueDate = ymdMax(addCalendarDaysYmd(bounds.end, next), bounds.start);
+        } else {
+          targetStartDate = addCalendarDaysYmd(bounds.start, next);
+          targetDueDate = addCalendarDaysYmd(bounds.end, next);
+        }
+
         setDragPreview({
           taskId: task.id,
+          kind,
+          startDate: targetStartDate,
+          dueDate: targetDueDate,
           deltaDays: next,
           pixelOffset,
-          pixelOffsetY,
+          pixelOffsetY: kind === "move" ? pixelOffsetY : 0,
           targetAssigneeId,
           targetRowOffset
         });
@@ -1072,38 +1150,21 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
       const assigneeChanged = targetAssigneeId !== originalAssigneeId;
 
-      if (deltaDays === 0 && !assigneeChanged) {
+      if (targetStartDate === bounds.start && targetDueDate === bounds.end && !assigneeChanged) {
         setDragPreview(null);
         return;
       }
 
-      const newStart = addCalendarDaysYmd(bounds.start, deltaDays);
-      const newEnd = addCalendarDaysYmd(bounds.end, deltaDays);
-      const payload: UpdateTaskRequest = { startDate: newStart, dueDate: newEnd };
+      const payload: UpdateTaskRequest = { startDate: targetStartDate, dueDate: targetDueDate };
       if (assigneeChanged) {
         payload.assigneeId = targetAssigneeId;
       }
-      setPendingTaskMoves((current) => ({
-        ...current,
-        [task.id]: {
-          startDate: newStart,
-          dueDate: newEnd,
-          ...(assigneeChanged ? { assigneeId: targetAssigneeId } : {})
-        }
-      }));
       setDragPreview(null);
-      void updateTask
-        .mutateAsync({
-          id: task.id,
-          payload
-        })
-        .then((updatedTask) => {
-          onTaskUpdated?.(mergeTimelineTask(task, updatedTask));
-        })
-        .catch(() => {
-          setDragPreview(null);
-          setPendingTaskMoves((current) => removePendingTaskMove(current, task.id));
-        });
+      queueTaskMove(task, payload, {
+        startDate: targetStartDate,
+        dueDate: targetDueDate,
+        ...(assigneeChanged ? { assigneeId: targetAssigneeId } : {})
+      });
     }
 
     window.addEventListener("pointermove", onMove);
@@ -1175,8 +1236,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             activeDragPreview !== null && activeDragPreview.targetAssigneeId !== (p.task.assigneeId ?? null);
           const span = endIdx - startIdx + 1;
           const left = startIdx * DAY_W + 2;
-          const previewLeft = activeDragPreview ? (startIdx + activeDragPreview.deltaDays) * DAY_W + 2 : left;
           const width = span * DAY_W - 4;
+          const previewClip = activeDragPreview
+            ? clipToViewport({ start: activeDragPreview.startDate, end: activeDragPreview.dueDate }, unionFrom, unionTo)
+            : null;
+          const previewLeft = previewClip ? previewClip.startIdx * DAY_W + 2 : left;
+          const previewWidth = previewClip ? (previewClip.endIdx - previewClip.startIdx + 1) * DAY_W - 4 : width;
+          const isMovingTask = activeDragPreview?.kind === "move";
           const estimatedDays = p.task.estimatedDays ?? p.task.estimatedTime ?? null;
           const canRecalculateDates = Boolean(toYmd(p.task.startDate) && estimatedDays != null && estimatedDays > 0);
 
@@ -1186,13 +1252,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
           return (
             <Fragment key={`${rowKey}-${p.task.id}`}>
-              {activeDragPreview && (activeDragPreview.deltaDays !== 0 || previewAssigneeChanged) ? (
+              {activeDragPreview && previewClip && (activeDragPreview.deltaDays !== 0 || previewAssigneeChanged) ? (
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute z-[5] rounded-md border border-dashed border-brand-orange/50 bg-brand-orange/10"
                   style={{
                     left: previewLeft,
-                    width,
+                    width: previewWidth,
                     top: CHART_H + 4 + lane * LANE_STRIDE + activeDragPreview.targetRowOffset,
                     height: BAR_H,
                     transition:
@@ -1214,7 +1280,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     height: BAR_H,
                     backgroundColor: statusColorVar(p.task.status),
                     opacity: p.task.completed && !activeDragPreview ? 0.45 : 1,
-                    transform: activeDragPreview
+                    transform: activeDragPreview && isMovingTask
                       ? `translate3d(${activeDragPreview.pixelOffset}px, ${activeDragPreview.pixelOffsetY - 2}px, 0) scale(1.025)`
                       : undefined,
                     transition: activeDragPreview
@@ -1223,7 +1289,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     willChange: activeDragPreview ? "transform" : undefined
                   }}
                   className={cn(
-                    "z-[6] cursor-grab select-none overflow-hidden rounded-md border border-border px-1 text-left text-[11px] font-medium text-white shadow-sm outline-none active:cursor-grabbing",
+                    "z-[6] cursor-grab select-none overflow-hidden rounded-md border border-border px-3 text-left text-[11px] font-medium text-white shadow-sm outline-none active:cursor-grabbing",
                     "transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-bg-1",
                     activeDragPreview &&
                       "z-[18] cursor-grabbing border-brand-orange/60 shadow-2xl ring-2 ring-brand-orange/70"
@@ -1238,7 +1304,31 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   }}
                   onContextMenu={() => setEmptyCellContext(null)}
                 >
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 left-0 z-[2] w-2 cursor-ew-resize bg-white/10 opacity-0 transition hover:opacity-100"
+                    onPointerDown={(e) => {
+                      const b = clientTaskBounds(p.task);
+                      if (!b) {
+                        return;
+                      }
+
+                      handleBarPointerDown(e, p.task, b, "resize-start");
+                    }}
+                  />
                   <span className="line-clamp-1">{workloadTaskLabel(p.task, mode)}</span>
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 right-0 z-[2] w-2 cursor-ew-resize bg-white/10 opacity-0 transition hover:opacity-100"
+                    onPointerDown={(e) => {
+                      const b = clientTaskBounds(p.task);
+                      if (!b) {
+                        return;
+                      }
+
+                      handleBarPointerDown(e, p.task, b, "resize-end");
+                    }}
+                  />
                 </button>
               </ContextMenuTrigger>
               <ContextMenuContent>
@@ -1347,6 +1437,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 ]}
                 triggerClassName="h-9 text-xs"
                 searchPlaceholder="Buscar status..."
+                showSelectionIndicator={false}
                 onValueChange={setStatusFilter}
               />
               <SearchableSelect

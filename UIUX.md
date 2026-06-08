@@ -12,6 +12,9 @@
 - Não criar landing page, hero, cards decorativos, gradientes chamativos, ilustrações ornamentais ou layouts de marketing dentro do app.
 - A UI deve favorecer uso repetido em LAN por equipe técnica: menos ornamento, mais consistência, densidade e controles claros.
 - Textos visíveis na UI devem preservar caracteres especiais em português (acentos, cedilha e til). Dados importados sem acento devem ser normalizados para exibição quando forem labels globais conhecidas.
+- Labels globais conhecidos devem usar acentuação correta: `REVISÃO`, `ANÁLISE`, `DEFINIÇÃO`, `Elétrico`, `Concluídas`, `Responsável`, `Sem responsável`, `Sem seção`, `Dias Conclusão`.
+- Todo arquivo de UI e documentação deve ser salvo e revisado como UTF-8 real. Nunca commitar mojibake como `Ã©`, `Ã§`, `Ã£`, `Â`, `â€”`, `â‰¤` ou sequências similares.
+- Antes de finalizar alteração visual, pesquisar nos arquivos tocados por padrões de mojibake (`Ã`, `Â`, `â`) e por labels globais sem acento (`REVISAO`, `ANALISE`, `DEFINICAO`, `responsavel`, `Conclusao`).
 
 ---
 
@@ -492,7 +495,18 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 
 ---
 
-## 14. Acessibilidade Mínima
+## 14. Performance: Listas Grandes
+
+- Telas operacionais nunca devem carregar a base inteira de projetos/tarefas no primeiro render.
+- Vistas com muitos registros devem usar paginação, lazy-loading, infinite scroll ou virtualização.
+- Boards Kanban/Sprint devem paginar por coluna/status, carregando mais itens apenas quando o usuário rolar aquela coluna.
+- Contadores totais devem vir de endpoints agregados, nunca do tamanho do array carregado no client.
+- Limite padrão por página: 25 itens; limite máximo: 50 itens, salvo justificativa explícita.
+- Renderizar somente itens necessários para a interação atual; evitar centenas de cards/linhas simultâneos no DOM.
+
+---
+
+## 15. Acessibilidade Mínima
 
 - Todo elemento interativo: `focus-visible:ring-2 ring-[--color-brand-orange] ring-offset-1 ring-offset-[--bg-2]`
 - Ícones decorativos: `aria-hidden="true"`
@@ -500,7 +514,7 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 
 ---
 
-## 15. QA Visual (Playwright)
+## 16. QA Visual (Playwright)
 
 - Usar Playwright ao alterar TaskDetail, TaskCreateSheet, tabela Lista, dropdowns, datepickers, chips coloridos ou responsividade
 - Após mudanças relevantes de UI, validar em desktop e viewport menor:
@@ -512,7 +526,7 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 
 ---
 
-## 16. Checklist — O que NUNCA fazer
+## 17. Checklist — O que NUNCA fazer
 
 - ❌ `bg-blue-500`, `bg-yellow-400`, `bg-pink-500` como fundo de chip — usar tokens
 - ❌ `text-white` sobre fundo colorido saturado

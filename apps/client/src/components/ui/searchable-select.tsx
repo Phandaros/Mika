@@ -28,6 +28,7 @@ interface SearchableSelectProps {
   className?: string;
   triggerClassName?: string;
   contentClassName?: string;
+  showSelectionIndicator?: boolean;
   renderValue?: (option: SearchableSelectOption) => ReactNode;
   renderOption?: (option: SearchableSelectOption) => ReactNode;
 }
@@ -44,6 +45,7 @@ export function SearchableSelect({
   className,
   triggerClassName,
   contentClassName,
+  showSelectionIndicator = true,
   renderValue,
   renderOption
 }: SearchableSelectProps) {
@@ -131,9 +133,11 @@ export function SearchableSelect({
                   )}
                   style={option.color ? coloredFieldStyle(option.color) : undefined}
                 >
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                    {option.value === value ? <Check size={15} className="text-brand-orange" /> : null}
-                  </span>
+                  {showSelectionIndicator ? (
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                      {option.value === value ? <Check size={15} className="text-brand-orange" /> : null}
+                    </span>
+                  ) : null}
                   {renderOption?.(option) ?? option.render ?? <DefaultOption option={option} />}
                 </button>
               ))}

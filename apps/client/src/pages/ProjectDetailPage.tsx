@@ -49,9 +49,9 @@ const columns: Array<{ status: TaskStatus; label: string }> = [
   { status: TaskStatus.ON_SCHEDULE, label: "NO CRONOGRAMA" },
   { status: TaskStatus.OVERDUE, label: "ATRASADO" },
   { status: TaskStatus.IN_PROGRESS, label: "EM ANDAMENTO" },
-  { status: TaskStatus.AWAITING_REVIEW, label: "AGUARDANDO REVISAO" },
-  { status: TaskStatus.IN_ANALYSIS, label: "EM ANALISE" },
-  { status: TaskStatus.AWAITING_DEFINITION, label: "AGUARDANDO DEFINICAO" },
+  { status: TaskStatus.AWAITING_REVIEW, label: "AGUARDANDO REVISÃO" },
+  { status: TaskStatus.IN_ANALYSIS, label: "EM ANÁLISE" },
+  { status: TaskStatus.AWAITING_DEFINITION, label: "AGUARDANDO DEFINIÇÃO" },
   { status: TaskStatus.FINISHED, label: "FINALIZADO" }
 ];
 
@@ -607,6 +607,7 @@ function ListControls({
             value={statusFilter}
             options={statusOptions}
             searchPlaceholder="Buscar status..."
+            showSelectionIndicator={false}
             onValueChange={onStatusFilterChange}
           />
           <SearchableSelect

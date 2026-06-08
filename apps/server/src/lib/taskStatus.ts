@@ -1,11 +1,5 @@
 import { TaskStatus, type TaskStatus as TaskStatusValue } from "./enums.js";
 
-const completingTaskStatuses = new Set<TaskStatusValue>([
-  TaskStatus.IN_ANALYSIS,
-  TaskStatus.AWAITING_REVIEW,
-  TaskStatus.FINISHED
-]);
-
 const legacyEnumStatusMap: Record<string, TaskStatusValue> = {
   BACKLOG: TaskStatus.ON_SCHEDULE,
   TODO: TaskStatus.TODO,
@@ -28,7 +22,7 @@ const legacyAsanaStatusMap: Record<string, TaskStatusValue> = {
 };
 
 export function taskStatusCompletes(status: TaskStatusValue): boolean {
-  return completingTaskStatuses.has(status);
+  return status === TaskStatus.FINISHED;
 }
 
 export function completionDateForStatus(status: TaskStatusValue, currentCompletedAt?: Date | null): Date | null {
@@ -70,13 +64,13 @@ export function normalizeTaskStatus(task: {
   mikaStatus: string | null;
   assigneeStatus: string | null;
 }): TaskStatusValue {
-  if (task.completed) {
-    return TaskStatus.FINISHED;
-  }
-
   const normalized = normalizePersistedTaskStatus(task.mikaStatus);
   if (normalized) {
     return normalized;
+  }
+
+  if (task.completed) {
+    return TaskStatus.FINISHED;
   }
 
   if (task.assigneeStatus === "upcoming") {
@@ -100,7 +94,7 @@ export function publicTaskStatus(task: {
   const normalized = normalizeTaskStatus(task);
   const dueDate = dateOnlyString(task.dueOn) ?? dateOnlyFromDate(task.dueAt);
 
-  if (!task.completed && dueDate && dueDate < todayDateOnly()) {
+  if (!task.completed && normalized !== TaskStatus.AWAITING_DEFINITION && dueDate && dueDate < todayDateOnly()) {
     return TaskStatus.OVERDUE;
   }
 
