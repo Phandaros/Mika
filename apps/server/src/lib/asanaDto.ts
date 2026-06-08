@@ -101,7 +101,6 @@ type UserRecord = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 type TaskRecord = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
 type ProjectRecord = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 type SectionRecord = ProjectRecord["sections"][number];
-type MembershipRecord = ProjectRecord["memberships"][number];
 export type TaskCustomFieldCatalog = Prisma.AsanaCustomFieldGetPayload<{ include: typeof taskCustomFieldCatalogInclude }>[];
 
 function taskCustomFieldSortValue(field: Pick<TaskCustomFieldCatalog[number], "mikaSortOrder" | "name">): string {
@@ -272,8 +271,8 @@ export function toTaskDto(
   const membership = task.memberships[0];
   const section = membership?.section;
   const project = section?.project ?? membership?.project;
-  const disciplineId = fallbackSection?.id ?? section?.id ?? "uncategorized";
-  const disciplineName = fallbackSection?.name ?? section?.name ?? membership?.sectionName ?? "Sem secao";
+  const disciplineId = fallbackSection?.id ?? section?.id ?? "";
+  const disciplineName = fallbackSection?.name ?? section?.name ?? membership?.sectionName ?? "";
   const projectId = fallbackSection?.projectId ?? project?.id ?? membership?.projectGid ?? "";
   const projectName =
     fallbackSection?.projectName != null && fallbackSection.projectName !== ""
@@ -415,33 +414,6 @@ export function toDisciplineDto(section: SectionRecord, projectId: string, taskF
 
 export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCustomFieldCatalog) {
   const disciplines = project.sections.map((section) => toDisciplineDto(section, project.id, taskFieldCatalog));
-  const sectionIds = new Set(project.sections.map((section) => section.id));
-  const looseMemberships = project.memberships.filter(
-    (membership): membership is MembershipRecord & { task: TaskRecord } =>
-      Boolean(membership.task) && (!membership.section || !sectionIds.has(membership.section.id))
-  );
-
-  if (looseMemberships.length > 0) {
-    disciplines.push({
-      id: `project-${project.id}-uncategorized`,
-      asanaGid: `local:section:uncategorized:${project.id}`,
-      projectId: project.id,
-      name: "Sem secao",
-      type: DisciplineType.OTHER,
-      status: DisciplineStatus.IN_PROGRESS,
-      responsibleId: null,
-      createdAt: project.createdAt,
-      updatedAt: project.updatedAt,
-      responsible: null,
-      tasks: looseMemberships.map((membership) =>
-        toTaskDto(membership.task, {
-          id: `project-${project.id}-uncategorized`,
-          name: "Sem secao",
-          projectId: project.id
-        }, taskFieldCatalog)
-      )
-    });
-  }
 
   return {
     id: project.id,

@@ -54,46 +54,6 @@ type SprintCursor = {
   id: string;
 };
 
-const scopeTokens: Record<Exclude<WorkloadScope, "general">, string[]> = {
-  civil: [
-    "hidrau",
-    "hidrául",
-    "sanit",
-    "ppc",
-    "sprinkler",
-    "pressuriz",
-    "gas",
-    "gás",
-    "climat",
-    "exaust",
-    "vacuo",
-    "vácuo",
-    "civil",
-    "incendi",
-    "incêndi",
-    "hvac",
-    "bim",
-    "estrutur",
-    "drenagem",
-    "drenag"
-  ],
-  electrical: [
-    "eletric",
-    "elétric",
-    "spda",
-    "telecom",
-    "automac",
-    "automaç",
-    "ilumin",
-    "subest",
-    "cabine",
-    "forca",
-    "força",
-    "energia",
-    "lumin"
-  ]
-};
-
 function todayDateOnly(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -133,15 +93,14 @@ function decodeCursor(value: string | undefined): SprintCursor | null {
 }
 
 function sprintScopeWhere(scope: Exclude<WorkloadScope, "general">): Prisma.TaskWhereInput {
-  const tokens = scopeTokens[scope];
-  const nameMatches = tokens.flatMap((token) => [{ sectionName: { contains: token } }, { section: { name: { contains: token } } }]);
+  const sectionName = scope === "electrical" ? "Elétrico" : "Civil";
 
   return {
     memberships: {
       some: {
         AND: [
           { OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }] },
-          { OR: nameMatches }
+          { section: { name: sectionName } }
         ]
       }
     }
@@ -289,7 +248,7 @@ function matchingActiveMembership(task: SprintTaskRecord, scope: WorkloadScope) 
       return false;
     }
 
-    return sectionMatchesWorkloadScope(membership.section?.name ?? membership.sectionName, scope);
+    return Boolean(membership.section && sectionMatchesWorkloadScope(membership.section.name, scope));
   });
 }
 
@@ -332,8 +291,8 @@ export const listSprintTasks: RequestHandler = async (req, res, next) => {
         return toTaskDto(
           task,
           {
-            id: membership.section?.id ?? `project-${project.id}-uncategorized`,
-            name: membership.section?.name ?? membership.sectionName ?? "Sem secao",
+            id: membership.section?.id ?? "",
+            name: membership.section?.name ?? "",
             projectId: project.id,
             projectName: project.name
           },

@@ -15,7 +15,7 @@ const router = Router();
 
 const sectionSchema = z.object({
   name: z.string().min(2),
-  type: z.nativeEnum(DisciplineType),
+  type: z.nativeEnum(DisciplineType).optional(),
   status: z.nativeEnum(DisciplineStatus).optional(),
   responsibleId: z.string().nullable().optional()
 });

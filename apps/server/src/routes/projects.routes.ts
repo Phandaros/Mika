@@ -9,7 +9,7 @@ import {
   updateProject
 } from "../controllers/projects.controller.js";
 import { auth } from "../middleware/auth.js";
-import { DisciplineType, ProjectStatus, Role } from "../lib/enums.js";
+import { ProjectStatus, Role } from "../lib/enums.js";
 import { requireRole } from "../middleware/role.js";
 import { validateBody } from "../middleware/validate.js";
 
@@ -25,7 +25,7 @@ const projectSchema = z.object({
   status: z.nativeEnum(ProjectStatus).optional(),
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),
-  disciplineTypes: z.array(z.nativeEnum(DisciplineType)).optional()
+  disciplineTypes: z.array(z.string()).optional()
 });
 
 const updateProjectSchema = projectSchema.partial();

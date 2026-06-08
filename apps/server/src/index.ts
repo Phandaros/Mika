@@ -5,6 +5,7 @@ import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
 import { createCorsOptions } from "./lib/cors.js";
+import { normalizeAllProjectSections } from "./lib/canonicalSections.js";
 import { prisma } from "./lib/prisma.js";
 import { initSocket } from "./lib/socket.js";
 import apiRoutes from "./routes/index.js";
@@ -67,6 +68,8 @@ app.use((_req, res) => {
 });
 
 app.use(errorHandler);
+
+await normalizeAllProjectSections(prisma);
 
 server.listen(env.PORT, "0.0.0.0", () => {
   console.log(`MK Projetos server running on port ${env.PORT}`);

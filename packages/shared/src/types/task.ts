@@ -116,7 +116,7 @@ export interface UpdateTaskRequest {
   projectIds?: string[];
   projectMemberships?: Array<{
     projectId: string;
-    sectionId?: string | null;
+    sectionId: string;
   }>;
   customFieldValues?: Array<{
     id?: string;

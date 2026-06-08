@@ -311,7 +311,7 @@ export function ProjectDetailPage() {
       <div className="flex flex-wrap gap-2">
         <ScopeTab active={taskScope === "general"} label="Geral" onClick={() => setTaskScope("general")} />
         <ScopeTab active={taskScope === "civil"} label="Civil" onClick={() => setTaskScope("civil")} />
-        <ScopeTab active={taskScope === "electrical"} label="Elétrica" onClick={() => setTaskScope("electrical")} />
+        <ScopeTab active={taskScope === "electrical"} label="Elétrico" onClick={() => setTaskScope("electrical")} />
       </div>
 
       <div className="min-w-0">
@@ -649,7 +649,7 @@ function ListControls({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 text-sm text-text-secondary">
-          Agrupado por Geral, Civil e Elétrica.
+          Agrupado por Geral, Civil e Elétrico.
         </PopoverContent>
       </Popover>
       <Popover>
@@ -1038,7 +1038,7 @@ function groupTasksByScope(tasks: TaskWithDiscipline[]) {
   const groups: Array<{ scope: TaskScope; label: string; color: string; tasks: TaskWithDiscipline[] }> = [
     { scope: "general", label: "Geral", color: "var(--color-text-muted)", tasks: [] },
     { scope: "civil", label: "Civil", color: "var(--disc-hid-text)", tasks: [] },
-    { scope: "electrical", label: "Elétrica", color: "var(--disc-ele-text)", tasks: [] }
+    { scope: "electrical", label: "Elétrico", color: "var(--disc-ele-text)", tasks: [] }
   ];
 
   for (const task of tasks) {
@@ -1180,36 +1180,13 @@ function projectBuilder(project: { builder?: string | null; client?: string | nu
   return project.builder ?? project.client ?? null;
 }
 
-function sectionScope(section: Pick<Section, "name" | "type">): TaskScope {
+function sectionScope(section: Pick<Section, "name">): TaskScope {
   const normalizedName = section.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const electricalTypes = new Set<DisciplineType>([
-    "ELECTRICAL" as DisciplineType,
-    "SPDA" as DisciplineType,
-    "TELECOM" as DisciplineType,
-    "AUTOMATION" as DisciplineType
-  ]);
-  const civilTypes = new Set<DisciplineType>([
-    "HYDRAULIC" as DisciplineType,
-    "SANITARY" as DisciplineType,
-    "FIRE_PROTECTION" as DisciplineType,
-    "SPRINKLER" as DisciplineType,
-    "GAS" as DisciplineType,
-    "HVAC" as DisciplineType
-  ]);
-
-  if (
-    electricalTypes.has(section.type) ||
-    ["ele", "eletrico", "spda", "tel", "telecom", "aut"].some((token) => normalizedName.includes(token))
-  ) {
+  if (normalizedName === "eletrico") {
     return "electrical";
   }
 
-  if (
-    civilTypes.has(section.type) ||
-    ["civil", "hid", "ppci", "preventivo", "sanitario", "arquitetonico", "estudo preliminar"].some((token) =>
-      normalizedName.includes(token)
-    )
-  ) {
+  if (normalizedName === "civil") {
     return "civil";
   }
 

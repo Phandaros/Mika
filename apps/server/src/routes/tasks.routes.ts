@@ -48,7 +48,7 @@ const updateTaskSchema = taskSchema.partial().extend({
   projectIds: z.array(z.string()).min(1).optional(),
   projectMemberships: z.array(z.object({
     projectId: z.string(),
-    sectionId: z.string().nullable().optional()
+    sectionId: z.string()
   })).optional(),
   customFieldValues: z.array(z.object({
     id: z.string().optional(),

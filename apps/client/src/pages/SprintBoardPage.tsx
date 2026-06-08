@@ -181,6 +181,7 @@ function SprintColumn({
         <section
           ref={provided.innerRef}
           {...provided.droppableProps}
+          data-testid={`sprint-column-${status}`}
           className={cn(
             "flex h-[calc(100vh-230px)] min-h-[520px] w-80 flex-none flex-col rounded-md border border-border bg-surface p-3 transition",
             snapshot.isDraggingOver && acceptsDrop ? "border-brand-orange" : "",
@@ -192,7 +193,7 @@ function SprintColumn({
               <h2 className="truncate text-sm font-bold text-text-primary">{label}</h2>
               <p className="mt-1 text-xs text-text-muted">{taskStatusLabels[status]}</p>
             </div>
-            <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{totalCount}</span>
+            <span data-testid={`sprint-column-count-${status}`} className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{totalCount}</span>
           </div>
           <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pr-1">
             {isLoading ? (
@@ -210,6 +211,9 @@ function SprintColumn({
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
+                        data-testid={`sprint-task-card-${task.id}`}
+                        data-task-id={task.id}
+                        data-task-status={task.status}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
                         <SprintTaskCard task={task} onOpen={onOpenTask} />
@@ -237,7 +241,7 @@ function SprintColumn({
 
 function SprintTaskCard({ task, onOpen }: { task: Task; onOpen: (task: Task) => void }) {
   const projectName = task.discipline?.projectName ?? task.projects?.[0]?.name ?? "Sem projeto";
-  const sectionName = task.discipline?.name ?? task.projects?.[0]?.sectionName ?? "Sem seção";
+  const sectionName = task.discipline?.name ?? task.projects?.[0]?.sectionName ?? "";
   const dateLabel = task.maxDeadline ?? task.dueDate;
 
   return (
@@ -264,7 +268,7 @@ function SprintTaskCard({ task, onOpen }: { task: Task; onOpen: (task: Task) => 
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <PriorityBadge priority={task.priority} />
-        <DisciplineChip discipline={task.taskDiscipline ?? sectionName} />
+        {task.taskDiscipline || sectionName ? <DisciplineChip discipline={task.taskDiscipline ?? sectionName} /> : null}
         <TaskStatusBadge status={task.status} />
         <CompletionStatusChip completed={task.completed} />
       </div>

@@ -98,8 +98,7 @@ function taskMatchesScope(task: GlobalWorkloadTaskRecord, scope: WorkloadScope):
       return false;
     }
 
-    const sectionName = m.section?.name ?? m.sectionName ?? "";
-    return sectionMatchesWorkloadScope(sectionName, scope);
+    return Boolean(m.section && sectionMatchesWorkloadScope(m.section.name, scope));
   });
 }
 
@@ -110,18 +109,13 @@ function resolveGlobalWorkloadFallback(task: GlobalWorkloadTaskRecord): { id: st
       continue;
     }
 
-    if (membership.section) {
-      return {
-        id: membership.section.id,
-        name: membership.section.name,
-        projectId: project.id,
-        projectName: project.name
-      };
+    if (!membership.section) {
+      continue;
     }
 
     return {
-      id: `project-${project.id}-uncategorized`,
-      name: membership.sectionName ?? "Sem secao",
+      id: membership.section.id,
+      name: membership.section.name,
       projectId: project.id,
       projectName: project.name
     };

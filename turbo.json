@@ -3,7 +3,14 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "NODE_ENV",
+        "PORT",
+        "CLIENT_URL",
+        "VITE_API_URL",
+        "VITE_SOCKET_URL"
+      ]
     },
     "build": {
       "dependsOn": ["^build"],

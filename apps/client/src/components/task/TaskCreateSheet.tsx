@@ -129,6 +129,18 @@ export function TaskCreateSheet() {
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !projectId || sections.length === 0) {
+      return;
+    }
+
+    if (!sectionId || !sections.some((section) => section.id === sectionId)) {
+      const nextSectionId = defaultSectionId(sections);
+      setSectionId(nextSectionId);
+      setStage(sections.find((section) => section.id === nextSectionId)?.name ?? "");
+    }
+  }, [open, projectId, sectionId, sections]);
+
   const projectSelectOptions = [
     { value: "none", label: "Sem projeto" },
     ...[...projects].sort((a, b) => a.name.localeCompare(b.name)).map((project) => ({
@@ -137,13 +149,10 @@ export function TaskCreateSheet() {
       description: projectBuilder(project)
     }))
   ];
-  const sectionSelectOptions = [
-    { value: "none", label: "Sem secao" },
-    ...sections.map((section) => ({
-      value: section.id,
-      label: section.name
-    }))
-  ];
+  const sectionSelectOptions = sections.map((section) => ({
+    value: section.id,
+    label: section.name
+  }));
   const assigneeOptions = [
     { value: "none", label: "Sem responsável" },
     ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
@@ -169,8 +178,10 @@ export function TaskCreateSheet() {
 
   function handleProjectChange(nextProjectId: string) {
     const value = nextProjectId === "none" ? "" : nextProjectId;
+    const project = projects.find((item) => item.id === value) ?? null;
+    const nextSections = project ? sectionsOf(project) : [];
     setProjectId(value);
-    setSectionId("");
+    setSectionId(defaultSectionId(nextSections));
     setStage("");
     setCustomFieldDraft({});
   }
@@ -185,6 +196,11 @@ export function TaskCreateSheet() {
 
     if (!trimmedTitle) {
       toast.error("Informe o nome da tarefa");
+      return;
+    }
+
+    if (!projectId || !sectionId) {
+      toast.error("Selecione projeto e seção");
       return;
     }
 
@@ -204,8 +220,8 @@ export function TaskCreateSheet() {
     const payload: CreateTaskRequest = {
       title: trimmedTitle,
       description: description.trim() || null,
-      projectId: projectId || null,
-      sectionId: sectionId || null,
+      projectId,
+      sectionId,
       ...(status ? { status: status as TaskStatus } : {}),
       ...(priority ? { priority: priority as Priority } : {}),
       assigneeId: assigneeId || null,
@@ -279,19 +295,18 @@ export function TaskCreateSheet() {
                 },
                 {
                   key: "section",
-                  label: "Secao",
+                  label: "Seção",
                   render: () => (
                     <SearchableSelect
-                      value={sectionId || "none"}
+                      value={sectionId}
                       options={sectionSelectOptions}
-                      searchPlaceholder="Buscar secao..."
+                      searchPlaceholder="Buscar seção..."
                       triggerClassName={compactSelectTriggerClassName}
                       contentClassName="min-w-[260px] max-w-[420px]"
-                      disabled={!projectId}
+                      disabled={!projectId || sections.length === 0}
                       onValueChange={(value) => {
-                        const next = value === "none" ? "" : value;
-                        setSectionId(next);
-                        setStage(sections.find((section) => section.id === next)?.name ?? "");
+                        setSectionId(value);
+                        setStage(sections.find((section) => section.id === value)?.name ?? "");
                       }}
                     />
                   )
@@ -559,6 +574,18 @@ function isPromotedTaskField(field: Pick<ProjectCustomField, "mikaKey" | "mikaLa
 
 function sectionsOf(project: Project) {
   return project.sections ?? project.disciplines ?? [];
+}
+
+function defaultSectionId(sections: ReturnType<typeof sectionsOf>) {
+  return sections.find((section) => normalizeSectionName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
+}
+
+function normalizeSectionName(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 function projectBuilder(project: { builder?: string | null; client?: string | null }) {

@@ -80,7 +80,7 @@ async function main(): Promise<void> {
     }
   });
 
-  const sectionNames = ["Backlog", "Em andamento", "Concluido"];
+  const sectionNames = ["Civil", "Elétrico"];
   const sections: { id: string; asanaGid: string; name: string }[] = [];
 
   for (const name of sectionNames) {
@@ -97,9 +97,9 @@ async function main(): Promise<void> {
   const demoTasks: Array<{ name: string; status: string; priority: string; sectionIdx: number }> = [
     { name: "Levantar pontos de agua fria", status: TaskStatus.ON_SCHEDULE, priority: Priority.MEDIUM, sectionIdx: 0 },
     { name: "Compatibilizar shaft hidraulico", status: TaskStatus.TODO, priority: Priority.HIGH, sectionIdx: 0 },
-    { name: "Revisar prumadas sanitarias", status: TaskStatus.IN_PROGRESS, priority: Priority.URGENT, sectionIdx: 1 },
-    { name: "Conferir memorial PPCI", status: TaskStatus.AWAITING_REVIEW, priority: Priority.HIGH, sectionIdx: 1 },
-    { name: "Enviar prancha de sprinklers", status: TaskStatus.FINISHED, priority: Priority.LOW, sectionIdx: 2 }
+    { name: "Revisar entrada de energia", status: TaskStatus.IN_PROGRESS, priority: Priority.URGENT, sectionIdx: 1 },
+    { name: "Conferir memorial eletrico", status: TaskStatus.AWAITING_REVIEW, priority: Priority.HIGH, sectionIdx: 1 },
+    { name: "Enviar prancha civil", status: TaskStatus.FINISHED, priority: Priority.LOW, sectionIdx: 0 }
   ];
 
   for (const row of demoTasks) {

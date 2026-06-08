@@ -2,7 +2,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { DisciplineType, ProjectStatus, type DisciplineType as DisciplineTypeValue, type ProjectStatus as ProjectStatusValue } from "../lib/enums.js";
+import { ProjectStatus, type ProjectStatus as ProjectStatusValue } from "../lib/enums.js";
 import {
   makeLocalAsanaGid,
   projectInclude,
@@ -11,6 +11,7 @@ import {
   toProjectDto,
   toTaskDto
 } from "../lib/asanaDto.js";
+import { ensureCanonicalSectionsForProject } from "../lib/canonicalSections.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 interface ProjectBody {
@@ -23,7 +24,7 @@ interface ProjectBody {
   status?: ProjectStatusValue;
   startDate?: string | null;
   endDate?: string | null;
-  disciplineTypes?: DisciplineTypeValue[];
+  disciplineTypes?: string[];
 }
 
 function firstDateOnly(value: string | null | undefined): string | null | undefined {
@@ -53,48 +54,6 @@ async function workspaceGid(tx: Prisma.TransactionClient): Promise<string> {
   });
 
   return createdWorkspace.asanaGid;
-}
-
-async function syncProjectSections(
-  tx: Prisma.TransactionClient,
-  projectGid: string,
-  disciplineTypes: DisciplineTypeValue[] | undefined
-): Promise<void> {
-  if (!disciplineTypes) {
-    return;
-  }
-
-  const names = [...new Set(disciplineTypes)].map((type) => disciplineName(type));
-  const existingSections = await tx.section.findMany({
-    where: { projectGid },
-    select: { id: true, name: true }
-  });
-  const selectedNameSet = new Set(names);
-  const sectionsToRemove = existingSections.filter((section) => !selectedNameSet.has(section.name));
-
-  if (sectionsToRemove.length > 0) {
-    await tx.section.deleteMany({
-      where: {
-        id: {
-          in: sectionsToRemove.map((section) => section.id)
-        }
-      }
-    });
-  }
-
-  for (const name of names) {
-    const existingSection = existingSections.find((section) => section.name === name);
-
-    if (!existingSection) {
-      await tx.section.create({
-        data: {
-          asanaGid: makeLocalAsanaGid("section"),
-          projectGid,
-          name
-        }
-      });
-    }
-  }
 }
 
 export const listProjects: RequestHandler = async (_req, res, next) => {
@@ -182,7 +141,7 @@ function rangeOverlaps(bounds: { start: string; end: string }, from: string, to:
 function resolveWorkloadDisciplineFallback(
   task: WorkloadTaskRecord,
   project: { id: string; asanaGid: string }
-): { id: string; name: string; projectId: string } {
+): { id: string; name: string; projectId: string } | undefined {
   for (const membership of task.memberships) {
     if (membership.section && membership.section.projectGid === project.asanaGid) {
       return {
@@ -191,21 +150,9 @@ function resolveWorkloadDisciplineFallback(
         projectId: project.id
       };
     }
-
-    if (membership.projectGid === project.asanaGid) {
-      return {
-        id: `project-${project.id}-uncategorized`,
-        name: "Sem secao",
-        projectId: project.id
-      };
-    }
   }
 
-  return {
-    id: `project-${project.id}-uncategorized`,
-    name: "Sem secao",
-    projectId: project.id
-  };
+  return undefined;
 }
 
 export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
@@ -265,7 +212,9 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
       include: taskCustomFieldCatalogInclude,
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
-    const dtos = filtered.map((task) => toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog));
+    const dtos = filtered
+      .map((task) => toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog))
+      .filter((task) => Boolean(task.discipline.id));
 
     res.json({ tasks: dtos });
   } catch (error) {
@@ -313,7 +262,11 @@ export const createProject: RequestHandler = async (req, res, next) => {
         }
       });
 
-      await syncProjectSections(tx, createdProject.asanaGid, body.disciplineTypes);
+      await ensureCanonicalSectionsForProject(tx, {
+        id: createdProject.id,
+        asanaGid: createdProject.asanaGid,
+        name: createdProject.name
+      });
 
       return tx.project.findUniqueOrThrow({
         where: { id: createdProject.id },
@@ -350,7 +303,11 @@ export const updateProject: RequestHandler = async (req, res, next) => {
         }
       });
 
-      await syncProjectSections(tx, updatedProject.asanaGid, body.disciplineTypes);
+      await ensureCanonicalSectionsForProject(tx, {
+        id: updatedProject.id,
+        asanaGid: updatedProject.asanaGid,
+        name: updatedProject.name
+      });
 
       return tx.project.findUniqueOrThrow({
         where: { id: req.params.id },
@@ -378,24 +335,3 @@ export const deleteProject: RequestHandler = async (req, res, next) => {
     next(error);
   }
 };
-
-function disciplineName(type: DisciplineTypeValue): string {
-  const labels: Record<DisciplineTypeValue, string> = {
-    [DisciplineType.HYDRAULIC]: "Hidraulico",
-    [DisciplineType.SANITARY]: "Sanitario",
-    [DisciplineType.FIRE_PROTECTION]: "PPCI",
-    [DisciplineType.SPRINKLER]: "Sprinkler",
-    [DisciplineType.PRESSURIZED_STAIR]: "Escada Pressurizada",
-    [DisciplineType.ELECTRICAL]: "Eletrico",
-    [DisciplineType.SPDA]: "SPDA",
-    [DisciplineType.TELECOM]: "Telecom",
-    [DisciplineType.HVAC]: "Climatizacao",
-    [DisciplineType.GAS]: "Gas",
-    [DisciplineType.AUTOMATION]: "Automacao",
-    [DisciplineType.EXHAUST]: "Exaustao",
-    [DisciplineType.VACUUM]: "Aspiracao Central",
-    [DisciplineType.OTHER]: "Outros"
-  };
-
-  return labels[type];
-}

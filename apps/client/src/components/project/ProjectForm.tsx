@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { DEFAULT_DISCIPLINES, ProjectStatus, type DisciplineType, type Project } from "shared";
+import { ProjectStatus, type Project } from "shared";
 import { toast } from "sonner";
 import { useCreateProject, useUpdateProject } from "../../hooks/useProjects";
-import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { SearchableSelect } from "../ui/searchable-select";
@@ -25,10 +24,6 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
   const [areaM2, setAreaM2] = useState(project?.areaM2?.toFixed(2) ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
   const [status, setStatus] = useState<ProjectStatus>(project?.status ?? ProjectStatus.ACTIVE);
-  const [showDisciplineError, setShowDisciplineError] = useState(false);
-  const [selectedDisciplineTypes, setSelectedDisciplineTypes] = useState<DisciplineType[]>(
-    project?.disciplines?.map((discipline) => discipline.type) ?? []
-  );
 
   useEffect(() => {
     setName(project?.name ?? "");
@@ -37,27 +32,10 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
     setAreaM2(project?.areaM2?.toFixed(2) ?? "");
     setDescription(project?.description ?? "");
     setStatus(project?.status ?? ProjectStatus.ACTIVE);
-    setSelectedDisciplineTypes(project?.disciplines?.map((discipline) => discipline.type) ?? []);
-    setShowDisciplineError(false);
   }, [project]);
-
-  function toggleDiscipline(type: DisciplineType) {
-    setShowDisciplineError(false);
-    setSelectedDisciplineTypes((currentTypes) =>
-      currentTypes.includes(type)
-        ? currentTypes.filter((currentType) => currentType !== type)
-        : [...currentTypes, type]
-    );
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (selectedDisciplineTypes.length === 0) {
-      setShowDisciplineError(true);
-      toast.error("Selecione pelo menos uma disciplina");
-      return;
-    }
 
     const parsedArea = areaM2 ? Number(areaM2.replace(",", ".")) : null;
 
@@ -73,8 +51,7 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
       builder: builder || null,
       areaM2: parsedArea === null ? null : Number(parsedArea.toFixed(2)),
       description: description || null,
-      status,
-      disciplineTypes: selectedDisciplineTypes
+      status
     };
 
     try {
@@ -91,7 +68,6 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
       setAreaM2("");
       setDescription("");
       setStatus(ProjectStatus.ACTIVE);
-      setSelectedDisciplineTypes([]);
       onCreated?.();
     } catch {
       toast.error(project ? "Não foi possível salvar o projeto" : "Não foi possível criar o projeto");
@@ -148,36 +124,6 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
         searchPlaceholder="Buscar status..."
         onValueChange={(value) => setStatus(value as ProjectStatus)}
       />
-      <fieldset className="grid gap-3">
-        <legend className="text-sm font-semibold text-text-secondary">Disciplinas do projeto</legend>
-        {showDisciplineError ? <p className="text-sm font-semibold text-red-400">Selecione pelo menos uma disciplina.</p> : null}
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {DEFAULT_DISCIPLINES.map((discipline) => {
-            const checked = selectedDisciplineTypes.includes(discipline.type);
-
-            return (
-              <label
-                key={discipline.type}
-                className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm font-semibold transition",
-                  checked
-                    ? "border-brand-orange bg-brand-orange/15 text-text-primary"
-                    : "border-border bg-brand-black text-text-secondary hover:bg-surface-hover"
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleDiscipline(discipline.type)}
-                  className="h-4 w-4 accent-brand-orange"
-                />
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: discipline.color }} />
-                {discipline.name}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
       {project?.customFields?.length ? (
         <section className="grid gap-3 rounded-md border border-border bg-brand-black p-4">
           <div>

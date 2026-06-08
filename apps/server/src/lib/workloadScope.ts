@@ -10,31 +10,14 @@ function normalizeForMatch(name: string): string {
     .trim();
 }
 
-/** Heurística por nome de seção (import Asana / disciplinas MK). */
+/** Escopo por seção canônica do Mika. */
 export function sectionMatchesWorkloadScope(sectionName: string | null | undefined, scope: WorkloadScope): boolean {
   if (scope === "general") {
     return true;
   }
 
-  const n = normalizeForMatch(sectionName ?? "");
-  if (!n) {
-    return false;
-  }
-
-  const electrical = /(eletric|spda|telecom|automac|ilumin|subest|cabine|forca|energia|lumin)/.test(n);
-  const civil = /(hidrau|sanit|ppc|sprinkler|pressuriz|g[aá]s|climat|exaust|vacuo|civil|incendi|hvac|bim|estrutur|hidraulic|drenagem|drenag)/.test(
-    n
-  );
-
-  if (scope === "electrical") {
-    return electrical;
-  }
-
-  if (scope === "civil") {
-    return civil && !electrical;
-  }
-
-  return false;
+  const normalized = normalizeForMatch(sectionName ?? "");
+  return scope === "electrical" ? normalized === "eletrico" : normalized === "civil";
 }
 
 export function parseWorkloadScope(value: unknown): WorkloadScope {

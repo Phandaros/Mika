@@ -3,6 +3,7 @@ import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
 import { Priority, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
 import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
+import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
@@ -252,57 +253,7 @@ async function syncTaskProjectMemberships(
     return;
   }
 
-  const uniqueProjectIds = [...new Set(projectIds)];
-  if (uniqueProjectIds.length === 0) {
-    throw new AppError(400, "A tarefa precisa estar vinculada a pelo menos um projeto");
-  }
-
-  const projects = await tx.project.findMany({
-    where: { id: { in: uniqueProjectIds } },
-    select: { id: true, asanaGid: true, name: true }
-  });
-
-  if (projects.length !== uniqueProjectIds.length) {
-    throw new AppError(400, "Um ou mais projetos selecionados nao existem");
-  }
-
-  const targetProjectGids = new Set(projects.map((project) => project.asanaGid));
-  const existingMemberships = await tx.taskMembership.findMany({
-    where: { taskId },
-    include: {
-      section: true,
-      project: true
-    }
-  });
-
-  for (const membership of existingMemberships) {
-    const membershipProjectGid = membership.section?.projectGid ?? membership.projectGid;
-    if (!membershipProjectGid || !targetProjectGids.has(membershipProjectGid)) {
-      await tx.taskMembership.delete({ where: { id: membership.id } });
-    }
-  }
-
-  const remainingProjectGids = new Set(
-    existingMemberships
-      .map((membership) => membership.section?.projectGid ?? membership.projectGid)
-      .filter((projectGid): projectGid is string => Boolean(projectGid && targetProjectGids.has(projectGid)))
-  );
-
-  for (const project of projects) {
-    if (remainingProjectGids.has(project.asanaGid)) {
-      continue;
-    }
-
-    await tx.taskMembership.create({
-      data: {
-        taskId,
-        projectGid: project.asanaGid,
-        projectName: project.name,
-        sectionGid: null,
-        sectionName: null
-      }
-    });
-  }
+  throw new AppError(400, "Informe a secao de cada projeto da tarefa");
 }
 
 async function syncTaskProjectSectionMemberships(
@@ -314,9 +265,22 @@ async function syncTaskProjectSectionMemberships(
     return;
   }
 
-  const uniqueMemberships = [...new Map(projectMemberships.map((item) => [`${item.projectId}:${item.sectionId ?? ""}`, item])).values()];
+  if (projectMemberships.length === 0) {
+    throw new AppError(400, "A tarefa precisa estar vinculada a pelo menos um projeto e uma secao");
+  }
+
+  if (projectMemberships.some((item) => !item.sectionId)) {
+    throw new AppError(400, "Toda tarefa precisa ter uma secao em cada projeto");
+  }
+
+  const uniqueProjectIds = new Set(projectMemberships.map((item) => item.projectId));
+  if (uniqueProjectIds.size !== projectMemberships.length) {
+    throw new AppError(400, "Informe apenas uma secao por projeto");
+  }
+
+  const uniqueMemberships = projectMemberships as Array<{ projectId: string; sectionId: string }>;
   const projectIds = [...new Set(uniqueMemberships.map((item) => item.projectId))];
-  const sectionIds = [...new Set(uniqueMemberships.map((item) => item.sectionId).filter((id): id is string => Boolean(id)))];
+  const sectionIds = [...new Set(uniqueMemberships.map((item) => item.sectionId))];
 
   const [projects, sections] = await Promise.all([
     tx.project.findMany({
@@ -349,18 +313,26 @@ async function syncTaskProjectSectionMemberships(
       continue;
     }
 
-    const section = membership.sectionId ? sectionById.get(membership.sectionId) : null;
-    if (section && section.project.id !== project.id) {
+    const section = sectionById.get(membership.sectionId);
+    if (!section) {
+      throw new AppError(400, "Uma ou mais secoes selecionadas nao existem");
+    }
+
+    if (section.project.id !== project.id) {
       throw new AppError(400, "A secao selecionada nao pertence ao projeto");
+    }
+
+    if (!isCanonicalSectionName(section.name)) {
+      throw new AppError(400, "A secao selecionada deve ser Civil ou Eletrico");
     }
 
     await tx.taskMembership.create({
       data: {
         taskId,
-        projectGid: section ? section.project.asanaGid : project.asanaGid,
-        projectName: section ? section.project.name : project.name,
-        sectionGid: section?.asanaGid ?? null,
-        sectionName: section?.name ?? null
+        projectGid: section.project.asanaGid,
+        projectName: section.project.name,
+        sectionGid: section.asanaGid,
+        sectionName: section.name
       }
     });
   }
@@ -374,48 +346,34 @@ async function createOptionalTaskMembership(
 ): Promise<void> {
   const requestedSectionId = body.sectionId || routeSectionId;
 
-  if (requestedSectionId) {
-    const section = await tx.section.findUnique({
-      where: { id: requestedSectionId },
-      include: { project: true }
-    });
-
-    if (!section) {
-      throw new AppError(404, "Section not found");
-    }
-
-    await tx.taskMembership.create({
-      data: {
-        taskId,
-        projectGid: section.projectGid,
-        projectName: section.project.name,
-        sectionGid: section.asanaGid,
-        sectionName: section.name
-      }
-    });
-    return;
+  if (!requestedSectionId) {
+    throw new AppError(400, "Toda tarefa precisa ter uma secao");
   }
 
-  if (!body.projectId) {
-    return;
-  }
-
-  const project = await tx.project.findUnique({
-    where: { id: body.projectId },
-    select: { asanaGid: true, name: true }
+  const section = await tx.section.findUnique({
+    where: { id: requestedSectionId },
+    include: { project: true }
   });
 
-  if (!project) {
-    throw new AppError(404, "Project not found");
+  if (!section) {
+    throw new AppError(404, "Section not found");
+  }
+
+  if (!isCanonicalSectionName(section.name)) {
+    throw new AppError(400, "A secao selecionada deve ser Civil ou Eletrico");
+  }
+
+  if (body.projectId && body.projectId !== section.project.id) {
+    throw new AppError(400, "A secao selecionada nao pertence ao projeto");
   }
 
   await tx.taskMembership.create({
     data: {
       taskId,
-      projectGid: project.asanaGid,
-      projectName: project.name,
-      sectionGid: null,
-      sectionName: null
+      projectGid: section.projectGid,
+      projectName: section.project.name,
+      sectionGid: section.asanaGid,
+      sectionName: section.name
     }
   });
 }

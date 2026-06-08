@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
-import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toDisciplineDto } from "../lib/asanaDto.js";
+import { taskCustomFieldCatalogInclude, taskInclude, toDisciplineDto } from "../lib/asanaDto.js";
+import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 interface SectionBody {
@@ -34,7 +35,9 @@ export const listSections: RequestHandler = async (req, res, next) => {
       include: taskCustomFieldCatalogInclude,
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
-    const sections = project.sections.map((section) => toDisciplineDto(section, project.id, taskFieldCatalog));
+    const sections = project.sections
+      .filter((section) => isCanonicalSectionName(section.name))
+      .map((section) => toDisciplineDto(section, project.id, taskFieldCatalog));
     res.json({ sections, disciplines: sections });
   } catch (error) {
     next(error);
@@ -43,29 +46,7 @@ export const listSections: RequestHandler = async (req, res, next) => {
 
 export const createSection: RequestHandler = async (req, res, next) => {
   try {
-    const project = await prisma.project.findUnique({ where: { id: req.params.projectId } });
-
-    if (!project) {
-      throw new AppError(404, "Project not found");
-    }
-
-    const body = req.body as Required<Pick<SectionBody, "name">>;
-    const section = await prisma.section.create({
-      data: {
-        asanaGid: makeLocalAsanaGid("section"),
-        projectGid: project.asanaGid,
-        name: body.name
-      },
-      include: { memberships: { include: { task: { include: taskInclude } } } }
-    });
-
-    const taskFieldCatalog = await prisma.asanaCustomField.findMany({
-      where: { mikaTaskField: true },
-      include: taskCustomFieldCatalogInclude,
-      orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
-    });
-    const dto = toDisciplineDto(section, project.id, taskFieldCatalog);
-    res.status(201).json({ section: dto, discipline: dto });
+    throw new AppError(409, "Projetos usam somente as secoes fixas Civil e Eletrico");
   } catch (error) {
     next(error);
   }
@@ -73,10 +54,8 @@ export const createSection: RequestHandler = async (req, res, next) => {
 
 export const updateSection: RequestHandler = async (req, res, next) => {
   try {
-    const body = req.body as SectionBody;
-    const section = await prisma.section.update({
+    const section = await prisma.section.findUnique({
       where: { id: req.params.id },
-      data: { name: body.name },
       include: {
         project: true,
         memberships: {
@@ -86,6 +65,15 @@ export const updateSection: RequestHandler = async (req, res, next) => {
         }
       }
     });
+
+    if (!section) {
+      throw new AppError(404, "Section not found");
+    }
+
+    const body = req.body as SectionBody;
+    if (body.name !== undefined && body.name !== section.name) {
+      throw new AppError(409, "As secoes fixas Civil e Eletrico nao podem ser renomeadas");
+    }
 
     const taskFieldCatalog = await prisma.asanaCustomField.findMany({
       where: { mikaTaskField: true },
@@ -101,8 +89,13 @@ export const updateSection: RequestHandler = async (req, res, next) => {
 
 export const deleteSection: RequestHandler = async (req, res, next) => {
   try {
-    await prisma.section.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    const section = await prisma.section.findUnique({ where: { id: req.params.id } });
+
+    if (!section) {
+      throw new AppError(404, "Section not found");
+    }
+
+    throw new AppError(409, "As secoes fixas Civil e Eletrico nao podem ser excluidas");
   } catch (error) {
     next(error);
   }

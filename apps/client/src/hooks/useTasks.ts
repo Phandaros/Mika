@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueries, useQuery, type QueryKey } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueries, useQuery, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { addMonths, endOfMonth, format, startOfMonth } from "date-fns";
 import { Priority, TaskStatus as TaskStatusValue } from "shared";
 import type {
@@ -39,6 +39,8 @@ type UpdateTaskMutationContext = {
   previousSectionId: string | undefined;
   previousSectionTasks: Task[] | undefined;
   previousWorkloadQueries: Array<[QueryKey, Task[] | undefined]>;
+  previousSprintBoardQueries: Array<[QueryKey, InfiniteData<SprintTasksResponse> | undefined]>;
+  previousSprintBoardSummaries: Array<[QueryKey, SprintSummaryResponse | undefined]>;
 };
 
 export function useTaskById(taskId: string | null | undefined) {
@@ -147,6 +149,14 @@ function sprintBoardQueryPredicate(query: { queryKey: QueryKey }): boolean {
   return Array.isArray(query.queryKey) && (query.queryKey[0] === "sprintBoardTasks" || query.queryKey[0] === "sprintBoardSummary");
 }
 
+function sprintBoardTasksQueryPredicate(query: { queryKey: QueryKey }): boolean {
+  return Array.isArray(query.queryKey) && query.queryKey[0] === "sprintBoardTasks";
+}
+
+function sprintBoardSummaryQueryPredicate(query: { queryKey: QueryKey }): boolean {
+  return Array.isArray(query.queryKey) && query.queryKey[0] === "sprintBoardSummary";
+}
+
 function invalidateWorkloadTaskQueries(projectId?: string) {
   void queryClient.invalidateQueries({
     predicate: (query) => {
@@ -163,8 +173,89 @@ function invalidateWorkloadTaskQueries(projectId?: string) {
   });
 }
 
-function invalidateSprintBoardTaskQueries() {
-  void queryClient.invalidateQueries({ predicate: sprintBoardQueryPredicate });
+function invalidateSprintBoardTaskQueries(refetchType: "active" | "inactive" | "all" | "none" = "active") {
+  void queryClient.invalidateQueries({ predicate: sprintBoardQueryPredicate, refetchType });
+}
+
+function updateSprintBoardTaskCaches(updatedTask: Task): Set<string> {
+  const sprintBoardQueries = queryClient.getQueriesData<InfiniteData<SprintTasksResponse>>({
+    predicate: sprintBoardTasksQueryPredicate
+  });
+  const touchedScopes = new Set<string>();
+
+  for (const [queryKey, data] of sprintBoardQueries) {
+    if (!data || !Array.isArray(queryKey)) {
+      continue;
+    }
+
+    const hasTask = data.pages.some((page) => page.tasks.some((task) => task.id === updatedTask.id));
+    if (hasTask && typeof queryKey[1] === "string") {
+      touchedScopes.add(queryKey[1]);
+    }
+  }
+
+  for (const [queryKey] of sprintBoardQueries) {
+    if (!Array.isArray(queryKey)) {
+      continue;
+    }
+
+    const scope = queryKey[1];
+    const status = queryKey[2];
+    const shouldContainTask = typeof scope === "string" && touchedScopes.has(scope) && status === updatedTask.status;
+
+    queryClient.setQueryData<InfiniteData<SprintTasksResponse>>(queryKey, (currentData) => {
+      if (!currentData) {
+        return currentData;
+      }
+
+      const pages = currentData.pages.map((page) => ({
+        ...page,
+        tasks: page.tasks.filter((task) => task.id !== updatedTask.id)
+      }));
+
+      if (shouldContainTask) {
+        const firstPage = pages[0] ?? { tasks: [], nextCursor: null };
+        pages[0] = {
+          ...firstPage,
+          tasks: [updatedTask, ...firstPage.tasks]
+        };
+      }
+
+      return {
+        ...currentData,
+        pages
+      };
+    });
+  }
+
+  return touchedScopes;
+}
+
+function updateSprintBoardSummaryCaches(scopes: Set<string>, previousStatus: TaskStatus | undefined, nextStatus: TaskStatus) {
+  if (!previousStatus || previousStatus === nextStatus || scopes.size === 0) {
+    return;
+  }
+
+  for (const [queryKey] of queryClient.getQueriesData<SprintSummaryResponse>({ predicate: sprintBoardSummaryQueryPredicate })) {
+    if (!Array.isArray(queryKey) || typeof queryKey[1] !== "string" || !scopes.has(queryKey[1])) {
+      continue;
+    }
+
+    queryClient.setQueryData<SprintSummaryResponse>(queryKey, (currentSummary) => {
+      if (!currentSummary) {
+        return currentSummary;
+      }
+
+      return {
+        ...currentSummary,
+        byStatus: {
+          ...currentSummary.byStatus,
+          [previousStatus]: Math.max((currentSummary.byStatus[previousStatus] ?? 0) - 1, 0),
+          [nextStatus]: (currentSummary.byStatus[nextStatus] ?? 0) + 1
+        }
+      };
+    });
+  }
 }
 
 function patchTaskForOptimisticUpdate(task: Task, payload: UpdateTaskRequest): Task {
@@ -201,6 +292,16 @@ function findCachedTask(taskId: string): Task | undefined {
     const task = tasks?.find((item) => item.id === taskId);
     if (task) {
       return task;
+    }
+  }
+
+  const sprintBoardQueries = queryClient.getQueriesData<InfiniteData<SprintTasksResponse>>({ predicate: sprintBoardTasksQueryPredicate });
+  for (const [, data] of sprintBoardQueries) {
+    for (const page of data?.pages ?? []) {
+      const task = page.tasks.find((item) => item.id === taskId);
+      if (task) {
+        return task;
+      }
     }
   }
 
@@ -411,9 +512,11 @@ export function useTasks(sectionId: string | undefined) {
 export function useCreateTask(projectId: string, sectionId: string) {
   return useMutation({
     mutationFn: async (payload: CreateTaskRequest) => {
-      const response = sectionId
-        ? await api.post<TaskResponse>(`/sections/${sectionId}/tasks`, payload)
-        : await api.post<TaskResponse>("/tasks", payload);
+      if (!sectionId) {
+        throw new Error("A tarefa precisa ter uma seção");
+      }
+
+      const response = await api.post<TaskResponse>(`/sections/${sectionId}/tasks`, payload);
       return response.data.task;
     },
     onMutate: async (payload) => {
@@ -422,7 +525,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
       const previousProject = queryClient.getQueryData<Project>(["projects", projectId]);
       const optimisticTask: Task = {
         id: `optimistic-${Date.now()}`,
-        disciplineId: sectionId || "uncategorized",
+        disciplineId: sectionId,
         title: payload.title,
         description: payload.description ?? null,
         status: payload.status ?? TaskStatusValue.TODO,
@@ -507,14 +610,7 @@ export function useUpdateTask(projectId: string) {
       const response = await api.patch<TaskResponse>(`/tasks/${id}`, payload);
       return response.data.task;
     },
-    onMutate: async ({ id, payload }) => {
-      await queryClient.cancelQueries({
-        predicate: (query) =>
-          workloadQueryPredicate(query) ||
-          (Array.isArray(query.queryKey) &&
-            (query.queryKey[0] === "projects" || (query.queryKey[0] === "task" && query.queryKey[1] === id)))
-      });
-
+    onMutate: ({ id, payload }) => {
       const currentTask = findCachedTask(id);
       const optimisticTask = currentTask ? patchTaskForOptimisticUpdate(currentTask, payload) : undefined;
       const resolvedProjectId = projectId || optimisticTask?.discipline?.projectId || currentTask?.discipline?.projectId;
@@ -526,11 +622,27 @@ export function useUpdateTask(projectId: string) {
         previousProject: resolvedProjectId ? queryClient.getQueryData<Project>(["projects", resolvedProjectId]) : undefined,
         previousSectionId: sectionId,
         previousSectionTasks: sectionId ? queryClient.getQueryData<Task[]>(["sections", sectionId, "tasks"]) : undefined,
-        previousWorkloadQueries: queryClient.getQueriesData<Task[]>({ predicate: workloadQueryPredicate })
+        previousWorkloadQueries: queryClient.getQueriesData<Task[]>({ predicate: workloadQueryPredicate }),
+        previousSprintBoardQueries: queryClient.getQueriesData<InfiniteData<SprintTasksResponse>>({
+          predicate: sprintBoardTasksQueryPredicate
+        }),
+        previousSprintBoardSummaries: queryClient.getQueriesData<SprintSummaryResponse>({
+          predicate: sprintBoardSummaryQueryPredicate
+        })
       };
+
+      void queryClient.cancelQueries({
+        predicate: (query) =>
+          workloadQueryPredicate(query) ||
+          sprintBoardQueryPredicate(query) ||
+          (Array.isArray(query.queryKey) &&
+            (query.queryKey[0] === "projects" || (query.queryKey[0] === "task" && query.queryKey[1] === id)))
+      });
 
       if (optimisticTask) {
         updateTaskInProjectCache(resolvedProjectId ?? projectId, optimisticTask);
+        const touchedSprintScopes = updateSprintBoardTaskCaches(optimisticTask);
+        updateSprintBoardSummaryCaches(touchedSprintScopes, currentTask?.status, optimisticTask.status);
       }
 
       return context;
@@ -550,11 +662,20 @@ export function useUpdateTask(projectId: string) {
       for (const [queryKey, data] of context?.previousWorkloadQueries ?? []) {
         queryClient.setQueryData(queryKey, data);
       }
+
+      for (const [queryKey, data] of context?.previousSprintBoardQueries ?? []) {
+        queryClient.setQueryData(queryKey, data);
+      }
+
+      for (const [queryKey, data] of context?.previousSprintBoardSummaries ?? []) {
+        queryClient.setQueryData(queryKey, data);
+      }
     },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+      updateSprintBoardTaskCaches(updatedTask);
       invalidateWorkloadTaskQueries(projectId);
-      invalidateSprintBoardTaskQueries();
+      invalidateSprintBoardTaskQueries("inactive");
     },
     onSettled: async (_data, _error, variables) => {
       if (!projectId || variables.payload.projectIds !== undefined || variables.payload.projectMemberships !== undefined) {
@@ -570,10 +691,72 @@ export function useUpdateTaskStatus(projectId: string) {
       const response = await api.patch<TaskResponse>(`/tasks/${id}/status`, { status });
       return response.data.task;
     },
+    onMutate: ({ id, status }) => {
+      const currentTask = findCachedTask(id);
+      const optimisticTask = currentTask ? { ...currentTask, status } : undefined;
+      const resolvedProjectId = projectId || optimisticTask?.discipline?.projectId || currentTask?.discipline?.projectId;
+      const sectionId = optimisticTask?.disciplineId ?? currentTask?.disciplineId;
+      const context: UpdateTaskMutationContext = {
+        previousTask: queryClient.getQueryData<Task>(["task", id]),
+        previousProjects: queryClient.getQueryData<Project[]>(["projects"]),
+        previousProjectId: resolvedProjectId,
+        previousProject: resolvedProjectId ? queryClient.getQueryData<Project>(["projects", resolvedProjectId]) : undefined,
+        previousSectionId: sectionId,
+        previousSectionTasks: sectionId ? queryClient.getQueryData<Task[]>(["sections", sectionId, "tasks"]) : undefined,
+        previousWorkloadQueries: queryClient.getQueriesData<Task[]>({ predicate: workloadQueryPredicate }),
+        previousSprintBoardQueries: queryClient.getQueriesData<InfiniteData<SprintTasksResponse>>({
+          predicate: sprintBoardTasksQueryPredicate
+        }),
+        previousSprintBoardSummaries: queryClient.getQueriesData<SprintSummaryResponse>({
+          predicate: sprintBoardSummaryQueryPredicate
+        })
+      };
+
+      void queryClient.cancelQueries({
+        predicate: (query) =>
+          workloadQueryPredicate(query) ||
+          sprintBoardQueryPredicate(query) ||
+          (Array.isArray(query.queryKey) &&
+            (query.queryKey[0] === "projects" || (query.queryKey[0] === "task" && query.queryKey[1] === id)))
+      });
+
+      if (optimisticTask) {
+        updateTaskInProjectCache(resolvedProjectId ?? projectId, optimisticTask);
+        const touchedSprintScopes = updateSprintBoardTaskCaches(optimisticTask);
+        updateSprintBoardSummaryCaches(touchedSprintScopes, currentTask?.status, status);
+      }
+
+      return context;
+    },
+    onError: (_error, variables, context) => {
+      queryClient.setQueryData(["task", variables.id], context?.previousTask);
+      queryClient.setQueryData(["projects"], context?.previousProjects);
+
+      if (context?.previousProjectId) {
+        queryClient.setQueryData(["projects", context.previousProjectId], context.previousProject);
+      }
+
+      if (context?.previousSectionId) {
+        queryClient.setQueryData(["sections", context.previousSectionId, "tasks"], context.previousSectionTasks);
+      }
+
+      for (const [queryKey, data] of context?.previousWorkloadQueries ?? []) {
+        queryClient.setQueryData(queryKey, data);
+      }
+
+      for (const [queryKey, data] of context?.previousSprintBoardQueries ?? []) {
+        queryClient.setQueryData(queryKey, data);
+      }
+
+      for (const [queryKey, data] of context?.previousSprintBoardSummaries ?? []) {
+        queryClient.setQueryData(queryKey, data);
+      }
+    },
     onSuccess: (updatedTask) => {
       updateTaskInProjectCache(projectId, updatedTask);
+      updateSprintBoardTaskCaches(updatedTask);
       invalidateWorkloadTaskQueries(projectId);
-      invalidateSprintBoardTaskQueries();
+      invalidateSprintBoardTaskQueries("inactive");
     }
   });
 }

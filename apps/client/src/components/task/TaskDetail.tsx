@@ -474,10 +474,9 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                 render: () => (
                   <EditableProjectsField
                     projects={projects}
-                    selectedMemberships={visibleTask.projects?.map((project) => ({
-                      projectId: project.id,
-                      sectionId: project.sectionId ?? null
-                    })) ?? []}
+                    selectedMemberships={visibleTask.projects?.flatMap((project) =>
+                      project.sectionId ? [{ projectId: project.id, sectionId: project.sectionId }] : []
+                    ) ?? []}
                     onSave={(projectMemberships) => void patchTask({ projectMemberships })}
                   />
                 )
@@ -838,13 +837,17 @@ function EditableProjectsField({
     const next = selectedMemberships.filter((membership) => membership.projectId !== projectId);
 
     if (!current) {
-      next.push({ projectId, sectionId: null });
+      const project = projects.find((item) => item.id === projectId);
+      const sectionId = project ? defaultSectionId(project.sections ?? project.disciplines ?? []) : "";
+      if (sectionId) {
+        next.push({ projectId, sectionId });
+      }
     }
 
     onSave(next);
   }
 
-  function updateProjectSection(projectId: string, sectionId: string | null) {
+  function updateProjectSection(projectId: string, sectionId: string) {
     const exists = selectedByProjectId.has(projectId);
     const next = selectedMemberships.map((membership) =>
       membership.projectId === projectId ? { ...membership, sectionId } : membership
@@ -907,14 +910,12 @@ function EditableProjectsField({
                     </button>
                     {selected ? (
                       <SearchableSelect
-                        value={membership?.sectionId ?? "none"}
-                        options={[
-                          { value: "none", label: "Sem secao" },
-                          ...sections.map((section) => ({ value: section.id, label: section.name }))
-                        ]}
+                        value={membership?.sectionId ?? defaultSectionId(sections)}
+                        options={sections.map((section) => ({ value: section.id, label: section.name }))}
                         triggerClassName="h-8 min-w-0 text-xs"
-                        searchPlaceholder="Buscar secao..."
-                        onValueChange={(value) => updateProjectSection(project.id, value === "none" ? null : value)}
+                        searchPlaceholder="Buscar seção..."
+                        disabled={sections.length === 0}
+                        onValueChange={(value) => updateProjectSection(project.id, value)}
                       />
                     ) : null}
                   </div>
@@ -1327,6 +1328,10 @@ function fieldIdentityMatches(
   normalizedMatches: string[]
 ): boolean {
   return [mikaKey, mikaLabel, name].some((value) => Boolean(value && normalizedMatches.includes(normalizeFieldName(value))));
+}
+
+function defaultSectionId(sections: Array<{ id: string; name: string }>): string {
+  return sections.find((section) => normalizeFieldName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
 }
 
 function normalizeFieldName(name: string): string {
