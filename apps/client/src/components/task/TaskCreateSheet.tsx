@@ -103,7 +103,7 @@ export function TaskCreateSheet() {
   const [projectId, setProjectId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<TaskStatus | "">(TaskStatus.TODO);
   const [description, setDescription] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [priority, setPriority] = useState("");
@@ -133,7 +133,7 @@ export function TaskCreateSheet() {
     setProjectId(defaults.projectId ?? "");
     setSectionId(defaults.sectionId ?? "");
     setTitle("");
-    setStatus("");
+    setStatus(TaskStatus.TODO);
     setDescription("");
     setAssigneeId(defaults.assigneeId ?? "");
     setPriority("");
@@ -204,6 +204,12 @@ export function TaskCreateSheet() {
     setSectionId(nextSectionId ?? "");
     setStage(nextSectionId ? sectionsOf(projects.find((project) => project.id === nextProjectId)).find((section) => section.id === nextSectionId)?.name ?? "" : "");
     setCustomFieldDraft({});
+  }
+
+  function handleDateRangeChange(nextStartDate: string, nextDueDate: string) {
+    setStartDate(nextStartDate);
+    setDueDate(nextDueDate);
+    setStatus(statusFromDateRange(nextStartDate, nextDueDate));
   }
 
   function handleCustomFieldChange(settingId: string, value: string) {
@@ -317,7 +323,7 @@ export function TaskCreateSheet() {
                   triggerClassName={compactSelectTriggerClassName}
                   contentClassName="min-w-[220px] max-w-[320px]"
                   showSelectionIndicator={false}
-                  onValueChange={(value) => setStatus(value === "none" ? "" : value)}
+                  onValueChange={(value) => setStatus(value === "none" ? "" : (value as TaskStatus))}
                 />
               )
             },
@@ -436,8 +442,7 @@ export function TaskCreateSheet() {
             <CreateDateRangeField
               startDate={startDate}
               dueDate={dueDate}
-              onStartDateChange={setStartDate}
-              onDueDateChange={setDueDate}
+              onDateRangeChange={handleDateRangeChange}
             />
           </DetailRow>
 
@@ -480,6 +485,7 @@ function CreateProjectsField({
   onChange: (projectId: string, sectionId?: string | null) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const selectedProject = projects.find((project) => project.id === projectId) ?? null;
   const filteredProjects = useMemo(() => {
     const normalizedQuery = normalizeFieldName(query);
@@ -492,8 +498,22 @@ function CreateProjectsField({
       });
   }, [projectId, projects, query]);
 
+  function selectProject(nextProjectId: string, nextSectionId: string | null = null) {
+    onChange(nextProjectId, nextSectionId);
+    setOpen(false);
+    setQuery("");
+  }
+
   return (
-    <Popover onOpenChange={(open) => !open && setQuery("")}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          setQuery("");
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="secondary" className={`${compactSelectTriggerClassName} max-w-full`}>
           <span className="min-w-0 truncate text-text-primary">
@@ -508,7 +528,7 @@ function CreateProjectsField({
             <div className="grid gap-1">
               <button
                 type="button"
-                onClick={() => onChange("", null)}
+                onClick={() => selectProject("", null)}
                 className="flex min-h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center">{!projectId ? <Check size={15} className="text-brand-orange" /> : null}</span>
@@ -525,7 +545,7 @@ function CreateProjectsField({
                   >
                     <button
                       type="button"
-                      onClick={() => onChange(selected ? "" : project.id, selected ? null : defaultSectionId(sections))}
+                      onClick={() => selectProject(selected ? "" : project.id, selected ? null : defaultSectionId(sections))}
                       className="flex min-h-7 w-full min-w-0 items-center gap-2 overflow-hidden text-left font-semibold"
                     >
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center">{selected ? <Check size={15} className="text-brand-orange" /> : null}</span>
@@ -589,13 +609,11 @@ function CreateAssigneeField({ users, assigneeId, onChange }: { users: User[]; a
 function CreateDateRangeField({
   startDate,
   dueDate,
-  onStartDateChange,
-  onDueDateChange
+  onDateRangeChange
 }: {
   startDate: string;
   dueDate: string;
-  onStartDateChange: (value: string) => void;
-  onDueDateChange: (value: string) => void;
+  onDateRangeChange: (startDate: string, dueDate: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [draftStart, setDraftStart] = useState<Date | null>(null);
@@ -609,16 +627,14 @@ function CreateDateRangeField({
 
   function saveDates() {
     const normalized = normalizeDateDraft(draftStart, draftEnd);
-    onStartDateChange(localDateToDateOnly(normalized.startDate) ?? "");
-    onDueDateChange(localDateToDateOnly(normalized.dueDate) ?? "");
+    onDateRangeChange(localDateToDateOnly(normalized.startDate) ?? "", localDateToDateOnly(normalized.dueDate) ?? "");
     setOpen(false);
   }
 
   function clearDates() {
     setDraftStart(null);
     setDraftEnd(null);
-    onStartDateChange("");
-    onDueDateChange("");
+    onDateRangeChange("", "");
     setOpen(false);
   }
 
@@ -913,6 +929,28 @@ function normalizeDateDraft(startDate: Date | null, endDate: Date | null): { sta
   }
 
   return { startDate: null, dueDate: startDate ?? endDate };
+}
+
+function statusFromDateRange(startDate: string, dueDate: string): TaskStatus {
+  if (!startDate && !dueDate) {
+    return TaskStatus.TODO;
+  }
+
+  const start = dateOnlyToLocalDate(startDate);
+  const end = dateOnlyToLocalDate(dueDate);
+  const today = startOfDay(new Date());
+
+  if (start && end) {
+    const normalized = normalizeDateDraft(start, end);
+    const normalizedStart = normalized.startDate ? startOfDay(normalized.startDate) : null;
+    const normalizedEnd = normalized.dueDate ? startOfDay(normalized.dueDate) : null;
+
+    if (normalizedStart && normalizedEnd && isWithinInterval(today, { start: normalizedStart, end: normalizedEnd })) {
+      return TaskStatus.IN_PROGRESS;
+    }
+  }
+
+  return TaskStatus.ON_SCHEDULE;
 }
 
 function projectMembershipLabel(project: Project, sectionId: string | null | undefined): string {

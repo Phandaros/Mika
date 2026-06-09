@@ -677,6 +677,7 @@ function EditableProjectsField({
   onSave: (value: NonNullable<UpdateTaskRequest["projectMemberships"]>) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const selectedByProjectId = useMemo(
     () => new Map(selectedMemberships.map((membership) => [membership.projectId, membership])),
     [selectedMemberships]
@@ -709,6 +710,8 @@ function EditableProjectsField({
     }
 
     onSave(next);
+    setOpen(false);
+    setQuery("");
   }
 
   function updateProjectSection(projectId: string, sectionId: string) {
@@ -725,7 +728,15 @@ function EditableProjectsField({
   }
 
   return (
-    <Popover onOpenChange={(open) => !open && setQuery("")}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          setQuery("");
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="secondary" className={cn(compactSelectTriggerClassName, "max-w-full")}>
           <span className="min-w-0 truncate text-text-primary">
