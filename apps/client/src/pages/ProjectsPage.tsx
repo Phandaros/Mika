@@ -11,6 +11,7 @@ import { Button } from "../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useProjects } from "../hooks/useProjects";
+import { formatProjectArea, projectStatusLabels } from "../lib/projectLabels";
 
 export function ProjectsPage() {
   const { data: projects = [], isLoading } = useProjects();
@@ -29,9 +30,9 @@ export function ProjectsPage() {
 
   const builderSuggestions = useMemo(
     () =>
-      Array.from(
-        new Set(projects.map((project) => projectBuilder(project)).filter((builder): builder is string => Boolean(builder)))
-      ).sort(),
+      Array.from(new Set(projects.map((project) => project.builder?.trim()).filter((builder): builder is string => Boolean(builder)))).sort(
+        (a, b) => a.localeCompare(b, "pt-BR")
+      ),
     [projects]
   );
 
@@ -43,7 +44,7 @@ export function ProjectsPage() {
 
     nextProjects.sort((a, b) => {
       if (sortMode === "name-asc") {
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name, "pt-BR");
       }
 
       if (sortMode === "endDate-asc") {
@@ -69,8 +70,8 @@ export function ProjectsPage() {
               <FolderKanban size={20} />
             </span>
             <div>
-              <p className="text-sm font-semibold uppercase text-brand-orange">Portfolio</p>
-              <h1 className="text-2xl font-bold text-text-primary">Projetos Ativos</h1>
+              <p className="text-sm font-semibold uppercase text-brand-orange">Portfólio</p>
+              <h1 className="text-2xl font-bold text-text-primary">Projetos ativos</h1>
             </div>
           </div>
           <div className="relative flex flex-wrap items-center gap-2">
@@ -86,7 +87,7 @@ export function ProjectsPage() {
                   value={statusFilter}
                   options={[
                     { value: "all", label: "Todos os status" },
-                    ...Object.values(ProjectStatus).map((status) => ({ value: status, label: status }))
+                    ...Object.values(ProjectStatus).map((status) => ({ value: status, label: projectStatusLabels[status] }))
                   ]}
                   searchPlaceholder="Buscar status..."
                   onValueChange={setStatusFilter}
@@ -117,7 +118,7 @@ export function ProjectsPage() {
                   options={[
                     { value: "updatedAt-desc", label: "Atualizados recentemente" },
                     { value: "name-asc", label: "Nome A-Z" },
-                    { value: "endDate-asc", label: "Entrega mais proxima" }
+                    { value: "endDate-asc", label: "Entrega mais próxima" }
                   ]}
                   searchPlaceholder="Buscar ordenação..."
                   onValueChange={setSortMode}
@@ -162,10 +163,11 @@ export function ProjectsPage() {
 function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project[]; onEditProject: (project: Project) => void }) {
   return (
     <div className="overflow-auto rounded-md border border-border">
-      <table className="w-full min-w-[900px] border-collapse bg-surface-card text-sm">
+      <table className="w-full min-w-[1040px] border-collapse bg-surface-card text-sm">
         <thead className="bg-surface text-left text-text-secondary">
           <tr>
-            <th className="w-[360px] border-r border-border p-3 font-semibold">Nome</th>
+            <th className="w-[320px] border-r border-border p-3 font-semibold">Nome</th>
+            <th className="w-[180px] border-r border-border p-3 font-semibold">Construtora</th>
             <th className="w-[130px] border-r border-border p-3 font-semibold">Plataforma</th>
             <th className="w-[130px] border-r border-border p-3 font-semibold">Área</th>
             <th className="w-[150px] border-r border-border p-3 font-semibold">Status</th>
@@ -186,19 +188,26 @@ function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project
                     <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-hover text-text-secondary">
                       <FolderKanban size={16} />
                     </span>
-                    {project.name}
+                    <span className="min-w-0 truncate">{project.name}</span>
                   </Link>
                 </td>
                 <td className="border-r border-border p-3 text-text-secondary">
-                  {project.platform ? <Badge tone="muted">{project.platform}</Badge> : "-"}
+                  <span className="block truncate" title={project.builder ?? undefined}>
+                    {project.builder ?? "—"}
+                  </span>
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">{formatArea(project.areaM2)}</td>
+                <td className="border-r border-border p-3 text-text-secondary">
+                  {project.platform ? <Badge tone="muted">{project.platform}</Badge> : "—"}
+                </td>
+                <td className="border-r border-border p-3 text-right font-mono text-[12px] text-text-secondary">
+                  {formatProjectArea(project.areaM2)}
+                </td>
                 <td className="border-r border-border p-3">
-                  <Badge tone="orange">{project.status}</Badge>
+                  <Badge tone="orange">{projectStatusLabels[project.status]}</Badge>
                 </td>
                 <td className="border-r border-border p-3 text-text-secondary">{taskCount}</td>
                 <td className="border-r border-border p-3 text-text-secondary">
-                  {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : "-"}
+                  {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : "—"}
                 </td>
                 <td className="border-r border-border p-3 text-text-secondary">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
                 <td className="p-3">
@@ -240,7 +249,7 @@ function ProjectModal({ title, children, onClose }: { title: string; children: R
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-bold text-text-primary">{title}</h2>
-          <Button variant="ghost" className="h-9 w-9 px-0" onClick={onClose} title="Fechar">
+          <Button variant="ghost" className="h-9 w-9 px-0" onClick={onClose} title="Fechar" aria-label="Fechar">
             <X size={18} />
           </Button>
         </div>
@@ -248,18 +257,6 @@ function ProjectModal({ title, children, onClose }: { title: string; children: R
       </section>
     </div>
   );
-}
-
-function projectBuilder(project: Project): string | null {
-  return project.builder ?? project.client ?? null;
-}
-
-function formatArea(areaM2: number | null): string {
-  if (areaM2 === null) {
-    return "-";
-  }
-
-  return `${areaM2.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} m²`;
 }
 
 function closeCreateModal(

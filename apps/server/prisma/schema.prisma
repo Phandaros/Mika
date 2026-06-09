@@ -111,6 +111,9 @@ model Project {
   notes        String?
   htmlNotes    String?
   permalinkUrl String?
+  platform     String?
+  builder      String?
+  areaM2       Float?
 
   archived    Boolean @default(false)
   color       String?

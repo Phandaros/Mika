@@ -16,7 +16,7 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound } from "lucide-react";
-import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest } from "shared";
+import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest, type User } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { useProjects } from "../../hooks/useProjects";
@@ -24,10 +24,11 @@ import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, PlatformChip, editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
+import { DisciplineChip, PlatformChip, editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
+import { TaskCompletionButton } from "./TaskCompletionButton";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
@@ -41,7 +42,6 @@ import {
   compactSelectTriggerClassName,
   DetailRow,
   EmptyField,
-  FieldPanel,
   formatDecimal,
   TaskFixedFieldGrid,
   TaskPanelShell
@@ -53,7 +53,7 @@ interface TaskDetailProps {
   openVersion?: number;
 }
 
-type EditableField = "assignee" | "priority" | "completionDate" | null;
+type EditableField = "priority" | "completionDate" | null;
 type TaskCustomField = NonNullable<Task["customFieldValues"]>[number];
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
@@ -116,8 +116,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const [titleDraft, setTitleDraft] = useState("");
   const [comment, setComment] = useState("");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
-  const completionDateTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const completionDatePanelRef = useRef<HTMLDivElement | null>(null);
   const asideRef = useRef<HTMLElement>(null);
   const closePanelTimeoutRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
@@ -246,9 +244,10 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   }
 
   async function saveCompletionDate() {
+    const normalized = normalizeDateDraft(dateDraftStart, dateDraftEnd);
     await patchTask({
-      startDate: localDateToDateOnly(dateDraftStart),
-      dueDate: localDateToDateOnly(dateDraftEnd)
+      startDate: localDateToDateOnly(normalized.startDate),
+      dueDate: localDateToDateOnly(normalized.dueDate)
     });
   }
 
@@ -257,41 +256,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     setDateDraftEnd(null);
     await patchTask({ startDate: null, dueDate: null });
   }
-
-  useEffect(() => {
-    if (openField !== "completionDate") {
-      return;
-    }
-
-    function handleDocumentMouseDown(event: MouseEvent) {
-      const target = event.target;
-
-      if (!(target instanceof Node)) {
-        return;
-      }
-
-      if (completionDatePanelRef.current?.contains(target) || completionDateTriggerRef.current?.contains(target)) {
-        return;
-      }
-
-      void saveCompletionDate();
-    }
-
-    function handleKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") {
-        setDateDraftStart(dateOnlyToLocalDate(visibleTask?.startDate));
-        setDateDraftEnd(dateOnlyToLocalDate(visibleTask?.dueDate));
-        setOpenField(null);
-      }
-    }
-
-    document.addEventListener("mousedown", handleDocumentMouseDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleDocumentMouseDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [dateDraftEnd, dateDraftStart, openField, visibleTask?.dueDate, visibleTask?.id, visibleTask?.startDate]);
 
   useEffect(() => {
     if (!visibleTask || !isOpen) {
@@ -424,22 +388,14 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
       isOpen={isOpen}
       asideRef={asideRef}
       onClose={requestClose}
-      footer={
-        <form onSubmit={handleCommentSubmit} className="flex items-start gap-3 border-t border-border p-5">
-          {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
-          <Textarea
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder="Adicionar um comentário"
-            className="min-h-20 flex-1 resize-none"
+      headerContent={
+        <div className="flex min-w-0 items-center gap-2">
+          <TaskCompletionButton
+            completed={visibleTask.completed}
+            disabled={updateTaskCompletion.isPending}
+            onToggle={() => void patchTaskCompletion(!visibleTask.completed)}
+            className="mt-0.5"
           />
-          <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
-            <Send size={16} />
-          </Button>
-        </form>
-      }
-    >
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           <Input
             value={isEditingTitle ? titleDraft : visibleTask.title}
             onFocus={() => {
@@ -460,11 +416,28 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               }
             }}
             className={cn(
-              "h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight focus:border-brand-orange focus:bg-brand-black focus:px-2",
+              "h-auto min-w-0 border-transparent bg-transparent px-0 py-1 text-[16px] font-semibold leading-tight focus:border-brand-orange focus:bg-[--bg-3] focus:px-2",
               visibleTask.completed ? "text-text-muted" : "text-text-primary"
             )}
           />
-
+        </div>
+      }
+      footer={
+        <form onSubmit={handleCommentSubmit} className="flex items-start gap-3 border-t border-border p-5">
+          {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
+          <Textarea
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Adicionar um comentário"
+            className="min-h-20 flex-1 resize-none"
+          />
+          <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
+            <Send size={16} />
+          </Button>
+        </form>
+      }
+    >
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           <TaskFixedFieldGrid
             fields={[
               {
@@ -507,16 +480,6 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                   <EditableDisciplineField
                     value={visibleTask.taskDiscipline}
                     onSave={(taskDiscipline) => void patchTask({ taskDiscipline })}
-                  />
-                )
-              },
-              {
-                key: "completionStatus",
-                label: "Status de Conclusão",
-                render: () => (
-                  <EditableCompletionStatusField
-                    completed={visibleTask.completed}
-                    onSave={(completed) => void patchTaskCompletion(completed)}
                   />
                 )
               },
@@ -568,91 +531,62 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
 
           <div className="mt-6 grid gap-4 text-sm">
             <DetailRow icon={<UserRound size={18} />} label="Responsável">
-              <button
-                type="button"
-                onClick={() => setOpenField(openField === "assignee" ? null : "assignee")}
-                className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left transition hover:bg-surface-hover"
-              >
-                {visibleTask.assignee ? (
-                  <>
-                    <Avatar name={visibleTask.assignee.name} imageUrl={visibleTask.assignee.avatarUrl} className="h-7 w-7" />
-                    <span className="font-medium text-text-primary">{visibleTask.assignee.name}</span>
-                  </>
-                ) : (
-                  <span className="text-text-secondary">Sem responsável</span>
-                )}
-              </button>
-              {openField === "assignee" ? (
-                <FieldPanel>
-                  <button
-                    type="button"
-                    onClick={() => void patchTask({ assigneeId: null })}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
-                  >
-                    Sem responsável
-                  </button>
-                  {users.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => void patchTask({ assigneeId: item.id })}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition hover:bg-surface-hover"
-                    >
-                      <Avatar name={item.name} imageUrl={item.avatarUrl} className="h-7 w-7" />
-                      <span className="font-medium text-text-primary">{item.name}</span>
-                    </button>
-                  ))}
-                </FieldPanel>
-              ) : null}
+              <EditableAssigneeField
+                users={users}
+                assigneeId={visibleTask.assigneeId}
+                onSave={(assigneeId) => void patchTask({ assigneeId })}
+              />
             </DetailRow>
 
             <DetailRow icon={<Flag size={18} />} label="Prioridade">
-              <button
-                type="button"
-                onClick={() => setOpenField(openField === "priority" ? null : "priority")}
-                className="flex min-h-10 w-full items-center rounded-md px-2 text-left transition hover:bg-surface-hover"
-              >
-                <PriorityPill priority={visibleTask.priority} />
-              </button>
-              {openField === "priority" ? (
-                <FieldPanel>
-                  {priorityOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => void patchTask({ priority: option.value })}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:bg-surface-hover"
-                    >
-                      <PriorityBadge priority={option.value} />
-                    </button>
-                  ))}
-                </FieldPanel>
-              ) : null}
+              <SearchableSelect
+                value={visibleTask.priority}
+                options={priorityOptions.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                  render: <PriorityBadge priority={option.value} />
+                }))}
+                searchPlaceholder="Buscar prioridade..."
+                contentClassName="min-w-[220px] max-w-[320px]"
+                showSelectionIndicator={false}
+                renderValue={(option) => <PriorityBadge priority={option.value as Priority} />}
+                onValueChange={(value) => void patchTask({ priority: value as Priority })}
+              />
             </DetailRow>
 
-            <DetailRow icon={<CalendarDays size={18} />} label="Prazo">
-              <button
-                ref={completionDateTriggerRef}
-                type="button"
-                onClick={openCompletionDate}
-                className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover"
+            <DetailRow icon={<CalendarDays size={18} />} label="Datas">
+              <Popover
+                open={openField === "completionDate"}
+                onOpenChange={(open) => {
+                  if (open) {
+                    openCompletionDate();
+                    return;
+                  }
+
+                  setDateDraftStart(dateOnlyToLocalDate(visibleTask.startDate));
+                  setDateDraftEnd(dateOnlyToLocalDate(visibleTask.dueDate));
+                  setOpenField(null);
+                }}
               >
-                <CompletionDateLabel
-                  startDate={openField === "completionDate" ? dateDraftStart : visibleTask.startDate}
-                  dueDate={openField === "completionDate" ? dateDraftEnd : visibleTask.dueDate}
-                />
-              </button>
-              {openField === "completionDate" ? (
-                <DateRangePanel
-                  panelRef={completionDatePanelRef}
-                  startDate={dateDraftStart}
-                  endDate={dateDraftEnd}
-                  onStartDateChange={setDateDraftStart}
-                  onEndDateChange={setDateDraftEnd}
-                  onSave={() => void saveCompletionDate()}
-                  onClear={() => void clearCompletionDate()}
-                />
-              ) : null}
+                <PopoverTrigger asChild>
+                  <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
+                    <CompletionDateLabel
+                      startDate={openField === "completionDate" ? dateDraftStart : visibleTask.startDate}
+                      dueDate={openField === "completionDate" ? dateDraftEnd : visibleTask.dueDate}
+                    />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" collisionPadding={16} className="w-80 p-0">
+                  <DateRangePanel
+                    startDate={dateDraftStart}
+                    endDate={dateDraftEnd}
+                    onStartDateChange={setDateDraftStart}
+                    onEndDateChange={setDateDraftEnd}
+                    onSave={() => void saveCompletionDate()}
+                    onClear={() => void clearCompletionDate()}
+                  />
+                </PopoverContent>
+              </Popover>
             </DetailRow>
 
             {lowerCustomFields.map((field) => (
@@ -748,12 +682,14 @@ function EditableProjectsField({
     [selectedMemberships]
   );
   const selectedIds = useMemo(() => new Set(selectedByProjectId.keys()), [selectedByProjectId]);
-  const selectedNames = projects.filter((project) => selectedIds.has(project.id)).map((project) => project.name);
+  const selectedNames = projects
+    .filter((project) => selectedIds.has(project.id))
+    .map((project) => projectMembershipLabel(project, selectedByProjectId.get(project.id)?.sectionId));
   const filteredProjects = useMemo(() => {
     const normalizedQuery = normalizeFieldName(query);
 
     return projects
-      .filter((project) => !normalizedQuery || normalizeFieldName(project.name).includes(normalizedQuery))
+      .filter((project) => !normalizedQuery || normalizeFieldName(projectSearchLabel(project)).includes(normalizedQuery))
       .sort((a, b) => {
         const selectedDelta = Number(selectedIds.has(b.id)) - Number(selectedIds.has(a.id));
         return selectedDelta || a.name.localeCompare(b.name, "pt-BR");
@@ -834,7 +770,7 @@ function EditableProjectsField({
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                         {selected ? <Check size={15} className="text-brand-orange" /> : null}
                       </span>
-                      <span className="min-w-0 flex-1 truncate">{project.name}</span>
+                      <ProjectSectionLabel project={project} sectionId={membership?.sectionId} />
                     </button>
                     {selected ? (
                       <SearchableSelect
@@ -877,18 +813,40 @@ function EditableStatusField({ task, onSave }: { task: Task; onSave: (value: Tas
   );
 }
 
-function EditableCompletionStatusField({ completed, onSave }: { completed: boolean; onSave: (value: boolean) => void }) {
+function EditableAssigneeField({
+  users,
+  assigneeId,
+  onSave
+}: {
+  users: User[];
+  assigneeId: string | null;
+  onSave: (value: string | null) => void;
+}) {
   return (
     <SearchableSelect
-      value={completed ? "completed" : "open"}
+      value={assigneeId ?? "none"}
       options={[
-        { value: "open", label: "Aberta", render: <CompletionStatusChip completed={false} /> },
-        { value: "completed", label: "Concluída", render: <CompletionStatusChip completed /> }
+        { value: "none", label: "Sem responsável", render: <span className="text-text-muted">Sem responsável</span> },
+        ...users.map((item) => ({
+          value: item.id,
+          label: item.name,
+          avatarUrl: item.avatarUrl
+        }))
       ]}
-      searchPlaceholder="Buscar conclusão..."
-      triggerClassName={compactSelectTriggerClassName}
-      contentClassName="min-w-[220px] max-w-[320px]"
-      onValueChange={(nextValue) => onSave(nextValue === "completed")}
+      placeholder="Sem responsável"
+      searchPlaceholder="Buscar responsável..."
+      contentClassName="min-w-[240px] max-w-[320px]"
+      renderValue={(option) =>
+        option.value === "none" ? (
+          <span className="text-text-secondary">Sem responsável</span>
+        ) : (
+          <span className="flex min-w-0 items-center gap-2">
+            <Avatar name={option.label} imageUrl={option.avatarUrl} className="h-7 w-7 shrink-0" />
+            <span className="min-w-0 truncate font-medium text-text-primary">{option.label}</span>
+          </span>
+        )
+      }
+      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
     />
   );
 }
@@ -1231,6 +1189,50 @@ function defaultSectionId(sections: Array<{ id: string; name: string }>): string
   return sections.find((section) => normalizeFieldName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
 }
 
+function projectMembershipLabel(project: Project, sectionId: string | null | undefined): string {
+  const sections = project.sections ?? project.disciplines ?? [];
+  const section = sections.find((item) => item.id === sectionId);
+  const suffix = section ? sectionAbbreviation(section.name) : null;
+  return suffix ? `${project.name} / ${suffix}` : project.name;
+}
+
+function projectSearchLabel(project: Project): string {
+  const sections = project.sections ?? project.disciplines ?? [];
+  return [project.name, ...sections.map((section) => section.name), ...sections.map((section) => sectionAbbreviation(section.name))].join(" ");
+}
+
+function sectionAbbreviation(name: string): string {
+  const normalized = normalizeFieldName(name);
+
+  if (normalized === "eletrico" || normalized === "eletrica") {
+    return "ELE";
+  }
+
+  if (normalized === "civil") {
+    return "CIV";
+  }
+
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+function ProjectSectionLabel({ project, sectionId }: { project: Project; sectionId: string | null | undefined }) {
+  const sections = project.sections ?? project.disciplines ?? [];
+  const section = sections.find((item) => item.id === sectionId);
+  const suffix = section ? sectionAbbreviation(section.name) : null;
+
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      <span className="min-w-0 truncate">{project.name}</span>
+      {suffix ? <span className="shrink-0 text-text-muted">/ {suffix}</span> : null}
+    </span>
+  );
+}
+
 function normalizeFieldName(name: string): string {
   return name
     .normalize("NFD")
@@ -1262,7 +1264,6 @@ function CompletionDateLabel({ startDate, dueDate }: { startDate: string | Date 
 }
 
 function DateRangePanel({
-  panelRef,
   startDate,
   endDate,
   onStartDateChange,
@@ -1270,7 +1271,6 @@ function DateRangePanel({
   onSave,
   onClear
 }: {
-  panelRef: RefObject<HTMLDivElement>;
   startDate: Date | null;
   endDate: Date | null;
   onStartDateChange: (date: Date | null) => void;
@@ -1319,7 +1319,7 @@ function DateRangePanel({
   }
 
   return (
-    <div ref={panelRef} className="absolute left-32 top-11 z-50 w-80 rounded-md border border-border bg-surface-card shadow-2xl">
+    <div className="w-80 rounded-md border border-border bg-surface-card shadow-2xl">
       <div className="grid gap-3 p-3">
         <div className="grid grid-cols-2 gap-3">
           <DatePicker
@@ -1393,6 +1393,16 @@ function dateInputValue(date: Date | null): string {
   return localDateToDateOnly(date) ?? "";
 }
 
+function normalizeDateDraft(startDate: Date | null, endDate: Date | null): { startDate: Date | null; dueDate: Date | null } {
+  if (startDate && endDate) {
+    return isBefore(endDate, startDate)
+      ? { startDate: endDate, dueDate: startDate }
+      : { startDate, dueDate: endDate };
+  }
+
+  return { startDate: null, dueDate: startDate ?? endDate };
+}
+
 function inputDateValue(value: string): Date | null {
   return dateOnlyToLocalDate(value);
 }
@@ -1410,14 +1420,4 @@ function formatDisplayDate(date: string | Date): string {
 function formatMonthLabel(date: Date): string {
   const label = format(date, "MMMM 'de' yyyy", { locale: ptBR });
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-}
-
-function PriorityPill({ priority }: { priority: Priority }) {
-  const fallback = priorityOptions[1] ?? priorityOptions[0];
-  const option = priorityOptions.find((item) => item.value === priority) ?? fallback;
-  if (!option) {
-    return null;
-  }
-
-  return <PriorityBadge priority={option.value} />;
 }

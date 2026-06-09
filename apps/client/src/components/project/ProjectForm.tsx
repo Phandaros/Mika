@@ -1,9 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Check, Plus } from "lucide-react";
 import { ProjectStatus, type Project } from "shared";
 import { toast } from "sonner";
 import { useCreateProject, useUpdateProject } from "../../hooks/useProjects";
+import { projectStatusLabels } from "../../lib/projectLabels";
+import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
+import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
 
@@ -15,21 +20,23 @@ interface ProjectFormProps {
   onSaved?: () => void;
 }
 
+type ProjectPlatform = "CAD" | "BIM" | "";
+
 export function ProjectForm({ project, builderSuggestions = [], onCancel, onCreated, onSaved }: ProjectFormProps) {
   const createProject = useCreateProject();
   const updateProject = useUpdateProject(project?.id ?? "");
   const [name, setName] = useState(project?.name ?? "");
-  const [platform, setPlatform] = useState<"CAD" | "BIM" | "">(project?.platform ?? "");
-  const [builder, setBuilder] = useState(project?.builder ?? project?.client ?? "");
-  const [areaM2, setAreaM2] = useState(project?.areaM2?.toFixed(2) ?? "");
+  const [platform, setPlatform] = useState<ProjectPlatform>(project?.platform ?? "");
+  const [builder, setBuilder] = useState(project?.builder ?? "");
+  const [areaM2, setAreaM2] = useState(project?.areaM2 != null ? formatAreaDraft(project.areaM2) : "");
   const [description, setDescription] = useState(project?.description ?? "");
   const [status, setStatus] = useState<ProjectStatus>(project?.status ?? ProjectStatus.ACTIVE);
 
   useEffect(() => {
     setName(project?.name ?? "");
     setPlatform(project?.platform ?? "");
-    setBuilder(project?.builder ?? project?.client ?? "");
-    setAreaM2(project?.areaM2?.toFixed(2) ?? "");
+    setBuilder(project?.builder ?? "");
+    setAreaM2(project?.areaM2 != null ? formatAreaDraft(project.areaM2) : "");
     setDescription(project?.description ?? "");
     setStatus(project?.status ?? ProjectStatus.ACTIVE);
   }, [project]);
@@ -37,20 +44,25 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const parsedArea = areaM2 ? Number(areaM2.replace(",", ".")) : null;
-
-    if (parsedArea !== null && Number.isNaN(parsedArea)) {
+    const parsedArea = parseDecimalInput(areaM2);
+    if (parsedArea !== null && (Number.isNaN(parsedArea) || parsedArea < 0)) {
       toast.error("Informe uma área válida");
       return;
     }
 
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      toast.error("Informe o nome do projeto");
+      return;
+    }
+
     const payload = {
-      name,
-      client: builder || null,
+      name: trimmedName,
+      client: builder.trim() || null,
       platform: platform || null,
-      builder: builder || null,
+      builder: builder.trim() || null,
       areaM2: parsedArea === null ? null : Number(parsedArea.toFixed(2)),
-      description: description || null,
+      description: description.trim() || null,
       status
     };
 
@@ -74,56 +86,89 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
     }
   }
 
+  function handleAreaBlur() {
+    const parsed = parseDecimalInput(areaM2);
+    if (parsed === null) {
+      setAreaM2("");
+      return;
+    }
+
+    if (Number.isNaN(parsed) || parsed < 0) {
+      toast.error("Informe uma área válida");
+      return;
+    }
+
+    setAreaM2(formatAreaDraft(parsed));
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm font-semibold text-text-secondary sm:col-span-2">
+    <form onSubmit={handleSubmit} className="grid gap-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="grid gap-2 text-[13px] font-medium text-[--color-text-secondary] sm:col-span-2">
           Nome do projeto
           <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome do projeto" required />
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-text-secondary sm:col-span-2">
+
+        <label className="grid gap-2 text-[13px] font-medium text-[--color-text-secondary] sm:col-span-2">
           Construtora
-          <BuilderAutocomplete
-            value={builder}
-            suggestions={builderSuggestions}
-            onChange={setBuilder}
-          />
+          <BuilderCombobox value={builder} suggestions={builderSuggestions} onChange={setBuilder} />
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-text-secondary">
+
+        <label className="grid gap-2 text-[13px] font-medium text-[--color-text-secondary]">
           Plataforma
           <SearchableSelect
             value={platform || "none"}
             options={[
-              { value: "none", label: "Selecionar plataforma" },
+              { value: "none", label: "Sem plataforma", render: <span className="text-text-muted">—</span> },
               { value: "CAD", label: "CAD" },
               { value: "BIM", label: "BIM" }
             ]}
             searchPlaceholder="Buscar plataforma..."
-            onValueChange={(value) => setPlatform(value === "none" ? "" : (value as "CAD" | "BIM"))}
+            contentClassName="min-w-[220px] max-w-[320px]"
+            onValueChange={(value) => setPlatform(value === "none" ? "" : (value as ProjectPlatform))}
           />
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-text-secondary">
-          Area (m2)
-          <Input
-            type="text"
-            inputMode="decimal"
-            value={areaM2}
-            onChange={(event) => setAreaM2(event.target.value)}
-            placeholder="0.00"
+
+        <label className="grid gap-2 text-[13px] font-medium text-[--color-text-secondary]">
+          Área
+          <span className="relative">
+            <DecimalInput
+              value={areaM2}
+              onValueChange={(value) => setAreaM2(sanitizeDecimalInput(value))}
+              onBlur={handleAreaBlur}
+              placeholder="0,00"
+              className="pr-10"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[--color-text-muted]">
+              m²
+            </span>
+          </span>
+        </label>
+
+        <label className="grid gap-2 text-[13px] font-medium text-[--color-text-secondary] sm:col-span-2">
+          Status
+          <SearchableSelect
+            value={status}
+            options={Object.values(ProjectStatus).map((option) => ({
+              value: option,
+              label: projectStatusLabels[option]
+            }))}
+            searchPlaceholder="Buscar status..."
+            contentClassName="min-w-[220px] max-w-[320px]"
+            onValueChange={(value) => setStatus(value as ProjectStatus)}
+          />
+        </label>
+
+        <label className="grid gap-2 text-[13px] font-medium text-[--color-text-secondary] sm:col-span-2">
+          Descrição
+          <Textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Descrição do projeto"
           />
         </label>
       </div>
-      <Textarea
-        value={description}
-        onChange={(event) => setDescription(event.target.value)}
-        placeholder="Descrição"
-      />
-      <SearchableSelect
-        value={status}
-        options={Object.values(ProjectStatus).map((option) => ({ value: option, label: option }))}
-        searchPlaceholder="Buscar status..."
-        onValueChange={(value) => setStatus(value as ProjectStatus)}
-      />
+
       {project?.customFields?.length ? (
         <section className="grid gap-3 rounded-md border border-border bg-brand-black p-4">
           <div>
@@ -154,19 +199,22 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
           </div>
         </section>
       ) : null}
-      <Button type="submit" disabled={createProject.isPending || updateProject.isPending}>
-        {project ? "Salvar projeto" : "Criar projeto"}
-      </Button>
-      {onCancel ? (
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancelar
+
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {onCancel ? (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Cancelar
+          </Button>
+        ) : null}
+        <Button type="submit" disabled={createProject.isPending || updateProject.isPending}>
+          {project ? "Salvar projeto" : "Criar projeto"}
         </Button>
-      ) : null}
+      </div>
     </form>
   );
 }
 
-function BuilderAutocomplete({
+function BuilderCombobox({
   value,
   suggestions,
   onChange
@@ -176,55 +224,130 @@ function BuilderAutocomplete({
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const normalizedValue = value.trim().toLocaleLowerCase();
-  const visibleSuggestions = suggestions.filter((suggestion) =>
-    normalizedValue ? suggestion.toLocaleLowerCase().includes(normalizedValue) : true
+  const [query, setQuery] = useState("");
+  const normalizedQuery = normalizeSearch(query);
+  const normalizedValue = normalizeSearch(value);
+  const options = useMemo(
+    () =>
+      Array.from(new Set(suggestions.map((suggestion) => suggestion.trim()).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, "pt-BR")
+      ),
+    [suggestions]
   );
+  const visibleOptions = options.filter((suggestion) => !normalizedQuery || normalizeSearch(suggestion).includes(normalizedQuery));
+  const canCreate = Boolean(query.trim()) && !options.some((suggestion) => normalizeSearch(suggestion) === normalizedQuery);
 
-  useEffect(() => {
-    function handleMouseDown(event: MouseEvent) {
-      if (!wrapperRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, []);
+  function selectBuilder(nextValue: string) {
+    onChange(nextValue.trim());
+    setQuery("");
+    setOpen(false);
+  }
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <Input
-        value={value}
-        onFocus={() => setOpen(true)}
-        onChange={(event) => {
-          onChange(event.target.value);
-          setOpen(true);
-        }}
-        placeholder="Construtora"
-      />
-      {open ? (
-        <div className="absolute left-0 right-0 top-11 z-50 max-h-56 overflow-y-auto rounded-md border border-border bg-surface-card p-1 shadow-2xl">
-          {visibleSuggestions.length > 0 ? (
-            visibleSuggestions.map((suggestion) => (
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          setQuery(value);
+        } else {
+          setQuery("");
+        }
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button variant="secondary" className="h-10 w-full justify-between px-3 text-left">
+          <span className={cn("min-w-0 truncate", value ? "text-text-primary" : "text-text-muted")}>
+            {value || "Selecionar construtora"}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(360px,calc(100vw-32px))] overflow-x-hidden p-2">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && query.trim()) {
+              event.preventDefault();
+              selectBuilder(query);
+            }
+          }}
+          placeholder="Buscar ou adicionar construtora..."
+          className="h-9"
+          autoFocus
+        />
+        <div className="mt-2 max-h-64 overflow-y-auto overscroll-contain">
+          <div className="grid gap-1">
+            {value ? (
+              <button
+                type="button"
+                onClick={() => selectBuilder("")}
+                className="flex min-h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left text-sm font-semibold text-text-muted transition hover:bg-surface-hover"
+              >
+                <span className="flex h-4 w-4 shrink-0" />
+                <span className="min-w-0 truncate">Sem construtora</span>
+              </button>
+            ) : null}
+            {canCreate ? (
+              <button
+                type="button"
+                onClick={() => selectBuilder(query)}
+                className="flex min-h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover"
+              >
+                <Plus size={15} className="shrink-0 text-brand-orange" />
+                <span className="min-w-0 truncate">Adicionar "{query.trim()}"</span>
+              </button>
+            ) : null}
+            {visibleOptions.map((suggestion) => (
               <button
                 key={suggestion}
                 type="button"
-                onClick={() => {
-                  onChange(suggestion);
-                  setOpen(false);
-                }}
-                className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:bg-surface-hover"
+                onClick={() => selectBuilder(suggestion)}
+                className={cn(
+                  "flex min-h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover",
+                  normalizeSearch(suggestion) === normalizedValue ? "bg-surface-hover" : ""
+                )}
               >
-                {suggestion}
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                  {normalizeSearch(suggestion) === normalizedValue ? <Check size={15} className="text-brand-orange" /> : null}
+                </span>
+                <span className="min-w-0 truncate">{suggestion}</span>
               </button>
-            ))
-          ) : (
-            <div className="px-3 py-2 text-sm text-text-muted">Nova construtora</div>
-          )}
+            ))}
+            {visibleOptions.length === 0 && !canCreate ? (
+              <div className="px-3 py-6 text-center text-sm text-text-muted">Nenhuma construtora encontrada</div>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
+}
+
+function sanitizeDecimalInput(value: string): string {
+  const cleaned = value.replace(/[^\d,.]/g, "");
+  const firstSeparator = cleaned.search(/[,.]/);
+  if (firstSeparator === -1) {
+    return cleaned;
+  }
+
+  const before = cleaned.slice(0, firstSeparator + 1);
+  const after = cleaned.slice(firstSeparator + 1).replace(/[,.]/g, "");
+  return `${before}${after}`;
+}
+
+function formatAreaDraft(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false
+  });
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }

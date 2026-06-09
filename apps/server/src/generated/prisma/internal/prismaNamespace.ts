@@ -2018,6 +2018,9 @@ export const ProjectScalarFieldEnum = {
   notes: 'notes',
   htmlNotes: 'htmlNotes',
   permalinkUrl: 'permalinkUrl',
+  platform: 'platform',
+  builder: 'builder',
+  areaM2: 'areaM2',
   archived: 'archived',
   color: 'color',
   public: 'public',
@@ -2288,16 +2291,16 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 
 
 /**
- * Reference to a field of type 'Int'
+ * Reference to a field of type 'Float'
  */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 
 /**
- * Reference to a field of type 'Float'
+ * Reference to a field of type 'Int'
  */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 /**

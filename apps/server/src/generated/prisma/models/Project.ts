@@ -20,8 +20,18 @@ export type ProjectModel = runtime.Types.Result.DefaultSelection<Prisma.$Project
 
 export type AggregateProject = {
   _count: ProjectCountAggregateOutputType | null
+  _avg: ProjectAvgAggregateOutputType | null
+  _sum: ProjectSumAggregateOutputType | null
   _min: ProjectMinAggregateOutputType | null
   _max: ProjectMaxAggregateOutputType | null
+}
+
+export type ProjectAvgAggregateOutputType = {
+  areaM2: number | null
+}
+
+export type ProjectSumAggregateOutputType = {
+  areaM2: number | null
 }
 
 export type ProjectMinAggregateOutputType = {
@@ -31,6 +41,9 @@ export type ProjectMinAggregateOutputType = {
   notes: string | null
   htmlNotes: string | null
   permalinkUrl: string | null
+  platform: string | null
+  builder: string | null
+  areaM2: number | null
   archived: boolean | null
   color: string | null
   public: boolean | null
@@ -58,6 +71,9 @@ export type ProjectMaxAggregateOutputType = {
   notes: string | null
   htmlNotes: string | null
   permalinkUrl: string | null
+  platform: string | null
+  builder: string | null
+  areaM2: number | null
   archived: boolean | null
   color: string | null
   public: boolean | null
@@ -85,6 +101,9 @@ export type ProjectCountAggregateOutputType = {
   notes: number
   htmlNotes: number
   permalinkUrl: number
+  platform: number
+  builder: number
+  areaM2: number
   archived: number
   color: number
   public: number
@@ -107,6 +126,14 @@ export type ProjectCountAggregateOutputType = {
 }
 
 
+export type ProjectAvgAggregateInputType = {
+  areaM2?: true
+}
+
+export type ProjectSumAggregateInputType = {
+  areaM2?: true
+}
+
 export type ProjectMinAggregateInputType = {
   id?: true
   asanaGid?: true
@@ -114,6 +141,9 @@ export type ProjectMinAggregateInputType = {
   notes?: true
   htmlNotes?: true
   permalinkUrl?: true
+  platform?: true
+  builder?: true
+  areaM2?: true
   archived?: true
   color?: true
   public?: true
@@ -141,6 +171,9 @@ export type ProjectMaxAggregateInputType = {
   notes?: true
   htmlNotes?: true
   permalinkUrl?: true
+  platform?: true
+  builder?: true
+  areaM2?: true
   archived?: true
   color?: true
   public?: true
@@ -168,6 +201,9 @@ export type ProjectCountAggregateInputType = {
   notes?: true
   htmlNotes?: true
   permalinkUrl?: true
+  platform?: true
+  builder?: true
+  areaM2?: true
   archived?: true
   color?: true
   public?: true
@@ -227,6 +263,18 @@ export type ProjectAggregateArgs<ExtArgs extends runtime.Types.Extensions.Intern
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ProjectAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ProjectSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ProjectMinAggregateInputType
@@ -257,6 +305,8 @@ export type ProjectGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   _count?: ProjectCountAggregateInputType | true
+  _avg?: ProjectAvgAggregateInputType
+  _sum?: ProjectSumAggregateInputType
   _min?: ProjectMinAggregateInputType
   _max?: ProjectMaxAggregateInputType
 }
@@ -268,6 +318,9 @@ export type ProjectGroupByOutputType = {
   notes: string | null
   htmlNotes: string | null
   permalinkUrl: string | null
+  platform: string | null
+  builder: string | null
+  areaM2: number | null
   archived: boolean
   color: string | null
   public: boolean
@@ -287,6 +340,8 @@ export type ProjectGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   _count: ProjectCountAggregateOutputType | null
+  _avg: ProjectAvgAggregateOutputType | null
+  _sum: ProjectSumAggregateOutputType | null
   _min: ProjectMinAggregateOutputType | null
   _max: ProjectMaxAggregateOutputType | null
 }
@@ -316,6 +371,9 @@ export type ProjectWhereInput = {
   notes?: Prisma.StringNullableFilter<"Project"> | string | null
   htmlNotes?: Prisma.StringNullableFilter<"Project"> | string | null
   permalinkUrl?: Prisma.StringNullableFilter<"Project"> | string | null
+  platform?: Prisma.StringNullableFilter<"Project"> | string | null
+  builder?: Prisma.StringNullableFilter<"Project"> | string | null
+  areaM2?: Prisma.FloatNullableFilter<"Project"> | number | null
   archived?: Prisma.BoolFilter<"Project"> | boolean
   color?: Prisma.StringNullableFilter<"Project"> | string | null
   public?: Prisma.BoolFilter<"Project"> | boolean
@@ -351,6 +409,9 @@ export type ProjectOrderByWithRelationInput = {
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   htmlNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   permalinkUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  platform?: Prisma.SortOrderInput | Prisma.SortOrder
+  builder?: Prisma.SortOrderInput | Prisma.SortOrder
+  areaM2?: Prisma.SortOrderInput | Prisma.SortOrder
   archived?: Prisma.SortOrder
   color?: Prisma.SortOrderInput | Prisma.SortOrder
   public?: Prisma.SortOrder
@@ -389,6 +450,9 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   notes?: Prisma.StringNullableFilter<"Project"> | string | null
   htmlNotes?: Prisma.StringNullableFilter<"Project"> | string | null
   permalinkUrl?: Prisma.StringNullableFilter<"Project"> | string | null
+  platform?: Prisma.StringNullableFilter<"Project"> | string | null
+  builder?: Prisma.StringNullableFilter<"Project"> | string | null
+  areaM2?: Prisma.FloatNullableFilter<"Project"> | number | null
   archived?: Prisma.BoolFilter<"Project"> | boolean
   color?: Prisma.StringNullableFilter<"Project"> | string | null
   public?: Prisma.BoolFilter<"Project"> | boolean
@@ -424,6 +488,9 @@ export type ProjectOrderByWithAggregationInput = {
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   htmlNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   permalinkUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  platform?: Prisma.SortOrderInput | Prisma.SortOrder
+  builder?: Prisma.SortOrderInput | Prisma.SortOrder
+  areaM2?: Prisma.SortOrderInput | Prisma.SortOrder
   archived?: Prisma.SortOrder
   color?: Prisma.SortOrderInput | Prisma.SortOrder
   public?: Prisma.SortOrder
@@ -443,8 +510,10 @@ export type ProjectOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProjectCountOrderByAggregateInput
+  _avg?: Prisma.ProjectAvgOrderByAggregateInput
   _max?: Prisma.ProjectMaxOrderByAggregateInput
   _min?: Prisma.ProjectMinOrderByAggregateInput
+  _sum?: Prisma.ProjectSumOrderByAggregateInput
 }
 
 export type ProjectScalarWhereWithAggregatesInput = {
@@ -457,6 +526,9 @@ export type ProjectScalarWhereWithAggregatesInput = {
   notes?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
   htmlNotes?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
   permalinkUrl?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
+  platform?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
+  builder?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
+  areaM2?: Prisma.FloatNullableWithAggregatesFilter<"Project"> | number | null
   archived?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   color?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
   public?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
@@ -484,6 +556,9 @@ export type ProjectCreateInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -516,6 +591,9 @@ export type ProjectUncheckedCreateInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -548,6 +626,9 @@ export type ProjectUpdateInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -580,6 +661,9 @@ export type ProjectUncheckedUpdateInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -612,6 +696,9 @@ export type ProjectCreateManyInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -639,6 +726,9 @@ export type ProjectUpdateManyMutationInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -663,6 +753,9 @@ export type ProjectUncheckedUpdateManyInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -700,6 +793,9 @@ export type ProjectCountOrderByAggregateInput = {
   notes?: Prisma.SortOrder
   htmlNotes?: Prisma.SortOrder
   permalinkUrl?: Prisma.SortOrder
+  platform?: Prisma.SortOrder
+  builder?: Prisma.SortOrder
+  areaM2?: Prisma.SortOrder
   archived?: Prisma.SortOrder
   color?: Prisma.SortOrder
   public?: Prisma.SortOrder
@@ -720,6 +816,10 @@ export type ProjectCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type ProjectAvgOrderByAggregateInput = {
+  areaM2?: Prisma.SortOrder
+}
+
 export type ProjectMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   asanaGid?: Prisma.SortOrder
@@ -727,6 +827,9 @@ export type ProjectMaxOrderByAggregateInput = {
   notes?: Prisma.SortOrder
   htmlNotes?: Prisma.SortOrder
   permalinkUrl?: Prisma.SortOrder
+  platform?: Prisma.SortOrder
+  builder?: Prisma.SortOrder
+  areaM2?: Prisma.SortOrder
   archived?: Prisma.SortOrder
   color?: Prisma.SortOrder
   public?: Prisma.SortOrder
@@ -754,6 +857,9 @@ export type ProjectMinOrderByAggregateInput = {
   notes?: Prisma.SortOrder
   htmlNotes?: Prisma.SortOrder
   permalinkUrl?: Prisma.SortOrder
+  platform?: Prisma.SortOrder
+  builder?: Prisma.SortOrder
+  areaM2?: Prisma.SortOrder
   archived?: Prisma.SortOrder
   color?: Prisma.SortOrder
   public?: Prisma.SortOrder
@@ -772,6 +878,10 @@ export type ProjectMinOrderByAggregateInput = {
   workspaceGid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type ProjectSumOrderByAggregateInput = {
+  areaM2?: Prisma.SortOrder
 }
 
 export type ProjectScalarRelationFilter = {
@@ -910,6 +1020,14 @@ export type ProjectUncheckedUpdateManyWithoutTeamNestedInput = {
   deleteMany?: Prisma.ProjectScalarWhereInput | Prisma.ProjectScalarWhereInput[]
 }
 
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
@@ -993,6 +1111,9 @@ export type ProjectCreateWithoutOwnerInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1024,6 +1145,9 @@ export type ProjectUncheckedCreateWithoutOwnerInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1083,6 +1207,9 @@ export type ProjectScalarWhereInput = {
   notes?: Prisma.StringNullableFilter<"Project"> | string | null
   htmlNotes?: Prisma.StringNullableFilter<"Project"> | string | null
   permalinkUrl?: Prisma.StringNullableFilter<"Project"> | string | null
+  platform?: Prisma.StringNullableFilter<"Project"> | string | null
+  builder?: Prisma.StringNullableFilter<"Project"> | string | null
+  areaM2?: Prisma.FloatNullableFilter<"Project"> | number | null
   archived?: Prisma.BoolFilter<"Project"> | boolean
   color?: Prisma.StringNullableFilter<"Project"> | string | null
   public?: Prisma.BoolFilter<"Project"> | boolean
@@ -1110,6 +1237,9 @@ export type ProjectCreateWithoutWorkspaceInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1141,6 +1271,9 @@ export type ProjectUncheckedCreateWithoutWorkspaceInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1197,6 +1330,9 @@ export type ProjectCreateWithoutTeamInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1228,6 +1364,9 @@ export type ProjectUncheckedCreateWithoutTeamInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1284,6 +1423,9 @@ export type ProjectCreateWithoutFollowersInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1315,6 +1457,9 @@ export type ProjectUncheckedCreateWithoutFollowersInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1362,6 +1507,9 @@ export type ProjectUpdateWithoutFollowersInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1393,6 +1541,9 @@ export type ProjectUncheckedUpdateWithoutFollowersInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1424,6 +1575,9 @@ export type ProjectCreateWithoutMembersInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1455,6 +1609,9 @@ export type ProjectUncheckedCreateWithoutMembersInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1502,6 +1659,9 @@ export type ProjectUpdateWithoutMembersInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1533,6 +1693,9 @@ export type ProjectUncheckedUpdateWithoutMembersInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1564,6 +1727,9 @@ export type ProjectCreateWithoutSectionsInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1595,6 +1761,9 @@ export type ProjectUncheckedCreateWithoutSectionsInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1642,6 +1811,9 @@ export type ProjectUpdateWithoutSectionsInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1673,6 +1845,9 @@ export type ProjectUncheckedUpdateWithoutSectionsInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1704,6 +1879,9 @@ export type ProjectCreateWithoutMembershipsInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1735,6 +1913,9 @@ export type ProjectUncheckedCreateWithoutMembershipsInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1782,6 +1963,9 @@ export type ProjectUpdateWithoutMembershipsInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1813,6 +1997,9 @@ export type ProjectUncheckedUpdateWithoutMembershipsInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1844,6 +2031,9 @@ export type ProjectCreateWithoutCustomFieldSettingsInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1875,6 +2065,9 @@ export type ProjectUncheckedCreateWithoutCustomFieldSettingsInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -1922,6 +2115,9 @@ export type ProjectUpdateWithoutCustomFieldSettingsInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1953,6 +2149,9 @@ export type ProjectUncheckedUpdateWithoutCustomFieldSettingsInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1984,6 +2183,9 @@ export type ProjectCreateManyOwnerInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -2010,6 +2212,9 @@ export type ProjectUpdateWithoutOwnerInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2041,6 +2246,9 @@ export type ProjectUncheckedUpdateWithoutOwnerInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2072,6 +2280,9 @@ export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2098,6 +2309,9 @@ export type ProjectCreateManyWorkspaceInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -2124,6 +2338,9 @@ export type ProjectUpdateWithoutWorkspaceInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2155,6 +2372,9 @@ export type ProjectUncheckedUpdateWithoutWorkspaceInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2186,6 +2406,9 @@ export type ProjectUncheckedUpdateManyWithoutWorkspaceInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2212,6 +2435,9 @@ export type ProjectCreateManyTeamInput = {
   notes?: string | null
   htmlNotes?: string | null
   permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
   archived?: boolean
   color?: string | null
   public?: boolean
@@ -2238,6 +2464,9 @@ export type ProjectUpdateWithoutTeamInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2269,6 +2498,9 @@ export type ProjectUncheckedUpdateWithoutTeamInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2300,6 +2532,9 @@ export type ProjectUncheckedUpdateManyWithoutTeamInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   public?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2393,6 +2628,9 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   notes?: boolean
   htmlNotes?: boolean
   permalinkUrl?: boolean
+  platform?: boolean
+  builder?: boolean
+  areaM2?: boolean
   archived?: boolean
   color?: boolean
   public?: boolean
@@ -2429,6 +2667,9 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   notes?: boolean
   htmlNotes?: boolean
   permalinkUrl?: boolean
+  platform?: boolean
+  builder?: boolean
+  areaM2?: boolean
   archived?: boolean
   color?: boolean
   public?: boolean
@@ -2459,6 +2700,9 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   notes?: boolean
   htmlNotes?: boolean
   permalinkUrl?: boolean
+  platform?: boolean
+  builder?: boolean
+  areaM2?: boolean
   archived?: boolean
   color?: boolean
   public?: boolean
@@ -2489,6 +2733,9 @@ export type ProjectSelectScalar = {
   notes?: boolean
   htmlNotes?: boolean
   permalinkUrl?: boolean
+  platform?: boolean
+  builder?: boolean
+  areaM2?: boolean
   archived?: boolean
   color?: boolean
   public?: boolean
@@ -2509,7 +2756,7 @@ export type ProjectSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "permalinkUrl" | "archived" | "color" | "public" | "defaultView" | "currentStatusGid" | "currentStatusColor" | "currentStatusText" | "statusUpdateGid" | "startOn" | "dueOn" | "dueDate" | "asanaCreatedAt" | "asanaModifiedAt" | "ownerGid" | "teamGid" | "workspaceGid" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "permalinkUrl" | "platform" | "builder" | "areaM2" | "archived" | "color" | "public" | "defaultView" | "currentStatusGid" | "currentStatusColor" | "currentStatusText" | "statusUpdateGid" | "startOn" | "dueOn" | "dueDate" | "asanaCreatedAt" | "asanaModifiedAt" | "ownerGid" | "teamGid" | "workspaceGid" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.Project$ownerArgs<ExtArgs>
   team?: boolean | Prisma.Project$teamArgs<ExtArgs>
@@ -2551,6 +2798,9 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     notes: string | null
     htmlNotes: string | null
     permalinkUrl: string | null
+    platform: string | null
+    builder: string | null
+    areaM2: number | null
     archived: boolean
     color: string | null
     public: boolean
@@ -3012,6 +3262,9 @@ export interface ProjectFieldRefs {
   readonly notes: Prisma.FieldRef<"Project", 'String'>
   readonly htmlNotes: Prisma.FieldRef<"Project", 'String'>
   readonly permalinkUrl: Prisma.FieldRef<"Project", 'String'>
+  readonly platform: Prisma.FieldRef<"Project", 'String'>
+  readonly builder: Prisma.FieldRef<"Project", 'String'>
+  readonly areaM2: Prisma.FieldRef<"Project", 'Float'>
   readonly archived: Prisma.FieldRef<"Project", 'Boolean'>
   readonly color: Prisma.FieldRef<"Project", 'String'>
   readonly public: Prisma.FieldRef<"Project", 'Boolean'>

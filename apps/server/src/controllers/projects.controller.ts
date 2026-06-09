@@ -255,6 +255,9 @@ export const createProject: RequestHandler = async (req, res, next) => {
           asanaGid: makeLocalAsanaGid("project"),
           name: body.name,
           notes: body.description,
+          platform: body.platform,
+          builder: body.builder ?? body.client,
+          areaM2: body.areaM2,
           archived: body.status === ProjectStatus.COMPLETED || body.status === ProjectStatus.CANCELLED,
           startOn: firstDateOnly(body.startDate),
           dueOn: firstDateOnly(body.endDate),
@@ -296,6 +299,9 @@ export const updateProject: RequestHandler = async (req, res, next) => {
         data: {
           name: body.name,
           notes: body.description,
+          platform: body.platform,
+          builder: body.builder ?? body.client,
+          areaM2: body.areaM2,
           archived:
             body.status === undefined ? undefined : body.status === ProjectStatus.COMPLETED || body.status === ProjectStatus.CANCELLED,
           startOn: firstDateOnly(body.startDate),

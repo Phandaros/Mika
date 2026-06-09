@@ -9,6 +9,7 @@ import {
   type DragEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type CSSProperties,
   type ReactNode
 } from "react";
 import {
@@ -45,11 +46,13 @@ import { WORKLOAD_TASK_DRAG_MIME, WorkloadUndatedPanel } from "./WorkloadUndated
 
 const DAY_W = 44;
 const HEADER_H = 40;
-const CHART_H = 34;
+const CHART_H = 26;
 const BAR_H = 22;
 const BAR_GAP = 2;
 const LANE_STRIDE = BAR_H + BAR_GAP;
 const NAME_COL = 192;
+const ROW_Y_PAD = 8;
+const CHART_GAP = 4;
 const EXTENSION_DAYS = 28;
 const SCROLL_EDGE = 100;
 const SMOOTH_WHEEL_FRICTION = 0.82;
@@ -220,6 +223,37 @@ function statusColorVar(status: string): string {
   }
 }
 
+function statusTimelineStyle(status: string): CSSProperties {
+  switch (status) {
+    case TaskStatus.TODO:
+      return tokenTimelineStyle("--status-todo-bg", "--status-todo-text");
+    case TaskStatus.ON_SCHEDULE:
+      return tokenTimelineStyle("--status-scheduled-bg", "--status-scheduled-text");
+    case TaskStatus.OVERDUE:
+      return tokenTimelineStyle("--status-late-bg", "--status-late-text");
+    case TaskStatus.IN_PROGRESS:
+      return tokenTimelineStyle("--status-inprogress-bg", "--status-inprogress-text");
+    case TaskStatus.AWAITING_REVIEW:
+      return tokenTimelineStyle("--status-review-bg", "--status-review-text");
+    case TaskStatus.IN_ANALYSIS:
+      return tokenTimelineStyle("--status-analysis-bg", "--status-analysis-text");
+    case TaskStatus.AWAITING_DEFINITION:
+      return tokenTimelineStyle("--status-waiting-bg", "--status-waiting-text");
+    case TaskStatus.FINISHED:
+      return tokenTimelineStyle("--status-done-bg", "--status-done-text");
+    default:
+      return tokenTimelineStyle("--status-todo-bg", "--status-todo-text");
+  }
+}
+
+function tokenTimelineStyle(bg: string, text: string): CSSProperties {
+  return {
+    backgroundColor: `var(${bg})`,
+    color: `var(${text})`,
+    borderColor: `var(${bg})`
+  };
+}
+
 function roleLabel(role: User["role"]): string {
   const labels: Record<Role, string> = {
     [Role.ADMIN]: "Gerente",
@@ -346,7 +380,7 @@ type PositionedTask = {
   clip: { startIdx: number; endIdx: number };
 };
 
-function layoutRowTasks(rowTasks: TaskWithDiscipline[], unionFrom: string, unionTo: string): {
+function layoutRowTasks(rowTasks: TaskWithDiscipline[], unionFrom: string, unionTo: string, includeLoadChart: boolean): {
   positioned: PositionedTask[];
   lanes: number[];
   rowH: number;
@@ -370,7 +404,8 @@ function layoutRowTasks(rowTasks: TaskWithDiscipline[], unionFrom: string, union
   const lanes = assignLanes(positioned.map((p) => p.clip));
   const maxLane = lanes.length ? Math.max(...lanes) : -1;
   const lanesHeight = Math.max(1, maxLane + 1) * LANE_STRIDE;
-  const rowH = CHART_H + lanesHeight + 8;
+  const chartHeight = includeLoadChart ? CHART_H + CHART_GAP : 0;
+  const rowH = ROW_Y_PAD * 2 + chartHeight + lanesHeight;
   return { positioned, lanes, rowH };
 }
 
@@ -602,7 +637,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     [datedTasks, days, nonWorkingDays]
   );
 
-  const totalRowH = CHART_H + 8;
+  const totalRowH = showEstimatedDays ? CHART_H + ROW_Y_PAD * 2 : 0;
 
   const workloadRows = useMemo<WorkloadRow[]>(() => {
     if (grouping === "section") {
@@ -622,7 +657,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return [...map.entries()]
         .sort((a, b) => a[1].label.localeCompare(b[1].label, "pt-BR"))
         .map(([id, row]) => {
-          const { positioned, lanes, rowH } = layoutRowTasks(row.tasks, unionFrom, unionTo);
+          const { positioned, lanes, rowH } = layoutRowTasks(row.tasks, unionFrom, unionTo, showEstimatedDays);
           return {
             id,
             label: row.label,
@@ -637,7 +672,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     const rows: WorkloadRow[] = userRows.map((user) => {
       const rowTasks = datedTasks.filter((t) => t.assigneeId === user.id);
-      const { positioned, lanes, rowH } = layoutRowTasks(rowTasks, unionFrom, unionTo);
+      const { positioned, lanes, rowH } = layoutRowTasks(rowTasks, unionFrom, unionTo, showEstimatedDays);
       return {
         id: user.id,
         label: user.name,
@@ -653,7 +688,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     const unassignedTasks = datedTasks.filter((t) => !t.assigneeId);
     if (unassignedTasks.length) {
-      const { positioned, lanes, rowH } = layoutRowTasks(unassignedTasks, unionFrom, unionTo);
+      const { positioned, lanes, rowH } = layoutRowTasks(unassignedTasks, unionFrom, unionTo, showEstimatedDays);
       rows.push({
         id: "unassigned",
         label: "Sem responsável",
@@ -665,7 +700,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     return rows;
-  }, [datedTasks, grouping, unionFrom, unionTo, userRows]);
+  }, [datedTasks, grouping, showEstimatedDays, unionFrom, unionTo, userRows]);
 
   const extendLeft = useCallback(() => {
     if (extendingLeft.current) {
@@ -1221,6 +1256,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     loads: number[],
     rowKey: string
   ): ReactNode {
+    const chartSlotHeight = showEstimatedDays ? CHART_H + CHART_GAP : 0;
+    const barTop = ROW_Y_PAD + chartSlotHeight;
+
     return (
       <>
         {showEstimatedDays ? (
@@ -1255,12 +1293,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               {activeDragPreview && previewClip && (activeDragPreview.deltaDays !== 0 || previewAssigneeChanged) ? (
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute z-[5] rounded-md border border-dashed border-brand-orange/50 bg-brand-orange/10"
+                  className="pointer-events-none absolute z-[5] rounded-md border border-dashed bg-[var(--color-brand-orange-muted)]"
                   style={{
                     left: previewLeft,
                     width: previewWidth,
-                    top: CHART_H + 4 + lane * LANE_STRIDE + activeDragPreview.targetRowOffset,
+                    top: barTop + lane * LANE_STRIDE + activeDragPreview.targetRowOffset,
                     height: BAR_H,
+                    borderColor: "var(--color-brand-orange)",
                     transition:
                       "left 120ms var(--ease-out-expo), top 120ms var(--ease-out-expo), opacity 120ms var(--ease-out-expo)"
                   }}
@@ -1276,9 +1315,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     position: "absolute",
                     left,
                     width,
-                    top: CHART_H + 4 + lane * LANE_STRIDE,
+                    top: barTop + lane * LANE_STRIDE,
                     height: BAR_H,
-                    backgroundColor: statusColorVar(p.task.status),
+                    ...statusTimelineStyle(p.task.status),
                     opacity: p.task.completed && !activeDragPreview ? 0.45 : 1,
                     transform: activeDragPreview && isMovingTask
                       ? `translate3d(${activeDragPreview.pixelOffset}px, ${activeDragPreview.pixelOffsetY - 2}px, 0) scale(1.025)`
@@ -1289,10 +1328,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     willChange: activeDragPreview ? "transform" : undefined
                   }}
                   className={cn(
-                    "z-[6] cursor-grab select-none overflow-hidden rounded-md border border-border px-3 text-left text-[11px] font-medium text-white shadow-sm outline-none active:cursor-grabbing",
+                    "z-[6] cursor-grab select-none overflow-hidden rounded-md border px-3 text-left text-[11px] font-semibold shadow-sm outline-none active:cursor-grabbing",
                     "transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-bg-1",
                     activeDragPreview &&
-                      "z-[18] cursor-grabbing border-brand-orange/60 shadow-2xl ring-2 ring-brand-orange/70"
+                      "z-[18] cursor-grabbing border-brand-orange shadow-2xl ring-2 ring-brand-orange"
                   )}
                   onPointerDown={(e) => {
                     const b = clientTaskBounds(p.task);
@@ -1526,35 +1565,44 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           ) : null}
 
           <div className="flex w-full min-w-0 max-w-full">
-            <div className="z-30 shrink-0 border-r border-border bg-bg-2" style={{ width: NAME_COL, paddingTop: HEADER_H }}>
-              <div
-                className="flex items-center border-b border-border px-3 text-xs font-semibold text-text-secondary"
-                style={{ height: totalRowH }}
-              >
-                Total (dias est.)
-              </div>
-              {workloadRows.map((row) => (
+            <div className="z-30 shrink-0 border-r border-border bg-bg-2" style={{ width: NAME_COL }}>
+              <div className="border-b border-border bg-bg-2" style={{ height: HEADER_H }} />
+              {showEstimatedDays ? (
                 <div
-                  key={row.id}
-                  className={cn(
-                    "flex items-center gap-2 border-b border-border px-3 py-2 transition-colors duration-150",
-                    dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-brand-orange/10"
-                  )}
-                  style={{ height: row.rowH }}
+                  className="flex items-center border-b border-border-subtle px-3 text-xs font-semibold text-text-secondary"
+                  style={{ height: totalRowH }}
                 >
-                  {row.avatarName ? (
-                    <Avatar name={row.avatarName} imageUrl={row.avatarUrl} className="h-8 w-8 shrink-0" />
-                  ) : (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-card text-xs font-bold text-text-secondary">
-                      #
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-text-primary">{row.label}</p>
-                    {row.sublabel ? <p className="truncate text-xs text-text-muted">{row.sublabel}</p> : null}
-                  </div>
+                  Total (dias est.)
                 </div>
-              ))}
+              ) : null}
+              {workloadRows.map((row) => {
+                const chartSlotHeight = showEstimatedDays ? CHART_H + CHART_GAP : 0;
+
+                return (
+                  <div
+                    key={row.id}
+                    className={cn(
+                      "border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
+                      dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
+                    )}
+                    style={{ height: row.rowH, paddingTop: chartSlotHeight }}
+                  >
+                    <div className="flex h-full items-center gap-2 px-3 py-2">
+                      {row.avatarName ? (
+                        <Avatar name={row.avatarName} imageUrl={row.avatarUrl} className="h-8 w-8 shrink-0" />
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-card text-xs font-bold text-text-secondary">
+                          #
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-text-primary">{row.label}</p>
+                        {row.sublabel ? <p className="truncate text-xs text-text-muted">{row.sublabel}</p> : null}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div
@@ -1589,16 +1637,18 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                           "flex flex-col items-center justify-center border-r border-border-subtle text-[10px] text-text-muted",
                           isNonWorking && "bg-[rgba(244,244,245,0.04)]",
                           holidayName && "bg-brand-orange/10",
-                          isToday && "bg-surface-hover text-text-primary"
+                          isToday && "bg-bg-3 text-text-primary"
                         )}
                       >
-                        <span className="h-2.5 text-[9px] leading-none uppercase text-text-muted">
+                        <span className="h-2.5 text-[9px] font-medium leading-none uppercase text-text-muted">
                           {showMonth ? format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR }) : ""}
                         </span>
-                        <span className="text-[9px] leading-none uppercase text-text-muted">
+                        <span className="text-[9px] font-medium leading-none uppercase text-text-muted">
                           {WEEKDAY_LABELS[weekDay]}
                         </span>
-                        <span className="font-semibold leading-none text-text-secondary">{format(parseYmdToLocalNoon(d), "d")}</span>
+                        <span className={cn("font-semibold leading-none text-text-secondary", isToday && "text-text-primary")}>
+                          {format(parseYmdToLocalNoon(d), "d")}
+                        </span>
                       </div>
                     );
                   })}
@@ -1607,31 +1657,35 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 <div className="relative">
                   {todayIdx >= 0 && todayIdx < dayCount ? (
                     <div
-                      className="pointer-events-none absolute bottom-0 top-0 z-[4] w-px bg-[var(--color-status-todo)]"
+                      className="pointer-events-none absolute bottom-0 top-0 z-[4] w-px bg-[var(--color-brand-orange)] opacity-60"
                       style={{ left: todayIdx * DAY_W + DAY_W / 2 }}
                     />
                   ) : null}
 
-                  <div className="flex border-b border-border-subtle">
-                    <div
-                      className="relative"
-                      style={{ width: timelineWidth, minWidth: timelineWidth, height: totalRowH }}
-                    >
-                      {renderNonWorkingBands(totalRowH, "total")}
-                      {showEstimatedDays ? <MiniLoadChart loads={totalLoads} height={CHART_H} /> : null}
-                      {showEstimatedDays ? totalLoads.map((load, i) =>
-                        load > 0 ? (
-                          <span
-                            key={`tot-cap-${i}`}
-                            className="pointer-events-none absolute text-[9px] text-text-muted"
-                            style={{ left: i * DAY_W + 2, top: 2, width: DAY_W - 4 }}
-                          >
-                            {load >= 10 ? load.toFixed(0) : load.toFixed(1)}
-                          </span>
-                        ) : null
-                      ) : null}
+                  {showEstimatedDays ? (
+                    <div className="flex border-b border-border-subtle">
+                      <div
+                        className="relative"
+                        style={{ width: timelineWidth, minWidth: timelineWidth, height: totalRowH }}
+                      >
+                        {renderNonWorkingBands(totalRowH, "total")}
+                        <div className="absolute left-0 top-1">
+                          <MiniLoadChart loads={totalLoads} height={CHART_H} />
+                        </div>
+                        {totalLoads.map((load, i) =>
+                          load > 0 ? (
+                            <span
+                              key={`tot-cap-${i}`}
+                              className="pointer-events-none absolute text-[9px] text-text-muted"
+                              style={{ left: i * DAY_W + 2, top: 2, width: DAY_W - 4 }}
+                            >
+                              {load >= 10 ? load.toFixed(0) : load.toFixed(1)}
+                            </span>
+                          ) : null
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
 
                   {workloadRows.map((row) => {
                     const loads = buildDailyLoadsForTasks(row.rowTasks, days, nonWorkingDays);
@@ -1640,8 +1694,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                         <ContextMenuTrigger asChild>
                           <div
                             className={cn(
-                              "flex border-b border-border-subtle transition-colors duration-150",
-                              dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-brand-orange/10"
+                              "flex border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
+                              dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
                             )}
                             onContextMenu={(event) => handleEmptyRowContextMenu(event, row)}
                           >

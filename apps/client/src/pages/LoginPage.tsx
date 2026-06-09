@@ -68,7 +68,7 @@ export function LoginPage() {
         <img src={logoUrl} alt="Mika" className="mx-auto h-16 w-auto" />
         <div className="mt-8">
           <h1 className="text-2xl font-bold text-text-primary">Entrar no Mika</h1>
-          <p className="mt-2 text-sm text-text-secondary">Acesse projetos, secoes e tarefas da equipe.</p>
+          <p className="mt-2 text-sm text-text-secondary">Acesse projetos, seções e tarefas da equipe.</p>
         </div>
         <form onSubmit={handleSubmit} className="mt-8 grid gap-4" autoComplete="on">
           {isDesktop ? (

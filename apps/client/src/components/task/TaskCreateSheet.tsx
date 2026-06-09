@@ -1,15 +1,30 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { format } from "date-fns";
-import { CalendarDays, Check, Flag, FolderKanban, UserRound } from "lucide-react";
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isAfter,
+  isBefore,
+  isSameDay,
+  isSameMonth,
+  isWithinInterval,
+  startOfDay,
+  startOfMonth,
+  startOfWeek
+} from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectCustomField } from "shared";
+import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectCustomField, type User } from "shared";
 import { useProjects } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
-import { dateOnlyToLocalDate } from "../../lib/utils";
+import { cn, dateOnlyToLocalDate, localDateToDateOnly } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels, taskStatusOptions } from "../shared/Chip";
+import { DisciplineChip, PlatformChip, taskStatusLabels, taskStatusOptions } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
@@ -26,13 +41,11 @@ import {
   compactSelectTriggerClassName,
   DetailRow,
   EmptyField,
-  FieldPanel,
   TaskFixedFieldGrid,
   TaskPanelShell
 } from "./TaskPanelPrimitives";
 
 type CustomFieldDraft = Record<string, string>;
-type OpenCreateField = "assignee" | "priority" | null;
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
@@ -103,13 +116,10 @@ export function TaskCreateSheet() {
   const [taskDiscipline, setTaskDiscipline] = useState("");
   const [stage, setStage] = useState("");
   const [customFieldDraft, setCustomFieldDraft] = useState<CustomFieldDraft>({});
-  const [openField, setOpenField] = useState<OpenCreateField>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const asideRef = useRef<HTMLElement>(null);
 
   const selectedProject = projects.find((project) => project.id === projectId) ?? null;
-  const selectedAssignee = users.find((user) => user.id === assigneeId) ?? null;
-  const selectedPriority = priorityOptions.find((option) => option.value === priority) ?? null;
   const globalTaskFields = selectedProject?.taskCustomFields?.filter((field) => field.mikaDetailVisible !== false) ?? [];
   const stageField = globalTaskFields.find((field) => fieldIdentityMatches(field, ["etapa", "stage"])) ?? null;
   const lowerCustomFields = globalTaskFields.filter((field) => !isPromotedTaskField(field));
@@ -136,7 +146,6 @@ export function TaskCreateSheet() {
     setTaskDiscipline("");
     setStage("");
     setCustomFieldDraft({});
-    setOpenField(null);
   }, [defaults.assigneeId, defaults.dueDate, defaults.projectId, defaults.sectionId, defaults.startDate, open]);
 
   useEffect(() => {
@@ -261,6 +270,16 @@ export function TaskCreateSheet() {
       isOpen={open}
       asideRef={asideRef}
       onClose={() => setOpen(false)}
+      headerContent={
+        <Input
+          ref={titleInputRef}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Nome da tarefa"
+          className="h-auto min-w-0 border-transparent bg-transparent px-0 py-1 text-[16px] font-semibold leading-tight text-text-primary focus:border-brand-orange focus:bg-[--bg-3] focus:px-2"
+          autoFocus
+        />
+      }
       footer={
         <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-card px-6 py-4">
           <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
@@ -273,15 +292,6 @@ export function TaskCreateSheet() {
       }
     >
       <form id="task-create-form" onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <Input
-          ref={titleInputRef}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Nome da tarefa"
-          className="h-auto border-transparent bg-transparent px-0 py-1 text-2xl font-bold leading-tight text-text-primary focus:border-brand-orange focus:bg-brand-black focus:px-2"
-          autoFocus
-        />
-
         <TaskFixedFieldGrid
           fields={[
             {
@@ -346,11 +356,6 @@ export function TaskCreateSheet() {
               )
             },
             {
-              key: "completionStatus",
-              label: "Status de Conclusão",
-              render: () => <CompletionStatusChip completed={false} />
-            },
-            {
               key: "maxDeadline",
               label: "Prazo Máximo",
               render: () => (
@@ -402,88 +407,32 @@ export function TaskCreateSheet() {
 
         <div className="mt-6 grid gap-4 text-sm">
           <DetailRow icon={<UserRound size={18} />} label="Responsável">
-            <button
-              type="button"
-              onClick={() => setOpenField(openField === "assignee" ? null : "assignee")}
-              className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left transition hover:bg-surface-hover"
-            >
-              {selectedAssignee ? (
-                <>
-                  <Avatar name={selectedAssignee.name} imageUrl={selectedAssignee.avatarUrl} className="h-7 w-7" />
-                  <span className="font-medium text-text-primary">{selectedAssignee.name}</span>
-                </>
-              ) : (
-                <span className="text-text-secondary">Sem responsável</span>
-              )}
-            </button>
-            {openField === "assignee" ? (
-              <FieldPanel>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAssigneeId("");
-                    setOpenField(null);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
-                >
-                  Sem responsável
-                </button>
-                {users.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setAssigneeId(item.id);
-                      setOpenField(null);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition hover:bg-surface-hover"
-                  >
-                    <Avatar name={item.name} imageUrl={item.avatarUrl} className="h-7 w-7" />
-                    <span className="font-medium text-text-primary">{item.name}</span>
-                  </button>
-                ))}
-              </FieldPanel>
-            ) : null}
+            <CreateAssigneeField users={users} assigneeId={assigneeId} onChange={setAssigneeId} />
           </DetailRow>
 
           <DetailRow icon={<Flag size={18} />} label="Prioridade">
-            <button
-              type="button"
-              onClick={() => setOpenField(openField === "priority" ? null : "priority")}
-              className="flex min-h-10 w-full items-center rounded-md px-2 text-left transition hover:bg-surface-hover"
-            >
-              {selectedPriority ? <PriorityBadge priority={selectedPriority.value} /> : <span className="text-text-secondary">Sem prioridade</span>}
-            </button>
-            {openField === "priority" ? (
-              <FieldPanel>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPriority("");
-                    setOpenField(null);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-text-secondary transition hover:bg-surface-hover"
-                >
-                  Sem prioridade
-                </button>
-                {priorityOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setPriority(option.value);
-                      setOpenField(null);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:bg-surface-hover"
-                  >
-                    <PriorityBadge priority={option.value} />
-                  </button>
-                ))}
-              </FieldPanel>
-            ) : null}
+            <SearchableSelect
+              value={priority || "none"}
+              options={[
+                { value: "none", label: "Sem prioridade", render: <span className="text-text-muted">Sem prioridade</span> },
+                ...priorityOptions.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                  render: <PriorityBadge priority={option.value} />
+                }))
+              ]}
+              placeholder="Sem prioridade"
+              searchPlaceholder="Buscar prioridade..."
+              contentClassName="min-w-[220px] max-w-[320px]"
+              showSelectionIndicator={false}
+              renderValue={(option) =>
+                option.value === "none" ? <span className="text-text-secondary">Sem prioridade</span> : <PriorityBadge priority={option.value as Priority} />
+              }
+              onValueChange={(value) => setPriority(value === "none" ? "" : value)}
+            />
           </DetailRow>
 
-          <DetailRow icon={<CalendarDays size={18} />} label="Prazo">
+          <DetailRow icon={<CalendarDays size={18} />} label="Datas">
             <CreateDateRangeField
               startDate={startDate}
               dueDate={dueDate}
@@ -536,7 +485,7 @@ function CreateProjectsField({
     const normalizedQuery = normalizeFieldName(query);
 
     return [...projects]
-      .filter((project) => !normalizedQuery || normalizeFieldName(project.name).includes(normalizedQuery))
+      .filter((project) => !normalizedQuery || normalizeFieldName(projectSearchLabel(project)).includes(normalizedQuery))
       .sort((a, b) => {
         const selectedDelta = Number(b.id === projectId) - Number(a.id === projectId);
         return selectedDelta || a.name.localeCompare(b.name, "pt-BR");
@@ -547,7 +496,9 @@ function CreateProjectsField({
     <Popover onOpenChange={(open) => !open && setQuery("")}>
       <PopoverTrigger asChild>
         <Button variant="secondary" className={`${compactSelectTriggerClassName} max-w-full`}>
-          <span className="min-w-0 truncate text-text-primary">{selectedProject ? selectedProject.name : "Selecionar"}</span>
+          <span className="min-w-0 truncate text-text-primary">
+            {selectedProject ? projectMembershipLabel(selectedProject, sectionId) : "Selecionar"}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(420px,calc(100vw-32px))] overflow-x-hidden p-2">
@@ -574,11 +525,11 @@ function CreateProjectsField({
                   >
                     <button
                       type="button"
-                      onClick={() => onChange(selected ? "" : project.id, null)}
+                      onClick={() => onChange(selected ? "" : project.id, selected ? null : defaultSectionId(sections))}
                       className="flex min-h-7 w-full min-w-0 items-center gap-2 overflow-hidden text-left font-semibold"
                     >
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center">{selected ? <Check size={15} className="text-brand-orange" /> : null}</span>
-                      <span className="min-w-0 flex-1 truncate">{project.name}</span>
+                      <ProjectSectionLabel project={project} sectionId={selected ? sectionId : defaultSectionId(sections)} />
                     </button>
                     {selected ? (
                       <SearchableSelect
@@ -605,6 +556,36 @@ function CreateProjectsField({
   );
 }
 
+function CreateAssigneeField({ users, assigneeId, onChange }: { users: User[]; assigneeId: string; onChange: (value: string) => void }) {
+  return (
+    <SearchableSelect
+      value={assigneeId || "none"}
+      options={[
+        { value: "none", label: "Sem responsável", render: <span className="text-text-muted">Sem responsável</span> },
+        ...users.map((item) => ({
+          value: item.id,
+          label: item.name,
+          avatarUrl: item.avatarUrl
+        }))
+      ]}
+      placeholder="Sem responsável"
+      searchPlaceholder="Buscar responsável..."
+      contentClassName="min-w-[240px] max-w-[320px]"
+      renderValue={(option) =>
+        option.value === "none" ? (
+          <span className="text-text-secondary">Sem responsável</span>
+        ) : (
+          <span className="flex min-w-0 items-center gap-2">
+            <Avatar name={option.label} imageUrl={option.avatarUrl} className="h-7 w-7 shrink-0" />
+            <span className="min-w-0 truncate font-medium text-text-primary">{option.label}</span>
+          </span>
+        )
+      }
+      onValueChange={(value) => onChange(value === "none" ? "" : value)}
+    />
+  );
+}
+
 function CreateDateRangeField({
   startDate,
   dueDate,
@@ -616,33 +597,177 @@ function CreateDateRangeField({
   onStartDateChange: (value: string) => void;
   onDueDateChange: (value: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [draftStart, setDraftStart] = useState<Date | null>(null);
+  const [draftEnd, setDraftEnd] = useState<Date | null>(null);
+
+  function openPicker() {
+    setDraftStart(dateOnlyToLocalDate(startDate));
+    setDraftEnd(dateOnlyToLocalDate(dueDate));
+    setOpen(true);
+  }
+
+  function saveDates() {
+    const normalized = normalizeDateDraft(draftStart, draftEnd);
+    onStartDateChange(localDateToDateOnly(normalized.startDate) ?? "");
+    onDueDateChange(localDateToDateOnly(normalized.dueDate) ?? "");
+    setOpen(false);
+  }
+
+  function clearDates() {
+    setDraftStart(null);
+    setDraftEnd(null);
+    onStartDateChange("");
+    onDueDateChange("");
+    setOpen(false);
+  }
+
   return (
-    <Popover>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          openPicker();
+          return;
+        }
+
+        setOpen(false);
+      }}
+    >
       <PopoverTrigger asChild>
         <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
           <CompletionDateLabel startDate={startDate} dueDate={dueDate} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-3">
-        <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <DatePicker value={startDate || null} onValueChange={(value) => onStartDateChange(value ?? "")} placeholder="Início" />
-            <DatePicker value={dueDate || null} onValueChange={(value) => onDueDateChange(value ?? "")} placeholder="Entrega" />
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-8 justify-self-start"
-            onClick={() => {
-              onStartDateChange("");
-              onDueDateChange("");
-            }}
-          >
-            Apagar
-          </Button>
-        </div>
+      <PopoverContent align="start" collisionPadding={16} className="w-80 p-0">
+        <CreateDateRangePanel
+          startDate={draftStart}
+          endDate={draftEnd}
+          onStartDateChange={setDraftStart}
+          onEndDateChange={setDraftEnd}
+          onSave={saveDates}
+          onClear={clearDates}
+        />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function CreateDateRangePanel({
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  onSave,
+  onClear
+}: {
+  startDate: Date | null;
+  endDate: Date | null;
+  onStartDateChange: (date: Date | null) => void;
+  onEndDateChange: (date: Date | null) => void;
+  onSave: () => void;
+  onClear: () => void;
+}) {
+  const [month, setMonth] = useState(() => new Date());
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(month)),
+    end: endOfWeek(endOfMonth(month))
+  });
+
+  function handleStartInputChange(value: string) {
+    const date = dateOnlyToLocalDate(value);
+    onStartDateChange(date);
+
+    if (date) {
+      setMonth(date);
+    }
+  }
+
+  function handleEndInputChange(value: string) {
+    const date = dateOnlyToLocalDate(value);
+    onEndDateChange(date);
+
+    if (date) {
+      setMonth(date);
+    }
+  }
+
+  function handleDaySelect(day: Date) {
+    if (!startDate || (startDate && endDate)) {
+      onStartDateChange(day);
+      onEndDateChange(null);
+      return;
+    }
+
+    if (isBefore(day, startDate)) {
+      onStartDateChange(day);
+      onEndDateChange(startDate);
+      return;
+    }
+
+    onEndDateChange(day);
+  }
+
+  return (
+    <div className="w-80 rounded-md border border-border bg-surface-card shadow-2xl">
+      <div className="grid gap-3 p-3">
+        <div className="grid grid-cols-2 gap-3">
+          <DatePicker value={localDateToDateOnly(startDate)} onValueChange={(value) => handleStartInputChange(value ?? "")} placeholder="Início" />
+          <DatePicker value={localDateToDateOnly(endDate)} onValueChange={(value) => handleEndInputChange(value ?? "")} placeholder="Entrega" />
+        </div>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
+            <ChevronLeft size={16} />
+          </Button>
+          <span className="text-sm font-semibold text-text-primary">{formatMonthLabel(month)}</span>
+          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
+            <ChevronRight size={16} />
+          </Button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-text-muted">
+          {["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => (
+            <span key={`${day}-${index}`} className="py-1">
+              {day}
+            </span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-0 overflow-hidden rounded-md border border-border bg-border">
+          {days.map((day) => {
+            const s0 = startDate ? startOfDay(startDate) : null;
+            const e0 = endDate ? startOfDay(endDate) : null;
+            const d0 = startOfDay(day);
+            const rangeOk = Boolean(s0 && e0 && !isAfter(s0, e0));
+            const inClosedRange = rangeOk && s0 && e0 ? isWithinInterval(d0, { start: s0, end: e0 }) : false;
+            const isStart = Boolean(startDate && isSameDay(day, startDate));
+            const isEnd = Boolean(endDate && isSameDay(day, endDate));
+            const isMiddle = inClosedRange && !isStart && !isEnd;
+
+            return (
+              <button
+                key={day.toISOString()}
+                type="button"
+                onClick={() => handleDaySelect(day)}
+                className={cn(
+                  "flex h-8 items-center justify-center border border-transparent text-sm font-semibold transition outline-none",
+                  isSameMonth(day, month) ? "text-text-primary" : "text-text-muted",
+                  isMiddle && "bg-brand-orange/45 text-text-primary hover:bg-brand-orange/60",
+                  (isStart || isEnd) && "z-[1] bg-brand-orange font-bold text-brand-white hover:bg-brand-orange",
+                  !isMiddle && !isStart && !isEnd && "bg-surface-card hover:bg-surface-hover"
+                )}
+              >
+                {format(day, "d")}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex items-center justify-between border-t border-border p-3">
+        <Button variant="ghost" onClick={onClear}>
+          Apagar
+        </Button>
+        <Button onClick={onSave}>Salvar</Button>
+      </div>
+    </div>
   );
 }
 
@@ -774,6 +899,68 @@ function isPromotedTaskField(field: Pick<ProjectCustomField, "mikaKey" | "mikaLa
 
 function sectionsOf(project: Project | null | undefined) {
   return project?.sections ?? project?.disciplines ?? [];
+}
+
+function defaultSectionId(sections: Array<{ id: string; name: string }>): string {
+  return sections.find((section) => normalizeFieldName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
+}
+
+function normalizeDateDraft(startDate: Date | null, endDate: Date | null): { startDate: Date | null; dueDate: Date | null } {
+  if (startDate && endDate) {
+    return isBefore(endDate, startDate)
+      ? { startDate: endDate, dueDate: startDate }
+      : { startDate, dueDate: endDate };
+  }
+
+  return { startDate: null, dueDate: startDate ?? endDate };
+}
+
+function projectMembershipLabel(project: Project, sectionId: string | null | undefined): string {
+  const sections = sectionsOf(project);
+  const section = sections.find((item) => item.id === sectionId);
+  const suffix = section ? sectionAbbreviation(section.name) : null;
+  return suffix ? `${project.name} / ${suffix}` : project.name;
+}
+
+function projectSearchLabel(project: Project): string {
+  const sections = sectionsOf(project);
+  return [project.name, ...sections.map((section) => section.name), ...sections.map((section) => sectionAbbreviation(section.name))].join(" ");
+}
+
+function sectionAbbreviation(name: string): string {
+  const normalized = normalizeFieldName(name);
+
+  if (normalized === "eletrico" || normalized === "eletrica") {
+    return "ELE";
+  }
+
+  if (normalized === "civil") {
+    return "CIV";
+  }
+
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+function ProjectSectionLabel({ project, sectionId }: { project: Project; sectionId: string | null | undefined }) {
+  const section = sectionsOf(project).find((item) => item.id === sectionId);
+  const suffix = section ? sectionAbbreviation(section.name) : null;
+
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      <span className="min-w-0 truncate">{project.name}</span>
+      {suffix ? <span className="shrink-0 text-text-muted">/ {suffix}</span> : null}
+    </span>
+  );
+}
+
+function formatMonthLabel(date: Date): string {
+  const label = format(date, "MMMM 'de' yyyy", { locale: ptBR });
+  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }
 
 function fieldIdentityMatches(field: Pick<ProjectCustomField, "mikaKey" | "mikaLabel" | "name">, normalizedMatches: string[]): boolean {

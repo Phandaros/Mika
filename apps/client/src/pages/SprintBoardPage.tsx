@@ -193,7 +193,9 @@ function SprintColumn({
               <h2 className="truncate text-sm font-bold text-text-primary">{label}</h2>
               <p className="mt-1 text-xs text-text-muted">{taskStatusLabels[status]}</p>
             </div>
-            <span data-testid={`sprint-column-count-${status}`} className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{totalCount}</span>
+            <span data-testid={`sprint-column-count-${status}`} className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">
+              {totalCount}
+            </span>
           </div>
           <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pr-1">
             {isLoading ? (
@@ -246,17 +248,24 @@ function SprintTaskCard({ task, onOpen }: { task: Task; onOpen: (task: Task) => 
 
   return (
     <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(task)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(task);
+        }
+      }}
       className={cn(
-        "rounded-md border border-border bg-surface-card p-3 transition hover:border-brand-orange hover:bg-surface-hover",
+        "cursor-pointer rounded-md border border-border bg-surface-card p-3 transition hover:border-brand-orange hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
         task.completed ? "opacity-70" : ""
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <button type="button" onClick={() => onOpen(task)} className="min-w-0 text-left">
-          <h3 className={cn("line-clamp-2 text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
-            {task.title}
-          </h3>
-        </button>
+        <h3 className={cn("line-clamp-2 min-w-0 text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
+          {task.title}
+        </h3>
         {task.assignee ? <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-7 w-7" /> : null}
       </div>
 

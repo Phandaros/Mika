@@ -16,9 +16,10 @@ interface TaskPanelShellProps {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  headerContent?: ReactNode;
 }
 
-export function TaskPanelShell({ isOpen, asideRef, onClose, children, footer }: TaskPanelShellProps) {
+export function TaskPanelShell({ isOpen, asideRef, onClose, children, footer, headerContent }: TaskPanelShellProps) {
   return (
     <div
       className={cn(
@@ -34,10 +35,14 @@ export function TaskPanelShell({ isOpen, asideRef, onClose, children, footer }: 
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <CheckCircle2 size={18} />
-            <span>Tarefa</span>
+        <div className="flex items-center justify-between gap-4 border-b border-border bg-[--bg-2] px-6 py-4">
+          <div className="min-w-0 flex-1">
+            {headerContent ?? (
+              <div className="flex items-center gap-2 text-sm text-text-secondary">
+                <CheckCircle2 size={18} />
+                <span>Tarefa</span>
+              </div>
+            )}
           </div>
           <Button variant="ghost" className="h-9 w-9 px-0" onClick={onClose} title="Fechar" aria-label="Fechar">
             <X size={18} />

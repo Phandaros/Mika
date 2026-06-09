@@ -162,8 +162,8 @@ export function ProjectDetailPage() {
   const builderSuggestions = useMemo(
     () =>
       Array.from(
-        new Set(projects.map((item) => projectBuilder(item)).filter((builder): builder is string => Boolean(builder)))
-      ).sort(),
+        new Set(projects.map((item) => item.builder?.trim()).filter((builder): builder is string => Boolean(builder)))
+      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [projects]
   );
 
@@ -231,7 +231,7 @@ export function ProjectDetailPage() {
     <div className="grid gap-6">
       <section>
         <div>
-          <p className="text-sm font-semibold uppercase text-brand-orange">{projectBuilder(project) ?? "Projeto Asana"}</p>
+          <p className="text-sm font-semibold uppercase text-brand-orange">{project.builder ?? project.client ?? "Projeto Asana"}</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold text-text-primary">{project.name}</h1>
             {project.permalinkUrl ? (
@@ -1174,10 +1174,6 @@ function ProjectModal({ title, children, onClose }: { title: string; children: R
       </section>
     </div>
   );
-}
-
-function projectBuilder(project: { builder?: string | null; client?: string | null }): string | null {
-  return project.builder ?? project.client ?? null;
 }
 
 function sectionScope(section: Pick<Section, "name">): TaskScope {
