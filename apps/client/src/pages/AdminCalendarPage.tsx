@@ -3,6 +3,7 @@ import { CalendarDays, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import type { CompanyHoliday } from "shared";
+import { EmptyCell } from "../components/shared/DataTable";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { DatePicker } from "../components/ui/date-picker";
@@ -96,23 +97,23 @@ export function AdminCalendarPage() {
       {isLoading ? (
         <LoadingSpinner />
       ) : (
-        <div className="overflow-hidden rounded-md border border-border bg-surface-card">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
-            <thead className="bg-surface">
-              <tr className="text-left text-text-secondary">
-                <th className="p-3">Data</th>
-                <th className="p-3">Nome</th>
-                <th className="p-3">Dia</th>
-                <th className="p-3 text-right">Acoes</th>
+        <div className="overflow-x-auto rounded-md border border-[--color-border]">
+          <table className="w-full min-w-[640px] table-fixed border-collapse bg-[--bg-2] text-sm">
+            <thead className="sticky top-0 z-10 bg-[--bg-1]">
+              <tr className="border-b border-[--color-border] text-left">
+                <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Data</th>
+                <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Nome</th>
+                <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Dia</th>
+                <th className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Ações</th>
               </tr>
             </thead>
             <tbody>
               {groupedHolidays.map((holiday) => (
-                <tr key={holiday.id} className="border-t border-border">
-                  <td className="p-3 font-semibold text-text-primary">{formatDateOnly(holiday.date, "dd/MM/yyyy")}</td>
-                  <td className="p-3 text-text-secondary">{holiday.name}</td>
-                  <td className="p-3 text-text-muted">{holiday.weekday}</td>
-                  <td className="p-3">
+                <tr key={holiday.id} className="border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]">
+                  <td className="px-3 py-2 font-semibold text-[--color-text-primary]">{formatDateOnly(holiday.date, "dd/MM/yyyy")}</td>
+                  <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{holiday.name || <EmptyCell />}</td>
+                  <td className="px-3 py-2 text-[13px] text-[--color-text-muted]">{holiday.weekday || <EmptyCell />}</td>
+                  <td className="px-3 py-2">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="secondary"

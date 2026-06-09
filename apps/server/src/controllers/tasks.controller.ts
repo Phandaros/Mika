@@ -9,6 +9,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { applyTaskRules } from "../lib/taskRules.js";
+import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
 
 function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
   return req.params.sectionId ?? req.params.disciplineId ?? "";
@@ -52,6 +53,13 @@ interface StatusBody {
 interface CompletionBody {
   completed: boolean;
 }
+
+type ExistingTaskForActivity = Prisma.TaskGetPayload<{
+  include: {
+    assignee: { select: { id: true; name: true } };
+    memberships: true;
+  };
+}>;
 
 function dateOnly(value: string | null | undefined): string | null | undefined {
   if (value === undefined) {
@@ -246,6 +254,82 @@ async function taskFieldCatalog() {
   });
 }
 
+function taskMembershipSummary(memberships: Array<{ projectName: string | null; sectionName: string | null }>): string | null {
+  const labels = memberships
+    .map((membership) =>
+      [membership.projectName, membership.sectionName].filter((value): value is string => Boolean(value)).join(" / ")
+    )
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  return labels.length > 0 ? labels.join(", ") : null;
+}
+
+async function recordTaskFieldActivities(
+  tx: Prisma.TransactionClient,
+  taskId: string,
+  actorId: string,
+  existing: ExistingTaskForActivity,
+  updated: Prisma.TaskGetPayload<{ include: typeof taskInclude }>,
+  body: TaskBody
+): Promise<void> {
+  const fixedComparisons: Array<{
+    field: string;
+    touched: boolean;
+    fromValue: string | number | boolean | null | undefined;
+    toValue: string | number | boolean | null | undefined;
+  }> = [
+    { field: "title", touched: body.title !== undefined, fromValue: existing.name, toValue: updated.name },
+    { field: "description", touched: body.description !== undefined, fromValue: existing.notes, toValue: updated.notes },
+    { field: "status", touched: body.status !== undefined, fromValue: existing.mikaStatus, toValue: updated.mikaStatus },
+    { field: "priority", touched: body.priority !== undefined, fromValue: existing.priority, toValue: updated.priority },
+    { field: "assignee", touched: body.assigneeId !== undefined, fromValue: existing.assignee?.name, toValue: updated.assignee?.name },
+    { field: "startDate", touched: body.startDate !== undefined, fromValue: dateOnly(existing.startOn), toValue: dateOnly(updated.startOn) },
+    { field: "dueDate", touched: body.dueDate !== undefined, fromValue: dateOnly(existing.dueOn), toValue: dateOnly(updated.dueOn) },
+    { field: "estimatedDays", touched: body.estimatedDays !== undefined, fromValue: existing.estimatedDays, toValue: updated.estimatedDays },
+    { field: "platform", touched: body.platform !== undefined, fromValue: existing.platform, toValue: updated.platform },
+    {
+      field: "discipline",
+      touched: body.taskDiscipline !== undefined || body.discipline !== undefined,
+      fromValue: existing.discipline,
+      toValue: updated.discipline
+    },
+    { field: "estimatedTime", touched: body.estimatedTime !== undefined, fromValue: existing.estimatedTime, toValue: updated.estimatedTime },
+    {
+      field: "maxDeadline",
+      touched: body.maxDeadline !== undefined,
+      fromValue: existing.maxDeadline?.toISOString().slice(0, 10),
+      toValue: updated.maxDeadline?.toISOString().slice(0, 10)
+    },
+    { field: "conclusionDays", touched: body.conclusionDays !== undefined, fromValue: existing.conclusionDays, toValue: updated.conclusionDays },
+    { field: "stage", touched: body.stage !== undefined, fromValue: existing.stage, toValue: updated.stage }
+  ];
+
+  for (const comparison of fixedComparisons) {
+    if (!comparison.touched) {
+      continue;
+    }
+
+    await createTaskUpdateActivity(tx, {
+      taskId,
+      actorId,
+      field: comparison.field,
+      fromValue: comparison.fromValue,
+      toValue: comparison.toValue
+    });
+  }
+
+  if (body.projectMemberships !== undefined || body.projectIds !== undefined) {
+    await createTaskUpdateActivity(tx, {
+      taskId,
+      actorId,
+      field: "projectMemberships",
+      fromValue: taskMembershipSummary(existing.memberships),
+      toValue: taskMembershipSummary(updated.memberships)
+    });
+  }
+}
+
 async function syncTaskProjectMemberships(
   tx: Prisma.TransactionClient,
   taskId: string,
@@ -255,7 +339,7 @@ async function syncTaskProjectMemberships(
     return;
   }
 
-  throw new AppError(400, "Informe a secao de cada projeto da tarefa");
+  throw new AppError(400, "Informe a seção de cada projeto da tarefa");
 }
 
 async function syncTaskProjectSectionMemberships(
@@ -268,16 +352,16 @@ async function syncTaskProjectSectionMemberships(
   }
 
   if (projectMemberships.length === 0) {
-    throw new AppError(400, "A tarefa precisa estar vinculada a pelo menos um projeto e uma secao");
+    throw new AppError(400, "A tarefa precisa estar vinculada a pelo menos um projeto e uma seção");
   }
 
   if (projectMemberships.some((item) => !item.sectionId)) {
-    throw new AppError(400, "Toda tarefa precisa ter uma secao em cada projeto");
+    throw new AppError(400, "Toda tarefa precisa ter uma seção em cada projeto");
   }
 
   const uniqueProjectIds = new Set(projectMemberships.map((item) => item.projectId));
   if (uniqueProjectIds.size !== projectMemberships.length) {
-    throw new AppError(400, "Informe apenas uma secao por projeto");
+    throw new AppError(400, "Informe apenas uma seção por projeto");
   }
 
   const uniqueMemberships = projectMemberships as Array<{ projectId: string; sectionId: string }>;
@@ -321,11 +405,11 @@ async function syncTaskProjectSectionMemberships(
     }
 
     if (section.project.id !== project.id) {
-      throw new AppError(400, "A secao selecionada nao pertence ao projeto");
+      throw new AppError(400, "A seção selecionada não pertence ao projeto");
     }
 
     if (!isCanonicalSectionName(section.name)) {
-      throw new AppError(400, "A secao selecionada deve ser Civil ou Eletrico");
+      throw new AppError(400, "A seção selecionada deve ser Civil ou Elétrico");
     }
 
     await tx.taskMembership.create({
@@ -349,7 +433,7 @@ async function createOptionalTaskMembership(
   const requestedSectionId = body.sectionId || routeSectionId;
 
   if (!requestedSectionId) {
-    throw new AppError(400, "Toda tarefa precisa ter uma secao");
+    throw new AppError(400, "Toda tarefa precisa ter uma seção");
   }
 
   const section = await tx.section.findUnique({
@@ -362,11 +446,11 @@ async function createOptionalTaskMembership(
   }
 
   if (!isCanonicalSectionName(section.name)) {
-    throw new AppError(400, "A secao selecionada deve ser Civil ou Eletrico");
+    throw new AppError(400, "A seção selecionada deve ser Civil ou Elétrico");
   }
 
   if (body.projectId && body.projectId !== section.project.id) {
-    throw new AppError(400, "A secao selecionada nao pertence ao projeto");
+    throw new AppError(400, "A seção selecionada não pertence ao projeto");
   }
 
   await tx.taskMembership.create({
@@ -527,6 +611,14 @@ export const createTask: RequestHandler = async (req, res, next) => {
         }
       }
 
+      await createTaskActivity(tx, {
+        taskId: createdTask.id,
+        actorId: authUser.id,
+        type: taskActivityTypes.CREATED,
+        field: "task",
+        toValue: createdTask.name
+      });
+
       return tx.task.findUniqueOrThrow({
         where: { id: createdTask.id },
         include: taskInclude
@@ -537,7 +629,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
       await createAndEmitNotification({
         userId: body.assigneeId,
         type: "TASK_ASSIGNED",
-        title: "Nova tarefa atribuida",
+        title: "Nova tarefa atribuída",
         message: task.name,
         taskId: task.id
       });
@@ -563,8 +655,15 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { assigneeGid: true }
+      include: {
+        assignee: { select: { id: true, name: true } },
+        memberships: true
+      }
     });
+
+    if (!existing) {
+      throw new AppError(404, "Task not found");
+    }
 
     const task = await prisma.$transaction(async (tx) => {
       const status = body.status === undefined ? undefined : writableStatus(body.status);
@@ -626,10 +725,14 @@ export const updateTask: RequestHandler = async (req, res, next) => {
         await applyTaskRules(tx, taskId, { actor: authUser, status, recalculateOpenStatus: shouldRecalculateStatus });
       }
 
-      return tx.task.findUniqueOrThrow({
+      const updatedTask = await tx.task.findUniqueOrThrow({
         where: { id: taskId },
         include: taskInclude
       });
+
+      await recordTaskFieldActivities(tx, taskId, authUser.id, existing, updatedTask, body);
+
+      return updatedTask;
     });
 
     const newGid = task.assignee?.asanaGid ?? null;
@@ -637,7 +740,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
       await createAndEmitNotification({
         userId: task.assignee.id,
         type: "TASK_ASSIGNED",
-        title: "Tarefa atribuida a voce",
+        title: "Tarefa atribuída a você",
         message: task.name,
         taskId: task.id
       });
@@ -669,6 +772,15 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
       throw new AppError(400, "Task id is required");
     }
     const status = writableStatus(body.status);
+    const existing = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { mikaStatus: true }
+    });
+
+    if (!existing) {
+      throw new AppError(404, "Task not found");
+    }
+
     const task = await prisma.$transaction(async (tx) => {
       await tx.task.update({
         where: { id: taskId },
@@ -679,10 +791,20 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
 
       await applyTaskRules(tx, taskId, { actor: authUser, status });
 
-      return tx.task.findUniqueOrThrow({
+      const updatedTask = await tx.task.findUniqueOrThrow({
         where: { id: taskId },
         include: taskInclude
       });
+
+      await createTaskUpdateActivity(tx, {
+        taskId,
+        actorId: authUser.id,
+        field: "status",
+        fromValue: existing.mikaStatus,
+        toValue: updatedTask.mikaStatus
+      });
+
+      return updatedTask;
     });
 
     if (task.assignee) {
@@ -711,6 +833,15 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
     if (!taskId) {
       throw new AppError(400, "Task id is required");
     }
+    const existing = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { completed: true, completedAtAsana: true, mikaStatus: true }
+    });
+
+    if (!existing) {
+      throw new AppError(404, "Task not found");
+    }
+
     const task = await prisma.$transaction(async (tx) => {
       await tx.task.update({
         where: { id: taskId },
@@ -722,15 +853,56 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
 
       await applyTaskRules(tx, taskId, { actor: authUser, completed: body.completed });
 
-      return tx.task.findUniqueOrThrow({
+      const updatedTask = await tx.task.findUniqueOrThrow({
         where: { id: taskId },
         include: taskInclude
       });
+
+      await createTaskUpdateActivity(tx, {
+        taskId,
+        actorId: authUser.id,
+        type: body.completed ? taskActivityTypes.COMPLETED : taskActivityTypes.REOPENED,
+        field: "completed",
+        fromValue: existing.completed,
+        toValue: updatedTask.completed
+      });
+
+      if (existing.mikaStatus !== updatedTask.mikaStatus) {
+        await createTaskUpdateActivity(tx, {
+          taskId,
+          actorId: authUser.id,
+          field: "status",
+          fromValue: existing.mikaStatus,
+          toValue: updatedTask.mikaStatus
+        });
+      }
+
+      return updatedTask;
     });
 
     const catalog = await taskFieldCatalog();
 
     res.json({ task: toTaskDto(task, undefined, catalog) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listTaskHistory: RequestHandler = async (req, res, next) => {
+  try {
+    const task = await prisma.task.findUnique({ where: { id: req.params.id }, select: { id: true } });
+
+    if (!task) {
+      throw new AppError(404, "Task not found");
+    }
+
+    const activities = await prisma.taskActivity.findMany({
+      where: { taskId: task.id },
+      orderBy: { createdAt: "desc" },
+      include: taskActivityInclude()
+    });
+
+    res.json({ activities: activities.map(toTaskActivityDto) });
   } catch (error) {
     next(error);
   }

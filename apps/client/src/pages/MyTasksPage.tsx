@@ -6,18 +6,34 @@ import {
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
+  isAfter,
+  isBefore,
   isSameMonth,
+  max,
+  min,
   startOfMonth,
   startOfWeek
 } from "date-fns";
 import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { TaskStatus, type Task } from "shared";
+import {
+  DataTable,
+  DataTableCell,
+  DataTableContainer,
+  DataTableGroupRow,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+  DateCell,
+  EmptyCell,
+  NumberCell,
+  TruncatedCellValue
+} from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Avatar } from "../components/shared/Avatar";
-import { editableTaskStatusOptions } from "../components/shared/Chip";
+import { CompletionStatusChip, DisciplineChip, editableTaskStatusOptions, PlatformChip, taskStatusTokens } from "../components/shared/Chip";
 import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskDetail } from "../components/task/TaskDetail";
@@ -27,7 +43,8 @@ import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask } from "../hooks/useTasks";
-import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
+import { canManageTasks } from "../lib/permissions";
+import { cn, dateOnlyToLocalDate } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
 type CompletionFilter = "open" | "completed" | "all";
@@ -54,6 +71,7 @@ const columns: Array<{ status: TaskStatus; label: string }> = [
 
 export function MyTasksPage() {
   const { user } = useAuth();
+  const canManage = canManageTasks(user);
   const { data: projects = [], isLoading } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<MyTasksView>("list");
@@ -164,6 +182,10 @@ export function MyTasksPage() {
   }
 
   function handleDragEnd(result: DropResult) {
+    if (!canManage) {
+      return;
+    }
+
     if (!result.destination || result.destination.droppableId === result.source.droppableId) {
       return;
     }
@@ -227,17 +249,19 @@ export function MyTasksPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            className="h-8 bg-brand-orange hover:bg-orange-600"
-            onClick={() => {
-              setSelectedCreateTarget((current) => current || disciplineOptions[0]?.key || "");
-              setShowCreate((current) => !current);
-            }}
-            disabled={!disciplineOptions.length}
-          >
-            <Plus size={15} />
-            Adicionar uma tarefa
-          </Button>
+          {canManage ? (
+            <Button
+              className="h-8 bg-brand-orange hover:bg-orange-600"
+              onClick={() => {
+                setSelectedCreateTarget((current) => current || disciplineOptions[0]?.key || "");
+                setShowCreate((current) => !current);
+              }}
+              disabled={!disciplineOptions.length}
+            >
+              <Plus size={15} />
+              Adicionar uma tarefa
+            </Button>
+          ) : null}
           {view === "calendar" ? (
             <>
               <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
@@ -299,7 +323,7 @@ export function MyTasksPage() {
         </div>
       </div>
 
-      {showCreate ? (
+      {showCreate && canManage ? (
         <div className="grid gap-2 border-b border-border py-3 lg:grid-cols-[minmax(220px,340px)_minmax(260px,1fr)_auto]">
           {disciplineOptions.length > 0 ? (
             <SearchableSelect
@@ -338,7 +362,11 @@ export function MyTasksPage() {
         <ListView
           tasks={visibleTasks}
           onOpenTask={openTaskDetail}
-          onStatusChange={(task, status) => void updateTask.mutateAsync({ id: task.id, payload: { status } })}
+          onStatusChange={(task, status) => {
+            if (canManage) {
+              void updateTask.mutateAsync({ id: task.id, payload: { status } });
+            }
+          }}
         />
       ) : null}
       {view === "kanban" ? (
@@ -346,6 +374,7 @@ export function MyTasksPage() {
           tasks={visibleTasks}
           onDragEnd={handleDragEnd}
           onOpenTask={openTaskDetail}
+          canManage={canManage}
         />
       ) : null}
       {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
@@ -384,44 +413,73 @@ function ListView({
   ].filter((group) => group.tasks.length > 0);
 
   return (
-    <div className="overflow-auto">
-      <table className="w-full min-w-[980px] border-collapse text-sm">
-        <thead className="text-left text-xs font-semibold text-text-secondary">
-          <tr className="border-b border-border">
-            <th className="w-[36%] p-2 font-semibold">Nome</th>
-            <th className="w-[12%] border-l border-border p-2 font-semibold">Projetos</th>
-            <th className="w-[12%] border-l border-border p-2 font-semibold">Data de ...</th>
-            <th className="w-[12%] border-l border-border p-2 font-semibold">Status</th>
+    <DataTableContainer>
+      <DataTable minWidth="1480px">
+        <colgroup>
+          <col className="w-[260px]" />
+          <col className="w-[160px]" />
+          <col className="w-[130px]" />
+          <col className="w-[140px]" />
+          <col className="w-[150px]" />
+          <col className="w-[90px]" />
+          <col className="w-[100px]" />
+          <col className="w-[120px]" />
+          <col className="w-[120px]" />
+          <col className="w-[90px]" />
+          <col className="w-[90px]" />
+          <col className="w-[120px]" />
+        </colgroup>
+        <DataTableHead>
+          <tr className="border-b border-[--color-border]">
+            <DataTableHeader>Tarefa</DataTableHeader>
+            <DataTableHeader>Projeto</DataTableHeader>
+            <DataTableHeader>Seção</DataTableHeader>
+            <DataTableHeader>Responsável</DataTableHeader>
+            <DataTableHeader>Status</DataTableHeader>
+            <DataTableHeader align="center">Plataforma</DataTableHeader>
+            <DataTableHeader align="center">Disciplina</DataTableHeader>
+            <DataTableHeader align="center">Status Conclusão</DataTableHeader>
+            <DataTableHeader>Prazo Máximo</DataTableHeader>
+            <DataTableHeader align="right">Dias Estimados</DataTableHeader>
+            <DataTableHeader align="right">Dias Conclusão</DataTableHeader>
+            <DataTableHeader>Etapa</DataTableHeader>
           </tr>
-        </thead>
+        </DataTableHead>
         <tbody>
           {groups.map((group) => (
             <Fragment key={group.key}>
-              <tr className="border-b border-border bg-brand-black">
-                <td colSpan={4} className="px-2 py-2 text-xs font-bold uppercase text-text-secondary">
-                  {group.label} <span className="text-text-muted">{group.tasks.length}</span>
-                </td>
-              </tr>
-              {group.tasks.map((task) => (
-                <tr key={task.id} className={cn("h-7 border-b border-border hover:bg-surface-hover", task.completed ? "opacity-70" : "")}>
-                  <td className="p-1.5">
-                    <div className="flex max-w-full items-center gap-2">
+              <DataTableGroupRow colSpan={12} label={group.label} count={group.tasks.length} />
+              {group.tasks.map((task, index) => (
+                <DataTableRow key={`${group.key}:${task.id}:${task.discipline.projectId}:${task.discipline.id}:${index}`} className={cn(task.completed ? "opacity-70" : "")}>
+                  <DataTableCell>
+                    <div className="flex min-w-0 items-center gap-2">
                       <button
                         type="button"
                         onClick={() => onOpenTask(task)}
-                        className={cn("min-w-0 font-semibold", task.completed ? "text-text-muted" : "text-text-primary")}
+                        title={task.title}
+                        className={cn("min-w-0 truncate text-left font-medium hover:text-brand-orange", task.completed ? "text-text-muted" : "text-text-primary")}
                       >
-                        <span className="block truncate">{task.title}</span>
+                        {task.title || <EmptyCell />}
                       </button>
                     </div>
-                  </td>
-                  <td className="border-l border-border p-1.5">
-                    <span className="inline-flex max-w-36 items-center rounded bg-surface-hover px-2 py-0.5 text-xs font-bold text-text-primary">
-                      <span className="truncate">{task.discipline.projectName}</span>
-                    </span>
-                  </td>
-                  <td className="border-l border-border p-1.5 text-xs font-semibold text-red-300">{formatDateOnly(task.dueDate, "d MMM")}</td>
-                  <td className="border-l border-border p-1.5">
+                  </DataTableCell>
+                  <DataTableCell>
+                    <TruncatedCellValue value={task.discipline.projectName} />
+                  </DataTableCell>
+                  <DataTableCell>
+                    <TruncatedCellValue value={task.discipline.name} />
+                  </DataTableCell>
+                  <DataTableCell>
+                    {task.assignee ? (
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-5 w-5 shrink-0" />
+                        <span className="truncate">{task.assignee.name}</span>
+                      </span>
+                    ) : (
+                      <EmptyCell />
+                    )}
+                  </DataTableCell>
+                  <DataTableCell>
                     <SearchableSelect
                       value={task.status}
                       options={editableTaskStatusOptions(task).map((status) => ({
@@ -435,25 +493,34 @@ function ListView({
                       showSelectionIndicator={false}
                       onValueChange={(value) => onStatusChange(task, value as TaskStatus)}
                     />
-                  </td>
-                </tr>
+                  </DataTableCell>
+                  <DataTableCell align="center">{task.platform ? <PlatformChip platform={task.platform} /> : <EmptyCell />}</DataTableCell>
+                  <DataTableCell align="center">{task.taskDiscipline ? <DisciplineChip discipline={task.taskDiscipline} /> : <EmptyCell />}</DataTableCell>
+                  <DataTableCell align="center"><CompletionStatusChip completed={task.completed} /></DataTableCell>
+                  <DataTableCell><DateCell value={task.maxDeadline} /></DataTableCell>
+                  <DataTableCell align="right" className="font-mono text-[12px]"><NumberCell value={task.estimatedTime} /></DataTableCell>
+                  <DataTableCell align="right" className="font-mono text-[12px]"><NumberCell value={task.conclusionDays} /></DataTableCell>
+                  <DataTableCell><TruncatedCellValue value={task.stage} /></DataTableCell>
+                </DataTableRow>
               ))}
             </Fragment>
           ))}
         </tbody>
-      </table>
-    </div>
+      </DataTable>
+    </DataTableContainer>
   );
 }
 
 function KanbanView({
   tasks,
   onDragEnd,
-  onOpenTask
+  onOpenTask,
+  canManage
 }: {
   tasks: TaskWithProject[];
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithProject) => void;
+  canManage: boolean;
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -478,7 +545,7 @@ function KanbanView({
                     </div>
                     <div className="grid flex-1 content-start gap-2">
                       {columnTasks.map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                        <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!canManage}>
                           {(dragProvided) => (
                             <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
                               <TaskCard
@@ -505,38 +572,87 @@ function KanbanView({
 
 function CalendarView({ month, tasks, onOpenTask }: { month: Date; tasks: TaskWithProject[]; onOpenTask: (task: TaskWithProject) => void }) {
   const days = eachDayOfInterval({ start: startOfWeek(startOfMonth(month)), end: endOfWeek(endOfMonth(month)) });
+  const weeks = chunkDays(days);
+  const rangedTasks = tasks.flatMap((task) => {
+    const range = taskDateRange(task);
+    return range ? [{ task, ...range }] : [];
+  });
 
   return (
-    <div className="grid grid-cols-7 overflow-hidden border-l border-t border-border text-sm">
-      {["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"].map((day) => (
-        <div key={day} className="border-b border-r border-border px-3 py-1 text-xs font-bold text-text-secondary">
-          {day}
-        </div>
-      ))}
-      {days.map((day) => {
-        const dayTasks = tasks.filter((task) => {
-          const dueDate = dateOnlyToLocalDate(task.dueDate);
-          return Boolean(dueDate && isSameDay(dueDate, day));
-        });
-        return (
-          <div key={day.toISOString()} className="min-h-32 border-b border-r border-border p-2">
-            <p className={cn("mb-2 text-base font-semibold", isSameMonth(day, month) ? "text-text-primary" : "text-text-muted")}>{format(day, "d")}</p>
-            <div className="grid gap-1">
-              {dayTasks.map((task) => (
-                <button
-                  key={task.id}
-                  type="button"
-                  onClick={() => onOpenTask(task)}
-                  className="truncate rounded px-2 py-1 text-left text-xs font-semibold text-brand-black"
-                  style={{ backgroundColor: calendarColor(task.status) }}
-                >
-                  {task.title}
-                </button>
-              ))}
-            </div>
+    <div className="overflow-hidden rounded-md border border-[--color-border] bg-[--bg-2] text-sm">
+      <div className="grid grid-cols-7 border-b border-[--color-border] bg-[--bg-1]">
+        {["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"].map((day) => (
+          <div key={day} className="border-r border-[--color-border-subtle] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted] last:border-r-0">
+            {day}
           </div>
-        );
-      })}
+        ))}
+      </div>
+      <div>
+        {weeks.map((week) => {
+          const weekStart = week[0]!;
+          const weekEnd = week[week.length - 1]!;
+          const visibleBars = rangedTasks
+            .filter((item) => rangesOverlap(item.start, item.end, weekStart, weekEnd))
+            .sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime())
+            .slice(0, 4);
+          const hiddenCount = Math.max(0, rangedTasks.filter((item) => rangesOverlap(item.start, item.end, weekStart, weekEnd)).length - visibleBars.length);
+
+          return (
+            <div key={weekStart.toISOString()} className="relative min-h-[148px] border-b border-[--color-border-subtle] last:border-b-0">
+              <div className="grid h-full min-h-[148px] grid-cols-7">
+                {week.map((day) => (
+                  <div key={day.toISOString()} className="border-r border-[--color-border-subtle] px-2 py-2 last:border-r-0">
+                    <span className={cn("text-[13px] font-semibold", isSameMonth(day, month) ? "text-[--color-text-primary]" : "text-[--color-text-muted]")}>
+                      {format(day, "d")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="pointer-events-none absolute inset-x-0 top-9 grid grid-cols-7 gap-y-1 px-2">
+                {visibleBars.map((item, index) => {
+                  const clippedStart = max([item.start, weekStart]);
+                  const clippedEnd = min([item.end, weekEnd]);
+                  const startsBeforeWeek = isBefore(item.start, weekStart);
+                  const endsAfterWeek = isAfter(item.end, weekEnd);
+                  const columnStart = weekColumn(clippedStart);
+                  const columnEnd = weekColumn(clippedEnd) + 1;
+                  const tokens = taskStatusTokens[item.task.status];
+
+                  return (
+                    <button
+                      key={`${item.task.id}:${item.task.discipline.projectId}:${item.task.discipline.id}:${index}`}
+                      type="button"
+                      onClick={() => onOpenTask(item.task)}
+                      className={cn(
+                        "pointer-events-auto min-w-0 truncate px-2 py-1 text-left text-[11px] font-medium transition-colors hover:brightness-125",
+                        startsBeforeWeek ? "rounded-l-none" : "rounded-l",
+                        endsAfterWeek ? "rounded-r-none" : "rounded-r"
+                      )}
+                      style={{
+                        gridColumn: `${columnStart} / ${columnEnd}`,
+                        gridRow: index + 1,
+                        backgroundColor: `var(${tokens.bg})`,
+                        color: `var(${tokens.text})`
+                      }}
+                      title={`${item.task.title} · ${item.task.discipline.projectName} / ${item.task.discipline.name}`}
+                    >
+                      <span className="truncate">{item.task.title}</span>
+                    </button>
+                  );
+                })}
+                {hiddenCount > 0 ? (
+                  <span
+                    className="rounded bg-[--bg-4] px-2 py-1 text-[11px] font-medium text-[--color-text-secondary]"
+                    style={{ gridColumn: "1 / 8", gridRow: visibleBars.length + 1 }}
+                  >
+                    +{hiddenCount} tarefas no período
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -545,17 +661,31 @@ function statusLabel(status: TaskStatus): string {
   return columns.find((column) => column.status === status)?.label ?? status;
 }
 
-function calendarColor(status: TaskStatus): string {
-  const colors: Record<TaskStatus, string> = {
-    [TaskStatus.TODO]: "var(--color-status-todo)",
-    [TaskStatus.ON_SCHEDULE]: "var(--color-status-on-schedule)",
-    [TaskStatus.OVERDUE]: "var(--color-status-overdue)",
-    [TaskStatus.IN_PROGRESS]: "var(--color-status-in-progress)",
-    [TaskStatus.AWAITING_REVIEW]: "var(--color-status-awaiting-review)",
-    [TaskStatus.IN_ANALYSIS]: "var(--color-status-in-analysis)",
-    [TaskStatus.AWAITING_DEFINITION]: "var(--color-status-awaiting-definition)",
-    [TaskStatus.FINISHED]: "var(--color-status-finished)"
-  };
+function chunkDays(days: Date[]): Date[][] {
+  const weeks: Date[][] = [];
+  for (let index = 0; index < days.length; index += 7) {
+    weeks.push(days.slice(index, index + 7));
+  }
+  return weeks;
+}
 
-  return colors[status];
+function taskDateRange(task: TaskWithProject): { start: Date; end: Date } | null {
+  const startDate = dateOnlyToLocalDate(task.startDate);
+  const dueDate = dateOnlyToLocalDate(task.dueDate);
+  const start = startDate ?? dueDate;
+  const end = dueDate ?? startDate;
+
+  if (!start || !end) {
+    return null;
+  }
+
+  return isAfter(start, end) ? { start: end, end: start } : { start, end };
+}
+
+function rangesOverlap(start: Date, end: Date, rangeStart: Date, rangeEnd: Date): boolean {
+  return !isBefore(end, rangeStart) && !isAfter(start, rangeEnd);
+}
+
+function weekColumn(day: Date): number {
+  return day.getDay() === 0 ? 7 : day.getDay();
 }

@@ -23,8 +23,10 @@ import { Priority, Role, TaskStatus, type CreateTaskRequest, type DisciplineType
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Copy, CopyPlus, Eye, Filter, Group, Hash, MoreHorizontal, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../../hooks/useAuth";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useCreateTaskInSection, useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
+import { canManageTasks } from "../../lib/permissions";
 import { cn, toDateOnly } from "../../lib/utils";
 import { workloadTaskLabel } from "../../lib/workloadTaskLabel";
 import { useUiStore } from "../../store/uiStore";
@@ -440,6 +442,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
   const mode = props.mode === "global" ? "global" : "project";
   const { users, isActive, onOpenTask, onTaskUpdated, updateTask } = props;
+  const { user } = useAuth();
+  const canManage = canManageTasks(user);
   const openTaskCreate = useUiStore((state) => state.openTaskCreate);
   const today = startOfDay(new Date());
   const [unionFrom, setUnionFrom] = useState(() => format(addDays(today, -21), "yyyy-MM-dd"));
@@ -1031,7 +1035,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       projectId,
       assigneeId: emptyCellContext.assigneeId,
       startDate: emptyCellContext.date,
-      dueDate: emptyCellContext.date
+      dueDate: emptyCellContext.date,
+      sectionScope: workloadScope ?? "general"
     });
   }
 
@@ -1096,6 +1101,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     kind: DragPreview["kind"] = "move"
   ) {
     if (ev.button !== 0) {
+      return;
+    }
+
+    if (!canManage) {
       return;
     }
 
@@ -1421,16 +1430,16 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   <Copy className="h-4 w-4" />
                   Copiar link da tarefa
                 </ContextMenuItem>
-                <ContextMenuItem disabled={createTaskInSection.isPending} onSelect={() => void duplicateTask(p.task)}>
+                <ContextMenuItem disabled={!canManage || createTaskInSection.isPending} onSelect={() => void duplicateTask(p.task)}>
                   <CopyPlus className="h-4 w-4" />
                   Duplicar tarefa
                 </ContextMenuItem>
-                <ContextMenuItem disabled={!canRecalculateDates} onSelect={() => void recalculateTaskDates(p.task)}>
+                <ContextMenuItem disabled={!canManage || !canRecalculateDates} onSelect={() => void recalculateTaskDates(p.task)}>
                   <RefreshCw className="h-4 w-4" />
                   Recalcular datas
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuItem variant="destructive" onSelect={() => setTaskPendingDelete(p.task)}>
+                <ContextMenuItem disabled={!canManage} variant="destructive" onSelect={() => setTaskPendingDelete(p.task)}>
                   <Trash2 className="h-4 w-4" />
                   Excluir a tarefa
                 </ContextMenuItem>
@@ -1752,7 +1761,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                           </div>
                         </ContextMenuTrigger>
                         <ContextMenuContent>
-                          <ContextMenuItem disabled={emptyCellContext?.rowId !== row.id} onSelect={createTaskFromEmptyCell}>
+                          <ContextMenuItem disabled={!canManage || emptyCellContext?.rowId !== row.id} onSelect={createTaskFromEmptyCell}>
                             <Plus className="h-4 w-4" />
                             Criar tarefa aqui
                           </ContextMenuItem>
@@ -1790,7 +1799,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             <Button variant="secondary" onClick={() => setTaskPendingDelete(null)}>
               Cancelar
             </Button>
-            <Button variant="danger" disabled={deleteTask.isPending} onClick={() => void confirmDeleteTask()}>
+            <Button variant="danger" disabled={!canManage || deleteTask.isPending} onClick={() => void confirmDeleteTask()}>
               Excluir
             </Button>
           </div>

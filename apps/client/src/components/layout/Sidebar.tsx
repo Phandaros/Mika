@@ -15,9 +15,10 @@ import {
   Users
 } from "lucide-react";
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Role } from "shared";
 import logoUrl from "../../assets/logo.svg";
+import { canManageTasks } from "../../lib/permissions";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../hooks/useAuth";
 import { useUiStore } from "../../store/uiStore";
@@ -36,7 +37,9 @@ export function Sidebar() {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const openTaskCreate = useUiStore((state) => state.openTaskCreate);
   const { user } = useAuth();
+  const canManage = canManageTasks(user);
   const navigate = useNavigate();
+  const location = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
   const roleWeight: Record<Role, number> = {
     [Role.INTERN]: 0,
@@ -54,7 +57,7 @@ export function Sidebar() {
     >
       <div className="flex h-14 items-center gap-3 border-b border-border-subtle px-4">
         <img src={logoUrl} alt="Mika" className="h-9 w-auto" />
-        <Popover open={createOpen} onOpenChange={setCreateOpen}>
+        {canManage ? <Popover open={createOpen} onOpenChange={setCreateOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -70,7 +73,7 @@ export function Sidebar() {
                 type="button"
                 onClick={() => {
                   setCreateOpen(false);
-                  openTaskCreate();
+                  openTaskCreate({ sectionScope: taskCreateScopeFromPath(location.pathname) });
                 }}
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-semibold text-text-primary transition hover:bg-surface-hover"
               >
@@ -90,7 +93,7 @@ export function Sidebar() {
               </button>
             </div>
           </PopoverContent>
-        </Popover>
+        </Popover> : null}
       </div>
       <nav className="grid gap-1 border-b border-border-subtle p-3">
         {navItems
@@ -151,6 +154,18 @@ export function Sidebar() {
       ) : null}
     </aside>
   );
+}
+
+function taskCreateScopeFromPath(pathname: string): "civil" | "electrical" | "general" {
+  if (pathname.includes("/eletrico")) {
+    return "electrical";
+  }
+
+  if (pathname.includes("/civil")) {
+    return "civil";
+  }
+
+  return "general";
 }
 
 function SidebarSection({

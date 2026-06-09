@@ -11,7 +11,9 @@ import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
+import { useAuth } from "../hooks/useAuth";
 import { useSprintBoardColumnTasks, useSprintBoardSummary, useTaskById, useUpdateTaskStatus } from "../hooks/useTasks";
+import { canManageTasks } from "../lib/permissions";
 import { cn, formatDateOnly } from "../lib/utils";
 
 type SprintBoardScope = "civil" | "electrical";
@@ -43,6 +45,8 @@ export function SprintBoardPage({ scope }: { scope: SprintBoardScope }) {
   const { data: taskFromApi } = useTaskById(taskIdFromUrl);
   const { data: summary, isLoading: isSummaryLoading } = useSprintBoardSummary(scope);
   const updateTaskStatus = useUpdateTaskStatus("");
+  const { user } = useAuth();
+  const canManage = canManageTasks(user);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
 
@@ -73,6 +77,10 @@ export function SprintBoardPage({ scope }: { scope: SprintBoardScope }) {
   }
 
   function handleDragEnd(result: DropResult) {
+    if (!canManage) {
+      return;
+    }
+
     if (!result.destination) {
       return;
     }
@@ -115,6 +123,7 @@ export function SprintBoardPage({ scope }: { scope: SprintBoardScope }) {
                 label={column.label}
                 totalCount={summary?.byStatus[column.status] ?? 0}
                 onOpenTask={openTaskDetail}
+                canManage={canManage}
               />
             ))}
           </div>
@@ -140,13 +149,15 @@ function SprintColumn({
   status,
   label,
   totalCount,
-  onOpenTask
+  onOpenTask,
+  canManage
 }: {
   scope: SprintBoardScope;
   status: TaskStatus;
   label: string;
   totalCount: number;
   onOpenTask: (task: Task) => void;
+  canManage: boolean;
 }) {
   const acceptsDrop = status !== TaskStatus.OVERDUE;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -207,7 +218,7 @@ function SprintColumn({
             ) : (
               <>
                 {tasks.map((task, index) => (
-                  <Draggable draggableId={task.id} index={index} key={task.id}>
+                  <Draggable draggableId={task.id} index={index} key={task.id} isDragDisabled={!canManage}>
                     {(dragProvided, dragSnapshot) => (
                       <div
                         ref={dragProvided.innerRef}

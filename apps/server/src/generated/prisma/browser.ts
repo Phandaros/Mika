@@ -79,6 +79,11 @@ export type TaskReview = Prisma.TaskReviewModel
  */
 export type Comment = Prisma.CommentModel
 /**
+ * Model TaskActivity
+ * 
+ */
+export type TaskActivity = Prisma.TaskActivityModel
+/**
  * Model TaskMembership
  * 
  */

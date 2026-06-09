@@ -4,6 +4,7 @@ import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
+import { taskActivityTypes } from "../lib/taskActivity.js";
 
 interface CommentBody {
   content: string;
@@ -60,6 +61,16 @@ export const createComment: RequestHandler = async (req, res, next) => {
       include: { author: { select: userSelect } }
     });
 
+    await prisma.taskActivity.create({
+      data: {
+        taskId: task.id,
+        actorId: authUser.id,
+        type: taskActivityTypes.COMMENTED,
+        field: "comment",
+        toValue: comment.id
+      }
+    });
+
     const fullTask = await prisma.task.findUnique({
       where: { id: task.id },
       include: {
@@ -84,7 +95,7 @@ export const createComment: RequestHandler = async (req, res, next) => {
         await createAndEmitNotification({
           userId,
           type: "COMMENT_ADDED",
-          title: "Novo comentario",
+          title: "Novo comentário",
           message: `${fullTask.name}: ${body.content.slice(0, 120)}${body.content.length > 120 ? "…" : ""}`,
           taskId: fullTask.id
         });

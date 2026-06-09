@@ -4,6 +4,7 @@ import { FolderKanban, ListFilter, Pencil, Plus, SlidersHorizontal, X } from "lu
 import { Link, useSearchParams } from "react-router-dom";
 import { ProjectStatus, type Project } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
+import { EmptyCell } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Badge } from "../components/ui/badge";
@@ -162,19 +163,19 @@ export function ProjectsPage() {
 
 function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project[]; onEditProject: (project: Project) => void }) {
   return (
-    <div className="overflow-auto rounded-md border border-border">
-      <table className="w-full min-w-[1040px] border-collapse bg-surface-card text-sm">
-        <thead className="bg-surface text-left text-text-secondary">
-          <tr>
-            <th className="w-[320px] border-r border-border p-3 font-semibold">Nome</th>
-            <th className="w-[180px] border-r border-border p-3 font-semibold">Construtora</th>
-            <th className="w-[130px] border-r border-border p-3 font-semibold">Plataforma</th>
-            <th className="w-[130px] border-r border-border p-3 font-semibold">Área</th>
-            <th className="w-[150px] border-r border-border p-3 font-semibold">Status</th>
-            <th className="w-[120px] border-r border-border p-3 font-semibold">Tarefas</th>
-            <th className="w-[150px] border-r border-border p-3 font-semibold">Entrega</th>
-            <th className="w-[150px] border-r border-border p-3 font-semibold">Atualizado</th>
-            <th className="w-[90px] p-3 font-semibold">Editar</th>
+    <div className="overflow-x-auto rounded-md border border-[--color-border]">
+      <table className="w-full min-w-[1040px] table-fixed border-collapse bg-[--bg-2] text-sm">
+        <thead className="sticky top-0 z-10 bg-[--bg-1] text-left">
+          <tr className="border-b border-[--color-border]">
+            <th className="w-[320px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Nome</th>
+            <th className="w-[180px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Construtora</th>
+            <th className="w-[130px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Plataforma</th>
+            <th className="w-[130px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Área</th>
+            <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Status</th>
+            <th className="w-[120px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Tarefas</th>
+            <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Entrega</th>
+            <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Atualizado</th>
+            <th className="w-[90px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Editar</th>
           </tr>
         </thead>
         <tbody>
@@ -182,8 +183,8 @@ function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project
             const taskCount =
               (project.sections ?? project.disciplines)?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
             return (
-              <tr key={project.id} className="border-t border-border hover:bg-surface-hover">
-                <td className="border-r border-border p-3">
+              <tr key={project.id} className="border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]">
+                <td className="px-3 py-2">
                   <Link to={`/projects/${project.id}`} className="flex items-center gap-3 font-semibold text-text-primary">
                     <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-hover text-text-secondary">
                       <FolderKanban size={16} />
@@ -191,26 +192,26 @@ function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project
                     <span className="min-w-0 truncate">{project.name}</span>
                   </Link>
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">
                   <span className="block truncate" title={project.builder ?? undefined}>
-                    {project.builder ?? "—"}
+                    {project.builder ?? <EmptyCell />}
                   </span>
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">
-                  {project.platform ? <Badge tone="muted">{project.platform}</Badge> : "—"}
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">
+                  {project.platform ? <Badge tone="muted">{project.platform}</Badge> : <EmptyCell />}
                 </td>
-                <td className="border-r border-border p-3 text-right font-mono text-[12px] text-text-secondary">
+                <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-secondary]">
                   {formatProjectArea(project.areaM2)}
                 </td>
-                <td className="border-r border-border p-3">
+                <td className="px-3 py-2">
                   <Badge tone="orange">{projectStatusLabels[project.status]}</Badge>
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">{taskCount}</td>
-                <td className="border-r border-border p-3 text-text-secondary">
-                  {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : "—"}
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{taskCount}</td>
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">
+                  {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : <EmptyCell />}
                 </td>
-                <td className="border-r border-border p-3 text-text-secondary">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
-                <td className="p-3">
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
+                <td className="px-3 py-2">
                   <Button
                     type="button"
                     variant="ghost"

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Pencil, Plus, X } from "lucide-react";
 import { Role, type CreateUserRequest, type UpdateUserRequest, type User } from "shared";
 import { Avatar } from "../components/shared/Avatar";
+import { Chip } from "../components/shared/Chip";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -71,30 +72,34 @@ export function UsersPage() {
         </UserModal>
       ) : null}
 
-      <div className="overflow-hidden rounded-md border border-border">
-        <table className="w-full min-w-[820px] border-collapse bg-surface-card text-sm">
-          <thead className="bg-surface">
-            <tr className="text-left text-text-secondary">
-              <th className="p-3">Usuário</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Cargo</th>
-              <th className="p-3">Status</th>
-              <th className="p-3 text-right">Ações</th>
+      <div className="overflow-x-auto rounded-md border border-[--color-border]">
+        <table className="w-full min-w-[820px] table-fixed border-collapse bg-[--bg-2] text-sm">
+          <thead className="sticky top-0 z-10 bg-[--bg-1]">
+            <tr className="border-b border-[--color-border] text-left">
+              <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Usuário</th>
+              <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Email</th>
+              <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Cargo</th>
+              <th className="px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Status</th>
+              <th className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Ações</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id} className="border-t border-border">
-                <td className="p-3">
+              <tr key={user.id} className="border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]">
+                <td className="px-3 py-2">
                   <Link to={`/users/${user.id}`} className="flex items-center gap-3 font-semibold text-text-primary">
                     <Avatar name={user.name} imageUrl={user.avatarUrl} />
-                    {user.name}
+                    <span className="min-w-0 truncate">{user.name}</span>
                   </Link>
                 </td>
-                <td className="p-3 text-text-secondary">{user.email}</td>
-                <td className="p-3 text-text-secondary">{roleLabel(user.role)}</td>
-                <td className="p-3 text-text-secondary">{user.isActive ? "Ativo" : "Inativo"}</td>
-                <td className="p-3">
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]"><span className="block truncate">{user.email}</span></td>
+                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{roleLabel(user.role)}</td>
+                <td className="px-3 py-2">
+                  <Chip bg={user.isActive ? "--status-done-bg" : "--status-todo-bg"} text={user.isActive ? "--status-done-text" : "--status-todo-text"}>
+                    {user.isActive ? "Ativo" : "Inativo"}
+                  </Chip>
+                </td>
+                <td className="px-3 py-2">
                   <div className="flex justify-end gap-2">
                     <Button variant="secondary" className="h-9" onClick={() => setEditingUser(user)}>
                       <Pencil size={15} />

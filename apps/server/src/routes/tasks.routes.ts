@@ -4,13 +4,15 @@ import {
   createTask,
   deleteTask,
   getTaskById,
+  listTaskHistory,
   listTasks,
   updateTask,
   updateTaskCompletion,
   updateTaskStatus
 } from "../controllers/tasks.controller.js";
 import { auth } from "../middleware/auth.js";
-import { Priority, TaskStatus } from "../lib/enums.js";
+import { Priority, Role, TaskStatus } from "../lib/enums.js";
+import { requireRole } from "../middleware/role.js";
 import { validateBody } from "../middleware/validate.js";
 
 const router = Router();
@@ -68,12 +70,13 @@ const taskCompletionSchema = z.object({
 router.get("/sections/:sectionId/tasks", auth, listTasks);
 router.get("/disciplines/:disciplineId/tasks", auth, listTasks);
 router.get("/tasks/:id", auth, getTaskById);
-router.post("/tasks", auth, validateBody(createTaskSchema), createTask);
-router.post("/sections/:sectionId/tasks", auth, validateBody(createTaskSchema), createTask);
-router.post("/disciplines/:disciplineId/tasks", auth, validateBody(createTaskSchema), createTask);
-router.patch("/tasks/:id", auth, validateBody(updateTaskSchema), updateTask);
-router.delete("/tasks/:id", auth, deleteTask);
-router.patch("/tasks/:id/status", auth, validateBody(taskStatusSchema), updateTaskStatus);
-router.patch("/tasks/:id/completed", auth, validateBody(taskCompletionSchema), updateTaskCompletion);
+router.get("/tasks/:id/history", auth, listTaskHistory);
+router.post("/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
+router.post("/sections/:sectionId/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
+router.post("/disciplines/:disciplineId/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
+router.patch("/tasks/:id", auth, requireRole(Role.COORDINATOR), validateBody(updateTaskSchema), updateTask);
+router.delete("/tasks/:id", auth, requireRole(Role.COORDINATOR), deleteTask);
+router.patch("/tasks/:id/status", auth, requireRole(Role.COORDINATOR), validateBody(taskStatusSchema), updateTaskStatus);
+router.patch("/tasks/:id/completed", auth, requireRole(Role.DESIGNER), validateBody(taskCompletionSchema), updateTaskCompletion);
 
 export default router;

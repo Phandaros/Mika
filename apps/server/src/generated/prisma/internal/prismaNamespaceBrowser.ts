@@ -63,6 +63,7 @@ export const ModelName = {
   Task: 'Task',
   TaskReview: 'TaskReview',
   Comment: 'Comment',
+  TaskActivity: 'TaskActivity',
   TaskMembership: 'TaskMembership',
   TaskFollower: 'TaskFollower',
   TaskLike: 'TaskLike',
@@ -295,6 +296,21 @@ export const CommentScalarFieldEnum = {
 } as const
 
 export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeof CommentScalarFieldEnum]
+
+
+export const TaskActivityScalarFieldEnum = {
+  id: 'id',
+  taskId: 'taskId',
+  actorId: 'actorId',
+  type: 'type',
+  field: 'field',
+  fromValue: 'fromValue',
+  toValue: 'toValue',
+  metadataJson: 'metadataJson',
+  createdAt: 'createdAt'
+} as const
+
+export type TaskActivityScalarFieldEnum = (typeof TaskActivityScalarFieldEnum)[keyof typeof TaskActivityScalarFieldEnum]
 
 
 export const TaskMembershipScalarFieldEnum = {

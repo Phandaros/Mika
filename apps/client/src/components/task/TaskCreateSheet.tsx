@@ -126,6 +126,18 @@ export function TaskCreateSheet() {
   const createTask = useCreateTask(projectId, sectionId);
 
   useEffect(() => {
+    if (!open || !projectId || sectionId) {
+      return;
+    }
+
+    const nextSectionId = defaultSectionId(sectionsOf(selectedProject), defaults.sectionScope);
+    if (nextSectionId) {
+      setSectionId(nextSectionId);
+      setStage(sectionsOf(selectedProject).find((section) => section.id === nextSectionId)?.name ?? "");
+    }
+  }, [defaults.sectionScope, open, projectId, sectionId, selectedProject]);
+
+  useEffect(() => {
     if (!open) {
       return;
     }
@@ -308,6 +320,7 @@ export function TaskCreateSheet() {
                   projects={projects}
                   projectId={projectId}
                   sectionId={sectionId}
+                  sectionScope={defaults.sectionScope}
                   onChange={handleProjectChange}
                 />
               )
@@ -477,11 +490,13 @@ function CreateProjectsField({
   projects,
   projectId,
   sectionId,
+  sectionScope,
   onChange
 }: {
   projects: Project[];
   projectId: string;
   sectionId: string;
+  sectionScope?: "civil" | "electrical" | "general";
   onChange: (projectId: string, sectionId?: string | null) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -545,11 +560,11 @@ function CreateProjectsField({
                   >
                     <button
                       type="button"
-                      onClick={() => selectProject(selected ? "" : project.id, selected ? null : defaultSectionId(sections))}
+                      onClick={() => selectProject(selected ? "" : project.id, selected ? null : defaultSectionId(sections, sectionScope))}
                       className="flex min-h-7 w-full min-w-0 items-center gap-2 overflow-hidden text-left font-semibold"
                     >
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center">{selected ? <Check size={15} className="text-brand-orange" /> : null}</span>
-                      <ProjectSectionLabel project={project} sectionId={selected ? sectionId : defaultSectionId(sections)} />
+                      <ProjectSectionLabel project={project} sectionId={selected ? sectionId : defaultSectionId(sections, sectionScope)} />
                     </button>
                     {selected ? (
                       <SearchableSelect
@@ -917,7 +932,19 @@ function sectionsOf(project: Project | null | undefined) {
   return project?.sections ?? project?.disciplines ?? [];
 }
 
-function defaultSectionId(sections: Array<{ id: string; name: string }>): string {
+function defaultSectionId(sections: Array<{ id: string; name: string }>, scope: "civil" | "electrical" | "general" | undefined): string {
+  if (scope === "electrical") {
+    return (
+      sections.find((section) => {
+        const normalized = normalizeFieldName(section.name);
+        return normalized === "eletrico" || normalized === "eletrica";
+      })?.id ??
+      sections.find((section) => normalizeFieldName(section.name) === "civil")?.id ??
+      sections[0]?.id ??
+      ""
+    );
+  }
+
   return sections.find((section) => normalizeFieldName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
 }
 

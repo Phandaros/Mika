@@ -36,6 +36,7 @@ model User {
   taskFollowers       TaskFollower[]
   taskLikes           TaskLike[]
   comments            Comment[]
+  taskActivities      TaskActivity[]
   notifications       Notification[]
   createdHolidays     CompanyHoliday[]      @relation("HolidayCreator")
   createdTasks        Task[]                @relation("TaskCreator")
@@ -268,6 +269,7 @@ model Task {
   tags              TaskTag[]
   customFieldValues TaskCustomFieldValue[]
   comments          Comment[]
+  activities         TaskActivity[]
   requestedReviews  TaskReview[] @relation("TaskReviewSource")
   rootReviews       TaskReview[] @relation("TaskReviewRoot")
 
@@ -328,6 +330,25 @@ model Comment {
   @@index([authorId])
   @@index([asanaGid])
   @@index([authorAsanaGid])
+}
+
+model TaskActivity {
+  id           String   @id @default(cuid())
+  taskId       String
+  actorId      String?
+  type         String
+  field        String?
+  fromValue    String?
+  toValue      String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@index([actorId])
+  @@index([createdAt])
 }
 
 model TaskMembership {

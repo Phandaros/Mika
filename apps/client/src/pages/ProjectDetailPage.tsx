@@ -7,7 +7,7 @@ import { ProjectWorkloadTimeline } from "../components/project/ProjectWorkloadTi
 import { ProjectForm } from "../components/project/ProjectForm";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
-import { DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
+import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
 import {
   enumColor,
   PriorityOptionPill,
@@ -23,9 +23,11 @@ import { DecimalInput, parseDecimalInput } from "../components/ui/decimal-input"
 import { Input } from "../components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { SearchableSelect } from "../components/ui/searchable-select";
+import { useAuth } from "../hooks/useAuth";
 import { useProject, useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
+import { canManageTasks } from "../lib/permissions";
 import { cn, formatDateOnly } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
@@ -103,6 +105,8 @@ export function ProjectDetailPage() {
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const openTaskCreate = useUiStore((state) => state.openTaskCreate);
+  const { user } = useAuth();
+  const canManage = canManageTasks(user);
 
   const { data: users = [] } = useUsers();
   const { data: projects = [] } = useProjects();
@@ -203,6 +207,10 @@ export function ProjectDetailPage() {
   }
 
   function handleDragEnd(result: DropResult) {
+    if (!canManage) {
+      return;
+    }
+
     if (!result.destination) {
       return;
     }
@@ -285,16 +293,20 @@ export function ProjectDetailPage() {
               onSort={handleSort}
             />
           ) : null}
-          <Button variant="secondary" onClick={() => setShowProjectForm((current) => !current)}>
-            <Edit3 size={16} />
-            Editar projeto
-          </Button>
-          <Button
-            onClick={() => openTaskCreate({ projectId })}
-          >
-            <Plus size={16} />
-            Criar tarefa
-          </Button>
+          {canManage ? (
+            <>
+              <Button variant="secondary" onClick={() => setShowProjectForm((current) => !current)}>
+                <Edit3 size={16} />
+                Editar projeto
+              </Button>
+              <Button
+                onClick={() => openTaskCreate({ projectId, sectionScope: taskScope })}
+              >
+                <Plus size={16} />
+                Criar tarefa
+              </Button>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -323,6 +335,7 @@ export function ProjectDetailPage() {
             isLoading={isTasksLoading}
             onDragEnd={handleDragEnd}
             onOpenTask={openTaskDetail}
+            canManage={canManage}
           />
         ) : null}
         {activeTab === "list" ? (
@@ -336,10 +349,10 @@ export function ProjectDetailPage() {
             sortDirection={sortDirection}
             onSort={handleSort}
             onTaskAssigneeChange={(taskId, assigneeId) =>
-              void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } })
+              canManage ? void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } }) : undefined
             }
             onTaskCustomFieldChange={(taskId, fieldId, mikaKey, value) =>
-              void updateTask.mutateAsync({ id: taskId, payload: { customFieldValues: [{ id: fieldId, mikaKey, value }] } })
+              canManage ? void updateTask.mutateAsync({ id: taskId, payload: { customFieldValues: [{ id: fieldId, mikaKey, value }] } }) : undefined
             }
             onOpenTask={openTaskDetail}
           />
@@ -368,7 +381,8 @@ function KanbanView({
   tasks,
   isLoading,
   onDragEnd,
-  onOpenTask
+  onOpenTask,
+  canManage
 }: {
   projectId: string;
   disciplineId: string | null;
@@ -376,6 +390,7 @@ function KanbanView({
   isLoading: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  canManage: boolean;
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -393,6 +408,7 @@ function KanbanView({
                 tasks={columnTasks}
                 isLoading={isLoading}
                 onOpenTask={onOpenTask}
+                canManage={canManage}
               />
             );
           })}
@@ -417,7 +433,8 @@ function KanbanColumn({
   label,
   tasks,
   isLoading,
-  onOpenTask
+  onOpenTask,
+  canManage
 }: {
   projectId: string;
   disciplineId: string | null;
@@ -426,6 +443,7 @@ function KanbanColumn({
   tasks: TaskWithDiscipline[];
   isLoading: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  canManage: boolean;
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState("");
@@ -435,7 +453,7 @@ function KanbanColumn({
   async function submitTask() {
     const trimmedTitle = title.trim();
 
-    if (!disciplineId || !canCreateInColumn || trimmedTitle.length < 2) {
+    if (!canManage || !disciplineId || !canCreateInColumn || trimmedTitle.length < 2) {
       return;
     }
 
@@ -469,7 +487,7 @@ function KanbanColumn({
             ) : (
               <>
                 {tasks.map((task, index) => (
-                  <Draggable draggableId={task.id} index={index} key={task.id}>
+                  <Draggable draggableId={task.id} index={index} key={task.id} isDragDisabled={!canManage}>
                     {(dragProvided, dragSnapshot) => (
                       <div
                         ref={dragProvided.innerRef}
@@ -491,7 +509,7 @@ function KanbanColumn({
             )}
             {provided.placeholder}
           </div>
-          <div className="mt-3 border-t border-border pt-3">
+          {canManage ? <div className="mt-3 border-t border-border pt-3">
             {isAdding ? (
               <Input
                 value={title}
@@ -522,7 +540,7 @@ function KanbanColumn({
                 Adicionar tarefa
               </Button>
             )}
-          </div>
+          </div> : null}
         </section>
       )}
     </Droppable>
@@ -704,7 +722,7 @@ function ListView({
       ) : null}
       {!isLoading ? (
         <div className="w-full overflow-x-auto rounded-md border border-border">
-          <table className="w-full min-w-[1100px] table-fixed border-collapse bg-[--bg-2] text-sm" data-testid="project-list-table">
+          <table className="w-full min-w-[1220px] table-fixed border-collapse bg-[--bg-2] text-sm" data-testid="project-list-table">
             <colgroup>
               <col className="w-[200px]" />
               <col className="w-[120px]" />
@@ -712,6 +730,7 @@ function ListView({
               <col className="w-[150px]" />
               <col className="w-[90px]" />
               <col className="w-[100px]" />
+              <col className="w-[120px]" />
               <col className="w-[120px]" />
               <col className="w-[90px]" />
               <col className="w-[90px]" />
@@ -725,6 +744,7 @@ function ListView({
                 <SortableHeader label="Status" sortKey="status" sortDirection={sortDirection} active={sortKey === "status"} onSort={onSort} />
                 <StaticHeader label="Plataforma" align="center" />
                 <StaticHeader label="Disciplina" align="center" />
+                <StaticHeader label="Status Conclusão" align="center" />
                 <StaticHeader label="Prazo Máximo" />
                 <StaticHeader label="Dias Estimados" align="right" />
                 <StaticHeader label="Dias Conclusão" align="right" />
@@ -761,7 +781,7 @@ function GroupedScopeRows({
   userById: Map<string, User>;
   onOpenTask: (task: TaskWithDiscipline) => void;
 }) {
-  const columnSpan = 10;
+  const columnSpan = 11;
 
   return (
     <>
@@ -819,6 +839,7 @@ function GroupedScopeRows({
               <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><TaskStatusBadge status={task.status} /></td>
               <td className="px-3 py-2 text-center">{task.platform ? <PlatformChip platform={task.platform} /> : <EmptyCell />}</td>
               <td className="px-3 py-2 text-center">{task.taskDiscipline ? <DisciplineChip discipline={task.taskDiscipline} /> : <EmptyCell />}</td>
+              <td className="px-3 py-2 text-center"><CompletionStatusChip completed={task.completed} /></td>
               <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><DateCell value={task.maxDeadline} /></td>
               <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-primary]"><NumberCell value={task.estimatedTime} /></td>
               <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-primary]"><NumberCell value={task.conclusionDays} /></td>

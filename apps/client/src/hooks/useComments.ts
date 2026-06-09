@@ -29,7 +29,10 @@ export function useCreateComment(taskId: string | undefined) {
       return response.data.comment;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] }),
+        queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "history"] })
+      ]);
     }
   });
 }

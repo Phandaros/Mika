@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import {
   addMonths,
   eachDayOfInterval,
@@ -15,13 +15,15 @@ import {
   startOfWeek
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, MessageSquare, Send, UserRound } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
 import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest, type User } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { useProjects } from "../../hooks/useProjects";
+import { useTaskHistory } from "../../hooks/useTaskHistory";
 import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
+import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
 import { DisciplineChip, PlatformChip, editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
@@ -29,6 +31,8 @@ import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
 import { TaskCompletionButton } from "./TaskCompletionButton";
+import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
+import { TaskCommentEditor } from "./TaskCommentEditor";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
@@ -105,6 +109,8 @@ function isPointInsideOpenPopover(clientX: number, clientY: number): boolean {
 
 export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) {
   const { user } = useAuth();
+  const canManageTaskFields = canManageTasks(user);
+  const canToggleCompletion = canCompleteTasks(user);
   const [visibleTask, setVisibleTask] = useState<Task | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [openField, setOpenField] = useState<EditableField>(null);
@@ -115,6 +121,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [comment, setComment] = useState("");
+  const [activityTab, setActivityTab] = useState<TaskActivityTab>("comments");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const asideRef = useRef<HTMLElement>(null);
   const closePanelTimeoutRef = useRef<number | null>(null);
@@ -127,8 +134,18 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const updateTaskCompletion = useUpdateTaskCompletion(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
+  const { data: history = [], isLoading: historyLoading } = useTaskHistory(visibleTask?.id);
 
   const previousTaskIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closePanelTimeoutRef.current != null) {
+        window.clearTimeout(closePanelTimeoutRef.current);
+        closePanelTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!task) {
@@ -164,6 +181,8 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     setIsEditingTitle(false);
     setDescriptionDraft(task.description ?? "");
     setTitleDraft(task.title);
+    setComment("");
+    setActivityTab("comments");
     setIsOpen(false);
     const frame = window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => setIsOpen(true));
@@ -181,6 +200,10 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   }, [descriptionDraft, isEditingDescription]);
 
   async function patchTask(payload: UpdateTaskRequest) {
+    if (!canManageTaskFields) {
+      return;
+    }
+
     const currentTask = visibleTask;
 
     if (!currentTask) {
@@ -372,9 +395,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     setIsEditingDescription(false);
   }
 
-  async function handleCommentSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleCommentSubmit() {
     if (!comment.trim()) {
       return;
     }
@@ -392,18 +413,26 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
         <div className="flex min-w-0 items-center gap-2">
           <TaskCompletionButton
             completed={visibleTask.completed}
-            disabled={updateTaskCompletion.isPending}
+            disabled={!canToggleCompletion || updateTaskCompletion.isPending}
             onToggle={() => void patchTaskCompletion(!visibleTask.completed)}
             className="mt-0.5"
           />
           <Input
             value={isEditingTitle ? titleDraft : visibleTask.title}
+            readOnly={!canManageTaskFields}
             onFocus={() => {
+              if (!canManageTaskFields) {
+                return;
+              }
               setTitleDraft(visibleTask.title);
               setIsEditingTitle(true);
             }}
             onChange={(event) => setTitleDraft(event.target.value)}
-            onBlur={() => void handleTitleSave()}
+            onBlur={() => {
+              if (canManageTaskFields) {
+                void handleTitleSave();
+              }
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -417,24 +446,21 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
             }}
             className={cn(
               "h-auto min-w-0 border-transparent bg-transparent px-0 py-1 text-[16px] font-semibold leading-tight focus:border-brand-orange focus:bg-[--bg-3] focus:px-2",
+              !canManageTaskFields && "cursor-default focus:border-transparent focus:bg-transparent focus:px-0",
               visibleTask.completed ? "text-text-muted" : "text-text-primary"
             )}
           />
         </div>
       }
       footer={
-        <form onSubmit={handleCommentSubmit} className="flex items-start gap-3 border-t border-border p-5">
+        activityTab === "comments" ? (
+        <div className="flex items-start gap-3 border-t border-[--color-border] bg-[--bg-2] p-5">
           {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
-          <Textarea
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder="Adicionar um comentário"
-            className="min-h-20 flex-1 resize-none"
-          />
-          <Button type="submit" className="mt-1.5 h-10 w-10 shrink-0 px-0" disabled={createComment.isPending || !comment.trim()} title="Enviar">
-            <Send size={16} />
-          </Button>
-        </form>
+          <div className="min-w-0 flex-1">
+            <TaskCommentEditor value={comment} onChange={setComment} onSubmit={() => void handleCommentSubmit()} disabled={createComment.isPending} />
+          </div>
+        </div>
+        ) : null
       }
     >
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
@@ -444,43 +470,59 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                 key: "projects",
                 label: "Projetos",
                 render: () => (
-                  <EditableProjectsField
-                    projects={projects}
-                    selectedMemberships={visibleTask.projects?.flatMap((project) =>
-                      project.sectionId ? [{ projectId: project.id, sectionId: project.sectionId }] : []
-                    ) ?? []}
-                    onSave={(projectMemberships) => void patchTask({ projectMemberships })}
-                  />
+                  canManageTaskFields ? (
+                    <EditableProjectsField
+                      projects={projects}
+                      selectedMemberships={visibleTask.projects?.flatMap((project) =>
+                        project.sectionId ? [{ projectId: project.id, sectionId: project.sectionId }] : []
+                      ) ?? []}
+                      onSave={(projectMemberships) => void patchTask({ projectMemberships })}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={taskProjectLabels(visibleTask)} />
+                  )
                 )
               },
               {
                 key: "status",
                 label: "Status",
                 render: () => (
-                  <EditableStatusField
-                    task={visibleTask}
-                    onSave={(status) => void patchTask({ status })}
-                  />
+                  canManageTaskFields ? (
+                    <EditableStatusField
+                      task={visibleTask}
+                      onSave={(status) => void patchTask({ status })}
+                    />
+                  ) : (
+                    <TaskStatusBadge status={visibleTask.status} />
+                  )
                 )
               },
               {
                 key: "platform",
                 label: "Plataforma",
                 render: () => (
-                  <EditablePlatformField
-                    value={visibleTask.platform}
-                    onSave={(platform) => void patchTask({ platform })}
-                  />
+                  canManageTaskFields ? (
+                    <EditablePlatformField
+                      value={visibleTask.platform}
+                      onSave={(platform) => void patchTask({ platform })}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={visibleTask.platform} />
+                  )
                 )
               },
               {
                 key: "discipline",
                 label: "Disciplina",
                 render: () => (
-                  <EditableDisciplineField
-                    value={visibleTask.taskDiscipline}
-                    onSave={(taskDiscipline) => void patchTask({ taskDiscipline })}
-                  />
+                  canManageTaskFields ? (
+                    <EditableDisciplineField
+                      value={visibleTask.taskDiscipline}
+                      onSave={(taskDiscipline) => void patchTask({ taskDiscipline })}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={visibleTask.taskDiscipline} />
+                  )
                 )
               },
               {
@@ -617,7 +659,11 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               <Textarea
                 ref={descriptionRef}
                 value={isEditingDescription ? descriptionDraft : visibleTask.description ?? ""}
+                readOnly={!canManageTaskFields}
                 onFocus={() => {
+                  if (!canManageTaskFields) {
+                    return;
+                  }
                   setDescriptionDraft(visibleTask.description ?? "");
                   setIsEditingDescription(true);
                 }}
@@ -629,39 +675,21 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                 }}
                 onKeyDown={handleDescriptionKeyDown}
                 placeholder="Do que se trata esta tarefa?"
-                className="min-h-28 resize-none overflow-hidden border-transparent bg-transparent focus:border-brand-orange focus:bg-brand-black"
+                className={cn(
+                  "min-h-28 resize-none overflow-hidden border-transparent bg-transparent focus:border-brand-orange focus:bg-brand-black",
+                  !canManageTaskFields && "cursor-default text-text-secondary focus:border-transparent focus:bg-transparent"
+                )}
               />
             </div>
           </section>
 
-          <section className="mt-8">
-            <div className="flex items-center gap-2">
-              <MessageSquare size={18} className="shrink-0 text-text-secondary" />
-              <h3 className="text-sm font-bold text-text-primary">Comentários</h3>
-              <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{comments.length}</span>
-            </div>
-            <div className="mt-4 flex flex-col gap-4">
-              {comments.map((item) => (
-                <div key={item.id} className="flex gap-3">
-                  <Avatar
-                    name={item.author?.name ?? "Usuário"}
-                    imageUrl={item.author?.avatarUrl}
-                    className="mt-0.5 h-8 w-8 shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="text-sm font-semibold leading-5 text-text-primary">{item.author?.name ?? "Usuário"}</span>
-                      <span className="text-xs tabular-nums text-text-muted">
-                        {format(new Date(item.createdAt), "dd/MM/yyyy HH:mm")}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">{item.content}</p>
-                  </div>
-                </div>
-              ))}
-              {comments.length === 0 ? <p className="text-sm text-text-muted">Nenhum comentário ainda.</p> : null}
-            </div>
-          </section>
+          <TaskActivityTabs
+            comments={comments}
+            history={history}
+            historyLoading={historyLoading}
+            value={activityTab}
+            onValueChange={setActivityTab}
+          />
         </div>
     </TaskPanelShell>
   );
@@ -1103,6 +1131,15 @@ function compareTaskDetailFields(a: TaskCustomField, b: TaskCustomField): number
   }
 
   return (a.mikaSortOrder ?? Number.MAX_SAFE_INTEGER) - (b.mikaSortOrder ?? Number.MAX_SAFE_INTEGER);
+}
+
+function ReadOnlyValue({ value }: { value: string | number | null | undefined }) {
+  return <span className="min-h-10 w-full px-2 py-2 text-sm text-text-secondary">{value ?? "—"}</span>;
+}
+
+function taskProjectLabels(task: Task): string {
+  const labels = task.projects?.map((project) => (project.sectionName ? `${project.name} / ${sectionAbbreviation(project.sectionName)}` : project.name)) ?? [];
+  return labels.length > 0 ? labels.join(", ") : task.discipline?.projectName ?? task.discipline?.name ?? "—";
 }
 
 function taskDetailFieldOrder(field: TaskCustomField): number {

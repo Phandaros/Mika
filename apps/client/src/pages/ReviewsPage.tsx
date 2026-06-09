@@ -3,6 +3,7 @@ import { CheckCircle2, ClipboardCheck, XCircle } from "lucide-react";
 import { Role, TaskReviewStatus, type TaskReview } from "shared";
 import { Avatar } from "../components/shared/Avatar";
 import { Chip, CompletionStatusChip, DisciplineChip } from "../components/shared/Chip";
+import { EmptyCell } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
@@ -65,9 +66,9 @@ export function ReviewsPage() {
 
       <section className="overflow-hidden rounded-md border border-border bg-surface">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[920px] table-fixed border-collapse">
-            <thead className="sticky top-0 z-10 bg-bg-1">
-              <tr className="border-b border-border">
+          <table className="w-full table-fixed border-collapse bg-[--bg-2] text-sm" style={{ minWidth: "920px" }}>
+            <thead className="sticky top-0 z-10 bg-[--bg-1]">
+              <tr className="border-b border-[--color-border]">
                 <HeaderCell className="w-[280px]">Tarefa</HeaderCell>
                 <HeaderCell className="w-[150px]">Responsável</HeaderCell>
                 <HeaderCell className="w-[220px]">Origem</HeaderCell>
@@ -80,7 +81,7 @@ export function ReviewsPage() {
               {reviews.map((review) => (
                 <tr
                   key={review.id}
-                  className="h-10 cursor-pointer border-b border-border-subtle hover:bg-surface-hover"
+                  className="h-10 cursor-pointer border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]"
                   onClick={() => setSelectedReview(review)}
                 >
                   <BodyCell>
@@ -98,7 +99,7 @@ export function ReviewsPage() {
                   <BodyCell>
                     <DisciplineChip discipline="Revisão" />
                   </BodyCell>
-                  <BodyCell>{review.dueDate ? formatDateOnly(review.dueDate, "dd/MM/yyyy") : <span className="text-text-muted">Sem data</span>}</BodyCell>
+                  <BodyCell>{review.dueDate ? formatDateOnly(review.dueDate, "dd/MM/yyyy") : <EmptyCell />}</BodyCell>
                   <BodyCell>
                     <ReviewStatusChip status={review.status} />
                   </BodyCell>
@@ -305,11 +306,11 @@ function ReviewStatusChip({ status }: { status: TaskReviewStatus }) {
 }
 
 function HeaderCell({ className, children }: { className?: string; children: string }) {
-  return <th className={cn("px-3 py-2 text-left text-[11px] font-medium uppercase tracking-widest text-text-muted", className)}>{children}</th>;
+  return <th className={cn("px-3 py-2 text-left text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]", className)}>{children}</th>;
 }
 
 function BodyCell({ children }: { children: ReactNode }) {
-  return <td className="px-3 py-2 text-[13px] text-text-secondary">{children}</td>;
+  return <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{children}</td>;
 }
 
 function DetailLabel({ children }: { children: string }) {

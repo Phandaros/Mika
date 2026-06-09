@@ -699,6 +699,7 @@ export function useUpdateTask(projectId: string) {
       updateSprintBoardTaskCaches(updatedTask);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries("inactive");
+      void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     },
     onSettled: async (_data, _error, variables) => {
       if (!projectId || variables.payload.projectIds !== undefined || variables.payload.projectMemberships !== undefined) {
@@ -780,6 +781,7 @@ export function useUpdateTaskStatus(projectId: string) {
       updateSprintBoardTaskCaches(updatedTask);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries("inactive");
+      void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     }
   });
 }
@@ -794,6 +796,7 @@ export function useUpdateTaskCompletion(projectId: string) {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries();
+      void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     }
   });
 }
