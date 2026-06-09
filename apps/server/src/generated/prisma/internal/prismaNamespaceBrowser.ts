@@ -61,6 +61,7 @@ export const ModelName = {
   ProjectMember: 'ProjectMember',
   Section: 'Section',
   Task: 'Task',
+  TaskReview: 'TaskReview',
   Comment: 'Comment',
   TaskMembership: 'TaskMembership',
   TaskFollower: 'TaskFollower',
@@ -250,6 +251,9 @@ export const TaskScalarFieldEnum = {
   conclusionDays: 'conclusionDays',
   stage: 'stage',
   assigneeGid: 'assigneeGid',
+  createdByUserId: 'createdByUserId',
+  workflowRootTaskId: 'workflowRootTaskId',
+  adjustmentNumber: 'adjustmentNumber',
   parentAsanaGid: 'parentAsanaGid',
   parentName: 'parentName',
   parentId: 'parentId',
@@ -258,6 +262,24 @@ export const TaskScalarFieldEnum = {
 } as const
 
 export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof TaskScalarFieldEnum]
+
+
+export const TaskReviewScalarFieldEnum = {
+  id: 'id',
+  sourceTaskId: 'sourceTaskId',
+  rootTaskId: 'rootTaskId',
+  reviewerId: 'reviewerId',
+  requestedById: 'requestedById',
+  status: 'status',
+  message: 'message',
+  startOn: 'startOn',
+  dueOn: 'dueOn',
+  decidedAt: 'decidedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TaskReviewScalarFieldEnum = (typeof TaskReviewScalarFieldEnum)[keyof typeof TaskReviewScalarFieldEnum]
 
 
 export const CommentScalarFieldEnum = {

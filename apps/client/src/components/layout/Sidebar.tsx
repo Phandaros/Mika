@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CalendarRange,
   CheckCircle2,
+  ClipboardCheck,
   FolderKanban,
   Home,
   Inbox,
@@ -26,6 +27,7 @@ const navItems = [
   { to: "/", label: "Página inicial", icon: Home },
   { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
   { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
+  { to: "/reviews", label: "Revisões", icon: ClipboardCheck, minRole: Role.COORDINATOR },
   { to: "/admin/calendar", label: "Calendario", icon: CalendarDays, minRole: Role.COORDINATOR },
   { to: "/users", label: "Usuários", icon: Users, minRole: Role.COORDINATOR }
 ];
@@ -122,6 +124,7 @@ export function Sidebar() {
           title="Projetos"
           items={[
             { label: "Projetos ativos", icon: FolderKanban, to: "/projects" },
+            { label: "Revisões", icon: ClipboardCheck, to: "/reviews", minRole: Role.COORDINATOR },
             { label: "Civil - Sprint Board", icon: KanbanSquare, to: "/sprint/civil", minRole: Role.COORDINATOR },
             { label: "Elétrico - Sprint Board", icon: KanbanSquare, to: "/sprint/eletrico", minRole: Role.COORDINATOR }
           ].filter((item) => !item.minRole || (user && roleWeight[user.role] >= roleWeight[item.minRole]))}

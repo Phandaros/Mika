@@ -7,6 +7,8 @@ import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
+import { getAuthUser } from "../middleware/auth.js";
+import { applyTaskRules } from "../lib/taskRules.js";
 
 function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
   return req.params.sectionId ?? req.params.disciplineId ?? "";
@@ -436,6 +438,7 @@ export const getTaskById: RequestHandler = async (req, res, next) => {
 
 export const createTask: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const body = req.body as Required<Pick<TaskBody, "title">> & TaskBody;
     const routeSectionId = sectionIdFromReq(req);
 
@@ -459,7 +462,8 @@ export const createTask: RequestHandler = async (req, res, next) => {
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,
           stage: body.stage,
           completed: false,
-          completedAtAsana: null
+          completedAtAsana: null,
+          createdByUserId: authUser.id
         }
       });
 
@@ -549,6 +553,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
 
 export const updateTask: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const body = req.body as TaskBody;
     const taskId = req.params.id;
 
@@ -614,6 +619,13 @@ export const updateTask: RequestHandler = async (req, res, next) => {
         }
       }
 
+      const shouldRecalculateStatus =
+        body.startDate !== undefined || body.dueDate !== undefined || body.assigneeId !== undefined;
+
+      if (status !== undefined || shouldRecalculateStatus) {
+        await applyTaskRules(tx, taskId, { actor: authUser, status, recalculateOpenStatus: shouldRecalculateStatus });
+      }
+
       return tx.task.findUniqueOrThrow({
         where: { id: taskId },
         include: taskInclude
@@ -650,14 +662,27 @@ export const deleteTask: RequestHandler = async (req, res, next) => {
 
 export const updateTaskStatus: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const body = req.body as StatusBody;
+    const taskId = req.params.id;
+    if (!taskId) {
+      throw new AppError(400, "Task id is required");
+    }
     const status = writableStatus(body.status);
-    const task = await prisma.task.update({
-      where: { id: req.params.id },
-      data: {
-        mikaStatus: status
-      },
-      include: taskInclude
+    const task = await prisma.$transaction(async (tx) => {
+      await tx.task.update({
+        where: { id: taskId },
+        data: {
+          mikaStatus: status
+        }
+      });
+
+      await applyTaskRules(tx, taskId, { actor: authUser, status });
+
+      return tx.task.findUniqueOrThrow({
+        where: { id: taskId },
+        include: taskInclude
+      });
     });
 
     if (task.assignee) {
@@ -680,14 +705,27 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
 
 export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const body = req.body as CompletionBody;
-    const task = await prisma.task.update({
-      where: { id: req.params.id },
-      data: {
-        completed: body.completed,
-        completedAtAsana: body.completed ? new Date() : null
-      },
-      include: taskInclude
+    const taskId = req.params.id;
+    if (!taskId) {
+      throw new AppError(400, "Task id is required");
+    }
+    const task = await prisma.$transaction(async (tx) => {
+      await tx.task.update({
+        where: { id: taskId },
+        data: {
+          completed: body.completed,
+          completedAtAsana: body.completed ? new Date() : null
+        }
+      });
+
+      await applyTaskRules(tx, taskId, { actor: authUser, completed: body.completed });
+
+      return tx.task.findUniqueOrThrow({
+        where: { id: taskId },
+        include: taskInclude
+      });
     });
 
     const catalog = await taskFieldCatalog();

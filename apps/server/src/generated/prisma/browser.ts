@@ -69,6 +69,11 @@ export type Section = Prisma.SectionModel
  */
 export type Task = Prisma.TaskModel
 /**
+ * Model TaskReview
+ * 
+ */
+export type TaskReview = Prisma.TaskReviewModel
+/**
  * Model Comment
  * 
  */

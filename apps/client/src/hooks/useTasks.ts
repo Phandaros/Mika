@@ -604,6 +604,29 @@ export function useCreateTask(projectId: string, sectionId: string) {
   });
 }
 
+export function useCreateTaskInSection() {
+  return useMutation({
+    mutationFn: async ({ sectionId, payload }: { projectId: string; sectionId: string; payload: CreateTaskRequest }) => {
+      if (!sectionId) {
+        throw new Error("A tarefa precisa ter uma seção");
+      }
+
+      const response = await api.post<TaskResponse>(`/sections/${sectionId}/tasks`, payload);
+      return response.data.task;
+    },
+    onSuccess: async (createdTask, variables) => {
+      if (variables.projectId) {
+        await queryClient.invalidateQueries({ queryKey: ["projects", variables.projectId] });
+      }
+      await queryClient.invalidateQueries({ queryKey: ["sections", variables.sectionId, "tasks"] });
+      invalidateWorkloadTaskQueries(variables.projectId);
+      invalidateSprintBoardTaskQueries();
+      updateTaskInProjectCache(variables.projectId, createdTask);
+      updateSprintBoardTaskCaches(createdTask);
+    }
+  });
+}
+
 export function useUpdateTask(projectId: string) {
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateTaskRequest }) => {

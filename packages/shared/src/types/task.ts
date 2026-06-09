@@ -13,7 +13,9 @@ export interface Task {
   priority: Priority;
   assigneeId: string | null;
   assigneeGid?: string | null;
-  creatorId: string;
+  creatorId: string | null;
+  workflowRootTaskId?: string | null;
+  adjustmentNumber?: number;
   startDate: string | null;
   dueDate: string | null;
   /** Dias estimados de esforço (opcional); usado na vista Carga de trabalho. */

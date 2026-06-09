@@ -38,6 +38,9 @@ model User {
   comments            Comment[]
   notifications       Notification[]
   createdHolidays     CompanyHoliday[]      @relation("HolidayCreator")
+  createdTasks        Task[]                @relation("TaskCreator")
+  requestedReviews    TaskReview[]          @relation("TaskReviewRequester")
+  assignedReviews     TaskReview[]          @relation("TaskReviewReviewer")
 
   @@index([asanaGid])
   @@index([email])
@@ -240,6 +243,9 @@ model Task {
   stage String?
 
   assigneeGid String?
+  createdByUserId String?
+  workflowRootTaskId String?
+  adjustmentNumber Int @default(0)
 
   /// `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
   parentAsanaGid String?
@@ -250,8 +256,11 @@ model Task {
   updatedAt DateTime @updatedAt
 
   assignee User? @relation("TaskAssignee", fields: [assigneeGid], references: [asanaGid])
+  creator  User? @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   parent   Task? @relation("TaskSubtasks", fields: [parentId], references: [id])
   subtasks Task[] @relation("TaskSubtasks")
+  workflowRoot Task? @relation("TaskWorkflowRoot", fields: [workflowRootTaskId], references: [id])
+  workflowAdjustments Task[] @relation("TaskWorkflowRoot")
 
   memberships       TaskMembership[]
   followers         TaskFollower[]
@@ -259,13 +268,43 @@ model Task {
   tags              TaskTag[]
   customFieldValues TaskCustomFieldValue[]
   comments          Comment[]
+  requestedReviews  TaskReview[] @relation("TaskReviewSource")
+  rootReviews       TaskReview[] @relation("TaskReviewRoot")
 
   @@index([name])
   @@index([assigneeGid])
+  @@index([createdByUserId])
+  @@index([workflowRootTaskId])
   @@index([parentAsanaGid])
   @@index([parentId])
   @@index([completed])
   @@index([dueOn])
+}
+
+model TaskReview {
+  id            String   @id @default(cuid())
+  sourceTaskId  String
+  rootTaskId    String
+  reviewerId    String
+  requestedById String?
+  status        String   @default("PENDING")
+  message       String?
+  startOn       String?
+  dueOn         String?
+  decidedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sourceTask  Task  @relation("TaskReviewSource", fields: [sourceTaskId], references: [id], onDelete: Cascade)
+  rootTask    Task  @relation("TaskReviewRoot", fields: [rootTaskId], references: [id], onDelete: Cascade)
+  reviewer    User  @relation("TaskReviewReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  requestedBy User? @relation("TaskReviewRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+
+  @@index([rootTaskId])
+  @@index([reviewerId])
+  @@index([requestedById])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Comment {

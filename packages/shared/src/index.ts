@@ -7,3 +7,4 @@ export * from "./types/comment.js";
 export * from "./types/notification.js";
 export * from "./types/calendar.js";
 export * from "./types/update.js";
+export * from "./types/review.js";

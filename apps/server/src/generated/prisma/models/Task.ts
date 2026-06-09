@@ -32,6 +32,7 @@ export type TaskAvgAggregateOutputType = {
   estimatedDays: number | null
   estimatedTime: number | null
   conclusionDays: number | null
+  adjustmentNumber: number | null
 }
 
 export type TaskSumAggregateOutputType = {
@@ -40,6 +41,7 @@ export type TaskSumAggregateOutputType = {
   estimatedDays: number | null
   estimatedTime: number | null
   conclusionDays: number | null
+  adjustmentNumber: number | null
 }
 
 export type TaskMinAggregateOutputType = {
@@ -70,6 +72,9 @@ export type TaskMinAggregateOutputType = {
   conclusionDays: number | null
   stage: string | null
   assigneeGid: string | null
+  createdByUserId: string | null
+  workflowRootTaskId: string | null
+  adjustmentNumber: number | null
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
@@ -105,6 +110,9 @@ export type TaskMaxAggregateOutputType = {
   conclusionDays: number | null
   stage: string | null
   assigneeGid: string | null
+  createdByUserId: string | null
+  workflowRootTaskId: string | null
+  adjustmentNumber: number | null
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
@@ -140,6 +148,9 @@ export type TaskCountAggregateOutputType = {
   conclusionDays: number
   stage: number
   assigneeGid: number
+  createdByUserId: number
+  workflowRootTaskId: number
+  adjustmentNumber: number
   parentAsanaGid: number
   parentName: number
   parentId: number
@@ -155,6 +166,7 @@ export type TaskAvgAggregateInputType = {
   estimatedDays?: true
   estimatedTime?: true
   conclusionDays?: true
+  adjustmentNumber?: true
 }
 
 export type TaskSumAggregateInputType = {
@@ -163,6 +175,7 @@ export type TaskSumAggregateInputType = {
   estimatedDays?: true
   estimatedTime?: true
   conclusionDays?: true
+  adjustmentNumber?: true
 }
 
 export type TaskMinAggregateInputType = {
@@ -193,6 +206,9 @@ export type TaskMinAggregateInputType = {
   conclusionDays?: true
   stage?: true
   assigneeGid?: true
+  createdByUserId?: true
+  workflowRootTaskId?: true
+  adjustmentNumber?: true
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
@@ -228,6 +244,9 @@ export type TaskMaxAggregateInputType = {
   conclusionDays?: true
   stage?: true
   assigneeGid?: true
+  createdByUserId?: true
+  workflowRootTaskId?: true
+  adjustmentNumber?: true
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
@@ -263,6 +282,9 @@ export type TaskCountAggregateInputType = {
   conclusionDays?: true
   stage?: true
   assigneeGid?: true
+  createdByUserId?: true
+  workflowRootTaskId?: true
+  adjustmentNumber?: true
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
@@ -385,6 +407,9 @@ export type TaskGroupByOutputType = {
   conclusionDays: number | null
   stage: string | null
   assigneeGid: string | null
+  createdByUserId: string | null
+  workflowRootTaskId: string | null
+  adjustmentNumber: number
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
@@ -443,20 +468,28 @@ export type TaskWhereInput = {
   conclusionDays?: Prisma.FloatNullableFilter<"Task"> | number | null
   stage?: Prisma.StringNullableFilter<"Task"> | string | null
   assigneeGid?: Prisma.StringNullableFilter<"Task"> | string | null
+  createdByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
+  workflowRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
+  adjustmentNumber?: Prisma.IntFilter<"Task"> | number
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   assignee?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  creator?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   parent?: Prisma.XOR<Prisma.TaskNullableScalarRelationFilter, Prisma.TaskWhereInput> | null
   subtasks?: Prisma.TaskListRelationFilter
+  workflowRoot?: Prisma.XOR<Prisma.TaskNullableScalarRelationFilter, Prisma.TaskWhereInput> | null
+  workflowAdjustments?: Prisma.TaskListRelationFilter
   memberships?: Prisma.TaskMembershipListRelationFilter
   followers?: Prisma.TaskFollowerListRelationFilter
   likes?: Prisma.TaskLikeListRelationFilter
   tags?: Prisma.TaskTagListRelationFilter
   customFieldValues?: Prisma.TaskCustomFieldValueListRelationFilter
   comments?: Prisma.CommentListRelationFilter
+  requestedReviews?: Prisma.TaskReviewListRelationFilter
+  rootReviews?: Prisma.TaskReviewListRelationFilter
 }
 
 export type TaskOrderByWithRelationInput = {
@@ -487,20 +520,28 @@ export type TaskOrderByWithRelationInput = {
   conclusionDays?: Prisma.SortOrderInput | Prisma.SortOrder
   stage?: Prisma.SortOrderInput | Prisma.SortOrder
   assigneeGid?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  workflowRootTaskId?: Prisma.SortOrderInput | Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   parentName?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   assignee?: Prisma.UserOrderByWithRelationInput
+  creator?: Prisma.UserOrderByWithRelationInput
   parent?: Prisma.TaskOrderByWithRelationInput
   subtasks?: Prisma.TaskOrderByRelationAggregateInput
+  workflowRoot?: Prisma.TaskOrderByWithRelationInput
+  workflowAdjustments?: Prisma.TaskOrderByRelationAggregateInput
   memberships?: Prisma.TaskMembershipOrderByRelationAggregateInput
   followers?: Prisma.TaskFollowerOrderByRelationAggregateInput
   likes?: Prisma.TaskLikeOrderByRelationAggregateInput
   tags?: Prisma.TaskTagOrderByRelationAggregateInput
   customFieldValues?: Prisma.TaskCustomFieldValueOrderByRelationAggregateInput
   comments?: Prisma.CommentOrderByRelationAggregateInput
+  requestedReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
+  rootReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
 }
 
 export type TaskWhereUniqueInput = Prisma.AtLeast<{
@@ -534,20 +575,28 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   conclusionDays?: Prisma.FloatNullableFilter<"Task"> | number | null
   stage?: Prisma.StringNullableFilter<"Task"> | string | null
   assigneeGid?: Prisma.StringNullableFilter<"Task"> | string | null
+  createdByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
+  workflowRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
+  adjustmentNumber?: Prisma.IntFilter<"Task"> | number
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   assignee?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  creator?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   parent?: Prisma.XOR<Prisma.TaskNullableScalarRelationFilter, Prisma.TaskWhereInput> | null
   subtasks?: Prisma.TaskListRelationFilter
+  workflowRoot?: Prisma.XOR<Prisma.TaskNullableScalarRelationFilter, Prisma.TaskWhereInput> | null
+  workflowAdjustments?: Prisma.TaskListRelationFilter
   memberships?: Prisma.TaskMembershipListRelationFilter
   followers?: Prisma.TaskFollowerListRelationFilter
   likes?: Prisma.TaskLikeListRelationFilter
   tags?: Prisma.TaskTagListRelationFilter
   customFieldValues?: Prisma.TaskCustomFieldValueListRelationFilter
   comments?: Prisma.CommentListRelationFilter
+  requestedReviews?: Prisma.TaskReviewListRelationFilter
+  rootReviews?: Prisma.TaskReviewListRelationFilter
 }, "id" | "asanaGid">
 
 export type TaskOrderByWithAggregationInput = {
@@ -578,6 +627,9 @@ export type TaskOrderByWithAggregationInput = {
   conclusionDays?: Prisma.SortOrderInput | Prisma.SortOrder
   stage?: Prisma.SortOrderInput | Prisma.SortOrder
   assigneeGid?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  workflowRootTaskId?: Prisma.SortOrderInput | Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   parentName?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -621,6 +673,9 @@ export type TaskScalarWhereWithAggregatesInput = {
   conclusionDays?: Prisma.FloatNullableWithAggregatesFilter<"Task"> | number | null
   stage?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   assigneeGid?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  createdByUserId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  workflowRootTaskId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  adjustmentNumber?: Prisma.IntWithAggregatesFilter<"Task"> | number
   parentAsanaGid?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
@@ -655,19 +710,25 @@ export type TaskCreateInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateInput = {
@@ -698,18 +759,24 @@ export type TaskUncheckedCreateInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUpdateInput = {
@@ -739,19 +806,25 @@ export type TaskUpdateInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateInput = {
@@ -782,18 +855,24 @@ export type TaskUncheckedUpdateInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateManyInput = {
@@ -824,6 +903,9 @@ export type TaskCreateManyInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -858,6 +940,7 @@ export type TaskUpdateManyMutationInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -892,6 +975,9 @@ export type TaskUncheckedUpdateManyInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -942,6 +1028,9 @@ export type TaskCountOrderByAggregateInput = {
   conclusionDays?: Prisma.SortOrder
   stage?: Prisma.SortOrder
   assigneeGid?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrder
+  workflowRootTaskId?: Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
@@ -955,6 +1044,7 @@ export type TaskAvgOrderByAggregateInput = {
   estimatedDays?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
   conclusionDays?: Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
 }
 
 export type TaskMaxOrderByAggregateInput = {
@@ -985,6 +1075,9 @@ export type TaskMaxOrderByAggregateInput = {
   conclusionDays?: Prisma.SortOrder
   stage?: Prisma.SortOrder
   assigneeGid?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrder
+  workflowRootTaskId?: Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
@@ -1020,6 +1113,9 @@ export type TaskMinOrderByAggregateInput = {
   conclusionDays?: Prisma.SortOrder
   stage?: Prisma.SortOrder
   assigneeGid?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrder
+  workflowRootTaskId?: Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
@@ -1033,6 +1129,7 @@ export type TaskSumOrderByAggregateInput = {
   estimatedDays?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
   conclusionDays?: Prisma.SortOrder
+  adjustmentNumber?: Prisma.SortOrder
 }
 
 export type TaskScalarRelationFilter = {
@@ -1047,10 +1144,24 @@ export type TaskCreateNestedManyWithoutAssigneeInput = {
   connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
 }
 
+export type TaskCreateNestedManyWithoutCreatorInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutCreatorInput, Prisma.TaskUncheckedCreateWithoutCreatorInput> | Prisma.TaskCreateWithoutCreatorInput[] | Prisma.TaskUncheckedCreateWithoutCreatorInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutCreatorInput | Prisma.TaskCreateOrConnectWithoutCreatorInput[]
+  createMany?: Prisma.TaskCreateManyCreatorInputEnvelope
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+}
+
 export type TaskUncheckedCreateNestedManyWithoutAssigneeInput = {
   create?: Prisma.XOR<Prisma.TaskCreateWithoutAssigneeInput, Prisma.TaskUncheckedCreateWithoutAssigneeInput> | Prisma.TaskCreateWithoutAssigneeInput[] | Prisma.TaskUncheckedCreateWithoutAssigneeInput[]
   connectOrCreate?: Prisma.TaskCreateOrConnectWithoutAssigneeInput | Prisma.TaskCreateOrConnectWithoutAssigneeInput[]
   createMany?: Prisma.TaskCreateManyAssigneeInputEnvelope
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+}
+
+export type TaskUncheckedCreateNestedManyWithoutCreatorInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutCreatorInput, Prisma.TaskUncheckedCreateWithoutCreatorInput> | Prisma.TaskCreateWithoutCreatorInput[] | Prisma.TaskUncheckedCreateWithoutCreatorInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutCreatorInput | Prisma.TaskCreateOrConnectWithoutCreatorInput[]
+  createMany?: Prisma.TaskCreateManyCreatorInputEnvelope
   connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
 }
 
@@ -1068,6 +1179,20 @@ export type TaskUpdateManyWithoutAssigneeNestedInput = {
   deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
 }
 
+export type TaskUpdateManyWithoutCreatorNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutCreatorInput, Prisma.TaskUncheckedCreateWithoutCreatorInput> | Prisma.TaskCreateWithoutCreatorInput[] | Prisma.TaskUncheckedCreateWithoutCreatorInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutCreatorInput | Prisma.TaskCreateOrConnectWithoutCreatorInput[]
+  upsert?: Prisma.TaskUpsertWithWhereUniqueWithoutCreatorInput | Prisma.TaskUpsertWithWhereUniqueWithoutCreatorInput[]
+  createMany?: Prisma.TaskCreateManyCreatorInputEnvelope
+  set?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  disconnect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  delete?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  update?: Prisma.TaskUpdateWithWhereUniqueWithoutCreatorInput | Prisma.TaskUpdateWithWhereUniqueWithoutCreatorInput[]
+  updateMany?: Prisma.TaskUpdateManyWithWhereWithoutCreatorInput | Prisma.TaskUpdateManyWithWhereWithoutCreatorInput[]
+  deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
+}
+
 export type TaskUncheckedUpdateManyWithoutAssigneeNestedInput = {
   create?: Prisma.XOR<Prisma.TaskCreateWithoutAssigneeInput, Prisma.TaskUncheckedCreateWithoutAssigneeInput> | Prisma.TaskCreateWithoutAssigneeInput[] | Prisma.TaskUncheckedCreateWithoutAssigneeInput[]
   connectOrCreate?: Prisma.TaskCreateOrConnectWithoutAssigneeInput | Prisma.TaskCreateOrConnectWithoutAssigneeInput[]
@@ -1079,6 +1204,20 @@ export type TaskUncheckedUpdateManyWithoutAssigneeNestedInput = {
   connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
   update?: Prisma.TaskUpdateWithWhereUniqueWithoutAssigneeInput | Prisma.TaskUpdateWithWhereUniqueWithoutAssigneeInput[]
   updateMany?: Prisma.TaskUpdateManyWithWhereWithoutAssigneeInput | Prisma.TaskUpdateManyWithWhereWithoutAssigneeInput[]
+  deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
+}
+
+export type TaskUncheckedUpdateManyWithoutCreatorNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutCreatorInput, Prisma.TaskUncheckedCreateWithoutCreatorInput> | Prisma.TaskCreateWithoutCreatorInput[] | Prisma.TaskUncheckedCreateWithoutCreatorInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutCreatorInput | Prisma.TaskCreateOrConnectWithoutCreatorInput[]
+  upsert?: Prisma.TaskUpsertWithWhereUniqueWithoutCreatorInput | Prisma.TaskUpsertWithWhereUniqueWithoutCreatorInput[]
+  createMany?: Prisma.TaskCreateManyCreatorInputEnvelope
+  set?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  disconnect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  delete?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  update?: Prisma.TaskUpdateWithWhereUniqueWithoutCreatorInput | Prisma.TaskUpdateWithWhereUniqueWithoutCreatorInput[]
+  updateMany?: Prisma.TaskUpdateManyWithWhereWithoutCreatorInput | Prisma.TaskUpdateManyWithWhereWithoutCreatorInput[]
   deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
 }
 
@@ -1095,10 +1234,30 @@ export type TaskCreateNestedManyWithoutParentInput = {
   connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
 }
 
+export type TaskCreateNestedOneWithoutWorkflowAdjustmentsInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowAdjustmentsInput, Prisma.TaskUncheckedCreateWithoutWorkflowAdjustmentsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWorkflowAdjustmentsInput
+  connect?: Prisma.TaskWhereUniqueInput
+}
+
+export type TaskCreateNestedManyWithoutWorkflowRootInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowRootInput, Prisma.TaskUncheckedCreateWithoutWorkflowRootInput> | Prisma.TaskCreateWithoutWorkflowRootInput[] | Prisma.TaskUncheckedCreateWithoutWorkflowRootInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWorkflowRootInput | Prisma.TaskCreateOrConnectWithoutWorkflowRootInput[]
+  createMany?: Prisma.TaskCreateManyWorkflowRootInputEnvelope
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+}
+
 export type TaskUncheckedCreateNestedManyWithoutParentInput = {
   create?: Prisma.XOR<Prisma.TaskCreateWithoutParentInput, Prisma.TaskUncheckedCreateWithoutParentInput> | Prisma.TaskCreateWithoutParentInput[] | Prisma.TaskUncheckedCreateWithoutParentInput[]
   connectOrCreate?: Prisma.TaskCreateOrConnectWithoutParentInput | Prisma.TaskCreateOrConnectWithoutParentInput[]
   createMany?: Prisma.TaskCreateManyParentInputEnvelope
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+}
+
+export type TaskUncheckedCreateNestedManyWithoutWorkflowRootInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowRootInput, Prisma.TaskUncheckedCreateWithoutWorkflowRootInput> | Prisma.TaskCreateWithoutWorkflowRootInput[] | Prisma.TaskUncheckedCreateWithoutWorkflowRootInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWorkflowRootInput | Prisma.TaskCreateOrConnectWithoutWorkflowRootInput[]
+  createMany?: Prisma.TaskCreateManyWorkflowRootInputEnvelope
   connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
 }
 
@@ -1134,6 +1293,30 @@ export type TaskUpdateManyWithoutParentNestedInput = {
   deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
 }
 
+export type TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowAdjustmentsInput, Prisma.TaskUncheckedCreateWithoutWorkflowAdjustmentsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWorkflowAdjustmentsInput
+  upsert?: Prisma.TaskUpsertWithoutWorkflowAdjustmentsInput
+  disconnect?: Prisma.TaskWhereInput | boolean
+  delete?: Prisma.TaskWhereInput | boolean
+  connect?: Prisma.TaskWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaskUpdateToOneWithWhereWithoutWorkflowAdjustmentsInput, Prisma.TaskUpdateWithoutWorkflowAdjustmentsInput>, Prisma.TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput>
+}
+
+export type TaskUpdateManyWithoutWorkflowRootNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowRootInput, Prisma.TaskUncheckedCreateWithoutWorkflowRootInput> | Prisma.TaskCreateWithoutWorkflowRootInput[] | Prisma.TaskUncheckedCreateWithoutWorkflowRootInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWorkflowRootInput | Prisma.TaskCreateOrConnectWithoutWorkflowRootInput[]
+  upsert?: Prisma.TaskUpsertWithWhereUniqueWithoutWorkflowRootInput | Prisma.TaskUpsertWithWhereUniqueWithoutWorkflowRootInput[]
+  createMany?: Prisma.TaskCreateManyWorkflowRootInputEnvelope
+  set?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  disconnect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  delete?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  update?: Prisma.TaskUpdateWithWhereUniqueWithoutWorkflowRootInput | Prisma.TaskUpdateWithWhereUniqueWithoutWorkflowRootInput[]
+  updateMany?: Prisma.TaskUpdateManyWithWhereWithoutWorkflowRootInput | Prisma.TaskUpdateManyWithWhereWithoutWorkflowRootInput[]
+  deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
+}
+
 export type TaskUncheckedUpdateManyWithoutParentNestedInput = {
   create?: Prisma.XOR<Prisma.TaskCreateWithoutParentInput, Prisma.TaskUncheckedCreateWithoutParentInput> | Prisma.TaskCreateWithoutParentInput[] | Prisma.TaskUncheckedCreateWithoutParentInput[]
   connectOrCreate?: Prisma.TaskCreateOrConnectWithoutParentInput | Prisma.TaskCreateOrConnectWithoutParentInput[]
@@ -1146,6 +1329,48 @@ export type TaskUncheckedUpdateManyWithoutParentNestedInput = {
   update?: Prisma.TaskUpdateWithWhereUniqueWithoutParentInput | Prisma.TaskUpdateWithWhereUniqueWithoutParentInput[]
   updateMany?: Prisma.TaskUpdateManyWithWhereWithoutParentInput | Prisma.TaskUpdateManyWithWhereWithoutParentInput[]
   deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
+}
+
+export type TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowRootInput, Prisma.TaskUncheckedCreateWithoutWorkflowRootInput> | Prisma.TaskCreateWithoutWorkflowRootInput[] | Prisma.TaskUncheckedCreateWithoutWorkflowRootInput[]
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWorkflowRootInput | Prisma.TaskCreateOrConnectWithoutWorkflowRootInput[]
+  upsert?: Prisma.TaskUpsertWithWhereUniqueWithoutWorkflowRootInput | Prisma.TaskUpsertWithWhereUniqueWithoutWorkflowRootInput[]
+  createMany?: Prisma.TaskCreateManyWorkflowRootInputEnvelope
+  set?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  disconnect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  delete?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  connect?: Prisma.TaskWhereUniqueInput | Prisma.TaskWhereUniqueInput[]
+  update?: Prisma.TaskUpdateWithWhereUniqueWithoutWorkflowRootInput | Prisma.TaskUpdateWithWhereUniqueWithoutWorkflowRootInput[]
+  updateMany?: Prisma.TaskUpdateManyWithWhereWithoutWorkflowRootInput | Prisma.TaskUpdateManyWithWhereWithoutWorkflowRootInput[]
+  deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
+}
+
+export type TaskCreateNestedOneWithoutRequestedReviewsInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutRequestedReviewsInput, Prisma.TaskUncheckedCreateWithoutRequestedReviewsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutRequestedReviewsInput
+  connect?: Prisma.TaskWhereUniqueInput
+}
+
+export type TaskCreateNestedOneWithoutRootReviewsInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutRootReviewsInput, Prisma.TaskUncheckedCreateWithoutRootReviewsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutRootReviewsInput
+  connect?: Prisma.TaskWhereUniqueInput
+}
+
+export type TaskUpdateOneRequiredWithoutRequestedReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutRequestedReviewsInput, Prisma.TaskUncheckedCreateWithoutRequestedReviewsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutRequestedReviewsInput
+  upsert?: Prisma.TaskUpsertWithoutRequestedReviewsInput
+  connect?: Prisma.TaskWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaskUpdateToOneWithWhereWithoutRequestedReviewsInput, Prisma.TaskUpdateWithoutRequestedReviewsInput>, Prisma.TaskUncheckedUpdateWithoutRequestedReviewsInput>
+}
+
+export type TaskUpdateOneRequiredWithoutRootReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutRootReviewsInput, Prisma.TaskUncheckedCreateWithoutRootReviewsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutRootReviewsInput
+  upsert?: Prisma.TaskUpsertWithoutRootReviewsInput
+  connect?: Prisma.TaskWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaskUpdateToOneWithWhereWithoutRootReviewsInput, Prisma.TaskUpdateWithoutRootReviewsInput>, Prisma.TaskUncheckedUpdateWithoutRootReviewsInput>
 }
 
 export type TaskCreateNestedOneWithoutCommentsInput = {
@@ -1259,18 +1484,24 @@ export type TaskCreateWithoutAssigneeInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutAssigneeInput = {
@@ -1300,18 +1531,24 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutAssigneeInput = {
@@ -1321,6 +1558,109 @@ export type TaskCreateOrConnectWithoutAssigneeInput = {
 
 export type TaskCreateManyAssigneeInputEnvelope = {
   data: Prisma.TaskCreateManyAssigneeInput | Prisma.TaskCreateManyAssigneeInput[]
+}
+
+export type TaskCreateWithoutCreatorInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskUncheckedCreateWithoutCreatorInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskCreateOrConnectWithoutCreatorInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutCreatorInput, Prisma.TaskUncheckedCreateWithoutCreatorInput>
+}
+
+export type TaskCreateManyCreatorInputEnvelope = {
+  data: Prisma.TaskCreateManyCreatorInput | Prisma.TaskCreateManyCreatorInput[]
 }
 
 export type TaskUpsertWithWhereUniqueWithoutAssigneeInput = {
@@ -1370,11 +1710,30 @@ export type TaskScalarWhereInput = {
   conclusionDays?: Prisma.FloatNullableFilter<"Task"> | number | null
   stage?: Prisma.StringNullableFilter<"Task"> | string | null
   assigneeGid?: Prisma.StringNullableFilter<"Task"> | string | null
+  createdByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
+  workflowRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
+  adjustmentNumber?: Prisma.IntFilter<"Task"> | number
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string
+}
+
+export type TaskUpsertWithWhereUniqueWithoutCreatorInput = {
+  where: Prisma.TaskWhereUniqueInput
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutCreatorInput, Prisma.TaskUncheckedUpdateWithoutCreatorInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutCreatorInput, Prisma.TaskUncheckedCreateWithoutCreatorInput>
+}
+
+export type TaskUpdateWithWhereUniqueWithoutCreatorInput = {
+  where: Prisma.TaskWhereUniqueInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutCreatorInput, Prisma.TaskUncheckedUpdateWithoutCreatorInput>
+}
+
+export type TaskUpdateManyWithWhereWithoutCreatorInput = {
+  where: Prisma.TaskScalarWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateManyMutationInput, Prisma.TaskUncheckedUpdateManyWithoutCreatorInput>
 }
 
 export type TaskCreateWithoutSubtasksInput = {
@@ -1404,18 +1763,24 @@ export type TaskCreateWithoutSubtasksInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutSubtasksInput = {
@@ -1446,17 +1811,23 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutSubtasksInput = {
@@ -1491,18 +1862,24 @@ export type TaskCreateWithoutParentInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutParentInput = {
@@ -1533,17 +1910,23 @@ export type TaskUncheckedCreateWithoutParentInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutParentInput = {
@@ -1553,6 +1936,208 @@ export type TaskCreateOrConnectWithoutParentInput = {
 
 export type TaskCreateManyParentInputEnvelope = {
   data: Prisma.TaskCreateManyParentInput | Prisma.TaskCreateManyParentInput[]
+}
+
+export type TaskCreateWithoutWorkflowAdjustmentsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskUncheckedCreateWithoutWorkflowAdjustmentsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskCreateOrConnectWithoutWorkflowAdjustmentsInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowAdjustmentsInput, Prisma.TaskUncheckedCreateWithoutWorkflowAdjustmentsInput>
+}
+
+export type TaskCreateWithoutWorkflowRootInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskUncheckedCreateWithoutWorkflowRootInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  createdByUserId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskCreateOrConnectWithoutWorkflowRootInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowRootInput, Prisma.TaskUncheckedCreateWithoutWorkflowRootInput>
+}
+
+export type TaskCreateManyWorkflowRootInputEnvelope = {
+  data: Prisma.TaskCreateManyWorkflowRootInput | Prisma.TaskCreateManyWorkflowRootInput[]
 }
 
 export type TaskUpsertWithoutSubtasksInput = {
@@ -1593,18 +2178,24 @@ export type TaskUpdateWithoutSubtasksInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutSubtasksInput = {
@@ -1635,17 +2226,23 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUpsertWithWhereUniqueWithoutParentInput = {
@@ -1662,6 +2259,535 @@ export type TaskUpdateWithWhereUniqueWithoutParentInput = {
 export type TaskUpdateManyWithWhereWithoutParentInput = {
   where: Prisma.TaskScalarWhereInput
   data: Prisma.XOR<Prisma.TaskUpdateManyMutationInput, Prisma.TaskUncheckedUpdateManyWithoutParentInput>
+}
+
+export type TaskUpsertWithoutWorkflowAdjustmentsInput = {
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutWorkflowAdjustmentsInput, Prisma.TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowAdjustmentsInput, Prisma.TaskUncheckedCreateWithoutWorkflowAdjustmentsInput>
+  where?: Prisma.TaskWhereInput
+}
+
+export type TaskUpdateToOneWithWhereWithoutWorkflowAdjustmentsInput = {
+  where?: Prisma.TaskWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutWorkflowAdjustmentsInput, Prisma.TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput>
+}
+
+export type TaskUpdateWithoutWorkflowAdjustmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUpsertWithWhereUniqueWithoutWorkflowRootInput = {
+  where: Prisma.TaskWhereUniqueInput
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutWorkflowRootInput, Prisma.TaskUncheckedUpdateWithoutWorkflowRootInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutWorkflowRootInput, Prisma.TaskUncheckedCreateWithoutWorkflowRootInput>
+}
+
+export type TaskUpdateWithWhereUniqueWithoutWorkflowRootInput = {
+  where: Prisma.TaskWhereUniqueInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutWorkflowRootInput, Prisma.TaskUncheckedUpdateWithoutWorkflowRootInput>
+}
+
+export type TaskUpdateManyWithWhereWithoutWorkflowRootInput = {
+  where: Prisma.TaskScalarWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateManyMutationInput, Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootInput>
+}
+
+export type TaskCreateWithoutRequestedReviewsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskUncheckedCreateWithoutRequestedReviewsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskCreateOrConnectWithoutRequestedReviewsInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutRequestedReviewsInput, Prisma.TaskUncheckedCreateWithoutRequestedReviewsInput>
+}
+
+export type TaskCreateWithoutRootReviewsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+}
+
+export type TaskUncheckedCreateWithoutRootReviewsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+}
+
+export type TaskCreateOrConnectWithoutRootReviewsInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutRootReviewsInput, Prisma.TaskUncheckedCreateWithoutRootReviewsInput>
+}
+
+export type TaskUpsertWithoutRequestedReviewsInput = {
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutRequestedReviewsInput, Prisma.TaskUncheckedUpdateWithoutRequestedReviewsInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutRequestedReviewsInput, Prisma.TaskUncheckedCreateWithoutRequestedReviewsInput>
+  where?: Prisma.TaskWhereInput
+}
+
+export type TaskUpdateToOneWithWhereWithoutRequestedReviewsInput = {
+  where?: Prisma.TaskWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutRequestedReviewsInput, Prisma.TaskUncheckedUpdateWithoutRequestedReviewsInput>
+}
+
+export type TaskUpdateWithoutRequestedReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutRequestedReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUpsertWithoutRootReviewsInput = {
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutRootReviewsInput, Prisma.TaskUncheckedUpdateWithoutRootReviewsInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutRootReviewsInput, Prisma.TaskUncheckedCreateWithoutRootReviewsInput>
+  where?: Prisma.TaskWhereInput
+}
+
+export type TaskUpdateToOneWithWhereWithoutRootReviewsInput = {
+  where?: Prisma.TaskWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutRootReviewsInput, Prisma.TaskUncheckedUpdateWithoutRootReviewsInput>
+}
+
+export type TaskUpdateWithoutRootReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutRootReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
 }
 
 export type TaskCreateWithoutCommentsInput = {
@@ -1691,18 +2817,24 @@ export type TaskCreateWithoutCommentsInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutCommentsInput = {
@@ -1733,17 +2865,23 @@ export type TaskUncheckedCreateWithoutCommentsInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutCommentsInput = {
@@ -1789,18 +2927,24 @@ export type TaskUpdateWithoutCommentsInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutCommentsInput = {
@@ -1831,17 +2975,23 @@ export type TaskUncheckedUpdateWithoutCommentsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateWithoutMembershipsInput = {
@@ -1871,18 +3021,24 @@ export type TaskCreateWithoutMembershipsInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutMembershipsInput = {
@@ -1913,17 +3069,23 @@ export type TaskUncheckedCreateWithoutMembershipsInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutMembershipsInput = {
@@ -1969,18 +3131,24 @@ export type TaskUpdateWithoutMembershipsInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutMembershipsInput = {
@@ -2011,17 +3179,23 @@ export type TaskUncheckedUpdateWithoutMembershipsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateWithoutFollowersInput = {
@@ -2051,18 +3225,24 @@ export type TaskCreateWithoutFollowersInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutFollowersInput = {
@@ -2093,17 +3273,23 @@ export type TaskUncheckedCreateWithoutFollowersInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutFollowersInput = {
@@ -2149,18 +3335,24 @@ export type TaskUpdateWithoutFollowersInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutFollowersInput = {
@@ -2191,17 +3383,23 @@ export type TaskUncheckedUpdateWithoutFollowersInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateWithoutLikesInput = {
@@ -2231,18 +3429,24 @@ export type TaskCreateWithoutLikesInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutLikesInput = {
@@ -2273,17 +3477,23 @@ export type TaskUncheckedCreateWithoutLikesInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutLikesInput = {
@@ -2329,18 +3539,24 @@ export type TaskUpdateWithoutLikesInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutLikesInput = {
@@ -2371,17 +3587,23 @@ export type TaskUncheckedUpdateWithoutLikesInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateWithoutTagsInput = {
@@ -2411,18 +3633,24 @@ export type TaskCreateWithoutTagsInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutTagsInput = {
@@ -2453,17 +3681,23 @@ export type TaskUncheckedCreateWithoutTagsInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutTagsInput = {
@@ -2509,18 +3743,24 @@ export type TaskUpdateWithoutTagsInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutTagsInput = {
@@ -2551,17 +3791,23 @@ export type TaskUncheckedUpdateWithoutTagsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateWithoutCustomFieldValuesInput = {
@@ -2591,18 +3837,24 @@ export type TaskCreateWithoutCustomFieldValuesInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
   parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
   subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
@@ -2633,17 +3885,23 @@ export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
   followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
   likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
   tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
 }
 
 export type TaskCreateOrConnectWithoutCustomFieldValuesInput = {
@@ -2689,18 +3947,24 @@ export type TaskUpdateWithoutCustomFieldValuesInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
@@ -2731,17 +3995,23 @@ export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskCreateManyAssigneeInput = {
@@ -2771,6 +4041,46 @@ export type TaskCreateManyAssigneeInput = {
   maxDeadline?: Date | string | null
   conclusionDays?: number | null
   stage?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TaskCreateManyCreatorInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -2805,18 +4115,24 @@ export type TaskUpdateWithoutAssigneeInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutAssigneeInput = {
@@ -2846,18 +4162,24 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
@@ -2887,6 +4209,140 @@ export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TaskUpdateWithoutCreatorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutCreatorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateManyWithoutCreatorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2922,8 +4378,48 @@ export type TaskCreateManyParentInput = {
   conclusionDays?: number | null
   stage?: string | null
   assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
   parentAsanaGid?: string | null
   parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TaskCreateManyWorkflowRootInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  createdByUserId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -2955,18 +4451,24 @@ export type TaskUpdateWithoutParentInput = {
   maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
   subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutParentInput = {
@@ -2997,17 +4499,23 @@ export type TaskUncheckedUpdateWithoutParentInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
   customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutParentInput = {
@@ -3038,8 +4546,142 @@ export type TaskUncheckedUpdateManyWithoutParentInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TaskUpdateWithoutWorkflowRootInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutWorkflowRootInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateManyWithoutWorkflowRootInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -3051,22 +4693,28 @@ export type TaskUncheckedUpdateManyWithoutParentInput = {
 
 export type TaskCountOutputType = {
   subtasks: number
+  workflowAdjustments: number
   memberships: number
   followers: number
   likes: number
   tags: number
   customFieldValues: number
   comments: number
+  requestedReviews: number
+  rootReviews: number
 }
 
 export type TaskCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subtasks?: boolean | TaskCountOutputTypeCountSubtasksArgs
+  workflowAdjustments?: boolean | TaskCountOutputTypeCountWorkflowAdjustmentsArgs
   memberships?: boolean | TaskCountOutputTypeCountMembershipsArgs
   followers?: boolean | TaskCountOutputTypeCountFollowersArgs
   likes?: boolean | TaskCountOutputTypeCountLikesArgs
   tags?: boolean | TaskCountOutputTypeCountTagsArgs
   customFieldValues?: boolean | TaskCountOutputTypeCountCustomFieldValuesArgs
   comments?: boolean | TaskCountOutputTypeCountCommentsArgs
+  requestedReviews?: boolean | TaskCountOutputTypeCountRequestedReviewsArgs
+  rootReviews?: boolean | TaskCountOutputTypeCountRootReviewsArgs
 }
 
 /**
@@ -3083,6 +4731,13 @@ export type TaskCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
  * TaskCountOutputType without action
  */
 export type TaskCountOutputTypeCountSubtasksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TaskWhereInput
+}
+
+/**
+ * TaskCountOutputType without action
+ */
+export type TaskCountOutputTypeCountWorkflowAdjustmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.TaskWhereInput
 }
 
@@ -3128,6 +4783,20 @@ export type TaskCountOutputTypeCountCommentsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.CommentWhereInput
 }
 
+/**
+ * TaskCountOutputType without action
+ */
+export type TaskCountOutputTypeCountRequestedReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TaskReviewWhereInput
+}
+
+/**
+ * TaskCountOutputType without action
+ */
+export type TaskCountOutputTypeCountRootReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TaskReviewWhereInput
+}
+
 
 export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3157,20 +4826,28 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   conclusionDays?: boolean
   stage?: boolean
   assigneeGid?: boolean
+  createdByUserId?: boolean
+  workflowRootTaskId?: boolean
+  adjustmentNumber?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
+  creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
   subtasks?: boolean | Prisma.Task$subtasksArgs<ExtArgs>
+  workflowRoot?: boolean | Prisma.Task$workflowRootArgs<ExtArgs>
+  workflowAdjustments?: boolean | Prisma.Task$workflowAdjustmentsArgs<ExtArgs>
   memberships?: boolean | Prisma.Task$membershipsArgs<ExtArgs>
   followers?: boolean | Prisma.Task$followersArgs<ExtArgs>
   likes?: boolean | Prisma.Task$likesArgs<ExtArgs>
   tags?: boolean | Prisma.Task$tagsArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Task$customFieldValuesArgs<ExtArgs>
   comments?: boolean | Prisma.Task$commentsArgs<ExtArgs>
+  requestedReviews?: boolean | Prisma.Task$requestedReviewsArgs<ExtArgs>
+  rootReviews?: boolean | Prisma.Task$rootReviewsArgs<ExtArgs>
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["task"]>
 
@@ -3202,13 +4879,18 @@ export type TaskSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   conclusionDays?: boolean
   stage?: boolean
   assigneeGid?: boolean
+  createdByUserId?: boolean
+  workflowRootTaskId?: boolean
+  adjustmentNumber?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
+  creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
+  workflowRoot?: boolean | Prisma.Task$workflowRootArgs<ExtArgs>
 }, ExtArgs["result"]["task"]>
 
 export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -3239,13 +4921,18 @@ export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   conclusionDays?: boolean
   stage?: boolean
   assigneeGid?: boolean
+  createdByUserId?: boolean
+  workflowRootTaskId?: boolean
+  adjustmentNumber?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
+  creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
+  workflowRoot?: boolean | Prisma.Task$workflowRootArgs<ExtArgs>
 }, ExtArgs["result"]["task"]>
 
 export type TaskSelectScalar = {
@@ -3276,6 +4963,9 @@ export type TaskSelectScalar = {
   conclusionDays?: boolean
   stage?: boolean
   assigneeGid?: boolean
+  createdByUserId?: boolean
+  workflowRootTaskId?: boolean
+  adjustmentNumber?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
@@ -3283,40 +4973,54 @@ export type TaskSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
+export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "createdByUserId" | "workflowRootTaskId" | "adjustmentNumber" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
 export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
+  creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
   subtasks?: boolean | Prisma.Task$subtasksArgs<ExtArgs>
+  workflowRoot?: boolean | Prisma.Task$workflowRootArgs<ExtArgs>
+  workflowAdjustments?: boolean | Prisma.Task$workflowAdjustmentsArgs<ExtArgs>
   memberships?: boolean | Prisma.Task$membershipsArgs<ExtArgs>
   followers?: boolean | Prisma.Task$followersArgs<ExtArgs>
   likes?: boolean | Prisma.Task$likesArgs<ExtArgs>
   tags?: boolean | Prisma.Task$tagsArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Task$customFieldValuesArgs<ExtArgs>
   comments?: boolean | Prisma.Task$commentsArgs<ExtArgs>
+  requestedReviews?: boolean | Prisma.Task$requestedReviewsArgs<ExtArgs>
+  rootReviews?: boolean | Prisma.Task$rootReviewsArgs<ExtArgs>
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TaskIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
+  creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
+  workflowRoot?: boolean | Prisma.Task$workflowRootArgs<ExtArgs>
 }
 export type TaskIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
+  creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
   parent?: boolean | Prisma.Task$parentArgs<ExtArgs>
+  workflowRoot?: boolean | Prisma.Task$workflowRootArgs<ExtArgs>
 }
 
 export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Task"
   objects: {
     assignee: Prisma.$UserPayload<ExtArgs> | null
+    creator: Prisma.$UserPayload<ExtArgs> | null
     parent: Prisma.$TaskPayload<ExtArgs> | null
     subtasks: Prisma.$TaskPayload<ExtArgs>[]
+    workflowRoot: Prisma.$TaskPayload<ExtArgs> | null
+    workflowAdjustments: Prisma.$TaskPayload<ExtArgs>[]
     memberships: Prisma.$TaskMembershipPayload<ExtArgs>[]
     followers: Prisma.$TaskFollowerPayload<ExtArgs>[]
     likes: Prisma.$TaskLikePayload<ExtArgs>[]
     tags: Prisma.$TaskTagPayload<ExtArgs>[]
     customFieldValues: Prisma.$TaskCustomFieldValuePayload<ExtArgs>[]
     comments: Prisma.$CommentPayload<ExtArgs>[]
+    requestedReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
+    rootReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3359,6 +5063,9 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     conclusionDays: number | null
     stage: string | null
     assigneeGid: string | null
+    createdByUserId: string | null
+    workflowRootTaskId: string | null
+    adjustmentNumber: number
     /**
      * `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
      */
@@ -3762,14 +5469,19 @@ readonly fields: TaskFieldRefs;
 export interface Prisma__TaskClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   assignee<T extends Prisma.Task$assigneeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$assigneeArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  creator<T extends Prisma.Task$creatorArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$creatorArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   parent<T extends Prisma.Task$parentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$parentArgs<ExtArgs>>): Prisma.Prisma__TaskClient<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   subtasks<T extends Prisma.Task$subtasksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$subtasksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  workflowRoot<T extends Prisma.Task$workflowRootArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$workflowRootArgs<ExtArgs>>): Prisma.Prisma__TaskClient<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  workflowAdjustments<T extends Prisma.Task$workflowAdjustmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$workflowAdjustmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   memberships<T extends Prisma.Task$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskMembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   followers<T extends Prisma.Task$followersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$followersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskFollowerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   likes<T extends Prisma.Task$likesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$likesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskLikePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tags<T extends Prisma.Task$tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customFieldValues<T extends Prisma.Task$customFieldValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$customFieldValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   comments<T extends Prisma.Task$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  requestedReviews<T extends Prisma.Task$requestedReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$requestedReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  rootReviews<T extends Prisma.Task$rootReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$rootReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3826,6 +5538,9 @@ export interface TaskFieldRefs {
   readonly conclusionDays: Prisma.FieldRef<"Task", 'Float'>
   readonly stage: Prisma.FieldRef<"Task", 'String'>
   readonly assigneeGid: Prisma.FieldRef<"Task", 'String'>
+  readonly createdByUserId: Prisma.FieldRef<"Task", 'String'>
+  readonly workflowRootTaskId: Prisma.FieldRef<"Task", 'String'>
+  readonly adjustmentNumber: Prisma.FieldRef<"Task", 'Int'>
   readonly parentAsanaGid: Prisma.FieldRef<"Task", 'String'>
   readonly parentName: Prisma.FieldRef<"Task", 'String'>
   readonly parentId: Prisma.FieldRef<"Task", 'String'>
@@ -4249,6 +5964,25 @@ export type Task$assigneeArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 }
 
 /**
+ * Task.creator
+ */
+export type Task$creatorArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
  * Task.parent
  */
 export type Task$parentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4271,6 +6005,49 @@ export type Task$parentArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
  * Task.subtasks
  */
 export type Task$subtasksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Task
+   */
+  select?: Prisma.TaskSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Task
+   */
+  omit?: Prisma.TaskOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskInclude<ExtArgs> | null
+  where?: Prisma.TaskWhereInput
+  orderBy?: Prisma.TaskOrderByWithRelationInput | Prisma.TaskOrderByWithRelationInput[]
+  cursor?: Prisma.TaskWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TaskScalarFieldEnum | Prisma.TaskScalarFieldEnum[]
+}
+
+/**
+ * Task.workflowRoot
+ */
+export type Task$workflowRootArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Task
+   */
+  select?: Prisma.TaskSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Task
+   */
+  omit?: Prisma.TaskOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskInclude<ExtArgs> | null
+  where?: Prisma.TaskWhereInput
+}
+
+/**
+ * Task.workflowAdjustments
+ */
+export type Task$workflowAdjustmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Task
    */
@@ -4433,6 +6210,54 @@ export type Task$commentsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.CommentScalarFieldEnum | Prisma.CommentScalarFieldEnum[]
+}
+
+/**
+ * Task.requestedReviews
+ */
+export type Task$requestedReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TaskReview
+   */
+  select?: Prisma.TaskReviewSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TaskReview
+   */
+  omit?: Prisma.TaskReviewOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskReviewInclude<ExtArgs> | null
+  where?: Prisma.TaskReviewWhereInput
+  orderBy?: Prisma.TaskReviewOrderByWithRelationInput | Prisma.TaskReviewOrderByWithRelationInput[]
+  cursor?: Prisma.TaskReviewWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TaskReviewScalarFieldEnum | Prisma.TaskReviewScalarFieldEnum[]
+}
+
+/**
+ * Task.rootReviews
+ */
+export type Task$rootReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TaskReview
+   */
+  select?: Prisma.TaskReviewSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TaskReview
+   */
+  omit?: Prisma.TaskReviewOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskReviewInclude<ExtArgs> | null
+  where?: Prisma.TaskReviewWhereInput
+  orderBy?: Prisma.TaskReviewOrderByWithRelationInput | Prisma.TaskReviewOrderByWithRelationInput[]
+  cursor?: Prisma.TaskReviewWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TaskReviewScalarFieldEnum | Prisma.TaskReviewScalarFieldEnum[]
 }
 
 /**

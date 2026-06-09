@@ -19,12 +19,12 @@ import {
   startOfDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { Priority, Role, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
+import { Priority, Role, TaskStatus, type CreateTaskRequest, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { Copy, Eye, Filter, Group, Hash, MoreHorizontal, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Copy, CopyPlus, Eye, Filter, Group, Hash, MoreHorizontal, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
-import { useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
+import { useCreateTaskInSection, useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { cn, toDateOnly } from "../../lib/utils";
 import { workloadTaskLabel } from "../../lib/workloadTaskLabel";
 import { useUiStore } from "../../store/uiStore";
@@ -468,6 +468,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const extendingRight = useRef(false);
   const taskMoveQueues = useRef<Record<string, TaskMoveQueueEntry>>({});
   const deleteTask = useDeleteTask(projectId);
+  const createTaskInSection = useCreateTaskInSection();
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -1218,6 +1219,47 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     toast.success("Link da tarefa copiado");
   }
 
+  async function duplicateTask(task: TaskWithDiscipline) {
+    const customFieldValues: CreateTaskRequest["customFieldValues"] = task.customFieldValues
+      ?.flatMap((field) =>
+        field.mikaKey
+          ? [{
+              mikaKey: field.mikaKey,
+              value: field.numberValue ?? field.enumOptionName ?? field.displayValue ?? null
+            }]
+          : []
+      );
+
+    const payload: CreateTaskRequest = {
+      title: `${task.title} (cópia)`,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      assigneeId: task.assigneeId,
+      startDate: task.startDate,
+      dueDate: task.dueDate,
+      estimatedDays: task.estimatedDays ?? null,
+      platform: task.platform ?? null,
+      taskDiscipline: task.taskDiscipline ?? null,
+      estimatedTime: task.estimatedTime ?? null,
+      maxDeadline: task.maxDeadline ?? null,
+      conclusionDays: task.conclusionDays ?? null,
+      stage: task.stage ?? null,
+      ...(customFieldValues?.length ? { customFieldValues } : {})
+    };
+
+    try {
+      await createTaskInSection.mutateAsync({
+        projectId: task.discipline.projectId,
+        sectionId: task.disciplineId,
+        payload
+      });
+      toast.success("Tarefa duplicada");
+    } catch {
+      toast.error("Não foi possível duplicar a tarefa");
+    }
+  }
+
   async function confirmDeleteTask() {
     if (!taskPendingDelete) {
       return;
@@ -1378,6 +1420,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 <ContextMenuItem onSelect={() => void copyTaskLink(p.task)}>
                   <Copy className="h-4 w-4" />
                   Copiar link da tarefa
+                </ContextMenuItem>
+                <ContextMenuItem disabled={createTaskInSection.isPending} onSelect={() => void duplicateTask(p.task)}>
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicar tarefa
                 </ContextMenuItem>
                 <ContextMenuItem disabled={!canRecalculateDates} onSelect={() => void recalculateTaskDates(p.task)}>
                   <RefreshCw className="h-4 w-4" />

@@ -11,6 +11,7 @@ import { MyTasksPage } from "./pages/MyTasksPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { ReviewsPage } from "./pages/ReviewsPage";
 import { SprintBoardPage } from "./pages/SprintBoardPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { UsersPage } from "./pages/UsersPage";
@@ -131,6 +132,7 @@ export function App() {
             <Route element={<CoordinatorRoute />}>
               <Route path="/sprint/civil" element={<SprintBoardPage scope="civil" />} />
               <Route path="/sprint/eletrico" element={<SprintBoardPage scope="electrical" />} />
+              <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/users" element={<UsersPage />} />
             </Route>
             <Route element={<AdminPermissionRoute />}>
