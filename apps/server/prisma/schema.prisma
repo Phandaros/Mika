@@ -43,6 +43,7 @@ model User {
   requestedReviews    TaskReview[]          @relation("TaskReviewRequester")
   assignedReviews     TaskReview[]          @relation("TaskReviewReviewer")
   uploadedAttachments Attachment[]          @relation("AttachmentUploader")
+  weeklyReports       WeeklyReport[]
 
   @@index([asanaGid])
   @@index([email])
@@ -273,6 +274,7 @@ model Task {
   activities         TaskActivity[]
   requestedReviews  TaskReview[] @relation("TaskReviewSource")
   rootReviews       TaskReview[] @relation("TaskReviewRoot")
+  weeklyReportItems WeeklyReportItem[]
 
   @@index([name])
   @@index([assigneeGid])
@@ -533,4 +535,42 @@ model TaskCustomFieldValue {
   @@index([customFieldId])
   @@index([enumOptionGid])
   @@index([enumOptionId])
+}
+
+enum WeeklyReportStatus {
+  PENDING
+  SUBMITTED
+  LATE
+}
+
+model WeeklyReport {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id])
+  weekStart   DateTime
+  weekEnd     DateTime
+  status      WeeklyReportStatus @default(PENDING)
+  submittedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  items       WeeklyReportItem[]
+
+  @@unique([userId, weekStart])
+  @@index([weekStart])
+  @@index([status])
+}
+
+model WeeklyReportItem {
+  id           String       @id @default(cuid())
+  reportId     String
+  report       WeeklyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  taskId       String
+  task         Task         @relation(fields: [taskId], references: [id])
+  comment      String       @default("")
+  taskSnapshot Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([reportId])
+  @@index([taskId])
 }

@@ -44,6 +44,7 @@ No modelo importado do Asana, **Section** e a unidade entre projeto e tarefa. O 
 | Zod | 3.x | Validação de schemas de entrada |
 | cors | 2.x | Liberar acesso da LAN |
 | dotenv | 16.x | Variáveis de ambiente |
+| date-fns | 3.x | Utilitários de semana (`weekUtils.ts`) |
 | tsx | latest | Dev runner (nunca ts-node) |
 
 ### Frontend — `apps/client`
@@ -119,6 +120,7 @@ mk-projetos/                        ← root do monorepo
 │   │           ├── task.ts
 │   │           ├── comment.ts
 │   │           ├── notification.ts
+│   │           ├── weeklyReport.ts
 │   │           └── enums.ts
 │   └── eslint-config/
 │       ├── package.json
@@ -144,7 +146,10 @@ mk-projetos/                        ← root do monorepo
     │       ├── lib/
     │       │   ├── prisma.ts       ← singleton PrismaClient
     │       │   ├── socket.ts       ← instância Socket.io exportável
-    │       │   └── notify.ts       ← persistir + emitir notificacoes
+    │       │   ├── notify.ts       ← persistir + emitir notificacoes
+    │       │   ├── weekUtils.ts    ← limites de semana (date-fns, local)
+    │       │   ├── weeklyReportTasks.ts ← tarefas elegíveis + criação de relatório
+    │       │   └── weeklyReportJob.ts   ← job nativo (sexta 08-09h, setInterval)
     │       ├── middleware/
     │       │   ├── auth.ts         ← verifica JWT
     │       │   ├── role.ts         ← verifica role mínimo
@@ -159,6 +164,7 @@ mk-projetos/                        ← root do monorepo
     │       │   ├── tasks.routes.ts
     │       │   ├── comments.routes.ts
     │       │   ├── notifications.routes.ts
+    │       │   ├── weeklyReports.routes.ts
     │       │   ├── activity.routes.ts
     │       │   └── uploads.routes.ts
     │       └── controllers/
@@ -169,6 +175,7 @@ mk-projetos/                        ← root do monorepo
     │           ├── tasks.controller.ts
     │           ├── comments.controller.ts
     │           ├── notifications.controller.ts
+    │           ├── weeklyReports.controller.ts
     │           ├── activity.controller.ts
     │           └── uploads.controller.ts
     │
@@ -202,7 +209,9 @@ mk-projetos/                        ← root do monorepo
             │   ├── useTasks.ts
             │   ├── useRecentActivity.ts
             │   ├── useAppHotkeys.ts
-            │   └── useNotifications.ts
+            │   ├── useNotifications.ts
+            │   ├── useMyWeeklyReport.ts
+            │   └── useWeeklyReports.ts
             ├── components/
             │   ├── ui/
             │   ├── layout/
@@ -232,6 +241,8 @@ mk-projetos/                        ← root do monorepo
                 ├── ProjectsPage.tsx        ← lista de todos os projetos
                 ├── ProjectDetailPage.tsx   ← abas: Kanban | Lista | Carga de Trabalho
                 ├── MyTasksPage.tsx         ← página do usuário logado
+                ├── WeeklyReportPage.tsx    ← relatório semanal do projetista (/weekly-reports/mine)
+                ├── WeeklyReportsAdminPage.tsx ← gestão de relatórios (coordenador+)
                 ├── UserProfilePage.tsx     ← perfil público de outro usuário
                 ├── UsersPage.tsx           ← admin: gerenciar usuários
                 └── NotFoundPage.tsx
@@ -257,9 +268,10 @@ Resumo das entidades principais:
 - **Task** + **TaskMembership**: tarefas Asana e colocacao em secao; campos locais (`localStatus`, etc.) para o Kanban.
 - **User**: usuarios do app e importados (`asanaGid`); `passwordHash` pode ser nulo para usuarios importados.
 - **Comment**: comentarios com campos opcionais de import (`asanaGid`, `authorAsanaGid`, `asanaCreatedAt`).
-- **Notification**: notificacoes in-app persistidas; emissao em tempo real via Socket.io (`lib/notify.ts`).
+- **Notification**: notificacoes in-app persistidas; emissao em tempo real via Socket.io (`lib/notify.ts`). Tipo `WEEKLY_REPORT_DUE` dispara na sexta-feira via `weeklyReportJob`.
+- **WeeklyReport** + **WeeklyReportItem**: relatorio semanal por usuario (`@@unique([userId, weekStart])`). Status `PENDING | SUBMITTED | LATE`. Items pre-populados com tarefas da semana; `taskSnapshot` (JSON) gravado no envio.
 
-Enums e tipos de API expostos ao client permanecem em `packages/shared` (`TaskStatus`, `Priority`, `DisciplineType`, alias `Section` = `Discipline`, etc.).
+Enums e tipos de API expostos ao client permanecem em `packages/shared` (`TaskStatus`, `Priority`, `DisciplineType`, `WeeklyReportDto`, alias `Section` = `Discipline`, etc.).
 
 Nao duplicar o schema completo neste arquivo: apos alterar o Prisma, rodar `pnpm --filter server prisma migrate dev` e revisar o `schema.prisma` no repositorio.
 
@@ -327,6 +339,14 @@ NOTIFICATIONS
   GET    /notifications
   PATCH  /notifications/:id/read
   PATCH  /notifications/read-all
+
+WEEKLY REPORTS
+  GET    /weekly-reports                    (Coordinator+; filtros: userId, weekStart, status, page, limit)
+  GET    /weekly-reports/:id                (Coordinator+ ou dono)
+  GET    /weekly-reports/mine               (autenticado; DESIGNER/INTERN)
+  GET    /weekly-reports/mine/history       (autenticado)
+  PATCH  /weekly-reports/:id/items/:itemId  (dono; salva comment)
+  POST   /weekly-reports/:id/submit         (dono; finaliza relatório)
 ```
 
 ---
@@ -375,7 +395,8 @@ Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globa
   - Uma tarefa é atribuída a ele → `notification:new`
   - Um comentário é adicionado em tarefa que ele está atribuído → `notification:new`
   - Status de tarefa atribuída é alterado → `notification:new`
-- Client ouve `notification:new` e exibe badge no sino + toast (Sonner).
+  - Relatório semanal disponível (sexta-feira, job `weeklyReportJob`) → `notification:new` tipo `WEEKLY_REPORT_DUE`
+- Client ouve `notification:new` e exibe badge no sino + toast (Sonner). Clique em `WEEKLY_REPORT_DUE` navega para `/weekly-reports/mine`.
 
 ---
 

@@ -1,39 +1,54 @@
-import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { Fragment, useMemo, useState, useEffect, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { ArrowDown, ArrowDownUp, ArrowUp, Edit3, ExternalLink, Filter, Group, Inbox, Plus, Settings2, X } from "lucide-react";
+import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, Plus, Search, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Priority, TaskStatus, type DisciplineType, type ProjectCustomField, type Section, type Task, type User } from "shared";
-import { ProjectWorkloadTimeline } from "../components/project/ProjectWorkloadTimeline";
+import { Priority, TaskStatus, type DisciplineType, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
+import {
+  DataTable,
+  DataTableCell,
+  DataTableContainer,
+  DataTableGroupRow,
+  DataTableHead,
+  DataTableHeader,
+  DataTableRow,
+  EmptyCell,
+  TruncatedCellValue
+} from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
+import { ViewTab } from "../components/shared/ViewTab";
+import { Avatar } from "../components/shared/Avatar";
 import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
-import {
-  enumColor,
-  PriorityOptionPill,
-  priorityColors
-} from "../components/shared/statusVisuals";
+import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
+import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
+import {
+  EditableAssigneeField,
+  EditableCompletionField,
+  EditableDecimalField,
+  EditableDisciplineField,
+  EditableMaxDeadlineField,
+  EditablePlatformField,
+  EditableStageField,
+  EditableStatusField
+} from "../components/task/TaskInlineFields";
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { Button } from "../components/ui/button";
-import { DatePicker } from "../components/ui/date-picker";
-import { DecimalInput, parseDecimalInput } from "../components/ui/decimal-input";
 import { Input } from "../components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProject, useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask, useUpdateTaskStatus } from "../hooks/useTasks";
+import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
-import { canManageTasks } from "../lib/permissions";
+import { canCompleteTasks, canManageTasks } from "../lib/permissions";
 import { cn, formatDateOnly } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
-type ProjectTab = "kanban" | "list" | "workload";
-type SortKey = "title" | "stage" | "assignee" | "status";
-type SortDirection = "asc" | "desc";
+type ProjectTab = "list" | "kanban";
+type SortKey = "title" | "section" | "assignee" | "status" | "stage";
 type CompletionFilter = "open" | "completed" | "all";
 type TaskScope = "general" | "civil" | "electrical";
 
@@ -72,6 +87,10 @@ function tasksFromDisciplines(sections: Section[]): TaskWithDiscipline[] {
 }
 
 function taskSortValue(task: TaskWithDiscipline, key: SortKey): string {
+  if (key === "section") {
+    return task.discipline.name ?? "";
+  }
+
   if (key === "stage") {
     return task.stage ?? "";
   }
@@ -84,7 +103,7 @@ function taskSortValue(task: TaskWithDiscipline, key: SortKey): string {
     return task.status;
   }
 
-  return String(task[key] ?? "");
+  return task.title ?? "";
 }
 
 export function ProjectDetailPage() {
@@ -93,20 +112,22 @@ export function ProjectDetailPage() {
   const { data: project, isLoading, isFetching } = useProject(projectId);
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
-  const [activeTab, setActiveTab] = useState<ProjectTab>("kanban");
+  const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
+  const [activeTab, setActiveTab] = useState<ProjectTab>("list");
   const [taskScope, setTaskScope] = useState<TaskScope>("general");
   const [statusFilter, setStatusFilter] = useState("all");
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("title");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<TaskWithDiscipline | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const openTaskCreate = useUiStore((state) => state.openTaskCreate);
   const { user } = useAuth();
   const canManage = canManageTasks(user);
+  const canComplete = canCompleteTasks(user);
 
   const { data: users = [] } = useUsers();
   const { data: projects = [] } = useProjects();
@@ -140,20 +161,12 @@ export function ProjectDetailPage() {
     setSearchParams(next, { replace: true });
   }
 
-  function handleTimelineTaskUpdated(task: TaskWithDiscipline) {
-    setSelectedTask((currentTask) =>
-      currentTask?.id === task.id
-        ? {
-            ...currentTask,
-            ...task,
-            discipline: {
-              ...currentTask.discipline,
-              ...task.discipline,
-              type: task.discipline.type ?? currentTask.discipline.type
-            }
-          }
-        : currentTask
-    );
+  function patchTask(task: TaskWithDiscipline, payload: UpdateTaskRequest) {
+    void updateTask.mutateAsync({ id: task.id, payload });
+  }
+
+  function patchTaskCompletion(task: TaskWithDiscipline, completed: boolean) {
+    void updateTaskCompletion.mutateAsync({ id: task.id, completed });
   }
 
   const scopedDisciplineIds = useMemo(() => {
@@ -163,6 +176,7 @@ export function ProjectDetailPage() {
 
     return new Set(disciplines.filter((discipline) => sectionScope(discipline) === taskScope).map((discipline) => discipline.id));
   }, [disciplines, taskScope]);
+
   const builderSuggestions = useMemo(
     () =>
       Array.from(
@@ -171,40 +185,47 @@ export function ProjectDetailPage() {
     [projects]
   );
 
-  const disciplineFilteredTasks = allTasks.filter(
-    (task) => scopedDisciplineIds.size === 0 || scopedDisciplineIds.has(task.discipline.id)
+  const disciplineFilteredTasks = useMemo(
+    () => allTasks.filter((task) => scopedDisciplineIds.size === 0 || scopedDisciplineIds.has(task.discipline.id)),
+    [allTasks, scopedDisciplineIds]
   );
+
   const visibleDisciplines =
     scopedDisciplineIds.size === 0
       ? disciplines
       : disciplines.filter((discipline) => scopedDisciplineIds.has(discipline.id));
 
-  const listTasks = disciplineFilteredTasks
-    .filter((task) => {
-      if (completionFilter === "all") {
-        return true;
-      }
+  const visibleTasks = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
 
-      return completionFilter === "completed" ? task.completed : !task.completed;
-    })
-    .filter((task) => statusFilter === "all" || task.status === statusFilter)
-    .filter((task) => assigneeFilter === "all" || (assigneeFilter === "none" ? !task.assigneeId : task.assigneeId === assigneeFilter))
-    .filter((task) => priorityFilter === "all" || task.priority === priorityFilter)
-    .sort((a, b) => {
-      const valueA = taskSortValue(a, sortKey);
-      const valueB = taskSortValue(b, sortKey);
-      return sortDirection === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-    });
+    return disciplineFilteredTasks
+      .filter((task) => {
+        if (completionFilter === "all") {
+          return true;
+        }
 
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
-      return;
-    }
+        return completionFilter === "completed" ? task.completed : !task.completed;
+      })
+      .filter((task) => statusFilter === "all" || task.status === statusFilter)
+      .filter((task) => assigneeFilter === "all" || (assigneeFilter === "none" ? !task.assigneeId : task.assigneeId === assigneeFilter))
+      .filter((task) => priorityFilter === "all" || task.priority === priorityFilter)
+      .filter((task) => {
+        if (!normalizedSearch) {
+          return true;
+        }
 
-    setSortKey(key);
-    setSortDirection("asc");
-  }
+        return [task.title, task.discipline.name, task.description ?? ""]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch);
+      });
+  }, [assigneeFilter, completionFilter, disciplineFilteredTasks, priorityFilter, search, statusFilter]);
+
+  const listTasks = useMemo(
+    () =>
+      [...visibleTasks].sort((a, b) => taskSortValue(a, sortKey).localeCompare(taskSortValue(b, sortKey), "pt-BR")),
+    [sortKey, visibleTasks]
+  );
 
   function handleDragEnd(result: DropResult) {
     if (!canManage) {
@@ -235,8 +256,44 @@ export function ProjectDetailPage() {
   const taskFormDiscipline = visibleDisciplines[0] ?? disciplines[0] ?? null;
   const isTasksLoading = isFetching && !isLoading;
 
+  const statusOptions = [
+    { value: "all", label: "Todos status" },
+    ...Object.values(TaskStatus).map((status) => ({
+      value: status,
+      label: taskStatusLabels[status],
+      color: taskStatusColors[status],
+      render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
+    }))
+  ];
+  const assigneeOptions = [
+    { value: "all", label: "Todos responsáveis" },
+    { value: "none", label: "Sem responsável" },
+    ...users.map((item) => ({ value: item.id, label: item.name, description: item.email, avatarUrl: item.avatarUrl }))
+  ];
+  const priorityOptions = [
+    { value: "all", label: "Todas prioridades" },
+    ...Object.values(Priority).map((priority) => ({
+      value: priority,
+      label: priority,
+      color: priorityColors[priority],
+      render: <PriorityOptionPill priority={priority} />
+    }))
+  ];
+  const completionOptions = [
+    { value: "open", label: "Não concluídas" },
+    { value: "completed", label: "Concluídas" },
+    { value: "all", label: "Todas" }
+  ];
+  const sortOptions = [
+    { value: "title", label: "Nome" },
+    { value: "section", label: "Seção" },
+    { value: "assignee", label: "Responsável" },
+    { value: "status", label: "Status" },
+    { value: "stage", label: "Etapa" }
+  ];
+
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-0">
       <section>
         <div>
           <p className="text-sm font-semibold uppercase text-brand-orange">{project.builder ?? project.client ?? "Projeto Asana"}</p>
@@ -263,50 +320,95 @@ export function ProjectDetailPage() {
         </div>
       </section>
 
-      <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
-        <div className="flex flex-wrap gap-2">
-          <Button variant={activeTab === "kanban" ? "primary" : "secondary"} onClick={() => setActiveTab("kanban")}>
-            Kanban
-          </Button>
-          <Button variant={activeTab === "list" ? "primary" : "secondary"} onClick={() => setActiveTab("list")}>
-            Lista
-          </Button>
-          <Button variant={activeTab === "workload" ? "primary" : "secondary"} onClick={() => setActiveTab("workload")}>
-            Carga de Trabalho
-          </Button>
+      <section className="mt-6 border-b border-border pb-0">
+        <div className="mb-3 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-text-primary">Tarefas</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-md border border-border px-3 py-1 text-sm font-semibold text-text-secondary">
+              {visibleTasks.length} de {disciplineFilteredTasks.length} tarefas
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {activeTab === "list" ? (
-            <ListControls
-              tasks={listTasks}
-              users={users}
-              statusFilter={statusFilter}
-              completionFilter={completionFilter}
-              assigneeFilter={assigneeFilter}
-              priorityFilter={priorityFilter}
-              sortKey={sortKey}
-              sortDirection={sortDirection}
-              onStatusFilterChange={setStatusFilter}
-              onCompletionFilterChange={setCompletionFilter}
-              onAssigneeFilterChange={setAssigneeFilter}
-              onPriorityFilterChange={setPriorityFilter}
-              onSort={handleSort}
-            />
-          ) : null}
+        <div className="flex items-center gap-5 text-sm font-bold text-text-secondary">
+          <ViewTab active={activeTab === "list"} icon={<List size={15} />} label="Lista" onClick={() => setActiveTab("list")} />
+          <ViewTab active={activeTab === "kanban"} icon={<KanbanSquare size={15} />} label="Quadro" onClick={() => setActiveTab("kanban")} />
+        </div>
+      </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-3">
+        <div className="flex flex-wrap items-center gap-2">
           {canManage ? (
             <>
-              <Button variant="secondary" onClick={() => setShowProjectForm((current) => !current)}>
-                <Edit3 size={16} />
-                Editar projeto
-              </Button>
               <Button
+                className="h-8 bg-brand-orange hover:bg-orange-600"
                 onClick={() => openTaskCreate({ projectId, sectionScope: taskScope })}
               >
-                <Plus size={16} />
+                <Plus size={15} />
                 Criar tarefa
+              </Button>
+              <Button variant="secondary" className="h-8" onClick={() => setShowProjectForm((current) => !current)}>
+                <Edit3 size={15} />
+                Editar projeto
               </Button>
             </>
           ) : null}
+          <ScopePill active={taskScope === "general"} label="Geral" onClick={() => setTaskScope("general")} />
+          <ScopePill active={taskScope === "civil"} label="Civil" onClick={() => setTaskScope("civil")} />
+          <ScopePill active={taskScope === "electrical"} label="Elétrico" onClick={() => setTaskScope("electrical")} />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+          <label className="inline-flex items-center gap-1.5">
+            <CheckCircle2 size={15} />
+            <SearchableSelect
+              value={completionFilter}
+              options={completionOptions}
+              triggerClassName="h-8 w-40"
+              searchPlaceholder="Buscar conclusão..."
+              onValueChange={(value) => setCompletionFilter(value as CompletionFilter)}
+            />
+          </label>
+          <label className="inline-flex items-center gap-1.5">
+            <Filter size={15} />
+            <SearchableSelect
+              value={statusFilter}
+              options={statusOptions}
+              triggerClassName="h-8 w-40"
+              searchPlaceholder="Buscar status..."
+              showSelectionIndicator={false}
+              onValueChange={setStatusFilter}
+            />
+          </label>
+          <SearchableSelect
+            value={assigneeFilter}
+            options={assigneeOptions}
+            triggerClassName="h-8 w-44"
+            searchPlaceholder="Buscar responsável..."
+            contentClassName="w-[min(420px,calc(100vw-32px))]"
+            onValueChange={setAssigneeFilter}
+          />
+          <SearchableSelect
+            value={priorityFilter}
+            options={priorityOptions}
+            triggerClassName="h-8 w-40"
+            searchPlaceholder="Buscar prioridade..."
+            onValueChange={setPriorityFilter}
+          />
+          <label className="inline-flex items-center gap-1.5">
+            <ArrowDownUp size={15} />
+            <SearchableSelect
+              value={sortKey}
+              options={sortOptions}
+              triggerClassName="h-8 w-36"
+              searchPlaceholder="Buscar ordenação..."
+              onValueChange={(value) => setSortKey(value as SortKey)}
+            />
+          </label>
+          <label className="relative">
+            <Search size={15} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2" />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} className="h-8 w-52 pl-8" placeholder="Buscar" />
+          </label>
         </div>
       </div>
 
@@ -320,18 +422,13 @@ export function ProjectDetailPage() {
           />
         </ProjectModal>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <ScopeTab active={taskScope === "general"} label="Geral" onClick={() => setTaskScope("general")} />
-        <ScopeTab active={taskScope === "civil"} label="Civil" onClick={() => setTaskScope("civil")} />
-        <ScopeTab active={taskScope === "electrical"} label="Elétrico" onClick={() => setTaskScope("electrical")} />
-      </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 pt-4">
         {activeTab === "kanban" ? (
           <KanbanView
             projectId={projectId}
             disciplineId={taskFormDiscipline?.id ?? null}
-            tasks={disciplineFilteredTasks}
+            tasks={visibleTasks}
             isLoading={isTasksLoading}
             onDragEnd={handleDragEnd}
             onOpenTask={openTaskDetail}
@@ -343,30 +440,13 @@ export function ProjectDetailPage() {
             disciplines={visibleDisciplines}
             tasks={listTasks}
             users={users}
-            customFieldDefinitions={project.taskCustomFields ?? []}
             isLoading={isTasksLoading}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            onTaskAssigneeChange={(taskId, assigneeId) =>
-              canManage ? void updateTask.mutateAsync({ id: taskId, payload: { assigneeId } }) : undefined
-            }
-            onTaskCustomFieldChange={(taskId, fieldId, mikaKey, value) =>
-              canManage ? void updateTask.mutateAsync({ id: taskId, payload: { customFieldValues: [{ id: fieldId, mikaKey, value }] } }) : undefined
-            }
+            canManage={canManage}
+            canComplete={canComplete}
             onOpenTask={openTaskDetail}
-          />
-        ) : null}
-        {activeTab === "workload" ? (
-          <ProjectWorkloadTimeline
-            mode="project"
+            onPatchTask={patchTask}
+            onPatchCompletion={patchTaskCompletion}
             projectId={projectId}
-            users={users}
-            disciplineIdFilter={scopedDisciplineIds}
-            isActive={activeTab === "workload"}
-            onOpenTask={openTaskDetail}
-            onTaskUpdated={handleTimelineTaskUpdated}
-            updateTask={updateTask}
           />
         ) : null}
       </div>
@@ -418,11 +498,18 @@ function KanbanView({
   );
 }
 
-function ScopeTab({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function ScopePill({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
-    <Button variant={active ? "primary" : "secondary"} onClick={onClick}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-8 rounded-md px-3 text-sm font-semibold transition",
+        active ? "bg-brand-orange/15 text-brand-orange" : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+      )}
+    >
       {label}
-    </Button>
+    </button>
   );
 }
 
@@ -495,11 +582,7 @@ function KanbanColumn({
                         {...dragProvided.dragHandleProps}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
-                        <TaskCard
-                          task={task}
-                          disciplineName={task.discipline.name}
-                          onOpen={onOpenTask}
-                        />
+                        <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} />
                       </div>
                     )}
                   </Draggable>
@@ -509,179 +592,43 @@ function KanbanColumn({
             )}
             {provided.placeholder}
           </div>
-          {canManage ? <div className="mt-3 border-t border-border pt-3">
-            {isAdding ? (
-              <Input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setTitle("");
-                    setIsAdding(false);
-                  }
+          {canManage ? (
+            <div className="mt-3 border-t border-border pt-3">
+              {isAdding ? (
+                <Input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setTitle("");
+                      setIsAdding(false);
+                    }
 
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void submitTask();
-                  }
-                }}
-                placeholder="Titulo da tarefa"
-                disabled={!disciplineId || !canCreateInColumn || createTask.isPending}
-                autoFocus
-              />
-            ) : (
-              <Button
-                variant="ghost"
-                className="w-full justify-start px-2"
-                onClick={() => setIsAdding(true)}
-                disabled={!disciplineId || !canCreateInColumn}
-              >
-                <Plus size={16} />
-                Adicionar tarefa
-              </Button>
-            )}
-          </div> : null}
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void submitTask();
+                    }
+                  }}
+                  placeholder="Titulo da tarefa"
+                  disabled={!disciplineId || !canCreateInColumn || createTask.isPending}
+                  autoFocus
+                />
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start px-2"
+                  onClick={() => setIsAdding(true)}
+                  disabled={!disciplineId || !canCreateInColumn}
+                >
+                  <Plus size={16} />
+                  Adicionar tarefa
+                </Button>
+              )}
+            </div>
+          ) : null}
         </section>
       )}
     </Droppable>
-  );
-}
-
-function ListControls({
-  tasks,
-  users,
-  statusFilter,
-  completionFilter,
-  assigneeFilter,
-  priorityFilter,
-  sortKey,
-  sortDirection,
-  onStatusFilterChange,
-  onCompletionFilterChange,
-  onAssigneeFilterChange,
-  onPriorityFilterChange,
-  onSort
-}: {
-  tasks: TaskWithDiscipline[];
-  users: User[];
-  statusFilter: string;
-  completionFilter: CompletionFilter;
-  assigneeFilter: string;
-  priorityFilter: string;
-  sortKey: SortKey;
-  sortDirection: SortDirection;
-  onStatusFilterChange: (value: string) => void;
-  onCompletionFilterChange: (value: CompletionFilter) => void;
-  onAssigneeFilterChange: (value: string) => void;
-  onPriorityFilterChange: (value: string) => void;
-  onSort: (key: SortKey) => void;
-}) {
-  const sortIndicator = (key: SortKey) => (sortKey === key ? <SortIcon direction={sortDirection} /> : null);
-  const statusOptions = [
-    { value: "all", label: "Todos os status" },
-    ...Object.values(TaskStatus).map((status) => ({
-      value: status,
-      label: taskStatusLabels[status],
-      render: <TaskStatusBadge status={status} />
-    }))
-  ];
-  const assigneeOptions = [
-    { value: "all", label: "Todos responsáveis" },
-    { value: "none", label: "Sem responsável" },
-    ...users.map((user) => ({ value: user.id, label: user.name, description: user.email, avatarUrl: user.avatarUrl }))
-  ];
-  const priorityOptions = [
-    { value: "all", label: "Todas prioridades" },
-    ...Object.values(Priority).map((priority) => ({
-      value: priority,
-      label: priority,
-      color: priorityColors[priority],
-      render: <PriorityOptionPill priority={priority} />
-    }))
-  ];
-  const completionOptions = [
-    { value: "open", label: "Não concluídas" },
-    { value: "completed", label: "Concluídas" },
-    { value: "all", label: "Todas" }
-  ];
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="secondary" className="h-10">
-            <Filter size={15} />
-            Filtrar
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="grid w-80 gap-3">
-          <SearchableSelect
-            value={completionFilter}
-            options={completionOptions}
-            searchPlaceholder="Buscar conclusão..."
-            onValueChange={(value) => onCompletionFilterChange(value as CompletionFilter)}
-          />
-          <SearchableSelect
-            value={statusFilter}
-            options={statusOptions}
-            searchPlaceholder="Buscar status..."
-            showSelectionIndicator={false}
-            onValueChange={onStatusFilterChange}
-          />
-          <SearchableSelect
-            value={assigneeFilter}
-            options={assigneeOptions}
-            searchPlaceholder="Buscar responsável..."
-            contentClassName="w-[min(420px,calc(100vw-32px))]"
-            onValueChange={onAssigneeFilterChange}
-          />
-          <SearchableSelect
-            value={priorityFilter}
-            options={priorityOptions}
-            searchPlaceholder="Buscar prioridade..."
-            onValueChange={onPriorityFilterChange}
-          />
-        </PopoverContent>
-      </Popover>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="secondary" className="h-10">
-            <ArrowDownUp size={15} />
-            Ordenar
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="grid w-72 gap-1">
-          {(["title", "stage", "assignee", "status"] as SortKey[]).map((key) => (
-            <Button key={key} variant="ghost" className="h-9 justify-between px-2" onClick={() => onSort(key)}>
-              <span>Ordenar por {sortLabel(key)}</span>
-              {sortIndicator(key)}
-            </Button>
-          ))}
-        </PopoverContent>
-      </Popover>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="secondary" className="h-10">
-            <Group size={15} />
-            Agrupar
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 text-sm text-text-secondary">
-          Agrupado por Geral, Civil e Elétrico.
-        </PopoverContent>
-      </Popover>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="secondary" className="h-10">
-            <Settings2 size={15} />
-            Opções
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 text-sm text-text-secondary">
-          A lista mostra campos customizados importados do Asana.
-        </PopoverContent>
-      </Popover>
-    </div>
   );
 }
 
@@ -690,376 +637,240 @@ function ListView({
   tasks,
   users,
   isLoading,
-  sortKey,
-  sortDirection,
-  onSort,
-  onOpenTask
+  canManage,
+  canComplete,
+  onOpenTask,
+  onPatchTask,
+  onPatchCompletion,
+  projectId
 }: {
   disciplines: Section[];
   tasks: TaskWithDiscipline[];
   users: User[];
-  customFieldDefinitions: ProjectCustomField[];
   isLoading: boolean;
-  sortKey: SortKey;
-  sortDirection: SortDirection;
-  onSort: (key: SortKey) => void;
-  onTaskAssigneeChange: (taskId: string, assigneeId: string | null) => void;
-  onTaskCustomFieldChange: (taskId: string, fieldId: string, mikaKey: string | undefined, value: string | number | null) => void;
+  canManage: boolean;
+  canComplete: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  onPatchTask: (task: TaskWithDiscipline, payload: UpdateTaskRequest) => void;
+  onPatchCompletion: (task: TaskWithDiscipline, completed: boolean) => void;
+  projectId: string;
 }) {
   const groupedTasks = groupTasksByScope(tasks);
-  const userById = new Map(users.map((user) => [user.id, user]));
+  const columnCount = 11;
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-3 md:grid-cols-3">
+        <TaskCardSkeleton />
+        <TaskCardSkeleton />
+        <TaskCardSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-4">
-      <div className="flex justify-end text-sm font-semibold text-text-secondary">{tasks.length} tarefas</div>
-      {isLoading ? (
-        <div className="grid gap-3 md:grid-cols-3">
-          <TaskCardSkeleton />
-          <TaskCardSkeleton />
-          <TaskCardSkeleton />
-        </div>
-      ) : null}
-      {!isLoading ? (
-        <div className="w-full overflow-x-auto rounded-md border border-border">
-          <table className="w-full min-w-[1220px] table-fixed border-collapse bg-[--bg-2] text-sm" data-testid="project-list-table">
-            <colgroup>
-              <col className="w-[200px]" />
-              <col className="w-[120px]" />
-              <col className="w-[140px]" />
-              <col className="w-[150px]" />
-              <col className="w-[90px]" />
-              <col className="w-[100px]" />
-              <col className="w-[120px]" />
-              <col className="w-[120px]" />
-              <col className="w-[90px]" />
-              <col className="w-[90px]" />
-              <col className="w-[80px]" />
-            </colgroup>
-            <thead className="sticky top-0 z-10 bg-[--bg-1]">
-              <tr className="border-b border-[--color-border]">
-                <SortableHeader label="Tarefa" sortKey="title" sortDirection={sortDirection} active={sortKey === "title"} onSort={onSort} />
-                <StaticHeader label="Seção" />
-                <SortableHeader label="Responsável" sortKey="assignee" sortDirection={sortDirection} active={sortKey === "assignee"} onSort={onSort} />
-                <SortableHeader label="Status" sortKey="status" sortDirection={sortDirection} active={sortKey === "status"} onSort={onSort} />
-                <StaticHeader label="Plataforma" align="center" />
-                <StaticHeader label="Disciplina" align="center" />
-                <StaticHeader label="Status Conclusão" align="center" />
-                <StaticHeader label="Prazo Máximo" />
-                <StaticHeader label="Dias Estimados" align="right" />
-                <StaticHeader label="Dias Conclusão" align="right" />
-                <SortableHeader label="Etapa" sortKey="stage" sortDirection={sortDirection} active={sortKey === "stage"} onSort={onSort} />
-              </tr>
-            </thead>
-            <tbody>
-              {groupedTasks.map((group) => (
-                <GroupedScopeRows
-                  key={group.scope}
-                  label={group.label}
-                  tasks={group.tasks}
-                  userById={userById}
-                  onOpenTask={onOpenTask}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+      <DataTableContainer>
+        <DataTable minWidth="1220px" data-testid="project-list-table">
+          <colgroup>
+            <col className="w-[200px]" />
+            <col className="w-[120px]" />
+            <col className="w-[140px]" />
+            <col className="w-[150px]" />
+            <col className="w-[90px]" />
+            <col className="w-[100px]" />
+            <col className="w-[120px]" />
+            <col className="w-[120px]" />
+            <col className="w-[90px]" />
+            <col className="w-[90px]" />
+            <col className="w-[80px]" />
+          </colgroup>
+          <DataTableHead>
+            <tr className="border-b border-[--color-border]">
+              <DataTableHeader>Tarefa</DataTableHeader>
+              <DataTableHeader>Seção</DataTableHeader>
+              <DataTableHeader>Responsável</DataTableHeader>
+              <DataTableHeader>Status</DataTableHeader>
+              <DataTableHeader align="center">Plataforma</DataTableHeader>
+              <DataTableHeader align="center">Disciplina</DataTableHeader>
+              <DataTableHeader align="center">Status Conclusão</DataTableHeader>
+              <DataTableHeader>Prazo Máximo</DataTableHeader>
+              <DataTableHeader align="right">Dias Estimados</DataTableHeader>
+              <DataTableHeader align="right">Dias Conclusão</DataTableHeader>
+              <DataTableHeader>Etapa</DataTableHeader>
+            </tr>
+          </DataTableHead>
+          <tbody>
+            {groupedTasks.map((group) => (
+              <Fragment key={group.scope}>
+                <DataTableGroupRow colSpan={columnCount} label={group.label} count={group.tasks.length} />
+                {group.tasks.length === 0 ? (
+                  <tr className="border-b border-[--color-border-subtle]">
+                    <td colSpan={columnCount} className="px-3 py-2 text-[13px] text-[--color-text-muted]">
+                      Nenhuma tarefa nesta seção.
+                    </td>
+                  </tr>
+                ) : (
+                  group.tasks.map((task) => (
+                    <TaskContextMenu
+                      key={task.id}
+                      task={task}
+                      projectId={projectId}
+                      onOpen={onOpenTask}
+                      fallbackLinkPath={`/projects/${projectId}`}
+                    >
+                      <DataTableRow className={cn(task.completed ? "opacity-70" : "")}>
+                        <DataTableCell>
+                          <button
+                            type="button"
+                            onClick={() => onOpenTask(task)}
+                            title={task.title}
+                            className={cn(
+                              "min-w-0 truncate text-left font-medium hover:text-brand-orange",
+                              task.completed ? "text-text-muted" : "text-text-primary"
+                            )}
+                          >
+                            {task.title || <EmptyCell />}
+                          </button>
+                        </DataTableCell>
+                        <DataTableCell>
+                          <TruncatedCellValue value={task.discipline.name} />
+                        </DataTableCell>
+                        <DataTableCell>
+                          {canManage ? (
+                            <EditableAssigneeField
+                              users={users}
+                              assigneeId={task.assigneeId}
+                              variant="table"
+                              onSave={(assigneeId) => onPatchTask(task, { assigneeId })}
+                            />
+                          ) : task.assignee ? (
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-5 w-5 shrink-0" />
+                              <span className="truncate">{task.assignee.name}</span>
+                            </span>
+                          ) : (
+                            <EmptyCell />
+                          )}
+                        </DataTableCell>
+                        <DataTableCell>
+                          {canManage ? (
+                            <EditableStatusField task={task} variant="table" onSave={(status) => onPatchTask(task, { status })} />
+                          ) : (
+                            <TaskStatusBadge status={task.status} />
+                          )}
+                        </DataTableCell>
+                        <DataTableCell align="center">
+                          {canManage ? (
+                            <EditablePlatformField
+                              value={task.platform}
+                              variant="table"
+                              onSave={(platform) => onPatchTask(task, { platform })}
+                            />
+                          ) : task.platform ? (
+                            <PlatformChip platform={task.platform} />
+                          ) : (
+                            <EmptyCell />
+                          )}
+                        </DataTableCell>
+                        <DataTableCell align="center">
+                          {canManage ? (
+                            <EditableDisciplineField
+                              value={task.taskDiscipline}
+                              variant="table"
+                              onSave={(taskDiscipline) => onPatchTask(task, { taskDiscipline })}
+                            />
+                          ) : task.taskDiscipline ? (
+                            <DisciplineChip discipline={task.taskDiscipline} />
+                          ) : (
+                            <EmptyCell />
+                          )}
+                        </DataTableCell>
+                        <DataTableCell align="center">
+                          {canManage || canComplete ? (
+                            <EditableCompletionField
+                              completed={task.completed}
+                              variant="table"
+                              onSave={(completed) => onPatchCompletion(task, completed)}
+                            />
+                          ) : (
+                            <CompletionStatusChip completed={task.completed} />
+                          )}
+                        </DataTableCell>
+                        <DataTableCell>
+                          {canManage ? (
+                            <EditableMaxDeadlineField
+                              value={task.maxDeadline}
+                              variant="table"
+                              onSave={(maxDeadline) => onPatchTask(task, { maxDeadline })}
+                            />
+                          ) : task.maxDeadline ? (
+                            <span>{formatDateOnly(task.maxDeadline, "dd/MM/yyyy")}</span>
+                          ) : (
+                            <EmptyCell />
+                          )}
+                        </DataTableCell>
+                        <DataTableCell align="right" className="font-mono text-[12px]">
+                          {canManage ? (
+                            <EditableDecimalField
+                              value={task.estimatedTime}
+                              variant="table"
+                              onSave={(estimatedTime) => onPatchTask(task, { estimatedTime, estimatedDays: estimatedTime })}
+                            />
+                          ) : task.estimatedTime == null ? (
+                            <EmptyCell />
+                          ) : (
+                            <span>{formatDecimalDisplay(task.estimatedTime)}</span>
+                          )}
+                        </DataTableCell>
+                        <DataTableCell align="right" className="font-mono text-[12px]">
+                          {canManage ? (
+                            <EditableDecimalField
+                              value={task.conclusionDays}
+                              variant="table"
+                              onSave={(conclusionDays) => onPatchTask(task, { conclusionDays })}
+                            />
+                          ) : task.conclusionDays == null ? (
+                            <EmptyCell />
+                          ) : (
+                            <span>{formatDecimalDisplay(task.conclusionDays)}</span>
+                          )}
+                        </DataTableCell>
+                        <DataTableCell>
+                          {canManage ? (
+                            <EditableStageField
+                              value={task.stage}
+                              stageField={null}
+                              variant="table"
+                              onSave={(stage) => onPatchTask(task, { stage })}
+                            />
+                          ) : (
+                            <TruncatedCellValue value={task.stage} />
+                          )}
+                        </DataTableCell>
+                      </DataTableRow>
+                    </TaskContextMenu>
+                  ))
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </DataTable>
+      </DataTableContainer>
       {disciplines.length === 0 ? <EmptyState title="Nenhuma disciplina selecionada no projeto" /> : null}
     </div>
   );
 }
 
-function GroupedScopeRows({
-  label,
-  tasks,
-  userById,
-  onOpenTask
-}: {
-  label: string;
-  tasks: TaskWithDiscipline[];
-  userById: Map<string, User>;
-  onOpenTask: (task: TaskWithDiscipline) => void;
-}) {
-  const columnSpan = 11;
-
-  return (
-    <>
-      <tr className="border-b border-[--color-border-subtle] bg-[--bg-1]">
-        <td colSpan={columnSpan} className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-[--color-text-muted]">
-          <span>{label}</span>
-          <span className="ml-2 rounded bg-[--bg-4] px-1.5 py-0.5 text-[11px] font-medium normal-case tracking-normal text-[--color-text-secondary]">{tasks.length}</span>
-        </td>
-      </tr>
-      {tasks.length === 0 ? (
-        <tr className="border-b border-[--color-border-subtle]">
-          <td colSpan={columnSpan} className="px-3 py-2 text-[13px] text-[--color-text-muted]">
-            Nenhuma tarefa nesta seção.
-          </td>
-        </tr>
-      ) : (
-        tasks.map((task) => {
-          const assignee = task.assigneeId ? userById.get(task.assigneeId) ?? task.assignee : task.assignee;
-          return (
-            <tr
-              key={task.id}
-              className={cn(
-                "border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]",
-                task.completed ? "opacity-70" : ""
-              )}
-            >
-              <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
-                <div className="flex min-w-0 items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onOpenTask(task)}
-                    title={task.title}
-                    className={cn(
-                      "min-w-0 truncate text-left font-medium hover:text-brand-orange",
-                      task.completed ? "text-text-muted" : "text-text-primary"
-                    )}
-                  >
-                    {task.title || <EmptyCell />}
-                  </button>
-                </div>
-              </td>
-              <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
-                <TruncatedValue value={task.discipline.name} />
-              </td>
-              <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
-                {assignee ? (
-                  <div className="flex min-w-0 items-center">
-                    {assignee.avatarUrl ? <img className="mr-1.5 h-5 w-5 rounded-full object-cover" src={assignee.avatarUrl} alt="" /> : <span className="mr-1.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[--bg-4] text-[10px] text-[--color-text-secondary]">{assignee.name.slice(0, 1)}</span>}
-                    <span className="truncate">{assignee.name}</span>
-                  </div>
-                ) : (
-                  <EmptyCell />
-                )}
-              </td>
-              <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><TaskStatusBadge status={task.status} /></td>
-              <td className="px-3 py-2 text-center">{task.platform ? <PlatformChip platform={task.platform} /> : <EmptyCell />}</td>
-              <td className="px-3 py-2 text-center">{task.taskDiscipline ? <DisciplineChip discipline={task.taskDiscipline} /> : <EmptyCell />}</td>
-              <td className="px-3 py-2 text-center"><CompletionStatusChip completed={task.completed} /></td>
-              <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><DateCell value={task.maxDeadline} /></td>
-              <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-primary]"><NumberCell value={task.estimatedTime} /></td>
-              <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-primary]"><NumberCell value={task.conclusionDays} /></td>
-              <td className="px-3 py-2 text-[13px] text-[--color-text-primary]"><TruncatedValue value={task.stage} /></td>
-            </tr>
-          );
-        })
-      )}
-    </>
-  );
-}
-function ListStageField({
-  task,
-  definition,
-  onSave
-}: {
-  task: TaskWithDiscipline;
-  definition: ProjectCustomField;
-  onSave: (field: NonNullable<Task["customFieldValues"]>[number], value: string | number | null) => void;
-}) {
-  const field = findTaskCustomField(task, definition);
-
-  if (!field) {
-    return <span className="block truncate" title={task.discipline.name}>{task.discipline.name || "-"}</span>;
-  }
-
-  return <InlineField field={field} onSave={(value) => onSave(field, value)} />;
-}
-
-function SortableHeader({
-  label,
-  sortKey,
-  active,
-  sortDirection,
-  onSort,
-  className
-}: {
-  label: string;
-  sortKey: SortKey;
-  active: boolean;
-  sortDirection: SortDirection;
-  onSort: (key: SortKey) => void;
-  className?: string;
-}) {
-  return (
-    <th className={cn("px-3 py-2 text-left text-[11px] font-medium uppercase tracking-widest", active ? "text-[--color-text-primary]" : "text-[--color-text-muted]", className)}>
-      <button type="button" className="group inline-flex max-w-full items-center gap-1.5 hover:text-[--color-text-primary]" onClick={() => onSort(sortKey)}>
-        <span>{label}</span>
-        {active ? <SortIcon direction={sortDirection} /> : <ArrowDownUp size={12} className="opacity-0 transition-opacity group-hover:opacity-100" />}
-      </button>
-    </th>
-  );
-}
-
-function SortIcon({ direction }: { direction: SortDirection }) {
-  return direction === "asc" ? <ArrowUp size={12} className="text-brand-orange" /> : <ArrowDown size={12} className="text-brand-orange" />;
-}
-
-function StaticHeader({ label, align = "left" }: { label: string; align?: "left" | "center" | "right" }) {
-  return (
-    <th
-      className={cn(
-        "px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]",
-        align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"
-      )}
-    >
-      {label}
-    </th>
-  );
-}
-
-function EmptyCell() {
-  return <span className="text-[--color-text-muted]">—</span>;
-}
-
-function TruncatedValue({ value }: { value: string | null | undefined }) {
-  return value ? (
-    <span className="block truncate" title={value}>
-      {value}
-    </span>
-  ) : (
-    <EmptyCell />
-  );
-}
-
-function DateCell({ value }: { value: string | null | undefined }) {
-  return value ? <span>{formatDateOnly(value, "dd/MM/yyyy")}</span> : <EmptyCell />;
-}
-
-function NumberCell({ value }: { value: number | null | undefined }) {
-  if (value == null) {
-    return <EmptyCell />;
-  }
-
-  return <span>{Number.isInteger(value) ? value : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}</span>;
-}
-
-function sortLabel(key: SortKey): string {
-  const labels: Record<SortKey, string> = {
-    title: "Tarefa",
-    stage: "Etapa",
-    assignee: "Responsável",
-    status: "Status"
-  };
-
-  return labels[key];
-}
-
-function visibleListCustomFields(tasks: TaskWithDiscipline[], definitions: ProjectCustomField[]) {
-  const fields = new Map<string, ProjectCustomField>();
-
-  for (const field of definitions) {
-    if (field.mikaListVisible === false) {
-      continue;
-    }
-
-    fields.set(field.mikaKey ?? field.id, field);
-  }
-
-  for (const task of tasks) {
-    for (const field of task.customFieldValues ?? []) {
-      if (field.mikaListVisible === false) {
-        continue;
-      }
-
-      const key = field.mikaKey ?? normalizeFieldName(field.customFieldName ?? "Campo");
-      if (!fields.has(key)) {
-        fields.set(key, {
-          id: field.customFieldId ?? field.id,
-          asanaGid: field.customFieldGid ?? field.id,
-          isImportant: true,
-          name: field.mikaLabel ?? field.customFieldName ?? "Campo",
-          description: null,
-          type: field.type ?? "text",
-          mikaKey: field.mikaKey,
-          mikaLabel: field.mikaLabel,
-          mikaSortOrder: field.mikaSortOrder,
-          mikaTaskField: true,
-          mikaListVisible: field.mikaListVisible,
-          mikaDetailVisible: field.mikaDetailVisible,
-          enumOptions: (field.enumOptions ?? []).map((option) => ({
-            id: option.id,
-            asanaGid: option.id,
-            name: option.name,
-            color: option.color,
-            enabled: true
-          }))
-        });
-      }
-    }
-  }
-
-  return Array.from(fields.values()).sort((a, b) => (a.mikaSortOrder ?? 9999) - (b.mikaSortOrder ?? 9999));
-}
-
-function findTaskCustomField(task: TaskWithDiscipline, definition: ProjectCustomField) {
-  return task.customFieldValues?.find((field) =>
-    definition.mikaKey
-      ? field.mikaKey === definition.mikaKey
-      : normalizeFieldName(field.customFieldName ?? "Campo") === normalizeFieldName(definition.name)
-  );
-}
-
-function uniqueCustomStatusOptions(tasks: TaskWithDiscipline[]) {
-  return Array.from(
-    new Set(tasks.map((task) => customStatusValue(task)).filter((value): value is string => Boolean(value)))
-  ).sort((a, b) => a.localeCompare(b));
-}
-
-function customStatusValue(task: TaskWithDiscipline) {
-  const field = task.customFieldValues?.find((item) => isCustomStatusField(item.customFieldName ?? ""));
-  return field?.displayValue ?? field?.enumOptionName ?? null;
-}
-
-function stageValue(task: TaskWithDiscipline) {
-  const field = task.customFieldValues?.find((item) => isStageTaskField(item));
-  return field?.displayValue ?? field?.enumOptionName ?? null;
-}
-
-function isCustomStatusField(name: string) {
-  const normalized = normalizeFieldName(name);
-  return normalized === "status" || normalized === "status de conclusao" || normalized === "situacao";
-}
-
-function isStageCustomField(field: Pick<ProjectCustomField, "mikaKey" | "mikaLabel" | "name">) {
-  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.name, ["etapa", "stage"]);
-}
-
-function isDisciplineCustomField(field: Pick<ProjectCustomField, "mikaKey" | "mikaLabel" | "name">) {
-  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.name, ["disciplina", "discipline"]);
-}
-
-function isStageTaskField(field: NonNullable<Task["customFieldValues"]>[number]) {
-  return fieldIdentityMatches(field.mikaKey, field.mikaLabel, field.customFieldName, ["etapa", "stage"]);
-}
-
-function fieldIdentityMatches(
-  mikaKey: string | null | undefined,
-  mikaLabel: string | null | undefined,
-  name: string | null | undefined,
-  normalizedMatches: string[]
-) {
-  return [mikaKey, mikaLabel, name].some((value) => Boolean(value && normalizedMatches.includes(normalizeFieldName(value))));
-}
-
-function normalizeFieldName(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .toLowerCase()
-    .trim();
+function formatDecimalDisplay(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function groupTasksByScope(tasks: TaskWithDiscipline[]) {
-  const groups: Array<{ scope: TaskScope; label: string; color: string; tasks: TaskWithDiscipline[] }> = [
-    { scope: "general", label: "Geral", color: "var(--color-text-muted)", tasks: [] },
-    { scope: "civil", label: "Civil", color: "var(--disc-hid-text)", tasks: [] },
-    { scope: "electrical", label: "Elétrico", color: "var(--disc-ele-text)", tasks: [] }
+  const groups: Array<{ scope: TaskScope; label: string; tasks: TaskWithDiscipline[] }> = [
+    { scope: "general", label: "Geral", tasks: [] },
+    { scope: "civil", label: "Civil", tasks: [] },
+    { scope: "electrical", label: "Elétrico", tasks: [] }
   ];
 
   for (const task of tasks) {
@@ -1071,116 +882,9 @@ function groupTasksByScope(tasks: TaskWithDiscipline[]) {
   return groups;
 }
 
-function InlineField({
-  field,
-  onSave
-}: {
-  field: NonNullable<Task["customFieldValues"]>[number];
-  onSave: (value: string | number | null) => void;
-}) {
-  const initialValue = String(field.displayValue ?? field.enumOptionName ?? field.numberValue ?? "");
-  const [draft, setDraft] = useState(initialValue);
-  const [editing, setEditing] = useState(false);
-  const type = (field.type ?? "").toLowerCase();
-  const enumOptions = field.enumOptions?.filter((option) => option.name) ?? [];
-
-  useEffect(() => {
-    setDraft(initialValue);
-  }, [initialValue]);
-
-  if (enumOptions.length > 0) {
-    return (
-      <SearchableSelect
-        value={draft || "none"}
-        options={[
-          { value: "none", label: "-" },
-          ...enumOptions.map((option) => ({
-            value: option.name,
-            label: option.name,
-            color: enumColor(option.name, option.color)
-          }))
-        ]}
-        triggerClassName="h-8 min-w-40"
-        searchPlaceholder={`Buscar ${field.mikaLabel ?? field.customFieldName ?? "campo"}...`}
-        onValueChange={(value) => {
-          const nextValue = value === "none" ? "" : value;
-          setDraft(nextValue);
-          onSave(nextValue || null);
-        }}
-      />
-    );
-  }
-
-  if (type === "number" || type === "integer") {
-    return (
-      <DecimalInput
-        value={draft}
-        onValueChange={setDraft}
-        onBlur={() => {
-          const parsed = parseDecimalInput(draft);
-          onSave(parsed === null || Number.isNaN(parsed) ? null : parsed);
-        }}
-        className="h-8 min-w-32 border-border bg-brand-black/60"
-      />
-    );
-  }
-
-  if (type === "date") {
-    return (
-      <DatePicker
-        value={/^\d{4}-\d{2}-\d{2}$/.test(draft) ? draft : ""}
-        onValueChange={(value) => {
-          const nextValue = value ?? "";
-          setDraft(nextValue);
-          onSave(nextValue || null);
-        }}
-        className="h-8 min-w-36 border-border bg-brand-black/60"
-      />
-    );
-  }
-
-  if (!editing) {
-    return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="min-h-8 min-w-36 rounded-md px-2 text-left text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
-      >
-        {draft || "-"}
-      </button>
-    );
-  }
-
-  return (
-    <Input
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => {
-        setEditing(false);
-        onSave(draft.trim() || null);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
-
-        if (event.key === "Escape") {
-          setDraft(initialValue);
-          setEditing(false);
-        }
-      }}
-      className="h-8 min-w-36 border-border bg-brand-black/60"
-      autoFocus
-    />
-  );
-}
-
 function ProjectModal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/80 p-4 backdrop-blur-sm"
-      onMouseDown={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/80 p-4 backdrop-blur-sm" onMouseDown={onClose}>
       <section
         className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-md border border-border bg-surface p-5 shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}

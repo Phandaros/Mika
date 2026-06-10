@@ -8,6 +8,7 @@ import { CompletionStatusChip, DisciplineChip, taskStatusLabels } from "../compo
 import { EmptyState } from "../components/shared/EmptyState";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
+import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
@@ -229,7 +230,13 @@ function SprintColumn({
                         data-task-status={task.status}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
-                        <SprintTaskCard task={task} onOpen={onOpenTask} />
+                        <TaskContextMenu
+                          task={task}
+                          onOpen={onOpenTask}
+                          fallbackLinkPath={scope === "civil" ? "/sprint/civil" : "/sprint/eletrico"}
+                        >
+                          <SprintTaskCard task={task} onOpen={onOpenTask} />
+                        </TaskContextMenu>
                       </div>
                     )}
                   </Draggable>

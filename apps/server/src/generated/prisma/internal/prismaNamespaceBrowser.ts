@@ -73,7 +73,9 @@ export const ModelName = {
   AsanaCustomField: 'AsanaCustomField',
   AsanaCustomFieldEnumOption: 'AsanaCustomFieldEnumOption',
   ProjectCustomFieldSetting: 'ProjectCustomFieldSetting',
-  TaskCustomFieldValue: 'TaskCustomFieldValue'
+  TaskCustomFieldValue: 'TaskCustomFieldValue',
+  WeeklyReport: 'WeeklyReport',
+  WeeklyReportItem: 'WeeklyReportItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -447,6 +449,33 @@ export const TaskCustomFieldValueScalarFieldEnum = {
 export type TaskCustomFieldValueScalarFieldEnum = (typeof TaskCustomFieldValueScalarFieldEnum)[keyof typeof TaskCustomFieldValueScalarFieldEnum]
 
 
+export const WeeklyReportScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  weekStart: 'weekStart',
+  weekEnd: 'weekEnd',
+  status: 'status',
+  submittedAt: 'submittedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WeeklyReportScalarFieldEnum = (typeof WeeklyReportScalarFieldEnum)[keyof typeof WeeklyReportScalarFieldEnum]
+
+
+export const WeeklyReportItemScalarFieldEnum = {
+  id: 'id',
+  reportId: 'reportId',
+  taskId: 'taskId',
+  comment: 'comment',
+  taskSnapshot: 'taskSnapshot',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WeeklyReportItemScalarFieldEnum = (typeof WeeklyReportItemScalarFieldEnum)[keyof typeof WeeklyReportItemScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -455,10 +484,35 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const NullsOrder = {
   first: 'first',
   last: 'last'
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 

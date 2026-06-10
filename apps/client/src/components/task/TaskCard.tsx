@@ -3,6 +3,7 @@ import { Avatar } from "../shared/Avatar";
 import { DisciplineChip } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { cn, formatDateOnly } from "../../lib/utils";
+import { TaskContextMenu } from "./TaskContextMenu";
 
 export type TaskCardTask = Task & {
   discipline?: {
@@ -24,7 +25,7 @@ export function TaskCard<TTask extends TaskCardTask>({
   disciplineName,
   onOpen
 }: TaskCardProps<TTask>) {
-  return (
+  const card = (
     <div
       className={cn(
         "w-full rounded-md border border-border bg-surface-card p-3 text-left transition hover:border-brand-orange hover:bg-surface-hover",
@@ -54,5 +55,15 @@ export function TaskCard<TTask extends TaskCardTask>({
         <p className="mt-3 text-xs text-text-secondary">Entrega {formatDateOnly(task.dueDate, "dd/MM/yyyy")}</p>
       ) : null}
     </div>
+  );
+
+  if (!onOpen) {
+    return card;
+  }
+
+  return (
+    <TaskContextMenu task={task} projectId={task.discipline?.projectId} onOpen={onOpen}>
+      {card}
+    </TaskContextMenu>
   );
 }

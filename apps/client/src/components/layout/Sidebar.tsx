@@ -1,9 +1,11 @@
 import {
+  BarChart2,
   Bell,
   CalendarDays,
   CalendarRange,
   CheckCircle2,
   ClipboardCheck,
+  ClipboardList,
   FolderKanban,
   Home,
   KanbanSquare,
@@ -47,14 +49,16 @@ const sidebarSections: SidebarNavSection[] = [
     title: "Principal",
     items: [
       { to: "/", label: "Página inicial", icon: Home },
-      { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 }
+      { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
+      { to: "/weekly-reports/mine", label: "Meu relatório", icon: ClipboardList }
     ]
   },
   {
     title: "Projetos",
     items: [
       { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
-      { to: "/reviews", label: "Revisões", icon: ClipboardCheck, minRole: Role.COORDINATOR }
+      { to: "/reviews", label: "Revisões", icon: ClipboardCheck, minRole: Role.COORDINATOR },
+      { to: "/weekly-reports", label: "Relatórios semanais", icon: BarChart2, minRole: Role.COORDINATOR }
     ]
   },
   {

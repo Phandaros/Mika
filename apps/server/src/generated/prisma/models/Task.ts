@@ -491,6 +491,7 @@ export type TaskWhereInput = {
   activities?: Prisma.TaskActivityListRelationFilter
   requestedReviews?: Prisma.TaskReviewListRelationFilter
   rootReviews?: Prisma.TaskReviewListRelationFilter
+  weeklyReportItems?: Prisma.WeeklyReportItemListRelationFilter
 }
 
 export type TaskOrderByWithRelationInput = {
@@ -544,6 +545,7 @@ export type TaskOrderByWithRelationInput = {
   activities?: Prisma.TaskActivityOrderByRelationAggregateInput
   requestedReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
   rootReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
+  weeklyReportItems?: Prisma.WeeklyReportItemOrderByRelationAggregateInput
 }
 
 export type TaskWhereUniqueInput = Prisma.AtLeast<{
@@ -600,6 +602,7 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   activities?: Prisma.TaskActivityListRelationFilter
   requestedReviews?: Prisma.TaskReviewListRelationFilter
   rootReviews?: Prisma.TaskReviewListRelationFilter
+  weeklyReportItems?: Prisma.WeeklyReportItemListRelationFilter
 }, "id" | "asanaGid">
 
 export type TaskOrderByWithAggregationInput = {
@@ -733,6 +736,7 @@ export type TaskCreateInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateInput = {
@@ -782,6 +786,7 @@ export type TaskUncheckedCreateInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUpdateInput = {
@@ -831,6 +836,7 @@ export type TaskUpdateInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateInput = {
@@ -880,6 +886,7 @@ export type TaskUncheckedUpdateInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateManyInput = {
@@ -1478,6 +1485,20 @@ export type TaskUpdateOneRequiredWithoutCustomFieldValuesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TaskUpdateToOneWithWhereWithoutCustomFieldValuesInput, Prisma.TaskUpdateWithoutCustomFieldValuesInput>, Prisma.TaskUncheckedUpdateWithoutCustomFieldValuesInput>
 }
 
+export type TaskCreateNestedOneWithoutWeeklyReportItemsInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWeeklyReportItemsInput, Prisma.TaskUncheckedCreateWithoutWeeklyReportItemsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWeeklyReportItemsInput
+  connect?: Prisma.TaskWhereUniqueInput
+}
+
+export type TaskUpdateOneRequiredWithoutWeeklyReportItemsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskCreateWithoutWeeklyReportItemsInput, Prisma.TaskUncheckedCreateWithoutWeeklyReportItemsInput>
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutWeeklyReportItemsInput
+  upsert?: Prisma.TaskUpsertWithoutWeeklyReportItemsInput
+  connect?: Prisma.TaskWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaskUpdateToOneWithWhereWithoutWeeklyReportItemsInput, Prisma.TaskUpdateWithoutWeeklyReportItemsInput>, Prisma.TaskUncheckedUpdateWithoutWeeklyReportItemsInput>
+}
+
 export type TaskCreateWithoutAssigneeInput = {
   id?: string
   asanaGid: string
@@ -1524,6 +1545,7 @@ export type TaskCreateWithoutAssigneeInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutAssigneeInput = {
@@ -1572,6 +1594,7 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutAssigneeInput = {
@@ -1629,6 +1652,7 @@ export type TaskCreateWithoutCreatorInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutCreatorInput = {
@@ -1677,6 +1701,7 @@ export type TaskUncheckedCreateWithoutCreatorInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutCreatorInput = {
@@ -1807,6 +1832,7 @@ export type TaskCreateWithoutSubtasksInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutSubtasksInput = {
@@ -1855,6 +1881,7 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutSubtasksInput = {
@@ -1908,6 +1935,7 @@ export type TaskCreateWithoutParentInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutParentInput = {
@@ -1956,6 +1984,7 @@ export type TaskUncheckedCreateWithoutParentInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutParentInput = {
@@ -2013,6 +2042,7 @@ export type TaskCreateWithoutWorkflowAdjustmentsInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutWorkflowAdjustmentsInput = {
@@ -2061,6 +2091,7 @@ export type TaskUncheckedCreateWithoutWorkflowAdjustmentsInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutWorkflowAdjustmentsInput = {
@@ -2114,6 +2145,7 @@ export type TaskCreateWithoutWorkflowRootInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutWorkflowRootInput = {
@@ -2162,6 +2194,7 @@ export type TaskUncheckedCreateWithoutWorkflowRootInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutWorkflowRootInput = {
@@ -2230,6 +2263,7 @@ export type TaskUpdateWithoutSubtasksInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutSubtasksInput = {
@@ -2278,6 +2312,7 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUpsertWithWhereUniqueWithoutParentInput = {
@@ -2353,6 +2388,7 @@ export type TaskUpdateWithoutWorkflowAdjustmentsInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput = {
@@ -2401,6 +2437,7 @@ export type TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUpsertWithWhereUniqueWithoutWorkflowRootInput = {
@@ -2465,6 +2502,7 @@ export type TaskCreateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutRequestedReviewsInput = {
@@ -2513,6 +2551,7 @@ export type TaskUncheckedCreateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutRequestedReviewsInput = {
@@ -2566,6 +2605,7 @@ export type TaskCreateWithoutRootReviewsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutRootReviewsInput = {
@@ -2614,6 +2654,7 @@ export type TaskUncheckedCreateWithoutRootReviewsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutRootReviewsInput = {
@@ -2678,6 +2719,7 @@ export type TaskUpdateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutRequestedReviewsInput = {
@@ -2726,6 +2768,7 @@ export type TaskUncheckedUpdateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUpsertWithoutRootReviewsInput = {
@@ -2785,6 +2828,7 @@ export type TaskUpdateWithoutRootReviewsInput = {
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutRootReviewsInput = {
@@ -2833,6 +2877,7 @@ export type TaskUncheckedUpdateWithoutRootReviewsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutCommentsInput = {
@@ -2881,6 +2926,7 @@ export type TaskCreateWithoutCommentsInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutCommentsInput = {
@@ -2929,6 +2975,7 @@ export type TaskUncheckedCreateWithoutCommentsInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutCommentsInput = {
@@ -2993,6 +3040,7 @@ export type TaskUpdateWithoutCommentsInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutCommentsInput = {
@@ -3041,6 +3089,7 @@ export type TaskUncheckedUpdateWithoutCommentsInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutActivitiesInput = {
@@ -3089,6 +3138,7 @@ export type TaskCreateWithoutActivitiesInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutActivitiesInput = {
@@ -3137,6 +3187,7 @@ export type TaskUncheckedCreateWithoutActivitiesInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutActivitiesInput = {
@@ -3201,6 +3252,7 @@ export type TaskUpdateWithoutActivitiesInput = {
   comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutActivitiesInput = {
@@ -3249,6 +3301,7 @@ export type TaskUncheckedUpdateWithoutActivitiesInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutMembershipsInput = {
@@ -3297,6 +3350,7 @@ export type TaskCreateWithoutMembershipsInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutMembershipsInput = {
@@ -3345,6 +3399,7 @@ export type TaskUncheckedCreateWithoutMembershipsInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutMembershipsInput = {
@@ -3409,6 +3464,7 @@ export type TaskUpdateWithoutMembershipsInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutMembershipsInput = {
@@ -3457,6 +3513,7 @@ export type TaskUncheckedUpdateWithoutMembershipsInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutFollowersInput = {
@@ -3505,6 +3562,7 @@ export type TaskCreateWithoutFollowersInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutFollowersInput = {
@@ -3553,6 +3611,7 @@ export type TaskUncheckedCreateWithoutFollowersInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutFollowersInput = {
@@ -3617,6 +3676,7 @@ export type TaskUpdateWithoutFollowersInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutFollowersInput = {
@@ -3665,6 +3725,7 @@ export type TaskUncheckedUpdateWithoutFollowersInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutLikesInput = {
@@ -3713,6 +3774,7 @@ export type TaskCreateWithoutLikesInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutLikesInput = {
@@ -3761,6 +3823,7 @@ export type TaskUncheckedCreateWithoutLikesInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutLikesInput = {
@@ -3825,6 +3888,7 @@ export type TaskUpdateWithoutLikesInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutLikesInput = {
@@ -3873,6 +3937,7 @@ export type TaskUncheckedUpdateWithoutLikesInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutTagsInput = {
@@ -3921,6 +3986,7 @@ export type TaskCreateWithoutTagsInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutTagsInput = {
@@ -3969,6 +4035,7 @@ export type TaskUncheckedCreateWithoutTagsInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutTagsInput = {
@@ -4033,6 +4100,7 @@ export type TaskUpdateWithoutTagsInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutTagsInput = {
@@ -4081,6 +4149,7 @@ export type TaskUncheckedUpdateWithoutTagsInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskCreateWithoutCustomFieldValuesInput = {
@@ -4129,6 +4198,7 @@ export type TaskCreateWithoutCustomFieldValuesInput = {
   activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemCreateNestedManyWithoutTaskInput
 }
 
 export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
@@ -4177,6 +4247,7 @@ export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
   activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
   rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedCreateNestedManyWithoutTaskInput
 }
 
 export type TaskCreateOrConnectWithoutCustomFieldValuesInput = {
@@ -4241,6 +4312,7 @@ export type TaskUpdateWithoutCustomFieldValuesInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
@@ -4285,6 +4357,219 @@ export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
   followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
   likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
   tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
+  activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
+}
+
+export type TaskCreateWithoutWeeklyReportItemsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
+  creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
+  parent?: Prisma.TaskCreateNestedOneWithoutSubtasksInput
+  subtasks?: Prisma.TaskCreateNestedManyWithoutParentInput
+  workflowRoot?: Prisma.TaskCreateNestedOneWithoutWorkflowAdjustmentsInput
+  workflowAdjustments?: Prisma.TaskCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentCreateNestedManyWithoutTaskInput
+  activities?: Prisma.TaskActivityCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskUncheckedCreateWithoutWeeklyReportItemsInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  resourceType?: string | null
+  assigneeStatus?: string | null
+  completed?: boolean
+  liked?: boolean
+  numLikes?: number
+  numSubtasks?: number
+  mikaStatus?: string | null
+  priority?: string | null
+  dueAt?: Date | string | null
+  completedAtAsana?: Date | string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  dueOn?: string | null
+  startOn?: string | null
+  estimatedDays?: number | null
+  platform?: string | null
+  discipline?: string | null
+  estimatedTime?: number | null
+  maxDeadline?: Date | string | null
+  conclusionDays?: number | null
+  stage?: string | null
+  assigneeGid?: string | null
+  createdByUserId?: string | null
+  workflowRootTaskId?: string | null
+  adjustmentNumber?: number
+  parentAsanaGid?: string | null
+  parentName?: string | null
+  parentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
+  workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutTaskInput
+  followers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutTaskInput
+  likes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutTaskInput
+  tags?: Prisma.TaskTagUncheckedCreateNestedManyWithoutTaskInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutTaskInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutTaskInput
+  activities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutTaskInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutSourceTaskInput
+  rootReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRootTaskInput
+}
+
+export type TaskCreateOrConnectWithoutWeeklyReportItemsInput = {
+  where: Prisma.TaskWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskCreateWithoutWeeklyReportItemsInput, Prisma.TaskUncheckedCreateWithoutWeeklyReportItemsInput>
+}
+
+export type TaskUpsertWithoutWeeklyReportItemsInput = {
+  update: Prisma.XOR<Prisma.TaskUpdateWithoutWeeklyReportItemsInput, Prisma.TaskUncheckedUpdateWithoutWeeklyReportItemsInput>
+  create: Prisma.XOR<Prisma.TaskCreateWithoutWeeklyReportItemsInput, Prisma.TaskUncheckedCreateWithoutWeeklyReportItemsInput>
+  where?: Prisma.TaskWhereInput
+}
+
+export type TaskUpdateToOneWithWhereWithoutWeeklyReportItemsInput = {
+  where?: Prisma.TaskWhereInput
+  data: Prisma.XOR<Prisma.TaskUpdateWithoutWeeklyReportItemsInput, Prisma.TaskUncheckedUpdateWithoutWeeklyReportItemsInput>
+}
+
+export type TaskUpdateWithoutWeeklyReportItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
+  creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
+  parent?: Prisma.TaskUpdateOneWithoutSubtasksNestedInput
+  subtasks?: Prisma.TaskUpdateManyWithoutParentNestedInput
+  workflowRoot?: Prisma.TaskUpdateOneWithoutWorkflowAdjustmentsNestedInput
+  workflowAdjustments?: Prisma.TaskUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutTaskNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutTaskNestedInput
+  activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
+  rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+}
+
+export type TaskUncheckedUpdateWithoutWeeklyReportItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resourceType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  liked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  numLikes?: Prisma.IntFieldUpdateOperationsInput | number
+  numSubtasks?: Prisma.IntFieldUpdateOperationsInput | number
+  mikaStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAtAsana?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discipline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  estimatedTime?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
+  workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutTaskNestedInput
+  followers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutTaskNestedInput
+  likes?: Prisma.TaskLikeUncheckedUpdateManyWithoutTaskNestedInput
+  tags?: Prisma.TaskTagUncheckedUpdateManyWithoutTaskNestedInput
+  customFieldValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutTaskNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutTaskNestedInput
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
@@ -4411,6 +4696,7 @@ export type TaskUpdateWithoutAssigneeInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutAssigneeInput = {
@@ -4459,6 +4745,7 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
@@ -4544,6 +4831,7 @@ export type TaskUpdateWithoutCreatorInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutCreatorInput = {
@@ -4592,6 +4880,7 @@ export type TaskUncheckedUpdateWithoutCreatorInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutCreatorInput = {
@@ -4751,6 +5040,7 @@ export type TaskUpdateWithoutParentInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutParentInput = {
@@ -4799,6 +5089,7 @@ export type TaskUncheckedUpdateWithoutParentInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutParentInput = {
@@ -4884,6 +5175,7 @@ export type TaskUpdateWithoutWorkflowRootInput = {
   activities?: Prisma.TaskActivityUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateWithoutWorkflowRootInput = {
@@ -4932,6 +5224,7 @@ export type TaskUncheckedUpdateWithoutWorkflowRootInput = {
   activities?: Prisma.TaskActivityUncheckedUpdateManyWithoutTaskNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutSourceTaskNestedInput
   rootReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRootTaskNestedInput
+  weeklyReportItems?: Prisma.WeeklyReportItemUncheckedUpdateManyWithoutTaskNestedInput
 }
 
 export type TaskUncheckedUpdateManyWithoutWorkflowRootInput = {
@@ -4988,6 +5281,7 @@ export type TaskCountOutputType = {
   activities: number
   requestedReviews: number
   rootReviews: number
+  weeklyReportItems: number
 }
 
 export type TaskCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5002,6 +5296,7 @@ export type TaskCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   activities?: boolean | TaskCountOutputTypeCountActivitiesArgs
   requestedReviews?: boolean | TaskCountOutputTypeCountRequestedReviewsArgs
   rootReviews?: boolean | TaskCountOutputTypeCountRootReviewsArgs
+  weeklyReportItems?: boolean | TaskCountOutputTypeCountWeeklyReportItemsArgs
 }
 
 /**
@@ -5091,6 +5386,13 @@ export type TaskCountOutputTypeCountRootReviewsArgs<ExtArgs extends runtime.Type
   where?: Prisma.TaskReviewWhereInput
 }
 
+/**
+ * TaskCountOutputType without action
+ */
+export type TaskCountOutputTypeCountWeeklyReportItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WeeklyReportItemWhereInput
+}
+
 
 export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -5143,6 +5445,7 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   activities?: boolean | Prisma.Task$activitiesArgs<ExtArgs>
   requestedReviews?: boolean | Prisma.Task$requestedReviewsArgs<ExtArgs>
   rootReviews?: boolean | Prisma.Task$rootReviewsArgs<ExtArgs>
+  weeklyReportItems?: boolean | Prisma.Task$weeklyReportItemsArgs<ExtArgs>
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["task"]>
 
@@ -5285,6 +5588,7 @@ export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   activities?: boolean | Prisma.Task$activitiesArgs<ExtArgs>
   requestedReviews?: boolean | Prisma.Task$requestedReviewsArgs<ExtArgs>
   rootReviews?: boolean | Prisma.Task$rootReviewsArgs<ExtArgs>
+  weeklyReportItems?: boolean | Prisma.Task$weeklyReportItemsArgs<ExtArgs>
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TaskIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5318,6 +5622,7 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     activities: Prisma.$TaskActivityPayload<ExtArgs>[]
     requestedReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
     rootReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
+    weeklyReportItems: Prisma.$WeeklyReportItemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -5780,6 +6085,7 @@ export interface Prisma__TaskClient<T, Null = never, ExtArgs extends runtime.Typ
   activities<T extends Prisma.Task$activitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   requestedReviews<T extends Prisma.Task$requestedReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$requestedReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rootReviews<T extends Prisma.Task$rootReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$rootReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  weeklyReportItems<T extends Prisma.Task$weeklyReportItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Task$weeklyReportItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WeeklyReportItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6580,6 +6886,30 @@ export type Task$rootReviewsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.TaskReviewScalarFieldEnum | Prisma.TaskReviewScalarFieldEnum[]
+}
+
+/**
+ * Task.weeklyReportItems
+ */
+export type Task$weeklyReportItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WeeklyReportItem
+   */
+  select?: Prisma.WeeklyReportItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WeeklyReportItem
+   */
+  omit?: Prisma.WeeklyReportItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WeeklyReportItemInclude<ExtArgs> | null
+  where?: Prisma.WeeklyReportItemWhereInput
+  orderBy?: Prisma.WeeklyReportItemOrderByWithRelationInput | Prisma.WeeklyReportItemOrderByWithRelationInput[]
+  cursor?: Prisma.WeeklyReportItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WeeklyReportItemScalarFieldEnum | Prisma.WeeklyReportItemScalarFieldEnum[]
 }
 
 /**

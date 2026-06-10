@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { type Task } from "shared";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
+import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
@@ -205,19 +206,26 @@ function TaskMiniList({ tasks, onOpenTask }: { tasks: TaskWithProject[]; onOpenT
   return (
     <div className="max-h-[290px] overflow-y-auto pr-1">
       {tasks.map((task) => (
-        <button
+        <TaskContextMenu
           key={task.id}
-          type="button"
-          onClick={() => onOpenTask(task)}
-          className="grid w-full grid-cols-[18px_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-border py-2 text-left text-sm hover:bg-surface-hover"
+          task={task}
+          projectId={task.discipline.projectId}
+          onOpen={onOpenTask}
+          fallbackLinkPath="/"
         >
-          <span className="text-text-secondary">
-            {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
-          </span>
-          <span className={cn("truncate font-semibold", task.completed ? "text-text-muted" : "text-text-primary")}>{task.title}</span>
-          <span className="max-w-32 truncate rounded bg-surface-hover px-2 py-1 text-xs font-semibold text-text-primary">{task.discipline.projectName}</span>
-          <span className={cn("text-xs font-semibold", isOverdue(task) ? "text-red-300" : "text-text-secondary")}>{dateLabel(task.dueDate)}</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => onOpenTask(task)}
+            className="grid w-full grid-cols-[18px_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-border py-2 text-left text-sm hover:bg-surface-hover"
+          >
+            <span className="text-text-secondary">
+              {task.completed ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} />}
+            </span>
+            <span className={cn("truncate font-semibold", task.completed ? "text-text-muted" : "text-text-primary")}>{task.title}</span>
+            <span className="max-w-32 truncate rounded bg-surface-hover px-2 py-1 text-xs font-semibold text-text-primary">{task.discipline.projectName}</span>
+            <span className={cn("text-xs font-semibold", isOverdue(task) ? "text-red-300" : "text-text-secondary")}>{dateLabel(task.dueDate)}</span>
+          </button>
+        </TaskContextMenu>
       ))}
     </div>
   );

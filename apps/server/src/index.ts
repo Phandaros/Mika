@@ -12,6 +12,7 @@ import { initSocket } from "./lib/socket.js";
 import apiRoutes from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import mikeAuthRoutes from "./modules/mike/auth/mike-auth.router.js";
+import { startWeeklyReportJob } from "./lib/weeklyReportJob.js";
 
 fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
 
@@ -76,6 +77,7 @@ await normalizeAllProjectSections(prisma);
 
 server.listen(env.PORT, "0.0.0.0", () => {
   console.log(`MK Projetos server running on port ${env.PORT}`);
+  startWeeklyReportJob();
 });
 
 async function shutdown(): Promise<void> {

@@ -157,3 +157,13 @@ export type ProjectCustomFieldSetting = Prisma.ProjectCustomFieldSettingModel
  * 
  */
 export type TaskCustomFieldValue = Prisma.TaskCustomFieldValueModel
+/**
+ * Model WeeklyReport
+ * 
+ */
+export type WeeklyReport = Prisma.WeeklyReportModel
+/**
+ * Model WeeklyReportItem
+ * 
+ */
+export type WeeklyReportItem = Prisma.WeeklyReportItemModel

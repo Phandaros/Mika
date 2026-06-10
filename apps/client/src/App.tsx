@@ -15,6 +15,8 @@ import { ReviewsPage } from "./pages/ReviewsPage";
 import { SprintBoardPage } from "./pages/SprintBoardPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { UsersPage } from "./pages/UsersPage";
+import { WeeklyReportPage } from "./pages/WeeklyReportPage";
+import { WeeklyReportsAdminPage } from "./pages/WeeklyReportsAdminPage";
 import { Role } from "shared";
 
 const AUTH_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
@@ -129,7 +131,9 @@ export function App() {
             <Route path="/workloads/civil" element={<GlobalWorkloadPage scope="civil" />} />
             <Route path="/workloads/eletrico" element={<GlobalWorkloadPage scope="electrical" />} />
             <Route path="/my-tasks" element={<MyTasksPage />} />
+            <Route path="/weekly-reports/mine" element={<WeeklyReportPage />} />
             <Route element={<CoordinatorRoute />}>
+              <Route path="/weekly-reports" element={<WeeklyReportsAdminPage />} />
               <Route path="/sprint/civil" element={<SprintBoardPage scope="civil" />} />
               <Route path="/sprint/eletrico" element={<SprintBoardPage scope="electrical" />} />
               <Route path="/reviews" element={<ReviewsPage />} />

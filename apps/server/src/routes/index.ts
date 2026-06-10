@@ -13,6 +13,7 @@ import updatesRoutes from "./updates.routes.js";
 import uploadsRoutes from "./uploads.routes.js";
 import usersRoutes from "./users.routes.js";
 import workloadRoutes from "./workload.routes.js";
+import weeklyReportsRoutes from "./weeklyReports.routes.js";
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use(sectionsRoutes);
 router.use(tasksRoutes);
 router.use(commentsRoutes);
 router.use(notificationsRoutes);
+router.use(weeklyReportsRoutes);
 router.use("/updates", updatesRoutes);
 router.use(uploadsRoutes);
 

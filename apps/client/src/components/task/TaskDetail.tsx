@@ -17,7 +17,7 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest, type User } from "shared";
+import { Priority, type Project, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
 import { useComments, useCreateComment } from "../../hooks/useComments";
@@ -29,10 +29,18 @@ import { useUsers } from "../../hooks/useUsers";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
-import { DisciplineChip, PlatformChip, editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
+import {
+  EditableAssigneeField,
+  EditableDecimalField,
+  EditableDisciplineField,
+  EditableMaxDeadlineField,
+  EditablePlatformField,
+  EditableStageField,
+  EditableStatusField
+} from "./TaskInlineFields";
 import { TaskCompletionButton } from "./TaskCompletionButton";
 import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
 import { TaskCommentEditor, type CommentEditorHandle } from "./TaskCommentEditor";
@@ -44,11 +52,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
 import { Textarea } from "../ui/textarea";
 import {
-  compactDatePickerClassName,
-  compactInputClassName,
   compactSelectTriggerClassName,
   DetailRow,
-  EmptyField,
   formatDecimal,
   TaskFixedFieldGrid,
   TaskPanelShell
@@ -68,23 +73,6 @@ const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.MEDIUM, label: "Média" },
   { value: Priority.HIGH, label: "Alta" },
   { value: Priority.URGENT, label: "Urgente" }
-];
-
-const platformOptions = [
-  { value: "CAD", label: "CAD" },
-  { value: "REVIT", label: "REVIT" },
-  { value: "COORD", label: "COORD" }
-];
-
-const disciplineOptions = [
-  { value: "ELE", label: "ELE" },
-  { value: "SPDA", label: "SPDA" },
-  { value: "TEL", label: "TEL" },
-  { value: "HID", label: "HID" },
-  { value: "PPCI", label: "PPCI" },
-  { value: "HVAC", label: "HVAC" },
-  { value: "COORD", label: "COORD" },
-  { value: "EP", label: "EP" }
 ];
 
 const promotedTaskFieldKeys = new Set(["status", "dias-estimados", "dias-conclusao", "estimated-time"]);
@@ -570,11 +558,9 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
                 label: "Prazo Máximo",
                 render: () =>
                   canManageTaskFields ? (
-                    <DatePicker
+                    <EditableMaxDeadlineField
                       value={fixedMaxDeadline ?? null}
-                      onValueChange={(maxDeadline) => void patchTask({ maxDeadline })}
-                      placeholder="—"
-                      className={compactDatePickerClassName}
+                      onSave={(maxDeadline) => void patchTask({ maxDeadline })}
                     />
                   ) : (
                     <ReadOnlyValue value={fixedMaxDeadline ? formatDisplayDate(fixedMaxDeadline) : null} />
@@ -900,187 +886,6 @@ function EditableProjectsField({
         </div>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function EditableStatusField({ task, onSave }: { task: Task; onSave: (value: TaskStatus) => void }) {
-  return (
-    <SearchableSelect
-      value={task.status}
-      options={editableTaskStatusOptions(task).map((status) => ({
-        value: status,
-        label: taskStatusLabels[status],
-        render: <TaskStatusBadge status={status} />
-      }))}
-      searchPlaceholder="Buscar status..."
-      triggerClassName={compactSelectTriggerClassName}
-      contentClassName="min-w-[220px] max-w-[320px]"
-      showSelectionIndicator={false}
-      onValueChange={(nextValue) => onSave(nextValue as TaskStatus)}
-    />
-  );
-}
-
-function EditableAssigneeField({
-  users,
-  assigneeId,
-  onSave
-}: {
-  users: User[];
-  assigneeId: string | null;
-  onSave: (value: string | null) => void;
-}) {
-  return (
-    <SearchableSelect
-      value={assigneeId ?? "none"}
-      options={[
-        { value: "none", label: "Sem responsável", render: <span className="text-text-muted">Sem responsável</span> },
-        ...users.map((item) => ({
-          value: item.id,
-          label: item.name,
-          avatarUrl: item.avatarUrl
-        }))
-      ]}
-      placeholder="Sem responsável"
-      searchPlaceholder="Buscar responsável..."
-      contentClassName="min-w-[240px] max-w-[320px]"
-      renderValue={(option) =>
-        option.value === "none" ? (
-          <span className="text-text-secondary">Sem responsável</span>
-        ) : (
-          <span className="flex min-w-0 items-center gap-2">
-            <Avatar name={option.label} imageUrl={option.avatarUrl} className="h-7 w-7 shrink-0" />
-            <span className="min-w-0 truncate font-medium text-text-primary">{option.label}</span>
-          </span>
-        )
-      }
-      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
-    />
-  );
-}
-
-function EditablePlatformField({ value, onSave }: { value: string | null | undefined; onSave: (value: string | null) => void }) {
-  return (
-    <SearchableSelect
-      value={value ?? "none"}
-      options={[
-        { value: "none", label: "Sem plataforma", render: <EmptyField /> },
-        ...platformOptions.map((option) => ({
-          ...option,
-          render: <PlatformChip platform={option.value} />
-        }))
-      ]}
-      searchPlaceholder="Buscar plataforma..."
-      triggerClassName={compactSelectTriggerClassName}
-      contentClassName="min-w-[220px] max-w-[320px]"
-      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
-    />
-  );
-}
-
-function EditableDisciplineField({ value, onSave }: { value: string | null | undefined; onSave: (value: string | null) => void }) {
-  return (
-    <SearchableSelect
-      value={value ?? "none"}
-      options={[
-        { value: "none", label: "Sem disciplina", render: <EmptyField /> },
-        ...disciplineOptions.map((option) => ({
-          ...option,
-          render: <DisciplineChip discipline={option.value} />
-        }))
-      ]}
-      searchPlaceholder="Buscar disciplina..."
-      triggerClassName={compactSelectTriggerClassName}
-      contentClassName="min-w-[220px] max-w-[320px]"
-      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
-    />
-  );
-}
-
-function EditableDecimalField({ value, onSave }: { value: number | null | undefined; onSave: (value: number | null) => void }) {
-  const initialValue = value == null ? "" : formatDecimal(value);
-  const [draft, setDraft] = useState(initialValue);
-
-  useEffect(() => {
-    setDraft(initialValue);
-  }, [initialValue]);
-
-  return (
-    <DecimalInput
-      value={draft}
-      onValueChange={setDraft}
-      onBlur={() => {
-        const parsed = parseDecimalInput(draft);
-        const nextValue = parsed === null || Number.isNaN(parsed) ? null : parsed;
-        if (nextValue !== (value ?? null)) {
-          onSave(nextValue);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
-      }}
-      className={cn(compactInputClassName, "font-mono text-[12px]")}
-      placeholder="—"
-    />
-  );
-}
-
-function EditableStageField({
-  value,
-  stageField,
-  onSave
-}: {
-  value: string | null | undefined;
-  stageField: TaskCustomField | null;
-  onSave: (value: string | null) => void;
-}) {
-  const enumOptions = stageField?.enumOptions?.filter((option) => option.name) ?? [];
-  const [draft, setDraft] = useState(value ?? "");
-
-  useEffect(() => {
-    setDraft(value ?? "");
-  }, [value]);
-
-  if (enumOptions.length > 0) {
-    return (
-      <SearchableSelect
-        value={value ?? "none"}
-        options={[
-          { value: "none", label: "Sem etapa", render: <EmptyField /> },
-          ...enumOptions.map((option) => ({
-            value: option.name,
-            label: option.name,
-            color: enumColor(option.name, option.color)
-          }))
-        ]}
-        searchPlaceholder="Buscar etapa..."
-        triggerClassName={compactSelectTriggerClassName}
-        contentClassName="min-w-[220px] max-w-[320px]"
-        onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
-      />
-    );
-  }
-
-  return (
-    <Input
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => {
-        const nextValue = draft.trim() || null;
-        if (nextValue !== (value ?? null)) {
-          onSave(nextValue);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
-      }}
-      className={cn(compactInputClassName, "w-[220px]")}
-      placeholder="—"
-    />
   );
 }
 

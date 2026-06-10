@@ -801,6 +801,134 @@ export function useUpdateTaskCompletion(projectId: string) {
   });
 }
 
+function cloneCacheValue<T>(value: T | undefined): T | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+export type TaskCacheSnapshot = {
+  projects: Project[] | undefined;
+  projectById: Array<[string, Project | undefined]>;
+  sectionTasks: Array<[string, Task[] | undefined]>;
+  workloadQueries: Array<[QueryKey, Task[] | undefined]>;
+  sprintQueries: Array<[QueryKey, InfiniteData<SprintTasksResponse> | undefined]>;
+  sprintSummaries: Array<[QueryKey, SprintSummaryResponse | undefined]>;
+  taskById: Task | undefined;
+};
+
+export function snapshotTaskCaches(taskId: string): TaskCacheSnapshot {
+  const task = findCachedTask(taskId);
+  const resolvedProjectId = task?.discipline?.projectId;
+  const projectById: Array<[string, Project | undefined]> = resolvedProjectId
+    ? [[resolvedProjectId, cloneCacheValue(queryClient.getQueryData<Project>(["projects", resolvedProjectId]))]]
+    : [];
+  const sectionTasks: Array<[string, Task[] | undefined]> = task?.disciplineId
+    ? [[task.disciplineId, cloneCacheValue(queryClient.getQueryData<Task[]>(["sections", task.disciplineId, "tasks"]))]]
+    : [];
+
+  return {
+    projects: cloneCacheValue(queryClient.getQueryData<Project[]>(["projects"])),
+    projectById,
+    sectionTasks,
+    workloadQueries: queryClient
+      .getQueriesData<Task[]>({ predicate: workloadQueryPredicate })
+      .map(([queryKey, data]) => [queryKey, cloneCacheValue(data)] as [QueryKey, Task[] | undefined]),
+    sprintQueries: queryClient
+      .getQueriesData<InfiniteData<SprintTasksResponse>>({ predicate: sprintBoardTasksQueryPredicate })
+      .map(([queryKey, data]) => [queryKey, cloneCacheValue(data)] as [QueryKey, InfiniteData<SprintTasksResponse> | undefined]),
+    sprintSummaries: queryClient
+      .getQueriesData<SprintSummaryResponse>({ predicate: sprintBoardSummaryQueryPredicate })
+      .map(([queryKey, data]) => [queryKey, cloneCacheValue(data)] as [QueryKey, SprintSummaryResponse | undefined]),
+    taskById: cloneCacheValue(queryClient.getQueryData<Task>(["task", taskId]))
+  };
+}
+
+export function restoreTaskCachesSnapshot(snapshot: TaskCacheSnapshot) {
+  queryClient.setQueryData(["projects"], snapshot.projects);
+
+  for (const [projectId, project] of snapshot.projectById) {
+    queryClient.setQueryData(["projects", projectId], project);
+  }
+
+  for (const [sectionId, tasks] of snapshot.sectionTasks) {
+    queryClient.setQueryData(["sections", sectionId, "tasks"], tasks);
+  }
+
+  for (const [queryKey, data] of snapshot.workloadQueries) {
+    queryClient.setQueryData(queryKey, data);
+  }
+
+  for (const [queryKey, data] of snapshot.sprintQueries) {
+    queryClient.setQueryData(queryKey, data);
+  }
+
+  for (const [queryKey, data] of snapshot.sprintSummaries) {
+    queryClient.setQueryData(queryKey, data);
+  }
+
+  if (snapshot.taskById) {
+    queryClient.setQueryData(["task", snapshot.taskById.id], snapshot.taskById);
+  }
+}
+
+export function optimisticallyRemoveTaskFromCaches(taskId: string, projectId?: string) {
+  queryClient.removeQueries({ queryKey: ["task", taskId] });
+  queryClient.setQueryData<Project[]>(["projects"], (projects) =>
+    projects?.map((project) => ({
+      ...project,
+      disciplines: project.disciplines?.map((discipline) => ({
+        ...discipline,
+        tasks: discipline.tasks?.filter((task) => task.id !== taskId)
+      })),
+      sections: project.sections?.map((section) => ({
+        ...section,
+        tasks: section.tasks?.filter((task) => task.id !== taskId)
+      }))
+    }))
+  );
+
+  if (projectId) {
+    queryClient.setQueryData<Project>(["projects", projectId], (currentProject) => {
+      if (!currentProject) {
+        return currentProject;
+      }
+
+      return {
+        ...currentProject,
+        disciplines: currentProject.disciplines?.map((discipline) => ({
+          ...discipline,
+          tasks: discipline.tasks?.filter((task) => task.id !== taskId)
+        })),
+        sections: currentProject.sections?.map((section) => ({
+          ...section,
+          tasks: section.tasks?.filter((task) => task.id !== taskId)
+        }))
+      };
+    });
+  }
+
+  queryClient.setQueriesData<Task[]>({ predicate: workloadQueryPredicate }, (tasks) =>
+    tasks?.filter((task) => task.id !== taskId)
+  );
+
+  queryClient.setQueriesData<InfiniteData<SprintTasksResponse>>({ predicate: sprintBoardTasksQueryPredicate }, (currentData) => {
+    if (!currentData) {
+      return currentData;
+    }
+
+    return {
+      ...currentData,
+      pages: currentData.pages.map((page) => ({
+        ...page,
+        tasks: page.tasks.filter((task) => task.id !== taskId)
+      }))
+    };
+  });
+}
+
 export function useDeleteTask(projectId?: string) {
   return useMutation({
     mutationFn: async (taskId: string) => {
@@ -808,23 +936,7 @@ export function useDeleteTask(projectId?: string) {
       return taskId;
     },
     onSuccess: (taskId) => {
-      queryClient.removeQueries({ queryKey: ["task", taskId] });
-      queryClient.setQueryData<Project[]>(["projects"], (projects) =>
-        projects?.map((project) => ({
-          ...project,
-          disciplines: project.disciplines?.map((discipline) => ({
-            ...discipline,
-            tasks: discipline.tasks?.filter((task) => task.id !== taskId)
-          })),
-          sections: project.sections?.map((section) => ({
-            ...section,
-            tasks: section.tasks?.filter((task) => task.id !== taskId)
-          }))
-        }))
-      );
-      queryClient.setQueriesData<Task[]>({ predicate: workloadQueryPredicate }, (tasks) =>
-        tasks?.filter((task) => task.id !== taskId)
-      );
+      optimisticallyRemoveTaskFromCaches(taskId, projectId);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries();
     }

@@ -406,7 +406,9 @@ export const ModelName = {
   AsanaCustomField: 'AsanaCustomField',
   AsanaCustomFieldEnumOption: 'AsanaCustomFieldEnumOption',
   ProjectCustomFieldSetting: 'ProjectCustomFieldSetting',
-  TaskCustomFieldValue: 'TaskCustomFieldValue'
+  TaskCustomFieldValue: 'TaskCustomFieldValue',
+  WeeklyReport: 'WeeklyReport',
+  WeeklyReportItem: 'WeeklyReportItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -422,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "taskCustomFieldValue"
+    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2128,6 +2130,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    WeeklyReport: {
+      payload: Prisma.$WeeklyReportPayload<ExtArgs>
+      fields: Prisma.WeeklyReportFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WeeklyReportFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WeeklyReportFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>
+        }
+        findFirst: {
+          args: Prisma.WeeklyReportFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WeeklyReportFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>
+        }
+        findMany: {
+          args: Prisma.WeeklyReportFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>[]
+        }
+        create: {
+          args: Prisma.WeeklyReportCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>
+        }
+        createMany: {
+          args: Prisma.WeeklyReportCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WeeklyReportCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>[]
+        }
+        delete: {
+          args: Prisma.WeeklyReportDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>
+        }
+        update: {
+          args: Prisma.WeeklyReportUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>
+        }
+        deleteMany: {
+          args: Prisma.WeeklyReportDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WeeklyReportUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WeeklyReportUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>[]
+        }
+        upsert: {
+          args: Prisma.WeeklyReportUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportPayload>
+        }
+        aggregate: {
+          args: Prisma.WeeklyReportAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWeeklyReport>
+        }
+        groupBy: {
+          args: Prisma.WeeklyReportGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WeeklyReportGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WeeklyReportCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WeeklyReportCountAggregateOutputType> | number
+        }
+      }
+    }
+    WeeklyReportItem: {
+      payload: Prisma.$WeeklyReportItemPayload<ExtArgs>
+      fields: Prisma.WeeklyReportItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WeeklyReportItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WeeklyReportItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>
+        }
+        findFirst: {
+          args: Prisma.WeeklyReportItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WeeklyReportItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>
+        }
+        findMany: {
+          args: Prisma.WeeklyReportItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>[]
+        }
+        create: {
+          args: Prisma.WeeklyReportItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>
+        }
+        createMany: {
+          args: Prisma.WeeklyReportItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WeeklyReportItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>[]
+        }
+        delete: {
+          args: Prisma.WeeklyReportItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>
+        }
+        update: {
+          args: Prisma.WeeklyReportItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.WeeklyReportItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WeeklyReportItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WeeklyReportItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.WeeklyReportItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WeeklyReportItemPayload>
+        }
+        aggregate: {
+          args: Prisma.WeeklyReportItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWeeklyReportItem>
+        }
+        groupBy: {
+          args: Prisma.WeeklyReportItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WeeklyReportItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WeeklyReportItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WeeklyReportItemCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2522,6 +2672,33 @@ export const TaskCustomFieldValueScalarFieldEnum = {
 export type TaskCustomFieldValueScalarFieldEnum = (typeof TaskCustomFieldValueScalarFieldEnum)[keyof typeof TaskCustomFieldValueScalarFieldEnum]
 
 
+export const WeeklyReportScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  weekStart: 'weekStart',
+  weekEnd: 'weekEnd',
+  status: 'status',
+  submittedAt: 'submittedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WeeklyReportScalarFieldEnum = (typeof WeeklyReportScalarFieldEnum)[keyof typeof WeeklyReportScalarFieldEnum]
+
+
+export const WeeklyReportItemScalarFieldEnum = {
+  id: 'id',
+  reportId: 'reportId',
+  taskId: 'taskId',
+  comment: 'comment',
+  taskSnapshot: 'taskSnapshot',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WeeklyReportItemScalarFieldEnum = (typeof WeeklyReportItemScalarFieldEnum)[keyof typeof WeeklyReportItemScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2530,12 +2707,37 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const NullsOrder = {
   first: 'first',
   last: 'last'
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
 
@@ -2576,6 +2778,27 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'WeeklyReportStatus'
+ */
+export type EnumWeeklyReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WeeklyReportStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 /**
@@ -2711,6 +2934,8 @@ export type GlobalOmitConfig = {
   asanaCustomFieldEnumOption?: Prisma.AsanaCustomFieldEnumOptionOmit
   projectCustomFieldSetting?: Prisma.ProjectCustomFieldSettingOmit
   taskCustomFieldValue?: Prisma.TaskCustomFieldValueOmit
+  weeklyReport?: Prisma.WeeklyReportOmit
+  weeklyReportItem?: Prisma.WeeklyReportItemOmit
 }
 
 /* Types for Logging */

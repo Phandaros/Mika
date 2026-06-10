@@ -9,7 +9,10 @@
 * 🟢 You can import this file directly.
 */
 
+export const WeeklyReportStatus = {
+  PENDING: 'PENDING',
+  SUBMITTED: 'SUBMITTED',
+  LATE: 'LATE'
+} as const
 
-
-// This file is empty because there are no enums in the schema.
-export {}
+export type WeeklyReportStatus = (typeof WeeklyReportStatus)[keyof typeof WeeklyReportStatus]

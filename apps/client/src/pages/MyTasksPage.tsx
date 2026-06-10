@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import {
   addMonths,
@@ -15,8 +15,8 @@ import {
   startOfWeek
 } from "date-fns";
 import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { TaskStatus, type Task } from "shared";
+import { Link, useSearchParams } from "react-router-dom";
+import { TaskStatus, type Task, type UpdateTaskRequest } from "shared";
 import {
   DataTable,
   DataTableCell,
@@ -25,26 +25,36 @@ import {
   DataTableHead,
   DataTableHeader,
   DataTableRow,
-  DateCell,
   EmptyCell,
-  NumberCell,
   TruncatedCellValue
 } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
+import { ViewTab } from "../components/shared/ViewTab";
 import { Avatar } from "../components/shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, editableTaskStatusOptions, PlatformChip, taskStatusTokens } from "../components/shared/Chip";
+import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusTokens } from "../components/shared/Chip";
 import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
+import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
+import {
+  EditableCompletionField,
+  EditableDecimalField,
+  EditableDisciplineField,
+  EditableMaxDeadlineField,
+  EditablePlatformField,
+  EditableStageField,
+  EditableStatusField
+} from "../components/task/TaskInlineFields";
+import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask } from "../hooks/useTasks";
-import { canManageTasks } from "../lib/permissions";
-import { cn, dateOnlyToLocalDate } from "../lib/utils";
+import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
+import { canCompleteTasks, canManageTasks } from "../lib/permissions";
+import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
 type CompletionFilter = "open" | "completed" | "all";
@@ -72,6 +82,7 @@ const columns: Array<{ status: TaskStatus; label: string }> = [
 export function MyTasksPage() {
   const { user } = useAuth();
   const canManage = canManageTasks(user);
+  const canComplete = canCompleteTasks(user);
   const { data: projects = [], isLoading } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<MyTasksView>("list");
@@ -86,6 +97,7 @@ export function MyTasksPage() {
   const [draftTitle, setDraftTitle] = useState("");
   const [selectedCreateTarget, setSelectedCreateTarget] = useState("");
   const updateTask = useUpdateTask("");
+  const updateTaskCompletion = useUpdateTaskCompletion("");
   const disciplineOptions = useMemo(
     () =>
       projects.flatMap((project) =>
@@ -226,6 +238,14 @@ export function MyTasksPage() {
     setSelectedTask(task);
   }
 
+  function patchTask(task: TaskWithProject, payload: UpdateTaskRequest) {
+    void updateTask.mutateAsync({ id: task.id, payload });
+  }
+
+  function patchTaskCompletion(task: TaskWithProject, completed: boolean) {
+    void updateTaskCompletion.mutateAsync({ id: task.id, completed });
+  }
+
   return (
     <div className="grid gap-0">
       <section className="border-b border-border pb-0">
@@ -361,12 +381,11 @@ export function MyTasksPage() {
       {view === "list" ? (
         <ListView
           tasks={visibleTasks}
+          canManage={canManage}
+          canComplete={canComplete}
           onOpenTask={openTaskDetail}
-          onStatusChange={(task, status) => {
-            if (canManage) {
-              void updateTask.mutateAsync({ id: task.id, payload: { status } });
-            }
-          }}
+          onPatchTask={patchTask}
+          onPatchCompletion={patchTaskCompletion}
         />
       ) : null}
       {view === "kanban" ? (
@@ -383,27 +402,20 @@ export function MyTasksPage() {
   );
 }
 
-function ViewTab({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn("flex h-9 items-center gap-1 border-b-2 border-transparent", active ? "border-text-primary text-text-primary" : "hover:text-text-primary")}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
 function ListView({
   tasks,
+  canManage,
+  canComplete,
   onOpenTask,
-  onStatusChange
+  onPatchTask,
+  onPatchCompletion
 }: {
   tasks: TaskWithProject[];
+  canManage: boolean;
+  canComplete: boolean;
   onOpenTask: (task: TaskWithProject) => void;
-  onStatusChange: (task: TaskWithProject, status: TaskStatus) => void;
+  onPatchTask: (task: TaskWithProject, payload: UpdateTaskRequest) => void;
+  onPatchCompletion: (task: TaskWithProject, completed: boolean) => void;
 }) {
   const openTasks = tasks.filter((task) => !task.completed);
   const completedTasks = tasks.filter((task) => task.completed);
@@ -411,15 +423,15 @@ function ListView({
     { key: "open", label: "Não concluídas", tasks: openTasks },
     { key: "completed", label: "Concluídas", tasks: completedTasks }
   ].filter((group) => group.tasks.length > 0);
+  const columnCount = 11;
 
   return (
     <DataTableContainer>
-      <DataTable minWidth="1480px">
+      <DataTable minWidth="1360px">
         <colgroup>
-          <col className="w-[260px]" />
           <col className="w-[160px]" />
-          <col className="w-[130px]" />
-          <col className="w-[140px]" />
+          <col className="w-[260px]" />
+          <col className="w-[120px]" />
           <col className="w-[150px]" />
           <col className="w-[90px]" />
           <col className="w-[100px]" />
@@ -427,14 +439,13 @@ function ListView({
           <col className="w-[120px]" />
           <col className="w-[90px]" />
           <col className="w-[90px]" />
-          <col className="w-[120px]" />
+          <col className="w-[80px]" />
         </colgroup>
         <DataTableHead>
           <tr className="border-b border-[--color-border]">
-            <DataTableHeader>Tarefa</DataTableHeader>
             <DataTableHeader>Projeto</DataTableHeader>
+            <DataTableHeader>Tarefa</DataTableHeader>
             <DataTableHeader>Seção</DataTableHeader>
-            <DataTableHeader>Responsável</DataTableHeader>
             <DataTableHeader>Status</DataTableHeader>
             <DataTableHeader align="center">Plataforma</DataTableHeader>
             <DataTableHeader align="center">Disciplina</DataTableHeader>
@@ -448,60 +459,144 @@ function ListView({
         <tbody>
           {groups.map((group) => (
             <Fragment key={group.key}>
-              <DataTableGroupRow colSpan={12} label={group.label} count={group.tasks.length} />
+              <DataTableGroupRow colSpan={columnCount} label={group.label} count={group.tasks.length} />
               {group.tasks.map((task, index) => (
-                <DataTableRow key={`${group.key}:${task.id}:${task.discipline.projectId}:${task.discipline.id}:${index}`} className={cn(task.completed ? "opacity-70" : "")}>
-                  <DataTableCell>
-                    <div className="flex min-w-0 items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onOpenTask(task)}
-                        title={task.title}
-                        className={cn("min-w-0 truncate text-left font-medium hover:text-brand-orange", task.completed ? "text-text-muted" : "text-text-primary")}
+                <TaskContextMenu
+                  key={`${group.key}:${task.id}:${task.discipline.projectId}:${task.discipline.id}:${index}`}
+                  task={task}
+                  projectId={task.discipline.projectId}
+                  onOpen={onOpenTask}
+                  fallbackLinkPath="/my-tasks"
+                >
+                  <DataTableRow className={cn(task.completed ? "opacity-70" : "")}>
+                    <DataTableCell>
+                      <Link
+                        to={`/projects/${task.discipline.projectId}`}
+                        title={task.discipline.projectName}
+                        className="block min-w-0 truncate text-[13px] text-[--color-text-primary] transition-colors hover:text-brand-orange"
                       >
-                        {task.title || <EmptyCell />}
-                      </button>
-                    </div>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <TruncatedCellValue value={task.discipline.projectName} />
-                  </DataTableCell>
-                  <DataTableCell>
-                    <TruncatedCellValue value={task.discipline.name} />
-                  </DataTableCell>
-                  <DataTableCell>
-                    {task.assignee ? (
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-5 w-5 shrink-0" />
-                        <span className="truncate">{task.assignee.name}</span>
-                      </span>
-                    ) : (
-                      <EmptyCell />
-                    )}
-                  </DataTableCell>
-                  <DataTableCell>
-                    <SearchableSelect
-                      value={task.status}
-                      options={editableTaskStatusOptions(task).map((status) => ({
-                        value: status,
-                        label: statusLabel(status),
-                        color: taskStatusColors[status],
-                        render: <StatusOptionPill label={statusLabel(status)} color={taskStatusColors[status]} />
-                      }))}
-                      triggerClassName="h-7 w-40 py-0"
-                      searchPlaceholder="Buscar status..."
-                      showSelectionIndicator={false}
-                      onValueChange={(value) => onStatusChange(task, value as TaskStatus)}
-                    />
-                  </DataTableCell>
-                  <DataTableCell align="center">{task.platform ? <PlatformChip platform={task.platform} /> : <EmptyCell />}</DataTableCell>
-                  <DataTableCell align="center">{task.taskDiscipline ? <DisciplineChip discipline={task.taskDiscipline} /> : <EmptyCell />}</DataTableCell>
-                  <DataTableCell align="center"><CompletionStatusChip completed={task.completed} /></DataTableCell>
-                  <DataTableCell><DateCell value={task.maxDeadline} /></DataTableCell>
-                  <DataTableCell align="right" className="font-mono text-[12px]"><NumberCell value={task.estimatedTime} /></DataTableCell>
-                  <DataTableCell align="right" className="font-mono text-[12px]"><NumberCell value={task.conclusionDays} /></DataTableCell>
-                  <DataTableCell><TruncatedCellValue value={task.stage} /></DataTableCell>
-                </DataTableRow>
+                        {task.discipline.projectName || <EmptyCell />}
+                      </Link>
+                    </DataTableCell>
+                    <DataTableCell>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onOpenTask(task)}
+                          title={task.title}
+                          className={cn(
+                            "min-w-0 truncate text-left font-medium hover:text-brand-orange",
+                            task.completed ? "text-text-muted" : "text-text-primary"
+                          )}
+                        >
+                          {task.title || <EmptyCell />}
+                        </button>
+                      </div>
+                    </DataTableCell>
+                    <DataTableCell>
+                      <TruncatedCellValue value={task.discipline.name} />
+                    </DataTableCell>
+                    <DataTableCell>
+                      {canManage ? (
+                        <EditableStatusField
+                          task={task}
+                          variant="table"
+                          onSave={(status) => onPatchTask(task, { status })}
+                        />
+                      ) : (
+                        <TaskStatusBadge status={task.status} />
+                      )}
+                    </DataTableCell>
+                    <DataTableCell align="center">
+                      {canManage ? (
+                        <EditablePlatformField
+                          value={task.platform}
+                          variant="table"
+                          onSave={(platform) => onPatchTask(task, { platform })}
+                        />
+                      ) : task.platform ? (
+                        <PlatformChip platform={task.platform} />
+                      ) : (
+                        <EmptyCell />
+                      )}
+                    </DataTableCell>
+                    <DataTableCell align="center">
+                      {canManage ? (
+                        <EditableDisciplineField
+                          value={task.taskDiscipline}
+                          variant="table"
+                          onSave={(taskDiscipline) => onPatchTask(task, { taskDiscipline })}
+                        />
+                      ) : task.taskDiscipline ? (
+                        <DisciplineChip discipline={task.taskDiscipline} />
+                      ) : (
+                        <EmptyCell />
+                      )}
+                    </DataTableCell>
+                    <DataTableCell align="center">
+                      {canManage || canComplete ? (
+                        <EditableCompletionField
+                          completed={task.completed}
+                          variant="table"
+                          onSave={(completed) => onPatchCompletion(task, completed)}
+                        />
+                      ) : (
+                        <CompletionStatusChip completed={task.completed} />
+                      )}
+                    </DataTableCell>
+                    <DataTableCell>
+                      {canManage ? (
+                        <EditableMaxDeadlineField
+                          value={task.maxDeadline}
+                          variant="table"
+                          onSave={(maxDeadline) => onPatchTask(task, { maxDeadline })}
+                        />
+                      ) : task.maxDeadline ? (
+                        <span>{formatDateOnly(task.maxDeadline, "dd/MM/yyyy")}</span>
+                      ) : (
+                        <EmptyCell />
+                      )}
+                    </DataTableCell>
+                    <DataTableCell align="right" className="font-mono text-[12px]">
+                      {canManage ? (
+                        <EditableDecimalField
+                          value={task.estimatedTime}
+                          variant="table"
+                          onSave={(estimatedTime) => onPatchTask(task, { estimatedTime, estimatedDays: estimatedTime })}
+                        />
+                      ) : task.estimatedTime == null ? (
+                        <EmptyCell />
+                      ) : (
+                        <span>{formatDecimalDisplay(task.estimatedTime)}</span>
+                      )}
+                    </DataTableCell>
+                    <DataTableCell align="right" className="font-mono text-[12px]">
+                      {canManage ? (
+                        <EditableDecimalField
+                          value={task.conclusionDays}
+                          variant="table"
+                          onSave={(conclusionDays) => onPatchTask(task, { conclusionDays })}
+                        />
+                      ) : task.conclusionDays == null ? (
+                        <EmptyCell />
+                      ) : (
+                        <span>{formatDecimalDisplay(task.conclusionDays)}</span>
+                      )}
+                    </DataTableCell>
+                    <DataTableCell>
+                      {canManage ? (
+                        <EditableStageField
+                          value={task.stage}
+                          stageField={null}
+                          variant="table"
+                          onSave={(stage) => onPatchTask(task, { stage })}
+                        />
+                      ) : (
+                        <TruncatedCellValue value={task.stage} />
+                      )}
+                    </DataTableCell>
+                  </DataTableRow>
+                </TaskContextMenu>
               ))}
             </Fragment>
           ))}
@@ -509,6 +604,10 @@ function ListView({
       </DataTable>
     </DataTableContainer>
   );
+}
+
+function formatDecimalDisplay(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function KanbanView({
@@ -619,25 +718,32 @@ function CalendarView({ month, tasks, onOpenTask }: { month: Date; tasks: TaskWi
                   const tokens = taskStatusTokens[item.task.status];
 
                   return (
-                    <button
+                    <TaskContextMenu
                       key={`${item.task.id}:${item.task.discipline.projectId}:${item.task.discipline.id}:${index}`}
-                      type="button"
-                      onClick={() => onOpenTask(item.task)}
-                      className={cn(
-                        "pointer-events-auto min-w-0 truncate px-2 py-1 text-left text-[11px] font-medium transition-colors hover:brightness-125",
-                        startsBeforeWeek ? "rounded-l-none" : "rounded-l",
-                        endsAfterWeek ? "rounded-r-none" : "rounded-r"
-                      )}
-                      style={{
-                        gridColumn: `${columnStart} / ${columnEnd}`,
-                        gridRow: index + 1,
-                        backgroundColor: `var(${tokens.bg})`,
-                        color: `var(${tokens.text})`
-                      }}
-                      title={`${item.task.title} · ${item.task.discipline.projectName} / ${item.task.discipline.name}`}
+                      task={item.task}
+                      projectId={item.task.discipline.projectId}
+                      onOpen={onOpenTask}
+                      fallbackLinkPath="/my-tasks"
                     >
-                      <span className="truncate">{item.task.title}</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => onOpenTask(item.task)}
+                        className={cn(
+                          "pointer-events-auto min-w-0 truncate px-2 py-1 text-left text-[11px] font-medium transition-colors hover:brightness-125",
+                          startsBeforeWeek ? "rounded-l-none" : "rounded-l",
+                          endsAfterWeek ? "rounded-r-none" : "rounded-r"
+                        )}
+                        style={{
+                          gridColumn: `${columnStart} / ${columnEnd}`,
+                          gridRow: index + 1,
+                          backgroundColor: `var(${tokens.bg})`,
+                          color: `var(${tokens.text})`
+                        }}
+                        title={`${item.task.title} · ${item.task.discipline.projectName} / ${item.task.discipline.name}`}
+                      >
+                        <span className="truncate">{item.task.title}</span>
+                      </button>
+                    </TaskContextMenu>
                   );
                 })}
                 {hiddenCount > 0 ? (

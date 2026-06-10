@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Bell, CheckCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { NotificationType } from "shared";
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -11,6 +13,7 @@ import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 
 export function NotificationBell() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const unreadCount = useUnreadNotificationCount();
@@ -77,6 +80,11 @@ export function NotificationBell() {
                   onClick={() => {
                     if (!notification.read) {
                       void markRead.mutateAsync(notification.id);
+                    }
+
+                    if (notification.type === NotificationType.WEEKLY_REPORT_DUE) {
+                      setOpen(false);
+                      navigate("/weekly-reports/mine");
                     }
                   }}
                   className="grid w-full gap-1 rounded-md p-3 text-left transition hover:bg-surface-hover"

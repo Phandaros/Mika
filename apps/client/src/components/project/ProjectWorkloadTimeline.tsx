@@ -19,13 +19,12 @@ import {
   startOfDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { Priority, Role, TaskStatus, type CreateTaskRequest, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
+import { Priority, Role, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { Copy, CopyPlus, Eye, Filter, Group, Hash, MoreHorizontal, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Filter, Group, Hash, MoreHorizontal, Plus } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
-import { useCreateTaskInSection, useDeleteTask, useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
+import { useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { canManageTasks } from "../../lib/permissions";
 import { cn, toDateOnly } from "../../lib/utils";
 import { workloadTaskLabel } from "../../lib/workloadTaskLabel";
@@ -33,15 +32,14 @@ import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { taskStatusLabels } from "../shared/Chip";
 import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../shared/statusVisuals";
+import { TaskContextMenu } from "../task/TaskContextMenu";
 import { Button } from "../ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSeparator,
   ContextMenuTrigger
 } from "../ui/context-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
 import { WORKLOAD_TASK_DRAG_MIME, WorkloadUndatedPanel } from "./WorkloadUndatedPanel";
@@ -460,7 +458,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
-  const [taskPendingDelete, setTaskPendingDelete] = useState<TaskWithDiscipline | null>(null);
   const [emptyCellContext, setEmptyCellContext] = useState<EmptyCellContext | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollAdjust = useRef(0);
@@ -471,8 +468,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const extendingLeft = useRef(false);
   const extendingRight = useRef(false);
   const taskMoveQueues = useRef<Record<string, TaskMoveQueueEntry>>({});
-  const deleteTask = useDeleteTask(projectId);
-  const createTaskInSection = useCreateTaskInSection();
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -1040,36 +1035,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     });
   }
 
-  function recalculatedDueDate(startDate: string, estimatedDays: number): string {
-    const targetWorkDays = Math.max(1, Math.ceil(estimatedDays));
-    let current = startDate;
-    let counted = 0;
-
-    while (counted < targetWorkDays) {
-      if (!nonWorkingDays.has(current)) {
-        counted += 1;
-      }
-
-      if (counted < targetWorkDays) {
-        current = addCalendarDaysYmd(current, 1);
-      }
-    }
-
-    return current;
-  }
-
-  function recalculateTaskDates(task: TaskWithDiscipline) {
-    const startDate = toYmd(task.startDate);
-    const estimatedDays = task.estimatedDays ?? task.estimatedTime ?? null;
-    if (!startDate || estimatedDays == null || estimatedDays <= 0) {
-      return;
-    }
-
-    const dueDate = recalculatedDueDate(startDate, estimatedDays);
-    queueTaskMove(task, { startDate, dueDate }, { startDate, dueDate });
-    toast.success("Datas recalculadas");
-  }
-
   function workloadRowAtClientY(clientY: number): { assigneeId: string | null; rowTop: number } | null {
     if (grouping !== "assignee") {
       return null;
@@ -1217,69 +1182,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     window.addEventListener("pointercancel", finish);
   }
 
-  function taskLink(task: TaskWithDiscipline): string {
-    const projectForLink = task.discipline?.projectId;
-    const path = projectForLink ? `/projects/${projectForLink}?task=${task.id}` : `/tasks/${task.id}`;
-    return `${window.location.origin}${path}`;
-  }
-
-  async function copyTaskLink(task: TaskWithDiscipline) {
-    await window.navigator.clipboard.writeText(taskLink(task));
-    toast.success("Link da tarefa copiado");
-  }
-
-  async function duplicateTask(task: TaskWithDiscipline) {
-    const customFieldValues: CreateTaskRequest["customFieldValues"] = task.customFieldValues
-      ?.flatMap((field) =>
-        field.mikaKey
-          ? [{
-              mikaKey: field.mikaKey,
-              value: field.numberValue ?? field.enumOptionName ?? field.displayValue ?? null
-            }]
-          : []
-      );
-
-    const payload: CreateTaskRequest = {
-      title: `${task.title} (cópia)`,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      assigneeId: task.assigneeId,
-      startDate: task.startDate,
-      dueDate: task.dueDate,
-      estimatedDays: task.estimatedDays ?? null,
-      platform: task.platform ?? null,
-      taskDiscipline: task.taskDiscipline ?? null,
-      estimatedTime: task.estimatedTime ?? null,
-      maxDeadline: task.maxDeadline ?? null,
-      conclusionDays: task.conclusionDays ?? null,
-      stage: task.stage ?? null,
-      ...(customFieldValues?.length ? { customFieldValues } : {})
-    };
-
-    try {
-      await createTaskInSection.mutateAsync({
-        projectId: task.discipline.projectId,
-        sectionId: task.disciplineId,
-        payload
-      });
-      toast.success("Tarefa duplicada");
-    } catch {
-      toast.error("Não foi possível duplicar a tarefa");
-    }
-  }
-
-  async function confirmDeleteTask() {
-    if (!taskPendingDelete) {
-      return;
-    }
-
-    const task = taskPendingDelete;
-    await deleteTask.mutateAsync(task.id);
-    setTaskPendingDelete(null);
-    toast.success("Tarefa excluída");
-  }
-
   function renderNonWorkingBands(rowHeight: number, rowKey: string): ReactNode {
     return days.map((day, index) => {
       if (!nonWorkingDays.has(day)) {
@@ -1332,8 +1234,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           const previewLeft = previewClip ? previewClip.startIdx * DAY_W + 2 : left;
           const previewWidth = previewClip ? (previewClip.endIdx - previewClip.startIdx + 1) * DAY_W - 4 : width;
           const isMovingTask = activeDragPreview?.kind === "move";
-          const estimatedDays = p.task.estimatedDays ?? p.task.estimatedTime ?? null;
-          const canRecalculateDates = Boolean(toYmd(p.task.startDate) && estimatedDays != null && estimatedDays > 0);
 
           if (width <= 0 || left + width < 0 || left > timelineWidth) {
             return null;
@@ -1356,8 +1256,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   }}
                 />
               ) : null}
-              <ContextMenu>
-              <ContextMenuTrigger asChild>
+              <TaskContextMenu
+                task={p.task}
+                projectId={projectId}
+                onOpen={onOpenTask}
+                onContextMenu={() => setEmptyCellContext(null)}
+              >
                 <button
                   type="button"
                   data-workload-task-bar="true"
@@ -1392,7 +1296,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
                     handleBarPointerDown(e, p.task, b);
                   }}
-                  onContextMenu={() => setEmptyCellContext(null)}
                 >
                   <span
                     aria-hidden="true"
@@ -1420,31 +1323,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     }}
                   />
                 </button>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem onSelect={() => onOpenTask(p.task)}>
-                  <Eye className="h-4 w-4" />
-                  Abrir detalhes da tarefa
-                </ContextMenuItem>
-                <ContextMenuItem onSelect={() => void copyTaskLink(p.task)}>
-                  <Copy className="h-4 w-4" />
-                  Copiar link da tarefa
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canManage || createTaskInSection.isPending} onSelect={() => void duplicateTask(p.task)}>
-                  <CopyPlus className="h-4 w-4" />
-                  Duplicar tarefa
-                </ContextMenuItem>
-                <ContextMenuItem disabled={!canManage || !canRecalculateDates} onSelect={() => void recalculateTaskDates(p.task)}>
-                  <RefreshCw className="h-4 w-4" />
-                  Recalcular datas
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                <ContextMenuItem disabled={!canManage} variant="destructive" onSelect={() => setTaskPendingDelete(p.task)}>
-                  <Trash2 className="h-4 w-4" />
-                  Excluir a tarefa
-                </ContextMenuItem>
-              </ContextMenuContent>
-              </ContextMenu>
+              </TaskContextMenu>
             </Fragment>
           );
         })}
@@ -1787,24 +1666,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           onOpenTask(task);
         }}
       />
-      <Dialog open={Boolean(taskPendingDelete)} onOpenChange={(open) => !open && setTaskPendingDelete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir tarefa</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-text-secondary">
-            Esta ação remove a tarefa "{taskPendingDelete?.title}" do projeto. Não é possível desfazer pela interface.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setTaskPendingDelete(null)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" disabled={!canManage || deleteTask.isPending} onClick={() => void confirmDeleteTask()}>
-              Excluir
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
