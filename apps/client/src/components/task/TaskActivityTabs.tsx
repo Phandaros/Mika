@@ -7,6 +7,8 @@ import { Avatar } from "../shared/Avatar";
 import { EmptyState } from "../shared/EmptyState";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { AttachmentPreview } from "../shared/AttachmentPreview";
+import { isImageMimeType } from "../../lib/attachmentUtils";
 import { MarkdownComment } from "./MarkdownComment";
 import { TaskCommentEditor } from "./TaskCommentEditor";
 import { TaskHistoryList } from "./TaskHistoryList";
@@ -160,7 +162,24 @@ function CommentItem({ comment, currentUser }: { comment: Comment; currentUser: 
             </div>
           </div>
         ) : (
-          <MarkdownComment content={comment.content} className="mt-2" />
+          <>
+            <MarkdownComment content={comment.content} className="mt-2" />
+            {comment.attachments && comment.attachments.filter((attachment) => !isImageMimeType(attachment.mimeType)).length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {comment.attachments
+                  .filter((attachment) => !isImageMimeType(attachment.mimeType))
+                  .map((attachment) => (
+                    <AttachmentPreview
+                      key={attachment.id}
+                      attachment={attachment}
+                      taskId={comment.taskId}
+                      currentUserId={currentUser?.id}
+                      currentUserRole={currentUser?.role}
+                    />
+                  ))}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </article>

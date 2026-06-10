@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,8 @@ import { initSocket } from "./lib/socket.js";
 import apiRoutes from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import mikeAuthRoutes from "./modules/mike/auth/mike-auth.router.js";
+
+fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
 
 const app = express();
 const server = http.createServer(app);

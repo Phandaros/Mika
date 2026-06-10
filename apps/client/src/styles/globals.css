@@ -261,6 +261,14 @@ input::-webkit-outer-spin-button {
   text-underline-offset: 3px;
 }
 
+.mika-rich-text img {
+  max-width: 100%;
+  max-height: 480px;
+  border-radius: 6px;
+  background: var(--bg-3);
+  object-fit: contain;
+}
+
 .mika-rich-text hr {
   margin: 0.75rem 0;
   border: 0;

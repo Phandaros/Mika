@@ -1,5 +1,4 @@
 import {
-  BarChart3,
   Bell,
   CalendarDays,
   CalendarRange,
@@ -7,11 +6,10 @@ import {
   ClipboardCheck,
   FolderKanban,
   Home,
-  Inbox,
   KanbanSquare,
   ListTodo,
+  LucideIcon,
   Plus,
-  Target,
   Users
 } from "lucide-react";
 import { useState } from "react";
@@ -24,14 +22,73 @@ import { useAuth } from "../../hooks/useAuth";
 import { useUiStore } from "../../store/uiStore";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-const navItems = [
-  { to: "/", label: "Página inicial", icon: Home },
-  { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
-  { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
-  { to: "/reviews", label: "Revisões", icon: ClipboardCheck, minRole: Role.COORDINATOR },
-  { to: "/admin/calendar", label: "Calendario", icon: CalendarDays, minRole: Role.COORDINATOR },
-  { to: "/users", label: "Usuários", icon: Users, minRole: Role.COORDINATOR }
+type SidebarNavItem = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  minRole?: Role;
+};
+
+type SidebarNavSection = {
+  title: string;
+  items: SidebarNavItem[];
+  minRole?: Role;
+};
+
+const roleWeight: Record<Role, number> = {
+  [Role.INTERN]: 0,
+  [Role.DESIGNER]: 1,
+  [Role.COORDINATOR]: 2,
+  [Role.ADMIN]: 3
+};
+
+const sidebarSections: SidebarNavSection[] = [
+  {
+    title: "Principal",
+    items: [
+      { to: "/", label: "Página inicial", icon: Home },
+      { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 }
+    ]
+  },
+  {
+    title: "Projetos",
+    items: [
+      { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
+      { to: "/reviews", label: "Revisões", icon: ClipboardCheck, minRole: Role.COORDINATOR }
+    ]
+  },
+  {
+    title: "Vistas",
+    minRole: Role.COORDINATOR,
+    items: [
+      { to: "/sprint/civil", label: "Civil - Sprint Board", icon: KanbanSquare, minRole: Role.COORDINATOR },
+      { to: "/sprint/eletrico", label: "Elétrico - Sprint Board", icon: KanbanSquare, minRole: Role.COORDINATOR },
+      { to: "/workloads/civil", label: "Workload Civil", icon: CalendarRange, minRole: Role.COORDINATOR },
+      { to: "/workloads/eletrico", label: "Workload Elétrico", icon: CalendarRange, minRole: Role.COORDINATOR },
+      { to: "/workloads/geral", label: "Workload Geral", icon: CalendarRange, minRole: Role.COORDINATOR }
+    ]
+  },
+  {
+    title: "Administração",
+    minRole: Role.COORDINATOR,
+    items: [
+      { to: "/users", label: "Usuários", icon: Users, minRole: Role.COORDINATOR },
+      { to: "/admin/calendar", label: "Calendário corporativo", icon: CalendarDays, minRole: Role.COORDINATOR }
+    ]
+  }
 ];
+
+function hasMinRole(userRole: Role | undefined, minRole: Role | undefined): boolean {
+  if (!minRole) {
+    return true;
+  }
+
+  return Boolean(userRole && roleWeight[userRole] >= roleWeight[minRole]);
+}
+
+function visibleItems(userRole: Role | undefined, items: SidebarNavItem[]): SidebarNavItem[] {
+  return items.filter((item) => hasMinRole(userRole, item.minRole));
+}
 
 export function Sidebar() {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
@@ -41,12 +98,6 @@ export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
-  const roleWeight: Record<Role, number> = {
-    [Role.INTERN]: 0,
-    [Role.DESIGNER]: 1,
-    [Role.COORDINATOR]: 2,
-    [Role.ADMIN]: 3
-  };
 
   return (
     <aside
@@ -95,51 +146,19 @@ export function Sidebar() {
           </PopoverContent>
         </Popover> : null}
       </div>
-      <nav className="grid gap-1 border-b border-border-subtle p-3">
-        {navItems
-          .filter((item) => !item.minRole || (user && roleWeight[user.role] >= roleWeight[item.minRole]))
-          .map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cn(
-                    "flex h-8 items-center gap-3 rounded-md px-3 text-sm font-semibold transition",
-                    isActive ? "bg-surface-hover text-text-primary" : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
-                  )
-                }
-              >
-                <Icon size={18} />
-                {item.label}
-              </NavLink>
-            );
-          })}
-        <NavLink to="/my-tasks" className="flex h-8 items-center gap-3 px-3 text-sm font-semibold text-text-secondary hover:bg-surface-hover hover:text-text-primary">
-          <Inbox size={18} />
-          Caixa de entrada
-        </NavLink>
-      </nav>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <SidebarSection title="Insights" items={[{ label: "Relatorios", icon: BarChart3, to: "/projects" }, { label: "Metas", icon: Target, to: "/" }]} />
-        <SidebarSection
-          title="Projetos"
-          items={[
-            { label: "Projetos ativos", icon: FolderKanban, to: "/projects" },
-            { label: "Revisões", icon: ClipboardCheck, to: "/reviews", minRole: Role.COORDINATOR },
-            { label: "Civil - Sprint Board", icon: KanbanSquare, to: "/sprint/civil", minRole: Role.COORDINATOR },
-            { label: "Elétrico - Sprint Board", icon: KanbanSquare, to: "/sprint/eletrico", minRole: Role.COORDINATOR }
-          ].filter((item) => !item.minRole || (user && roleWeight[user.role] >= roleWeight[item.minRole]))}
-        />
-        <SidebarSection
-          title="Workloads"
-          items={[
-            { label: "Workload Civil", icon: CalendarRange, to: "/workloads/civil" },
-            { label: "Workload Elétrico", icon: CalendarRange, to: "/workloads/eletrico" },
-            { label: "Workload Geral", icon: CalendarRange, to: "/workloads/geral" }
-          ]}
-        />
+        {sidebarSections.map((section) => {
+          if (!hasMinRole(user?.role, section.minRole)) {
+            return null;
+          }
+
+          const items = visibleItems(user?.role, section.items);
+          if (items.length === 0) {
+            return null;
+          }
+
+          return <SidebarSection key={section.title} title={section.title} items={items} />;
+        })}
       </div>
       {user && roleWeight[user.role] >= roleWeight[Role.COORDINATOR] ? (
         <div className="border-t border-border p-4">
@@ -168,29 +187,27 @@ function taskCreateScopeFromPath(pathname: string): "civil" | "electrical" | "ge
   return "general";
 }
 
-function SidebarSection({
-  title,
-  items
-}: {
-  title: string;
-  items: Array<{ label: string; icon: typeof Home; color?: string; to?: string; minRole?: Role }>;
-}) {
+function SidebarSection({ title, items }: { title: string; items: SidebarNavItem[] }) {
   return (
     <section className="mb-5">
-      <div className="mb-2 flex items-center justify-between px-2 text-xs font-bold text-text-primary">
+      <div className="mb-2 px-2 text-xs font-bold text-text-primary">
         <span>{title}</span>
-        <Plus size={14} className="text-text-secondary" />
       </div>
       <div className="grid gap-1">
         {items.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
-              key={item.label}
-              to={item.to ?? "/my-tasks"}
-              className="flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-left text-sm text-text-primary hover:bg-surface-hover"
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                cn(
+                  "flex h-8 min-w-0 items-center gap-3 rounded-md px-3 text-sm font-semibold transition",
+                  isActive ? "bg-surface-hover text-text-primary" : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                )
+              }
             >
-              <Icon size={16} className={item.color ?? "text-text-secondary"} />
+              <Icon size={18} className="shrink-0" />
               <span className="truncate">{item.label}</span>
             </NavLink>
           );

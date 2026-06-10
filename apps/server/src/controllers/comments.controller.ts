@@ -1,6 +1,8 @@
 import type { RequestHandler } from "express";
+import type { AttachmentDto } from "shared";
 import { prisma } from "../lib/prisma.js";
 import { toPublicUser, userSelect } from "../lib/asanaDto.js";
+import { deleteCommentAttachments } from "../lib/attachmentCleanup.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
@@ -13,6 +15,64 @@ interface CommentBody {
 
 const commentEditWindowMs = 2 * 60 * 60 * 1000;
 const privilegedCommentRoles = new Set<string>([Role.ADMIN, Role.COORDINATOR]);
+
+const commentInclude = {
+  author: { select: userSelect },
+  attachments: {
+    include: {
+      uploadedBy: { select: { id: true, name: true } }
+    },
+    orderBy: { createdAt: "asc" as const }
+  }
+};
+
+function toAttachmentDto(attachment: {
+  id: string;
+  commentId: string | null;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedById: string;
+  createdAt: Date;
+  uploadedBy: { id: string; name: string };
+}): AttachmentDto {
+  return {
+    id: attachment.id,
+    commentId: attachment.commentId,
+    filename: attachment.filename,
+    mimeType: attachment.mimeType,
+    sizeBytes: attachment.sizeBytes,
+    uploadedById: attachment.uploadedById,
+    uploadedBy: attachment.uploadedBy,
+    createdAt: attachment.createdAt.toISOString()
+  };
+}
+
+function toCommentDto(comment: {
+  id: string;
+  taskId: string;
+  authorId: string | null;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  asanaGid: string | null;
+  asanaCreatedAt: Date | null;
+  author: Parameters<typeof toPublicUser>[0];
+  attachments?: Array<Parameters<typeof toAttachmentDto>[0]>;
+}) {
+  return {
+    id: comment.id,
+    taskId: comment.taskId,
+    authorId: comment.authorId,
+    content: comment.content,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
+    asanaGid: comment.asanaGid,
+    asanaCreatedAt: comment.asanaCreatedAt,
+    author: toPublicUser(comment.author),
+    attachments: (comment.attachments ?? []).map(toAttachmentDto)
+  };
+}
 
 function canMutateComment(
   user: { id: string; role: string },
@@ -40,21 +100,11 @@ export const listComments: RequestHandler = async (req, res, next) => {
     const comments = await prisma.comment.findMany({
       where: { taskId: task.id },
       orderBy: { createdAt: "asc" },
-      include: { author: { select: userSelect } }
+      include: commentInclude
     });
 
     res.json({
-      comments: comments.map((comment) => ({
-        id: comment.id,
-        taskId: comment.taskId,
-        authorId: comment.authorId,
-        content: comment.content,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-        asanaGid: comment.asanaGid,
-        asanaCreatedAt: comment.asanaCreatedAt,
-        author: toPublicUser(comment.author)
-      }))
+      comments: comments.map(toCommentDto)
     });
   } catch (error) {
     next(error);
@@ -77,7 +127,7 @@ export const createComment: RequestHandler = async (req, res, next) => {
         authorId: authUser.id,
         content: body.content
       },
-      include: { author: { select: userSelect } }
+      include: commentInclude
     });
 
     await prisma.taskActivity.create({
@@ -122,17 +172,7 @@ export const createComment: RequestHandler = async (req, res, next) => {
     }
 
     res.status(201).json({
-      comment: {
-        id: comment.id,
-        taskId: comment.taskId,
-        authorId: comment.authorId,
-        content: comment.content,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-        asanaGid: comment.asanaGid,
-        asanaCreatedAt: comment.asanaCreatedAt,
-        author: toPublicUser(comment.author)
-      }
+      comment: toCommentDto(comment)
     });
   } catch (error) {
     next(error);
@@ -159,21 +199,11 @@ export const updateComment: RequestHandler = async (req, res, next) => {
     const comment = await prisma.comment.update({
       where: { id: existing.id },
       data: { content: body.content },
-      include: { author: { select: userSelect } }
+      include: commentInclude
     });
 
     res.json({
-      comment: {
-        id: comment.id,
-        taskId: comment.taskId,
-        authorId: comment.authorId,
-        content: comment.content,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-        asanaGid: comment.asanaGid,
-        asanaCreatedAt: comment.asanaCreatedAt,
-        author: toPublicUser(comment.author)
-      }
+      comment: toCommentDto(comment)
     });
   } catch (error) {
     next(error);
@@ -196,7 +226,11 @@ export const deleteComment: RequestHandler = async (req, res, next) => {
       throw new AppError(403, "Você não tem permissão para apagar este comentário");
     }
 
-    await prisma.comment.delete({ where: { id: existing.id } });
+    await prisma.$transaction(async (tx) => {
+      await deleteCommentAttachments(tx, existing.id);
+      await tx.comment.delete({ where: { id: existing.id } });
+    });
+
     res.status(204).send();
   } catch (error) {
     next(error);

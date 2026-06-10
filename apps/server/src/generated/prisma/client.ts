@@ -103,6 +103,11 @@ export type TaskReview = Prisma.TaskReviewModel
  */
 export type Comment = Prisma.CommentModel
 /**
+ * Model Attachment
+ * 
+ */
+export type Attachment = Prisma.AttachmentModel
+/**
  * Model TaskActivity
  * 
  */

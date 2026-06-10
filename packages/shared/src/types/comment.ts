@@ -1,3 +1,4 @@
+import type { AttachmentDto } from "./attachment.js";
 import { User } from "./user.js";
 
 export interface Comment {
@@ -10,6 +11,7 @@ export interface Comment {
   asanaGid?: string | null;
   asanaCreatedAt?: string | null;
   author?: User | null;
+  attachments?: AttachmentDto[];
 }
 
 export interface CreateCommentRequest {

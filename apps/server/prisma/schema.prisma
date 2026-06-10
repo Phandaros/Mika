@@ -42,6 +42,7 @@ model User {
   createdTasks        Task[]                @relation("TaskCreator")
   requestedReviews    TaskReview[]          @relation("TaskReviewRequester")
   assignedReviews     TaskReview[]          @relation("TaskReviewReviewer")
+  uploadedAttachments Attachment[]          @relation("AttachmentUploader")
 
   @@index([asanaGid])
   @@index([email])
@@ -323,13 +324,30 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  attachments Attachment[]
 
   @@index([taskId])
   @@index([authorId])
   @@index([asanaGid])
   @@index([authorAsanaGid])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  commentId    String?
+  comment      Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  filename     String
+  storedAs     String
+  mimeType     String
+  sizeBytes    Int
+  uploadedById String
+  uploadedBy   User     @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([commentId])
+  @@index([uploadedById])
 }
 
 model TaskActivity {

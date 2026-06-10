@@ -16,9 +16,12 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
+import { toast } from "sonner";
 import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest, type User } from "shared";
 import { useAuth } from "../../hooks/useAuth";
+import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
 import { useComments, useCreateComment } from "../../hooks/useComments";
+import { classifyFile, getFileRejectionMessage } from "../../lib/attachmentUtils";
 import { useProjects } from "../../hooks/useProjects";
 import { useTaskHistory } from "../../hooks/useTaskHistory";
 import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
@@ -32,7 +35,7 @@ import { enumColor } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "./TaskStatusBadge";
 import { TaskCompletionButton } from "./TaskCompletionButton";
 import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
-import { TaskCommentEditor } from "./TaskCommentEditor";
+import { TaskCommentEditor, type CommentEditorHandle } from "./TaskCommentEditor";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
@@ -121,8 +124,11 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [comment, setComment] = useState("");
+  const [pendingCommentFiles, setPendingCommentFiles] = useState<File[]>([]);
+  const [commentUploading, setCommentUploading] = useState(false);
   const [activityTab, setActivityTab] = useState<TaskActivityTab>("comments");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const commentEditorRef = useRef<CommentEditorHandle | null>(null);
   const asideRef = useRef<HTMLElement>(null);
   const closePanelTimeoutRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
@@ -134,6 +140,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const updateTaskCompletion = useUpdateTaskCompletion(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
+  const uploadCommentAttachments = useUploadCommentAttachments(visibleTask?.id);
   const { data: history = [], isLoading: historyLoading } = useTaskHistory(visibleTask?.id);
 
   const previousTaskIdRef = useRef<string | null>(null);
@@ -182,6 +189,8 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     setDescriptionDraft(task.description ?? "");
     setTitleDraft(task.title);
     setComment("");
+    setPendingCommentFiles([]);
+    setCommentUploading(false);
     setActivityTab("comments");
     setIsOpen(false);
     const frame = window.requestAnimationFrame(() => {
@@ -396,12 +405,34 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   }
 
   async function handleCommentSubmit() {
-    if (!comment.trim()) {
+    const submitContent = commentEditorRef.current?.getSubmitContent() ?? comment.trim();
+
+    if (!submitContent) {
       return;
     }
 
-    await createComment.mutateAsync({ content: comment.trim() });
+    const validFiles: File[] = [];
+
+    for (const file of pendingCommentFiles) {
+      if (classifyFile(file) === "document") {
+        validFiles.push(file);
+        continue;
+      }
+
+      toast.error(getFileRejectionMessage(file));
+    }
+
+    const createdComment = await createComment.mutateAsync({ content: submitContent });
+
+    if (validFiles.length > 0) {
+      await uploadCommentAttachments.mutateAsync({
+        commentId: createdComment.id,
+        files: validFiles
+      });
+    }
+
     setComment("");
+    setPendingCommentFiles([]);
   }
 
   return (
@@ -457,7 +488,16 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
         <div className="flex items-start gap-3 border-t border-[--color-border] bg-[--bg-2] p-5">
           {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
           <div className="min-w-0 flex-1">
-            <TaskCommentEditor value={comment} onChange={setComment} onSubmit={() => void handleCommentSubmit()} disabled={createComment.isPending} />
+            <TaskCommentEditor
+              ref={commentEditorRef}
+              value={comment}
+              onChange={setComment}
+              onSubmit={() => void handleCommentSubmit()}
+              disabled={createComment.isPending || uploadCommentAttachments.isPending || commentUploading}
+              pendingFiles={pendingCommentFiles}
+              onPendingFilesChange={setPendingCommentFiles}
+              onUploadingChange={setCommentUploading}
+            />
           </div>
         </div>
         ) : null
