@@ -25,6 +25,8 @@ interface TaskCommentEditorProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
+  submitLabel?: string;
+  minHeightClassName?: string;
 }
 
 type MarkdownEditor = Editor & {
@@ -34,7 +36,14 @@ type MarkdownEditor = Editor & {
 const toolbarButtonClass =
   "flex h-7 w-7 items-center justify-center rounded text-[--color-text-secondary] transition-colors hover:bg-[--bg-4] hover:text-[--color-text-primary] disabled:cursor-not-allowed disabled:opacity-50";
 
-export function TaskCommentEditor({ value, onChange, onSubmit, disabled }: TaskCommentEditorProps) {
+export function TaskCommentEditor({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  submitLabel = "Comentar",
+  minHeightClassName = "min-h-[112px]"
+}: TaskCommentEditorProps) {
   const [linkDraft, setLinkDraft] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const editor = useEditor({
@@ -155,13 +164,13 @@ export function TaskCommentEditor({ value, onChange, onSubmit, disabled }: TaskC
         </div>
       ) : null}
 
-      <EditorContent editor={editor} className="min-h-[112px] px-3 py-2" />
+      <EditorContent editor={editor} className={cn(minHeightClassName, "px-3 py-2")} />
 
       <div className="flex items-center justify-between border-t border-[--color-border-subtle] px-3 py-2">
         <span className="text-[12px] text-[--color-text-muted]">Markdown será preservado no comentário.</span>
         <Button type="button" className="h-8 px-3 text-xs" disabled={disabled || !value.trim()} onClick={submitComment}>
           <Send size={14} />
-          Comentar
+          {submitLabel}
         </Button>
       </div>
     </div>

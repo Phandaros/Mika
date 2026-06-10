@@ -528,115 +528,143 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               {
                 key: "maxDeadline",
                 label: "Prazo Máximo",
-                render: () => (
-                  <DatePicker
-                    value={fixedMaxDeadline ?? null}
-                    onValueChange={(maxDeadline) => void patchTask({ maxDeadline })}
-                    placeholder="—"
-                    className={compactDatePickerClassName}
-                  />
-                )
+                render: () =>
+                  canManageTaskFields ? (
+                    <DatePicker
+                      value={fixedMaxDeadline ?? null}
+                      onValueChange={(maxDeadline) => void patchTask({ maxDeadline })}
+                      placeholder="—"
+                      className={compactDatePickerClassName}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={fixedMaxDeadline ? formatDisplayDate(fixedMaxDeadline) : null} />
+                  )
               },
               {
                 key: "estimatedTime",
                 label: "Dias Estimados",
-                render: () => (
-                  <EditableDecimalField
-                    value={fixedEstimatedTime}
-                    onSave={(estimatedTime) => void patchTask({ estimatedTime, estimatedDays: estimatedTime })}
-                  />
-                )
+                render: () =>
+                  canManageTaskFields ? (
+                    <EditableDecimalField
+                      value={fixedEstimatedTime}
+                      onSave={(estimatedTime) => void patchTask({ estimatedTime, estimatedDays: estimatedTime })}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={fixedEstimatedTime == null ? null : formatDecimal(fixedEstimatedTime)} />
+                  )
               },
               {
                 key: "conclusionDays",
                 label: "Dias Conclusão",
-                render: () => (
-                  <EditableDecimalField
-                    value={fixedConclusionDays}
-                    onSave={(conclusionDays) => void patchTask({ conclusionDays })}
-                  />
-                )
+                render: () =>
+                  canManageTaskFields ? (
+                    <EditableDecimalField
+                      value={fixedConclusionDays}
+                      onSave={(conclusionDays) => void patchTask({ conclusionDays })}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={fixedConclusionDays == null ? null : formatDecimal(fixedConclusionDays)} />
+                  )
               },
               {
                 key: "stage",
                 label: "Etapa",
-                render: () => (
-                  <EditableStageField
-                    value={fixedStage}
-                    stageField={stageField}
-                    onSave={(stage) => void patchTask({ stage })}
-                  />
-                )
+                render: () =>
+                  canManageTaskFields ? (
+                    <EditableStageField
+                      value={fixedStage}
+                      stageField={stageField}
+                      onSave={(stage) => void patchTask({ stage })}
+                    />
+                  ) : (
+                    <ReadOnlyValue value={fixedStage} />
+                  )
               }
             ]}
           />
 
           <div className="mt-6 grid gap-4 text-sm">
             <DetailRow icon={<UserRound size={18} />} label="Responsável">
-              <EditableAssigneeField
-                users={users}
-                assigneeId={visibleTask.assigneeId}
-                onSave={(assigneeId) => void patchTask({ assigneeId })}
-              />
+              {canManageTaskFields ? (
+                <EditableAssigneeField
+                  users={users}
+                  assigneeId={visibleTask.assigneeId}
+                  onSave={(assigneeId) => void patchTask({ assigneeId })}
+                />
+              ) : (
+                <ReadOnlyValue value={visibleTask.assignee?.name ?? "Sem responsável"} />
+              )}
             </DetailRow>
 
             <DetailRow icon={<Flag size={18} />} label="Prioridade">
-              <SearchableSelect
-                value={visibleTask.priority}
-                options={priorityOptions.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                  render: <PriorityBadge priority={option.value} />
-                }))}
-                searchPlaceholder="Buscar prioridade..."
-                contentClassName="min-w-[220px] max-w-[320px]"
-                showSelectionIndicator={false}
-                renderValue={(option) => <PriorityBadge priority={option.value as Priority} />}
-                onValueChange={(value) => void patchTask({ priority: value as Priority })}
-              />
+              {canManageTaskFields ? (
+                <SearchableSelect
+                  value={visibleTask.priority}
+                  options={priorityOptions.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                    render: <PriorityBadge priority={option.value} />
+                  }))}
+                  searchPlaceholder="Buscar prioridade..."
+                  contentClassName="min-w-[220px] max-w-[320px]"
+                  showSelectionIndicator={false}
+                  renderValue={(option) => <PriorityBadge priority={option.value as Priority} />}
+                  onValueChange={(value) => void patchTask({ priority: value as Priority })}
+                />
+              ) : (
+                <PriorityBadge priority={visibleTask.priority} />
+              )}
             </DetailRow>
 
             <DetailRow icon={<CalendarDays size={18} />} label="Datas">
-              <Popover
-                open={openField === "completionDate"}
-                onOpenChange={(open) => {
-                  if (open) {
-                    openCompletionDate();
-                    return;
-                  }
+              {canManageTaskFields ? (
+                <Popover
+                  open={openField === "completionDate"}
+                  onOpenChange={(open) => {
+                    if (open) {
+                      openCompletionDate();
+                      return;
+                    }
 
-                  setDateDraftStart(dateOnlyToLocalDate(visibleTask.startDate));
-                  setDateDraftEnd(dateOnlyToLocalDate(visibleTask.dueDate));
-                  setOpenField(null);
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
-                    <CompletionDateLabel
-                      startDate={openField === "completionDate" ? dateDraftStart : visibleTask.startDate}
-                      dueDate={openField === "completionDate" ? dateDraftEnd : visibleTask.dueDate}
+                    setDateDraftStart(dateOnlyToLocalDate(visibleTask.startDate));
+                    setDateDraftEnd(dateOnlyToLocalDate(visibleTask.dueDate));
+                    setOpenField(null);
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
+                      <CompletionDateLabel
+                        startDate={openField === "completionDate" ? dateDraftStart : visibleTask.startDate}
+                        dueDate={openField === "completionDate" ? dateDraftEnd : visibleTask.dueDate}
+                      />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" collisionPadding={16} className="w-80 p-0">
+                    <DateRangePanel
+                      startDate={dateDraftStart}
+                      endDate={dateDraftEnd}
+                      onStartDateChange={setDateDraftStart}
+                      onEndDateChange={setDateDraftEnd}
+                      onSave={() => void saveCompletionDate()}
+                      onClear={() => void clearCompletionDate()}
                     />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" collisionPadding={16} className="w-80 p-0">
-                  <DateRangePanel
-                    startDate={dateDraftStart}
-                    endDate={dateDraftEnd}
-                    onStartDateChange={setDateDraftStart}
-                    onEndDateChange={setDateDraftEnd}
-                    onSave={() => void saveCompletionDate()}
-                    onClear={() => void clearCompletionDate()}
-                  />
-                </PopoverContent>
-              </Popover>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <ReadOnlyValue value={dateRangeDisplayValue(visibleTask.startDate, visibleTask.dueDate)} />
+              )}
             </DetailRow>
 
             {lowerCustomFields.map((field) => (
               <DetailRow key={field.mikaKey ?? field.id} icon={<FolderKanban size={18} />} label={taskFieldDisplayLabel(field)}>
-                <EditableCustomField
-                  field={field}
-                  onSave={(value) => void handleCustomFieldSave(field, value)}
-                />
+                {canManageTaskFields ? (
+                  <EditableCustomField
+                    field={field}
+                    onSave={(value) => void handleCustomFieldSave(field, value)}
+                  />
+                ) : (
+                  <ReadOnlyValue value={fieldDisplayValue(field)} />
+                )}
               </DetailRow>
             ))}
           </div>
@@ -689,6 +717,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
             historyLoading={historyLoading}
             value={activityTab}
             onValueChange={setActivityTab}
+            currentUser={user}
           />
         </div>
     </TaskPanelShell>
@@ -1140,6 +1169,22 @@ function ReadOnlyValue({ value }: { value: string | number | null | undefined })
 function taskProjectLabels(task: Task): string {
   const labels = task.projects?.map((project) => (project.sectionName ? `${project.name} / ${sectionAbbreviation(project.sectionName)}` : project.name)) ?? [];
   return labels.length > 0 ? labels.join(", ") : task.discipline?.projectName ?? task.discipline?.name ?? "—";
+}
+
+function dateRangeDisplayValue(startDate: string | Date | null, dueDate: string | Date | null): string | null {
+  if (startDate && dueDate) {
+    return `${formatDisplayDate(startDate)} - ${formatDisplayDate(dueDate)}`;
+  }
+
+  if (startDate) {
+    return `Início ${formatDisplayDate(startDate)}`;
+  }
+
+  if (dueDate) {
+    return `Entrega ${formatDisplayDate(dueDate)}`;
+  }
+
+  return null;
 }
 
 function taskDetailFieldOrder(field: TaskCustomField): number {

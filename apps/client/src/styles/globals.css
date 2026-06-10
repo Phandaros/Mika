@@ -213,7 +213,16 @@ input::-webkit-outer-spin-button {
   padding: 0;
 }
 
+.mika-rich-text ul {
+  list-style-type: disc;
+}
+
+.mika-rich-text ol {
+  list-style-type: decimal;
+}
+
 .mika-rich-text li {
+  display: list-item;
   padding-left: 0.15rem;
 }
 

@@ -5,9 +5,28 @@ import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
 import { taskActivityTypes } from "../lib/taskActivity.js";
+import { Role } from "../lib/enums.js";
 
 interface CommentBody {
   content: string;
+}
+
+const commentEditWindowMs = 2 * 60 * 60 * 1000;
+const privilegedCommentRoles = new Set<string>([Role.ADMIN, Role.COORDINATOR]);
+
+function canMutateComment(
+  user: { id: string; role: string },
+  comment: { authorId: string | null; createdAt: Date }
+): boolean {
+  if (privilegedCommentRoles.has(user.role)) {
+    return true;
+  }
+
+  if (!comment.authorId || comment.authorId !== user.id) {
+    return false;
+  }
+
+  return Date.now() - comment.createdAt.getTime() <= commentEditWindowMs;
 }
 
 export const listComments: RequestHandler = async (req, res, next) => {
@@ -120,9 +139,64 @@ export const createComment: RequestHandler = async (req, res, next) => {
   }
 };
 
+export const updateComment: RequestHandler = async (req, res, next) => {
+  try {
+    const authUser = getAuthUser(req);
+    const body = req.body as CommentBody;
+    const existing = await prisma.comment.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, authorId: true, createdAt: true }
+    });
+
+    if (!existing) {
+      throw new AppError(404, "Comment not found");
+    }
+
+    if (!canMutateComment(authUser, existing)) {
+      throw new AppError(403, "Você não tem permissão para editar este comentário");
+    }
+
+    const comment = await prisma.comment.update({
+      where: { id: existing.id },
+      data: { content: body.content },
+      include: { author: { select: userSelect } }
+    });
+
+    res.json({
+      comment: {
+        id: comment.id,
+        taskId: comment.taskId,
+        authorId: comment.authorId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        asanaGid: comment.asanaGid,
+        asanaCreatedAt: comment.asanaCreatedAt,
+        author: toPublicUser(comment.author)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const deleteComment: RequestHandler = async (req, res, next) => {
   try {
-    await prisma.comment.delete({ where: { id: req.params.id } });
+    const authUser = getAuthUser(req);
+    const existing = await prisma.comment.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, authorId: true, createdAt: true }
+    });
+
+    if (!existing) {
+      throw new AppError(404, "Comment not found");
+    }
+
+    if (!canMutateComment(authUser, existing)) {
+      throw new AppError(403, "Você não tem permissão para apagar este comentário");
+    }
+
+    await prisma.comment.delete({ where: { id: existing.id } });
     res.status(204).send();
   } catch (error) {
     next(error);
