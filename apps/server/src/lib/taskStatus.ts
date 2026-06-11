@@ -1,7 +1,6 @@
 import { TaskStatus, type TaskStatus as TaskStatusValue } from "./enums.js";
 
 const legacyEnumStatusMap: Record<string, TaskStatusValue> = {
-  BACKLOG: TaskStatus.ON_SCHEDULE,
   TODO: TaskStatus.TODO,
   IN_PROGRESS: TaskStatus.IN_PROGRESS,
   IN_REVIEW: TaskStatus.AWAITING_REVIEW,
@@ -9,6 +8,7 @@ const legacyEnumStatusMap: Record<string, TaskStatusValue> = {
 };
 
 const legacyAsanaStatusMap: Record<string, TaskStatusValue> = {
+  backlog: TaskStatus.BACKLOG,
   "a fazer": TaskStatus.TODO,
   "no cronograma": TaskStatus.ON_SCHEDULE,
   "em andamento": TaskStatus.IN_PROGRESS,

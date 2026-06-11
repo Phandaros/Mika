@@ -3,6 +3,7 @@ import { buildNonWorkingDays, countBusinessDaysBetween } from "./businessDays";
 import { toDateOnly } from "./utils";
 
 const primaryStatusSortWeight: Record<TaskStatus, number> = {
+  [TaskStatus.BACKLOG]: 8,
   [TaskStatus.IN_PROGRESS]: 0,
   [TaskStatus.OVERDUE]: 1,
   [TaskStatus.AWAITING_REVIEW]: 2,

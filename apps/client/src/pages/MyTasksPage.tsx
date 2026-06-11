@@ -49,10 +49,12 @@ import {
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
+import { defaultTaskStatusSelection, matchesMultiSelect } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
 import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
 
@@ -89,7 +91,7 @@ export function MyTasksPage() {
   const [month, setMonth] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultTaskStatusSelection);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [showUndatedOnly, setShowUndatedOnly] = useState(false);
   const [sortMode, setSortMode] = useState<"dueDate" | "title" | "project">("dueDate");
@@ -113,15 +115,12 @@ export function MyTasksPage() {
   const createTarget = disciplineOptions.find((option) => option.key === selectedCreateTarget) ?? disciplineOptions[0];
   const createTask = useCreateTask(createTarget?.projectId ?? "", createTarget?.disciplineId ?? "");
   const search = searchParams.get("search") ?? "";
-  const statusOptions = [
-    { value: "all", label: "Todos status" },
-    ...Object.values(TaskStatus).map((status) => ({
-      value: status,
-      label: statusLabel(status),
-      color: taskStatusColors[status],
-      render: <StatusOptionPill label={statusLabel(status)} color={taskStatusColors[status]} />
-    }))
-  ];
+  const statusOptions = Object.values(TaskStatus).map((status) => ({
+    value: status,
+    label: statusLabel(status),
+    color: taskStatusColors[status],
+    render: <StatusOptionPill label={statusLabel(status)} color={taskStatusColors[status]} />
+  }));
   const completionOptions = [
     { value: "open", label: "Não concluídas" },
     { value: "completed", label: "Concluídas" },
@@ -155,8 +154,9 @@ export function MyTasksPage() {
 
   const visibleTasks = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
+    const statusSet = new Set(statusFilter);
     const filteredTasks = myTasks
-      .filter((task) => statusFilter === "all" || task.status === statusFilter)
+      .filter((task) => matchesMultiSelect(task.status, statusSet))
       .filter((task) => {
         if (completionFilter === "all") {
           return true;
@@ -317,13 +317,15 @@ export function MyTasksPage() {
           </label>
           <label className="inline-flex items-center gap-1.5">
             <Filter size={15} />
-            <SearchableSelect
-              value={statusFilter}
+            <SearchableMultiSelect
+              values={statusFilter}
               options={statusOptions}
               triggerClassName="h-8 w-40"
               searchPlaceholder="Buscar status..."
-              showSelectionIndicator={false}
-              onValueChange={setStatusFilter}
+              allSelectedLabel="Todos status"
+              noneSelectedLabel="Nenhum status"
+              partialSelectedLabel={(count) => `${count} status`}
+              onValuesChange={setStatusFilter}
             />
           </label>
           <label className="inline-flex items-center gap-1.5">
@@ -674,8 +676,13 @@ function KanbanView({
   );
 }
 
+const calendarWeekOptions = { weekStartsOn: 1 as const };
+
 function CalendarView({ month, tasks, onOpenTask }: { month: Date; tasks: TaskWithProject[]; onOpenTask: (task: TaskWithProject) => void }) {
-  const days = eachDayOfInterval({ start: startOfWeek(startOfMonth(month)), end: endOfWeek(endOfMonth(month)) });
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(month), calendarWeekOptions),
+    end: endOfWeek(endOfMonth(month), calendarWeekOptions)
+  });
   const weeks = chunkDays(days);
   const rangedTasks = tasks.flatMap((task) => {
     const range = taskDateRange(task);

@@ -45,6 +45,7 @@ export const DisciplineStatus = {
 export type DisciplineStatus = (typeof DisciplineStatus)[keyof typeof DisciplineStatus];
 
 export const TaskStatus = {
+  BACKLOG: "BACKLOG",
   TODO: "TODO",
   ON_SCHEDULE: "ON_SCHEDULE",
   OVERDUE: "OVERDUE",

@@ -86,6 +86,21 @@ describe("task status compatibility", () => {
     ).toBe(TaskStatus.FINISHED);
   });
 
+  it("keeps BACKLOG as canonical persisted status", () => {
+    expect(normalizePersistedTaskStatus(TaskStatus.BACKLOG)).toBe(TaskStatus.BACKLOG);
+    expect(normalizePersistedTaskStatus("BACKLOG")).toBe(TaskStatus.BACKLOG);
+    expect(normalizeLegacyAsanaTaskStatus("Backlog")).toBe(TaskStatus.BACKLOG);
+    expect(
+      publicTaskStatus({
+        completed: false,
+        mikaStatus: TaskStatus.BACKLOG,
+        assigneeStatus: null,
+        dueOn: null,
+        dueAt: null
+      })
+    ).toBe(TaskStatus.BACKLOG);
+  });
+
   it("does not persist overdue as a writable Mika status", () => {
     expect(normalizeLegacyAsanaTaskStatus("Atrasado")).toBe(TaskStatus.OVERDUE);
     expect(normalizePersistedTaskStatus("Atrasado")).toBeNull();

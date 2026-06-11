@@ -18,9 +18,17 @@ import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { usePatchProject, useProjects } from "../hooks/useProjects";
+import {
+  countActiveFilterDimensions,
+  defaultBuilderSelection,
+  defaultPlatformSelection,
+  defaultProjectStatusSelection,
+  matchesMultiSelect
+} from "../lib/multiSelectFilter";
 import { formatProjectArea, projectStatusLabels } from "../lib/projectLabels";
 import { canManageTasks } from "../lib/permissions";
 import { resolveAsanaColor } from "../lib/utils";
@@ -32,9 +40,9 @@ export function ProjectsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [statusFilter, setStatusFilter] = useState("ACTIVE");
-  const [platformFilter, setPlatformFilter] = useState("all");
-  const [builderFilter, setBuilderFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectStatusSelection);
+  const [platformFilter, setPlatformFilter] = useState<string[]>(defaultPlatformSelection);
+  const [builderFilter, setBuilderFilter] = useState<string[]>([]);
   const [sortMode, setSortMode] = useState("updatedAt-desc");
   const canManage = canManageTasks(user);
 
@@ -52,21 +60,47 @@ export function ProjectsPage() {
     [projects]
   );
 
+  const statusOptions = useMemo(
+    () => Object.values(ProjectStatus).map((status) => ({ value: status, label: projectStatusLabels[status] })),
+    []
+  );
+  const platformOptions = useMemo(
+    () => [
+      { value: "CAD", label: "CAD" },
+      { value: "BIM", label: "BIM" },
+      { value: "none", label: "Sem plataforma" }
+    ],
+    []
+  );
+  const builderOptions = useMemo(
+    () => [
+      { value: "none", label: "Sem construtora" },
+      ...builderSuggestions.map((builder) => ({ value: builder, label: builder }))
+    ],
+    [builderSuggestions]
+  );
+
+  useEffect(() => {
+    if (builderFilter.length === 0 && builderSuggestions.length >= 0) {
+      setBuilderFilter(defaultBuilderSelection(builderSuggestions));
+    }
+  }, [builderFilter.length, builderSuggestions]);
+
+  const activeFilterCount = countActiveFilterDimensions([
+    { selected: statusFilter, all: statusOptions.map((option) => option.value) },
+    { selected: platformFilter, all: platformOptions.map((option) => option.value) },
+    { selected: builderFilter, all: builderOptions.map((option) => option.value) }
+  ]);
+
   const filteredProjects = useMemo(() => {
+    const statusSet = new Set(statusFilter);
+    const platformSet = new Set(platformFilter);
+    const builderSet = new Set(builderFilter);
+
     const nextProjects = projects
-      .filter((project) => statusFilter === "all" || project.status === statusFilter)
-      .filter((project) => platformFilter === "all" || (platformFilter === "none" ? !project.platform : project.platform === platformFilter))
-      .filter((project) => {
-        if (builderFilter === "all") {
-          return true;
-        }
-
-        if (builderFilter === "none") {
-          return !project.builder?.trim();
-        }
-
-        return project.builder?.trim() === builderFilter;
-      })
+      .filter((project) => matchesMultiSelect(project.status, statusSet))
+      .filter((project) => matchesMultiSelect(project.platform ?? "none", platformSet))
+      .filter((project) => matchesMultiSelect(project.builder?.trim() || "none", builderSet))
       .slice();
 
     nextProjects.sort((a, b) => {
@@ -120,39 +154,36 @@ export function ProjectsPage() {
               <PopoverTrigger asChild>
                 <Button variant="secondary" className="h-9">
                   <ListFilter size={16} />
-                  Filtrar
+                  Filtrar{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="grid w-80 gap-3">
-                <SearchableSelect
-                  value={statusFilter}
-                  options={[
-                    { value: "all", label: "Todos os status" },
-                    ...Object.values(ProjectStatus).map((status) => ({ value: status, label: projectStatusLabels[status] }))
-                  ]}
+                <SearchableMultiSelect
+                  values={statusFilter}
+                  options={statusOptions}
                   searchPlaceholder="Buscar status..."
-                  onValueChange={setStatusFilter}
+                  allSelectedLabel="Todos os status"
+                  noneSelectedLabel="Nenhum status"
+                  partialSelectedLabel={(count) => `${count} status`}
+                  onValuesChange={setStatusFilter}
                 />
-                <SearchableSelect
-                  value={platformFilter}
-                  options={[
-                    { value: "all", label: "Todas as plataformas" },
-                    { value: "CAD", label: "CAD" },
-                    { value: "BIM", label: "BIM" },
-                    { value: "none", label: "Sem plataforma" }
-                  ]}
+                <SearchableMultiSelect
+                  values={platformFilter}
+                  options={platformOptions}
                   searchPlaceholder="Buscar plataforma..."
-                  onValueChange={setPlatformFilter}
+                  allSelectedLabel="Todas as plataformas"
+                  noneSelectedLabel="Nenhuma plataforma"
+                  partialSelectedLabel={(count) => `${count} plataformas`}
+                  onValuesChange={setPlatformFilter}
                 />
-                <SearchableSelect
-                  value={builderFilter}
-                  options={[
-                    { value: "all", label: "Todas as construtoras" },
-                    { value: "none", label: "Sem construtora" },
-                    ...builderSuggestions.map((builder) => ({ value: builder, label: builder }))
-                  ]}
+                <SearchableMultiSelect
+                  values={builderFilter}
+                  options={builderOptions}
                   searchPlaceholder="Buscar construtora..."
-                  onValueChange={setBuilderFilter}
+                  allSelectedLabel="Todas as construtoras"
+                  noneSelectedLabel="Nenhuma construtora"
+                  partialSelectedLabel={(count) => `${count} construtoras`}
+                  onValuesChange={setBuilderFilter}
                 />
               </PopoverContent>
             </Popover>

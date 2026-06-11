@@ -38,11 +38,18 @@ import {
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { useProject, useProjects } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
+import {
+  defaultAssigneeSelection,
+  defaultPrioritySelection,
+  defaultProjectTaskStatusSelection,
+  matchesMultiSelect
+} from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
 import { cn, formatDateOnly } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
@@ -115,10 +122,10 @@ export function ProjectDetailPage() {
   const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
   const [activeTab, setActiveTab] = useState<ProjectTab>("list");
   const [taskScope, setTaskScope] = useState<TaskScope>("general");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectTaskStatusSelection);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
-  const [assigneeFilter, setAssigneeFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<string[]>(defaultPrioritySelection);
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<TaskWithDiscipline | null>(null);
@@ -134,6 +141,12 @@ export function ProjectDetailPage() {
 
   const disciplines = project?.sections ?? project?.disciplines ?? [];
   const allTasks = useMemo(() => tasksFromDisciplines(disciplines), [disciplines]);
+
+  useEffect(() => {
+    if (assigneeFilter.length === 0) {
+      setAssigneeFilter(defaultAssigneeSelection(users.map((item) => item.id)));
+    }
+  }, [assigneeFilter.length, users]);
 
   useEffect(() => {
     const taskId = searchParams.get("task");
@@ -197,6 +210,9 @@ export function ProjectDetailPage() {
 
   const visibleTasks = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
+    const statusSet = new Set(statusFilter);
+    const assigneeSet = new Set(assigneeFilter);
+    const prioritySet = new Set(priorityFilter);
 
     return disciplineFilteredTasks
       .filter((task) => {
@@ -206,9 +222,9 @@ export function ProjectDetailPage() {
 
         return completionFilter === "completed" ? task.completed : !task.completed;
       })
-      .filter((task) => statusFilter === "all" || task.status === statusFilter)
-      .filter((task) => assigneeFilter === "all" || (assigneeFilter === "none" ? !task.assigneeId : task.assigneeId === assigneeFilter))
-      .filter((task) => priorityFilter === "all" || task.priority === priorityFilter)
+      .filter((task) => matchesMultiSelect(task.status, statusSet))
+      .filter((task) => matchesMultiSelect(task.assigneeId ?? "none", assigneeSet))
+      .filter((task) => matchesMultiSelect(task.priority, prioritySet))
       .filter((task) => {
         if (!normalizedSearch) {
           return true;
@@ -256,29 +272,22 @@ export function ProjectDetailPage() {
   const taskFormDiscipline = visibleDisciplines[0] ?? disciplines[0] ?? null;
   const isTasksLoading = isFetching && !isLoading;
 
-  const statusOptions = [
-    { value: "all", label: "Todos status" },
-    ...Object.values(TaskStatus).map((status) => ({
-      value: status,
-      label: taskStatusLabels[status],
-      color: taskStatusColors[status],
-      render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
-    }))
-  ];
+  const statusOptions = Object.values(TaskStatus).map((status) => ({
+    value: status,
+    label: taskStatusLabels[status],
+    color: taskStatusColors[status],
+    render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
+  }));
   const assigneeOptions = [
-    { value: "all", label: "Todos responsáveis" },
     { value: "none", label: "Sem responsável" },
     ...users.map((item) => ({ value: item.id, label: item.name, description: item.email, avatarUrl: item.avatarUrl }))
   ];
-  const priorityOptions = [
-    { value: "all", label: "Todas prioridades" },
-    ...Object.values(Priority).map((priority) => ({
-      value: priority,
-      label: priority,
-      color: priorityColors[priority],
-      render: <PriorityOptionPill priority={priority} />
-    }))
-  ];
+  const priorityOptions = Object.values(Priority).map((priority) => ({
+    value: priority,
+    label: priority,
+    color: priorityColors[priority],
+    render: <PriorityOptionPill priority={priority} />
+  }));
   const completionOptions = [
     { value: "open", label: "Não concluídas" },
     { value: "completed", label: "Concluídas" },
@@ -371,29 +380,37 @@ export function ProjectDetailPage() {
           </label>
           <label className="inline-flex items-center gap-1.5">
             <Filter size={15} />
-            <SearchableSelect
-              value={statusFilter}
+            <SearchableMultiSelect
+              values={statusFilter}
               options={statusOptions}
               triggerClassName="h-8 w-40"
               searchPlaceholder="Buscar status..."
-              showSelectionIndicator={false}
-              onValueChange={setStatusFilter}
+              allSelectedLabel="Todos status"
+              noneSelectedLabel="Nenhum status"
+              partialSelectedLabel={(count) => `${count} status`}
+              onValuesChange={setStatusFilter}
             />
           </label>
-          <SearchableSelect
-            value={assigneeFilter}
+          <SearchableMultiSelect
+            values={assigneeFilter}
             options={assigneeOptions}
             triggerClassName="h-8 w-44"
             searchPlaceholder="Buscar responsável..."
             contentClassName="w-[min(420px,calc(100vw-32px))]"
-            onValueChange={setAssigneeFilter}
+            allSelectedLabel="Todos responsáveis"
+            noneSelectedLabel="Nenhum responsável"
+            partialSelectedLabel={(count) => `${count} responsáveis`}
+            onValuesChange={setAssigneeFilter}
           />
-          <SearchableSelect
-            value={priorityFilter}
+          <SearchableMultiSelect
+            values={priorityFilter}
             options={priorityOptions}
             triggerClassName="h-8 w-40"
             searchPlaceholder="Buscar prioridade..."
-            onValueChange={setPriorityFilter}
+            allSelectedLabel="Todas prioridades"
+            noneSelectedLabel="Nenhuma prioridade"
+            partialSelectedLabel={(count) => `${count} prioridades`}
+            onValuesChange={setPriorityFilter}
           />
           <label className="inline-flex items-center gap-1.5">
             <ArrowDownUp size={15} />

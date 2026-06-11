@@ -18,14 +18,14 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, type Project, type Task, type UpdateTaskRequest } from "shared";
+import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { classifyFile, getFileRejectionMessage } from "../../lib/attachmentUtils";
 import { useProjects } from "../../hooks/useProjects";
 import { useTaskHistory } from "../../hooks/useTaskHistory";
-import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
+import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { api } from "../../lib/api";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
@@ -125,6 +125,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
   const updateTaskCompletion = useUpdateTaskCompletion(projectId);
+  const updateTaskStatus = useUpdateTaskStatus(projectId);
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
   const uploadCommentAttachments = useUploadCommentAttachments(visibleTask?.id);
@@ -521,7 +522,13 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
         ) : null
       }
     >
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="relative min-h-0 flex-1 overflow-y-auto">
+          <div
+            className={cn(
+              "px-6 py-5",
+              visibleTask.status === TaskStatus.BACKLOG && "pointer-events-none select-none opacity-40"
+            )}
+          >
           <TaskFixedFieldGrid
             fields={[
               {
@@ -777,6 +784,39 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
             mentionContext={mentionContext}
             onMentionTask={handleMentionTask}
           />
+          </div>
+
+          {visibleTask.status === TaskStatus.BACKLOG ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[--bg-1]/80 p-6">
+              <div className="w-full max-w-sm rounded-xl border border-[--color-border] bg-[--bg-2] p-6 text-center shadow-lg">
+                <h3 className="text-base font-semibold text-text-primary">Esta tarefa está inativa</h3>
+                <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                  Tarefas em backlog não aparecem nos sprint boards nem no painel &quot;Sem datas&quot; dos workloads.
+                </p>
+                {canManageTaskFields ? (
+                  <Button
+                    className="mt-5 w-full"
+                    disabled={updateTaskStatus.isPending}
+                    onClick={() => {
+                      void updateTaskStatus
+                        .mutateAsync({ id: visibleTask.id, status: TaskStatus.TODO })
+                        .then((updatedTask) => {
+                          setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
+                          toast.success("Tarefa ativada");
+                        })
+                        .catch(() => {
+                          toast.error("Não foi possível ativar a tarefa");
+                        });
+                    }}
+                  >
+                    Ativar tarefa
+                  </Button>
+                ) : (
+                  <p className="mt-4 text-xs text-text-muted">Somente coordenadores podem ativar esta tarefa.</p>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
     </TaskPanelShell>
   );

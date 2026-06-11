@@ -17,6 +17,7 @@ interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: "Backlog",
   [TaskStatus.TODO]: "A fazer",
   [TaskStatus.ON_SCHEDULE]: "No Cronograma",
   [TaskStatus.OVERDUE]: "Atrasado",
@@ -28,6 +29,7 @@ export const taskStatusLabels: Record<TaskStatus, string> = {
 };
 
 export const taskStatusTokens: Record<TaskStatus, { bg: string; text: string }> = {
+  [TaskStatus.BACKLOG]: { bg: "--status-backlog-bg", text: "--status-backlog-text" },
   [TaskStatus.TODO]: { bg: "--status-todo-bg", text: "--status-todo-text" },
   [TaskStatus.ON_SCHEDULE]: { bg: "--status-scheduled-bg", text: "--status-scheduled-text" },
   [TaskStatus.OVERDUE]: { bg: "--status-late-bg", text: "--status-late-text" },
@@ -39,6 +41,7 @@ export const taskStatusTokens: Record<TaskStatus, { bg: string; text: string }> 
 };
 
 export const taskStatusOptions: TaskStatus[] = [
+  TaskStatus.BACKLOG,
   TaskStatus.TODO,
   TaskStatus.ON_SCHEDULE,
   TaskStatus.OVERDUE,

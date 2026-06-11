@@ -370,7 +370,7 @@ function mergeTasksById(taskLists: Array<Task[] | undefined>): Task[] {
 }
 
 function isUndatedTask(task: Task): boolean {
-  return !task.startDate && !task.dueDate;
+  return !task.startDate && !task.dueDate && task.status !== TaskStatusValue.BACKLOG;
 }
 
 export function useProjectWorkloadTasks(projectId: string | undefined, from: string, to: string, enabled: boolean) {

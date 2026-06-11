@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { isBacklogTask } from "../lib/taskStatusWhere.js";
 import { parseWorkloadScope, sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
 
 const globalWorkloadQuerySchema = z.object({
@@ -183,7 +184,7 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
 
       const bounds = taskTimelineBounds(task);
       if (!bounds) {
-        return includeUndated;
+        return includeUndated && !isBacklogTask(task);
       }
 
       return rangeOverlaps(bounds, from, to);

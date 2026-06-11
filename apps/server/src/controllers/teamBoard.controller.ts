@@ -5,6 +5,7 @@ import { buildTeamBoardResponse, TEAM_BOARD_DEFAULT_STATUSES } from "../lib/team
 import { AppError } from "../middleware/errorHandler.js";
 
 const taskStatusValues = [
+  TaskStatus.BACKLOG,
   TaskStatus.TODO,
   TaskStatus.ON_SCHEDULE,
   TaskStatus.OVERDUE,

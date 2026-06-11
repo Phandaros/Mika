@@ -47,7 +47,8 @@ const statusSortWeight: Record<TaskStatusValue, number> = {
   [TaskStatus.ON_SCHEDULE]: 4,
   [TaskStatus.IN_ANALYSIS]: 5,
   [TaskStatus.AWAITING_DEFINITION]: 6,
-  [TaskStatus.FINISHED]: 7
+  [TaskStatus.FINISHED]: 7,
+  [TaskStatus.BACKLOG]: 8
 };
 
 const prioritySortWeight: Record<Priority, number> = {

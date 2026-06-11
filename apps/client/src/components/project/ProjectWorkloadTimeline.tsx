@@ -209,6 +209,8 @@ export function clientTaskBounds(task: Task): { start: string; end: string } | n
 
 function statusColorVar(status: string): string {
   switch (status) {
+    case TaskStatus.BACKLOG:
+      return "var(--color-status-backlog)";
     case TaskStatus.TODO:
       return "var(--color-status-todo)";
     case TaskStatus.ON_SCHEDULE:
@@ -232,6 +234,8 @@ function statusColorVar(status: string): string {
 
 function statusTimelineStyle(status: string): CSSProperties {
   switch (status) {
+    case TaskStatus.BACKLOG:
+      return tokenTimelineStyle("--status-backlog-bg", "--status-backlog-text");
     case TaskStatus.TODO:
       return tokenTimelineStyle("--status-todo-bg", "--status-todo-text");
     case TaskStatus.ON_SCHEDULE:
@@ -625,7 +629,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
   const datedTasks = useMemo(() => filteredTasks.filter((t) => clientTaskBounds(t) !== null), [filteredTasks]);
   const undatedTasks = useMemo(
-    () => filteredTasks.filter((t) => clientTaskBounds(t) === null && !t.completed),
+    () => filteredTasks.filter((t) => clientTaskBounds(t) === null && !t.completed && t.status !== TaskStatus.BACKLOG),
     [filteredTasks]
   );
 

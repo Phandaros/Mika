@@ -235,13 +235,11 @@ function SprintColumn({
                         data-task-status={task.status}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
-                        <TaskContextMenu
+                        <SprintTaskCard
                           task={task}
                           onOpen={onOpenTask}
                           fallbackLinkPath={scope === "civil" ? "/sprint/civil" : "/sprint/eletrico"}
-                        >
-                          <SprintTaskCard task={task} onOpen={onOpenTask} />
-                        </TaskContextMenu>
+                        />
                       </div>
                     )}
                   </Draggable>
@@ -264,47 +262,62 @@ function SprintColumn({
   );
 }
 
-function SprintTaskCard({ task, onOpen }: { task: Task; onOpen: (task: Task) => void }) {
+function SprintTaskCard({
+  task,
+  onOpen,
+  fallbackLinkPath
+}: {
+  task: Task;
+  onOpen: (task: Task) => void;
+  fallbackLinkPath: string;
+}) {
   const projectName = task.discipline?.projectName ?? task.projects?.[0]?.name ?? "Sem projeto";
   const sectionName = task.discipline?.name ?? task.projects?.[0]?.sectionName ?? "";
   const dateLabel = task.maxDeadline ?? task.dueDate;
 
   return (
-    <article
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(task)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen(task);
-        }
-      }}
-      className={cn(
-        "cursor-pointer rounded-md border border-border bg-surface-card p-3 transition hover:border-brand-orange hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
-        task.completed ? "opacity-70" : ""
-      )}
+    <TaskContextMenu
+      task={task}
+      projectId={task.discipline?.projectId}
+      onOpen={onOpen}
+      fallbackLinkPath={fallbackLinkPath}
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className={cn("line-clamp-2 min-w-0 text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
-          {task.title}
-        </h3>
-        {task.assignee ? <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-7 w-7" /> : null}
-      </div>
+      <article
+        role="button"
+        tabIndex={0}
+        onClick={() => onOpen(task)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpen(task);
+          }
+        }}
+        className={cn(
+          "cursor-pointer rounded-md border border-border bg-surface-card p-3 transition hover:border-brand-orange hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
+          task.completed ? "opacity-70" : ""
+        )}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h3 className={cn("line-clamp-2 min-w-0 text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
+            {task.title}
+          </h3>
+          {task.assignee ? <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-7 w-7" /> : null}
+        </div>
 
-      <div className="mt-3 grid gap-2 text-xs text-text-secondary">
-        <InfoLine icon={<FolderKanban size={13} />} value={projectName} />
-        <InfoLine icon={<UserRound size={13} />} value={task.assignee?.name ?? "Sem responsável"} />
-        {dateLabel ? <InfoLine icon={<CalendarDays size={13} />} value={formatDateOnly(dateLabel, "dd/MM/yyyy")} /> : null}
-      </div>
+        <div className="mt-3 grid gap-2 text-xs text-text-secondary">
+          <InfoLine icon={<FolderKanban size={13} />} value={projectName} />
+          <InfoLine icon={<UserRound size={13} />} value={task.assignee?.name ?? "Sem responsável"} />
+          {dateLabel ? <InfoLine icon={<CalendarDays size={13} />} value={formatDateOnly(dateLabel, "dd/MM/yyyy")} /> : null}
+        </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <PriorityBadge priority={task.priority} />
-        {task.taskDiscipline || sectionName ? <DisciplineChip discipline={task.taskDiscipline ?? sectionName} /> : null}
-        <TaskStatusBadge status={task.status} />
-        <CompletionStatusChip completed={task.completed} />
-      </div>
-    </article>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <PriorityBadge priority={task.priority} />
+          {task.taskDiscipline || sectionName ? <DisciplineChip discipline={task.taskDiscipline ?? sectionName} /> : null}
+          <TaskStatusBadge status={task.status} />
+          <CompletionStatusChip completed={task.completed} />
+        </div>
+      </article>
+    </TaskContextMenu>
   );
 }
 

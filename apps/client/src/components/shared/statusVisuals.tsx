@@ -16,6 +16,7 @@ import { PriorityBadge } from "./PriorityBadge";
 export { priorityLabels, taskStatusLabels };
 
 export const taskStatusColors: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: tokenColorValue(taskStatusTokens[TaskStatus.BACKLOG].bg, taskStatusTokens[TaskStatus.BACKLOG].text),
   [TaskStatus.TODO]: tokenColorValue(taskStatusTokens[TaskStatus.TODO].bg, taskStatusTokens[TaskStatus.TODO].text),
   [TaskStatus.ON_SCHEDULE]: tokenColorValue(taskStatusTokens[TaskStatus.ON_SCHEDULE].bg, taskStatusTokens[TaskStatus.ON_SCHEDULE].text),
   [TaskStatus.OVERDUE]: tokenColorValue(taskStatusTokens[TaskStatus.OVERDUE].bg, taskStatusTokens[TaskStatus.OVERDUE].text),
@@ -56,6 +57,10 @@ export function enumColor(name: string, fallback?: string | null): string {
   }
 
   const normalized = normalize(name);
+  if (normalized.includes("backlog")) {
+    return taskStatusColors[TaskStatus.BACKLOG];
+  }
+
   if (normalized.includes("fazer") || normalized.includes("todo")) {
     return taskStatusColors[TaskStatus.TODO];
   }

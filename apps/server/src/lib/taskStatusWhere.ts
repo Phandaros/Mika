@@ -47,9 +47,47 @@ function notOverdueWhere(): Prisma.TaskWhereInput {
   };
 }
 
+export function backlogStatusWhere(): Prisma.TaskWhereInput {
+  return {
+    OR: [
+      { mikaStatus: TaskStatus.BACKLOG },
+      { mikaStatus: "BACKLOG" },
+      { mikaStatus: "backlog" },
+      { mikaStatus: "Backlog" }
+    ]
+  };
+}
+
+export function excludeBacklogWhere(): Prisma.TaskWhereInput {
+  return { NOT: backlogStatusWhere() };
+}
+
+export function isBacklogTask(task: { mikaStatus: string | null }): boolean {
+  return normalizeBacklogMikaStatus(task.mikaStatus) === TaskStatus.BACKLOG;
+}
+
+function normalizeBacklogMikaStatus(value: string | null | undefined): TaskStatusValue | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value === TaskStatus.BACKLOG || value.toLowerCase() === "backlog") {
+    return TaskStatus.BACKLOG;
+  }
+
+  return null;
+}
+
 export function normalizedStatusWhere(status: TaskStatusValue): Prisma.TaskWhereInput {
   if (status === TaskStatus.OVERDUE) {
     return overdueWhere();
+  }
+
+  if (status === TaskStatus.BACKLOG) {
+    return {
+      completed: false,
+      AND: [backlogStatusWhere()]
+    };
   }
 
   if (status === TaskStatus.FINISHED) {
@@ -68,7 +106,6 @@ export function normalizedStatusWhere(status: TaskStatusValue): Prisma.TaskWhere
             { mikaStatus: null, assigneeStatus: { not: "later" } },
             { mikaStatus: TaskStatus.TODO },
             { mikaStatus: "TODO" },
-            { mikaStatus: "BACKLOG" },
             { mikaStatus: "a fazer" },
             { mikaStatus: "A fazer" }
           ]
@@ -85,7 +122,7 @@ export function normalizedStatusWhere(status: TaskStatusValue): Prisma.TaskWhere
   }
 
   const legacyValues: Partial<Record<TaskStatusValue, string[]>> = {
-    [TaskStatus.ON_SCHEDULE]: ["ON_SCHEDULE", "BACKLOG", "later", "no cronograma", "No Cronograma"],
+    [TaskStatus.ON_SCHEDULE]: ["ON_SCHEDULE", "later", "no cronograma", "No Cronograma"],
     [TaskStatus.IN_PROGRESS]: ["IN_PROGRESS", "em andamento", "Em andamento"],
     [TaskStatus.AWAITING_REVIEW]: ["AWAITING_REVIEW", "IN_REVIEW", "aguardando revisao", "Aguardando Revisao", "Aguardando Revisão"],
     [TaskStatus.IN_ANALYSIS]: ["IN_ANALYSIS", "em analise", "Em Analise", "Em Análise"],

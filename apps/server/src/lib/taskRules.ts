@@ -48,6 +48,10 @@ export function statusForOpenTaskDates(
     return TaskStatus.AWAITING_DEFINITION;
   }
 
+  if (task.mikaStatus === TaskStatus.BACKLOG) {
+    return TaskStatus.BACKLOG;
+  }
+
   const startOn = dateOnlyString(task.startOn);
   const dueOn = dateOnlyString(task.dueOn);
 

@@ -161,6 +161,7 @@ describe("task rules", () => {
     expect(statusForOpenTaskDates(taskFixture({ startOn: "2026-06-01", dueOn: "2026-06-20" }), "2026-06-09")).toBe(TaskStatus.IN_PROGRESS);
     expect(statusForOpenTaskDates(taskFixture({ dueOn: "2026-06-08" }), "2026-06-09")).toBe(TaskStatus.OVERDUE);
     expect(statusForOpenTaskDates(taskFixture({ mikaStatus: TaskStatus.AWAITING_DEFINITION, dueOn: "2026-06-08" }), "2026-06-09")).toBe(TaskStatus.AWAITING_DEFINITION);
+    expect(statusForOpenTaskDates(taskFixture({ mikaStatus: TaskStatus.BACKLOG, dueOn: "2026-06-20" }), "2026-06-09")).toBe(TaskStatus.BACKLOG);
   });
 
   it("does not create a duplicate pending review", async () => {

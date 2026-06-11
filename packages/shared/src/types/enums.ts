@@ -37,6 +37,7 @@ export enum DisciplineStatus {
 }
 
 export enum TaskStatus {
+  BACKLOG = "BACKLOG",
   TODO = "TODO",
   ON_SCHEDULE = "ON_SCHEDULE",
   OVERDUE = "OVERDUE",

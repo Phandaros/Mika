@@ -12,6 +12,7 @@ import {
   toTaskDto
 } from "../lib/asanaDto.js";
 import { ensureCanonicalSectionsForProject } from "../lib/canonicalSections.js";
+import { isBacklogTask } from "../lib/taskStatusWhere.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 interface ProjectBody {
@@ -201,7 +202,7 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
     const filtered = tasks.filter((task) => {
       const bounds = taskTimelineBounds(task);
       if (!bounds) {
-        return includeUndated;
+        return includeUndated && !isBacklogTask(task);
       }
 
       return rangeOverlaps(bounds, from, to);

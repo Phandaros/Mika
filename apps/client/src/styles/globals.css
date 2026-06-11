@@ -28,6 +28,8 @@
   --color-text-muted: #5a5a6e;
   --color-text-disabled: #3a3a4a;
 
+  --status-backlog-bg: rgba(71,85,105,0.12);
+  --status-backlog-text: #64748b;
   --status-todo-bg: rgba(148,163,184,0.15);
   --status-todo-text: #94a3b8;
   --status-scheduled-bg: rgba(100,116,139,0.15);
@@ -84,6 +86,7 @@
   --plat-none-bg: rgba(71,85,105,0.12);
   --plat-none-text: #64748b;
 
+  --color-status-backlog: var(--status-backlog-text);
   --color-status-todo: var(--status-todo-text);
   --color-status-on-schedule: var(--status-scheduled-text);
   --color-status-overdue: var(--status-late-text);
