@@ -89,6 +89,13 @@ type DragPreview = {
   targetRowOffset: number;
 };
 
+type UndatedDropPreview = {
+  taskId: string;
+  startDate: string;
+  dueDate: string;
+  targetAssigneeId: string | null;
+};
+
 type QueuedTaskMove = {
   task: TaskWithDiscipline;
   payload: UpdateTaskRequest;
@@ -457,6 +464,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [sectionFilter, setSectionFilter] = useState<string>(ALL_FILTER_VALUE);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const [draggingUndatedTaskId, setDraggingUndatedTaskId] = useState<string | null>(null);
+  const [undatedDropPreview, setUndatedDropPreview] = useState<UndatedDropPreview | null>(null);
   const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
   const [emptyCellContext, setEmptyCellContext] = useState<EmptyCellContext | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -468,6 +477,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const extendingLeft = useRef(false);
   const extendingRight = useRef(false);
   const taskMoveQueues = useRef<Record<string, TaskMoveQueueEntry>>({});
+  const draggingUndatedTaskIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -887,13 +897,72 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     smoothWheelFrame.current = window.requestAnimationFrame(runSmoothWheelScroll);
   }
 
+  function clearUndatedDrag() {
+    draggingUndatedTaskIdRef.current = null;
+    setDraggingUndatedTaskId(null);
+    setUndatedDropPreview(null);
+  }
+
+  function handleUndatedDragStart(taskId: string) {
+    if (!canManage) {
+      return;
+    }
+
+    draggingUndatedTaskIdRef.current = taskId;
+    setDraggingUndatedTaskId(taskId);
+  }
+
+  function handleUndatedDragEnd() {
+    clearUndatedDrag();
+  }
+
   function handleTimelineDragOver(event: DragEvent<HTMLDivElement>) {
-    if (!Array.from(event.dataTransfer.types).includes(WORKLOAD_TASK_DRAG_MIME)) {
+    const taskId = draggingUndatedTaskIdRef.current;
+    const types = Array.from(event.dataTransfer.types);
+    const isUndatedDrag = taskId !== null || types.includes(WORKLOAD_TASK_DRAG_MIME);
+
+    if (!isUndatedDrag || !canManage) {
       return;
     }
 
     event.preventDefault();
+    event.stopPropagation();
     event.dataTransfer.dropEffect = "move";
+
+    if (!taskId) {
+      return;
+    }
+
+    const ymd = timelineDateAtClientX(event.clientX);
+    if (!ymd) {
+      setUndatedDropPreview(null);
+      return;
+    }
+
+    const task = tasks.find((item) => item.id === taskId);
+    const targetRow = workloadRowAtClientY(event.clientY);
+    const targetAssigneeId =
+      grouping === "assignee" && targetRow ? targetRow.assigneeId : (task?.assigneeId ?? null);
+
+    setUndatedDropPreview({
+      taskId,
+      startDate: ymd,
+      dueDate: ymd,
+      targetAssigneeId
+    });
+  }
+
+  function handleTimelineDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (!draggingUndatedTaskIdRef.current) {
+      return;
+    }
+
+    const related = event.relatedTarget;
+    if (related instanceof Node && event.currentTarget.contains(related)) {
+      return;
+    }
+
+    setUndatedDropPreview(null);
   }
 
   function samePendingTaskMove(a: PendingTaskMove | undefined, b: PendingTaskMove): boolean {
@@ -960,24 +1029,19 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
   function handleTimelineDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
-    const id = event.dataTransfer.getData(WORKLOAD_TASK_DRAG_MIME);
-    if (!id || days.length === 0) {
+    event.stopPropagation();
+
+    const id =
+      draggingUndatedTaskIdRef.current ||
+      event.dataTransfer.getData(WORKLOAD_TASK_DRAG_MIME) ||
+      event.dataTransfer.getData("text/plain");
+    clearUndatedDrag();
+
+    if (!canManage || !id || days.length === 0) {
       return;
     }
 
-    const box = scrollRef.current;
-    if (!box) {
-      return;
-    }
-
-    const rect = box.getBoundingClientRect();
-    const x = event.clientX - rect.left + box.scrollLeft;
-    const idx = Math.floor(x / DAY_W);
-    if (idx < 0 || idx >= days.length) {
-      return;
-    }
-
-    const ymd = days[idx];
+    const ymd = timelineDateAtClientX(event.clientX);
     if (!ymd) {
       return;
     }
@@ -987,7 +1051,16 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return;
     }
 
-    queueTaskMove(task, { startDate: ymd, dueDate: ymd }, { startDate: ymd, dueDate: ymd });
+    const targetRow = workloadRowAtClientY(event.clientY);
+    const payload: UpdateTaskRequest = { startDate: ymd, dueDate: ymd };
+    const visual: PendingTaskMove = { startDate: ymd, dueDate: ymd };
+
+    if (grouping === "assignee" && targetRow) {
+      payload.assigneeId = targetRow.assigneeId;
+      visual.assigneeId = targetRow.assigneeId;
+    }
+
+    queueTaskMove(task, payload, visual);
   }
 
   function assigneeIdForRow(rowId: string): string | null {
@@ -1345,6 +1418,56 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     );
   }
 
+  const highlightedAssigneeId = dragPreview?.targetAssigneeId ?? undatedDropPreview?.targetAssigneeId;
+
+  function renderUndatedDropGhost(row: WorkloadRow): ReactNode {
+    if (
+      grouping !== "assignee" ||
+      !undatedDropPreview ||
+      assigneeIdForRow(row.id) !== undatedDropPreview.targetAssigneeId
+    ) {
+      return null;
+    }
+
+    const previewClip = clipToViewport(
+      { start: undatedDropPreview.startDate, end: undatedDropPreview.dueDate },
+      unionFrom,
+      unionTo
+    );
+    if (!previewClip) {
+      return null;
+    }
+
+    const chartSlotHeight = showEstimatedDays ? CHART_H + CHART_GAP : 0;
+    const barTop = ROW_Y_PAD + chartSlotHeight;
+    const left = previewClip.startIdx * DAY_W + 2;
+    const width = (previewClip.endIdx - previewClip.startIdx + 1) * DAY_W - 4;
+
+    if (width <= 0) {
+      return null;
+    }
+
+    const draggingTask = tasks.find((item) => item.id === undatedDropPreview.taskId);
+
+    return (
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute z-[5] overflow-hidden rounded-md border border-dashed bg-[var(--color-brand-orange-muted)] px-3 text-[11px] font-semibold text-text-primary"
+        style={{
+          left,
+          width,
+          top: barTop,
+          height: BAR_H,
+          borderColor: "var(--color-brand-orange)"
+        }}
+      >
+        <span className="line-clamp-1">
+          {draggingTask ? workloadTaskLabel(draggingTask, mode) : "Nova tarefa"}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-w-0 max-w-full space-y-3 overflow-x-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-bg-1 px-3 py-2">
@@ -1520,7 +1643,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     key={row.id}
                     className={cn(
                       "border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
-                      dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
+                      highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
                     )}
                     style={{ height: row.rowH, paddingTop: chartSlotHeight }}
                   >
@@ -1547,8 +1670,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               data-testid="workload-timeline-scroll"
               className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain"
               onPointerDownCapture={cancelSmoothWheelScroll}
-              onDragOver={handleTimelineDragOver}
-              onDrop={handleTimelineDrop}
+              onDragOverCapture={handleTimelineDragOver}
+              onDragLeave={handleTimelineDragLeave}
+              onDropCapture={handleTimelineDrop}
             >
               <div className="relative" style={{ width: timelineWidth }}>
                 <div
@@ -1632,12 +1756,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                           <div
                             className={cn(
                               "flex border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
-                              dragPreview?.targetAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
+                              highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
                             )}
                             onContextMenu={(event) => handleEmptyRowContextMenu(event, row)}
                           >
                             <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: row.rowH }}>
                               {renderNonWorkingBands(row.rowH, row.id)}
+                              {renderUndatedDropGhost(row)}
                               {renderBars(row.positioned, row.lanes, loads, row.id)}
                             </div>
                           </div>
@@ -1664,6 +1789,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         tasks={undatedTasks}
         labelForTask={(task) => workloadTaskLabel(task, mode)}
         statusColorFor={statusColorVar}
+        canDrag={canManage}
+        assigneeGrouping={grouping === "assignee"}
+        onDragStart={handleUndatedDragStart}
+        onDragEnd={handleUndatedDragEnd}
         onOpenTask={(task) => {
           setUndatedPanelOpen(false);
           onOpenTask(task);

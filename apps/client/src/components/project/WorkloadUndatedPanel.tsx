@@ -24,6 +24,10 @@ type WorkloadUndatedPanelProps = {
   labelForTask: (task: TaskWithDiscipline) => string;
   statusColorFor: (status: string) => string;
   onOpenTask: (task: TaskWithDiscipline) => void;
+  canDrag: boolean;
+  assigneeGrouping: boolean;
+  onDragStart: (taskId: string) => void;
+  onDragEnd: () => void;
 };
 
 export function WorkloadUndatedPanel({
@@ -32,9 +36,14 @@ export function WorkloadUndatedPanel({
   tasks,
   labelForTask,
   statusColorFor,
-  onOpenTask
+  onOpenTask,
+  canDrag,
+  assigneeGrouping,
+  onDragStart,
+  onDragEnd
 }: WorkloadUndatedPanelProps) {
   const [search, setSearch] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
   const sorted = useMemo(
     () => [...tasks].sort((a, b) => a.title.localeCompare(b.title, "pt-BR")),
@@ -57,6 +66,7 @@ export function WorkloadUndatedPanel({
   useEffect(() => {
     if (!open) {
       setSearch("");
+      setIsDragging(false);
     }
   }, [open]);
 
@@ -79,7 +89,8 @@ export function WorkloadUndatedPanel({
     <div
       className={cn(
         "fixed inset-0 z-[35] bg-brand-black/60 transition-opacity duration-500 ease-out",
-        open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        open && !isDragging ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        open && isDragging && "opacity-100"
       )}
       aria-hidden={!open}
     >
@@ -116,7 +127,11 @@ export function WorkloadUndatedPanel({
           />
         </div>
         <p className="shrink-0 border-b border-border-subtle px-4 py-2 text-xs text-text-muted">
-          Arraste uma tarefa para a grade de datas para definir início e entrega no mesmo dia.
+          {canDrag
+            ? assigneeGrouping
+              ? "Arraste para a grade na linha do responsável e no dia desejado. Início e entrega serão definidos no mesmo dia."
+              : "Arraste uma tarefa para a grade de datas para definir início e entrega no mesmo dia."
+            : "Somente coordenadores podem agendar tarefas na grade."}
         </p>
         <ul className="min-h-0 flex-1 list-none space-y-1 overflow-y-auto p-3">
           {filtered.length === 0 ? (
@@ -128,13 +143,28 @@ export function WorkloadUndatedPanel({
               <li key={task.id}>
                 <button
                   type="button"
-                  draggable
+                  draggable={canDrag}
                   onDragStart={(event) => {
+                    if (!canDrag) {
+                      event.preventDefault();
+                      return;
+                    }
+
                     event.dataTransfer.setData(WORKLOAD_TASK_DRAG_MIME, task.id);
-                    event.dataTransfer.effectAllowed = "copyMove";
+                    event.dataTransfer.setData("text/plain", task.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    setIsDragging(true);
+                    onDragStart(task.id);
+                  }}
+                  onDragEnd={() => {
+                    setIsDragging(false);
+                    onDragEnd();
                   }}
                   onClick={() => onOpenTask(task)}
-                  className="flex w-full cursor-grab items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange active:cursor-grabbing"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange",
+                    canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+                  )}
                   style={{ borderLeftWidth: 3, borderLeftColor: statusColorFor(task.status) }}
                 >
                   <span className="min-w-0 flex-1 truncate">{labelForTask(task)}</span>
