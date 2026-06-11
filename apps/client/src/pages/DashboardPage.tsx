@@ -167,7 +167,12 @@ export function DashboardPage() {
           {!activeProjects.length ? <EmptyState title="Nenhum projeto ativo" /> : null}
         </HomeCard>
       </section>
-      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} openVersion={taskDetailOpenVersion} />
+      <TaskDetail
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onOpenTask={openTaskDetail}
+        openVersion={taskDetailOpenVersion}
+      />
     </div>
   );
 }

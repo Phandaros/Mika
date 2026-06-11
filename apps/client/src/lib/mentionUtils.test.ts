@@ -4,6 +4,7 @@ import { DisciplineStatus, DisciplineType, ProjectStatus, Role } from "shared";
 import {
   buildMentionMarkdown,
   buildMentionSuggestions,
+  normalizeMentionContentForRender,
   parseMentionHref,
   type MentionContext
 } from "./mentionUtils";
@@ -14,6 +15,16 @@ const context: MentionContext = {
 };
 
 const users: User[] = [
+  {
+    id: "user-torino",
+    name: "Torino Teste",
+    email: "torino@mk.com",
+    role: Role.DESIGNER,
+    avatarUrl: null,
+    isActive: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z"
+  },
   {
     id: "user-1",
     name: "João Silva",
@@ -53,7 +64,8 @@ const projects: Project[] = [
         responsible: null,
         tasks: [
           { id: "task-dup", title: "Memorial descritivo" },
-          { id: "task-other", title: "Diagrama unifilar" }
+          { id: "task-other", title: "Diagrama unifilar" },
+          { id: "task-torino", title: "[Torino] PPCI - Executivo" }
         ]
       },
       {
@@ -67,6 +79,34 @@ const projects: Project[] = [
         updatedAt: "2026-01-01T00:00:00.000Z",
         responsible: null,
         tasks: [{ id: "task-dup", title: "Memorial descritivo" }]
+      }
+    ]
+  },
+  {
+    id: "project-torino",
+    name: "Torino SAN",
+    description: null,
+    client: null,
+    platform: null,
+    builder: null,
+    areaM2: null,
+    status: ProjectStatus.ACTIVE,
+    startDate: null,
+    endDate: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    sections: [
+      {
+        id: "section-torino",
+        projectId: "project-torino",
+        name: "Civil",
+        type: DisciplineType.OTHER,
+        status: DisciplineStatus.IN_PROGRESS,
+        responsibleId: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        responsible: null,
+        tasks: []
       }
     ]
   },
@@ -108,7 +148,7 @@ describe("buildMentionMarkdown", () => {
         label: "João",
         type: "user"
       })
-    ).toBe("@[João](mk://user/user-1)");
+    ).toBe("[João](mk://user/user-1)");
   });
 
   it("strips brackets from labels", () => {
@@ -118,7 +158,15 @@ describe("buildMentionMarkdown", () => {
         label: "Tarefa [urgente]",
         type: "task"
       })
-    ).toBe("@[Tarefa urgente](mk://task/task-1)");
+    ).toBe("[Tarefa urgente](mk://task/task-1)");
+  });
+});
+
+describe("normalizeMentionContentForRender", () => {
+  it("strips legacy leading @ from mk mention links", () => {
+    expect(normalizeMentionContentForRender("@[Torino PPCI](mk://task/task-1)")).toBe(
+      "[Torino PPCI](mk://task/task-1)"
+    );
   });
 });
 
@@ -156,5 +204,26 @@ describe("buildMentionSuggestions", () => {
     const taskIds = suggestions.filter((item) => item.type === "task").map((item) => item.id);
 
     expect(taskIds.indexOf("task-dup")).toBeLessThan(taskIds.indexOf("task-remote"));
+  });
+
+  it("sorts users before projects before tasks", () => {
+    const suggestions = buildMentionSuggestions("torino", context, users, projects);
+    const firstUserIndex = suggestions.findIndex((item) => item.type === "user");
+    const firstProjectIndex = suggestions.findIndex((item) => item.type === "project");
+    const firstTaskIndex = suggestions.findIndex((item) => item.type === "task");
+
+    expect(firstUserIndex).toBeGreaterThanOrEqual(0);
+    expect(firstProjectIndex).toBeGreaterThanOrEqual(0);
+    expect(firstTaskIndex).toBeGreaterThanOrEqual(0);
+    expect(firstUserIndex).toBeLessThan(firstProjectIndex);
+    expect(firstProjectIndex).toBeLessThan(firstTaskIndex);
+  });
+
+  it("matches task titles with brackets and spaces in the query", () => {
+    const suggestions = buildMentionSuggestions("torino ppci", context, users, projects);
+    const task = suggestions.find((item) => item.id === "task-torino");
+
+    expect(task).toBeDefined();
+    expect(task?.label).toBe("[Torino] PPCI - Executivo");
   });
 });

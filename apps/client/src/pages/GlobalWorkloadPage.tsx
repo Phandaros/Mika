@@ -84,7 +84,12 @@ export function GlobalWorkloadPage({ scope }: { scope: GlobalWorkloadScope }) {
         onTaskUpdated={handleTimelineTaskUpdated}
         updateTask={updateTask}
       />
-      <TaskDetail task={selectedTask} onClose={closeTaskDetail} openVersion={taskDetailOpenVersion} />
+      <TaskDetail
+        task={selectedTask}
+        onClose={closeTaskDetail}
+        onOpenTask={openTaskDetail}
+        openVersion={taskDetailOpenVersion}
+      />
     </div>
   );
 }

@@ -172,7 +172,12 @@ export function TeamBoardPage() {
         </div>
       )}
 
-      <TaskDetail task={selectedTask} onClose={closeTaskDetail} openVersion={taskDetailOpenVersion} />
+      <TaskDetail
+        task={selectedTask}
+        onClose={closeTaskDetail}
+        onOpenTask={openTaskDetail}
+        openVersion={taskDetailOpenVersion}
+      />
     </div>
   );
 }

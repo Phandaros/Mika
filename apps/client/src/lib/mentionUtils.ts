@@ -19,8 +19,18 @@ function sectionsOf(project: Project) {
   return project.sections ?? project.disciplines ?? [];
 }
 
-function normalizeQuery(query: string): string {
-  return query.trim().toLowerCase();
+const TYPE_ORDER: Record<MentionEntityType, number> = {
+  user: 0,
+  project: 1,
+  task: 2
+};
+
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[\[\]]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function matchesQuery(value: string, query: string): boolean {
@@ -28,12 +38,17 @@ function matchesQuery(value: string, query: string): boolean {
     return true;
   }
 
-  return value.toLowerCase().includes(query);
+  return normalizeSearchText(value).includes(normalizeSearchText(query));
 }
 
 export function buildMentionMarkdown(item: Pick<MentionSuggestionItem, "id" | "label" | "type">): string {
   const safeLabel = item.label.replace(/[\[\]]/g, "");
-  return `@[${safeLabel}](mk://${item.type}/${item.id})`;
+  return `[${safeLabel}](mk://${item.type}/${item.id})`;
+}
+
+/** Removes legacy leading @ before mk mention links so render shows a single @ prefix. */
+export function normalizeMentionContentForRender(content: string): string {
+  return content.replace(/@\[([^\]]+)\]\(mk:\/\//g, "[$1](mk://");
 }
 
 export function parseMentionHref(href: string): { type: MentionEntityType; id: string } | null {
@@ -61,7 +76,7 @@ export function buildMentionSuggestions(
   users: User[],
   projects: Project[]
 ): MentionSuggestionItem[] {
-  const normalizedQuery = normalizeQuery(query);
+  const normalizedQuery = query.trim();
   const items: MentionSuggestionItem[] = [];
 
   for (const user of users) {
@@ -125,6 +140,12 @@ export function buildMentionSuggestions(
 
   return [...deduped.values()]
     .sort((a, b) => {
+      const typeDiff = TYPE_ORDER[a.type] - TYPE_ORDER[b.type];
+
+      if (typeDiff !== 0) {
+        return typeDiff;
+      }
+
       if (b.affinity !== a.affinity) {
         return b.affinity - a.affinity;
       }

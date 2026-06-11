@@ -397,7 +397,12 @@ export function MyTasksPage() {
         />
       ) : null}
       {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
-      <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} openVersion={taskDetailOpenVersion} />
+      <TaskDetail
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onOpenTask={openTaskDetail}
+        openVersion={taskDetailOpenVersion}
+      />
     </div>
   );
 }

@@ -1,9 +1,17 @@
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from "react-markdown";
 import { ImageOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedAsset, openAuthenticatedAsset } from "../../hooks/useAuthenticatedAsset";
-import { parseMentionHref } from "../../lib/mentionUtils";
+import { normalizeMentionContentForRender, parseMentionHref } from "../../lib/mentionUtils";
 import { cn } from "../../lib/utils";
+
+const mentionUrlTransform: UrlTransform = (url) => {
+  if (url.startsWith("mk://")) {
+    return url;
+  }
+
+  return defaultUrlTransform(url);
+};
 
 interface MarkdownCommentProps {
   content: string;
@@ -92,15 +100,18 @@ function MentionLink({
       onClick={handleClick}
       className="inline rounded bg-[--color-brand-orange]/15 px-1 py-0.5 text-[13px] font-medium text-[--color-brand-orange] hover:bg-[--color-brand-orange]/25"
     >
-      @{typeof children === "string" ? children.replace(/^@/, "") : children}
+      @{children}
     </button>
   );
 }
 
 export function MarkdownComment({ content, className, onMentionTask }: MarkdownCommentProps) {
+  const normalizedContent = normalizeMentionContentForRender(content);
+
   return (
     <div className={cn("min-w-0", className)}>
       <ReactMarkdown
+        urlTransform={mentionUrlTransform}
         components={{
           img: ({ src, alt }) => <MarkdownImage src={src} alt={alt} />,
           p: ({ children }) => <p className="mb-1 text-[13px] leading-relaxed text-[--color-text-primary]">{children}</p>,
@@ -124,7 +135,7 @@ export function MarkdownComment({ content, className, onMentionTask }: MarkdownC
         disallowedElements={["script", "iframe", "object", "embed"]}
         unwrapDisallowed
       >
-        {content}
+        {normalizedContent}
       </ReactMarkdown>
     </div>
   );

@@ -66,6 +66,7 @@ interface TaskDetailProps {
   task: Task | null;
   onClose: () => void;
   openVersion?: number;
+  onOpenTask?: (task: Task) => void;
 }
 
 type EditableField = "priority" | "completionDate" | null;
@@ -89,7 +90,7 @@ function isTargetInsidePanelShell(target: Element, asideRef: RefObject<HTMLEleme
   return isTargetInsidePanelPortal(target);
 }
 
-export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) {
+export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskDetailProps) {
   const { user } = useAuth();
   const canManageTaskFields = canManageTasks(user);
   const canToggleCompletion = canCompleteTasks(user);
@@ -112,6 +113,8 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const closePanelTimeoutRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const onOpenTaskRef = useRef(onOpenTask);
+  onOpenTaskRef.current = onOpenTask;
   const navigate = useNavigate();
   const projectId = visibleTask?.discipline?.projectId ?? "";
   const { data: projects = [] } = useProjects();
@@ -351,6 +354,12 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
         try {
           const response = await api.get<{ task: Task }>(`/tasks/${taskId}`);
           const mentionedTask = response.data.task;
+
+          if (onOpenTaskRef.current) {
+            onOpenTaskRef.current(mentionedTask);
+            return;
+          }
+
           const targetProjectId =
             mentionedTask.discipline?.projectId ?? mentionedTask.projects?.[0]?.id;
 

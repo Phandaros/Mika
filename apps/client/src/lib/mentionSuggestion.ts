@@ -17,6 +17,10 @@ type MentionDataSource = {
   contextRef: RefObject<MentionContext | null>;
 };
 
+const POPUP_GAP = 4;
+const POPUP_MAX_HEIGHT = 256;
+const POPUP_WIDTH = 320;
+
 function updatePopupPosition(element: HTMLElement, clientRect?: (() => DOMRect | null) | null) {
   const rect = clientRect?.();
 
@@ -24,15 +28,26 @@ function updatePopupPosition(element: HTMLElement, clientRect?: (() => DOMRect |
     return;
   }
 
+  const popupHeight = element.offsetHeight || POPUP_MAX_HEIGHT;
+  const popupWidth = element.offsetWidth || POPUP_WIDTH;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const openUpward = spaceBelow < popupHeight + POPUP_GAP && spaceAbove > spaceBelow;
+  const maxLeft = Math.max(0, window.innerWidth - popupWidth);
+  const left = Math.min(Math.max(0, rect.left), maxLeft);
+
   element.style.position = "fixed";
-  element.style.left = `${rect.left}px`;
-  element.style.top = `${rect.bottom + 4}px`;
+  element.style.left = `${left}px`;
+  element.style.top = openUpward
+    ? `${Math.max(POPUP_GAP, rect.top - popupHeight - POPUP_GAP)}px`
+    : `${rect.bottom + POPUP_GAP}px`;
   element.style.zIndex = "60";
 }
 
 export function createMentionSuggestionExtension(dataSource: MentionDataSource) {
   const suggestionOptions: Omit<SuggestionOptions<MentionSuggestionItem>, "editor"> = {
     char: "@",
+    allowSpaces: true,
     items: ({ query }: { query: string }) => {
       const context = dataSource.contextRef.current;
 
