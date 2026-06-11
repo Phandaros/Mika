@@ -1,1 +1,5 @@
-export { CommentEditor as TaskCommentEditor, type CommentEditorHandle } from "../shared/CommentEditor";
+export {
+  CommentEditor as TaskCommentEditor,
+  type CommentEditorHandle,
+  type PendingCommentFile
+} from "../shared/CommentEditor";

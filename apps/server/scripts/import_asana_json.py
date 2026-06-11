@@ -176,6 +176,12 @@ TASK_FIXED_FIELD_ALIASES: dict[str, set[str]] = {
     "stage": {"etapa", "stage"},
 }
 
+PROJECT_FIXED_FIELD_ALIASES: dict[str, set[str]] = {
+    "builder": {"construtora", "builder"},
+    "platform": {"plataforma", "platform"},
+    "areaM2": {"area", "area m2", "area m²"},
+}
+
 TASK_FIXED_FIELD_GIDS: dict[str, set[str]] = {
     "status": set(),
     "platform": set(),
@@ -218,6 +224,27 @@ def task_fixed_field_key(cf: dict[str, Any]) -> str | None:
         if gid and gid in TASK_FIXED_FIELD_GIDS.get(key, set()):
             return key
     return None
+
+
+def project_fixed_field_key(cf: dict[str, Any]) -> str | None:
+    name = normalize_field_key(cf.get("name"))
+    for key, aliases in PROJECT_FIXED_FIELD_ALIASES.items():
+        if name in aliases:
+            return key
+    return None
+
+
+def project_fixed_fields_from_custom_fields(custom_fields: list[dict[str, Any]] | None) -> dict[str, str | float]:
+    values: dict[str, str | float] = {}
+    for cf in custom_fields or []:
+        key = project_fixed_field_key(cf)
+        if not key:
+            continue
+        value = task_custom_field_scalar(cf)
+        if value is None:
+            continue
+        values[key] = value
+    return values
 
 
 def task_custom_field_scalar(cf: dict[str, Any]) -> str | float | None:
@@ -373,6 +400,10 @@ def import_projects(conn: sqlite3.Connection, projects: list[dict[str, Any]], pa
             ensure_user(conn, u, password_hash)
 
         status = p.get("current_status") if isinstance(p.get("current_status"), dict) else {}
+        project_fields = project_fixed_fields_from_custom_fields(p.get("custom_fields"))
+        builder = project_fields.get("builder")
+        platform = project_fields.get("platform")
+        area_m2 = project_fields.get("areaM2")
         insert_or_update(conn, "Project", ["asanaGid"], {
             "id": new_id(),
             "asanaGid": gid,
@@ -380,6 +411,9 @@ def import_projects(conn: sqlite3.Connection, projects: list[dict[str, Any]], pa
             "notes": p.get("notes"),
             "htmlNotes": p.get("html_notes"),
             "permalinkUrl": p.get("permalink_url"),
+            "builder": str(builder) if builder is not None else None,
+            "platform": str(platform) if platform is not None else None,
+            "areaM2": float(area_m2) if area_m2 is not None else None,
             "archived": boolv(p.get("archived")),
             "color": p.get("color"),
             "public": boolv(p.get("public")),
@@ -697,6 +731,7 @@ def main() -> int:
     parser.add_argument("--clear", action="store_true", help="Apaga os dados das tabelas importadas antes de popular")
     parser.add_argument("--import-users", action="store_true", help="Tambem cria/atualiza usuarios do dump. Por padrao, usuarios sao preservados.")
     parser.add_argument("--clear-comments", action="store_true", help="Remove comentarios importados (asanaGid NOT NULL) antes de importar stories")
+    args = parser.parse_args()
     global IMPORT_USERS
     IMPORT_USERS = args.import_users
 

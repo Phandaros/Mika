@@ -9,6 +9,7 @@ import {
   FolderKanban,
   Home,
   KanbanSquare,
+  LayoutGrid,
   ListTodo,
   LucideIcon,
   Plus,
@@ -65,6 +66,7 @@ const sidebarSections: SidebarNavSection[] = [
     title: "Vistas",
     minRole: Role.COORDINATOR,
     items: [
+      { to: "/team-board", label: "Quadro do Time", icon: LayoutGrid, minRole: Role.COORDINATOR },
       { to: "/sprint/civil", label: "Civil - Sprint Board", icon: KanbanSquare, minRole: Role.COORDINATOR },
       { to: "/sprint/eletrico", label: "Elétrico - Sprint Board", icon: KanbanSquare, minRole: Role.COORDINATOR },
       { to: "/workloads/civil", label: "Workload Civil", icon: CalendarRange, minRole: Role.COORDINATOR },

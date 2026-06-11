@@ -539,6 +539,36 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 - ❌ Scroll horizontal dentro de popover/dropdown
 - ❌ Campos custom configuráveis por projeto — campos são fixos em código
 - ❌ Cor hexadecimal hardcoded fora dos tokens CSS
+- ❌ Bloquear edição inline aguardando `invalidateQueries` + refetch do servidor
+
+---
+
+## 18. Atualização otimista de mutations
+
+### Quando aplicar
+
+- Toda edição inline em tabela/lista (projetos, tarefas, status, dropdowns) **deve** atualizar o cache antes da resposta HTTP.
+- Formulários modais de save único seguem o mesmo contrato quando o usuário espera feedback imediato.
+
+### Contrato TanStack Query
+
+1. **`onMutate`**: cancelar queries concorrentes das mesmas keys; snapshot do estado anterior no `context`; `setQueryData` com valor otimista.
+2. **`onError`**: restaurar snapshot; toast Sonner (mensagem em português).
+3. **`onSuccess`**: reconciliar com payload do servidor (`setQueryData`), não depender só de `invalidateQueries`.
+4. **`onSettled`**: invalidar apenas quando a mutation altera escopo amplo (ex.: mover tarefa entre projetos) ou quando não há DTO confiável para merge.
+5. **Proibido** para PATCH de campo único: UI que só muda após `invalidateQueries` + refetch.
+
+### Referências de implementação
+
+- Tarefas: `apps/client/src/hooks/useTasks.ts` (`useUpdateTask`)
+- Projetos: `apps/client/src/hooks/useProjects.ts` (`usePatchProject`, `useUpdateProject`) + `apps/client/src/lib/projectCache.ts`
+
+### UX esperada
+
+- Chip, texto e ordenação mudam no mesmo frame da interação.
+- Em erro, valor volta ao anterior sem refresh manual.
+- Sem spinner por campo em PATCH inline.
+- Não alterar campos de ordenação (ex.: `updatedAt`) no patch otimista — isso evita o item “pular” na lista e voltar quando o servidor reconcilia.
 
 ---
 

@@ -70,7 +70,7 @@ const taskCompletionSchema = z.object({
 router.get("/sections/:sectionId/tasks", auth, listTasks);
 router.get("/disciplines/:disciplineId/tasks", auth, listTasks);
 router.get("/tasks/:id", auth, getTaskById);
-router.get("/tasks/:id/history", auth, listTaskHistory);
+router.get("/tasks/:id/history", auth, requireRole(Role.COORDINATOR), listTaskHistory);
 router.post("/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
 router.post("/sections/:sectionId/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
 router.post("/disciplines/:disciplineId/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);

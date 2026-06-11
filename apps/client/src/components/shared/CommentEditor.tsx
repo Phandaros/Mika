@@ -3,11 +3,13 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
   type ReactNode
 } from "react";
+import type { Project, User } from "shared";
 import Image from "@tiptap/extension-image";
 import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -33,6 +35,10 @@ import {
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { useUploadInlineImage } from "../../hooks/useCommentAttachments";
+import { useProjects } from "../../hooks/useProjects";
+import { useUsers } from "../../hooks/useUsers";
+import { createMentionSuggestionExtension } from "../../lib/mentionSuggestion";
+import type { MentionContext } from "../../lib/mentionUtils";
 import {
   classifyFile,
   DOCUMENT_ACCEPT,
@@ -44,9 +50,14 @@ import {
   toAbsoluteApiUrl
 } from "../../lib/attachmentUtils";
 import { logCommentImageDebug } from "../../lib/commentImageDebug";
-import { cn } from "../../lib/utils";
+import { cn, createUploadId } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+
+export type PendingCommentFile = {
+  id: string;
+  file: File;
+};
 
 interface CommentEditorProps {
   value: string;
@@ -55,13 +66,18 @@ interface CommentEditorProps {
   disabled?: boolean;
   submitLabel?: string;
   minHeightClassName?: string;
-  pendingFiles?: File[];
-  onPendingFilesChange?: (files: File[]) => void;
+  pendingFiles?: PendingCommentFile[];
+  onPendingFilesChange?: (files: PendingCommentFile[]) => void;
   onUploadingChange?: (uploading: boolean) => void;
+  mentionContext?: MentionContext | null;
 }
 
 export interface CommentEditorHandle {
   getSubmitContent: () => string;
+}
+
+function createPendingFile(file: File): PendingCommentFile {
+  return { id: createUploadId(), file };
 }
 
 type MarkdownEditor = Editor & {
@@ -97,10 +113,29 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
     minHeightClassName = "min-h-[112px]",
     pendingFiles = [],
     onPendingFilesChange,
-    onUploadingChange
+    onUploadingChange,
+    mentionContext = null
   },
   ref
 ) {
+  const { data: users = [] } = useUsers();
+  const { data: projects = [] } = useProjects();
+  const usersRef = useRef<User[]>(users);
+  const projectsRef = useRef<Project[]>(projects);
+  const mentionContextRef = useRef<MentionContext | null>(mentionContext);
+  usersRef.current = users;
+  projectsRef.current = projects;
+  mentionContextRef.current = mentionContext;
+
+  const mentionExtension = useMemo(
+    () =>
+      createMentionSuggestionExtension({
+        usersRef,
+        projectsRef,
+        contextRef: mentionContextRef
+      }),
+    []
+  );
   const [linkDraft, setLinkDraft] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -113,6 +148,7 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
   const onPendingFilesChangeRef = useRef(onPendingFilesChange);
   const isApplyingMarkdownRef = useRef(false);
   const blobToApiUrlRef = useRef<Map<string, string>>(new Map());
+  const submitCommentRef = useRef<() => void>(() => undefined);
   const uploadInlineImage = useUploadInlineImage();
 
   valueRef.current = value;
@@ -239,7 +275,7 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
       return;
     }
 
-    onChangePending([...nextFiles, file]);
+    onChangePending([...nextFiles, createPendingFile(file)]);
   }, []);
 
   const handleImageFileRef = useRef<(file: File) => void>(() => undefined);
@@ -326,7 +362,8 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
       Markdown,
       Placeholder.configure({
         placeholder: "Adicionar um comentário"
-      })
+      }),
+      ...(mentionContext ? [mentionExtension] : [])
     ],
     content: value,
     contentType: "markdown",
@@ -358,8 +395,18 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
         }
 
         event.preventDefault();
+        event.stopPropagation();
         processDroppedFilesRef.current(files);
         return true;
+      },
+      handleKeyDown: (_view, event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+          event.preventDefault();
+          submitCommentRef.current();
+          return true;
+        }
+
+        return false;
       }
     },
     onUpdate: ({ editor: nextEditor }) => {
@@ -393,6 +440,8 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
 
     onSubmit();
   }
+
+  submitCommentRef.current = submitComment;
 
   function applyLink() {
     if (!editor) {
@@ -452,18 +501,18 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
         break;
       }
 
-      nextFiles.push(file);
+      nextFiles.push(createPendingFile(file));
     }
 
     onPendingFilesChange(nextFiles);
   }
 
-  function removePendingFile(index: number) {
+  function removePendingFile(id: string) {
     if (!onPendingFilesChange) {
       return;
     }
 
-    onPendingFilesChange(pendingFiles.filter((_, fileIndex) => fileIndex !== index));
+    onPendingFilesChange(pendingFiles.filter((item) => item.id !== id));
   }
 
   return (
@@ -589,21 +638,21 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
 
       {pendingFiles.length > 0 ? (
         <div className="flex flex-wrap gap-2 border-t border-[--color-border-subtle] px-3 py-2">
-          {pendingFiles.map((file, index) => (
+          {pendingFiles.map((item) => (
             <div
-              key={`${file.name}-${index}`}
+              key={item.id}
               className="flex items-center gap-2 rounded-md border border-[--color-border] bg-[--bg-3] px-2 py-1"
             >
               <Paperclip size={12} className="text-[--color-text-muted]" />
               <div className="min-w-0">
-                <p className="max-w-[140px] truncate text-[12px] text-[--color-text-primary]">{file.name}</p>
-                <p className="text-[11px] text-[--color-text-muted]">{formatFileSize(file.size)}</p>
+                <p className="max-w-[140px] truncate text-[12px] text-[--color-text-primary]">{item.file.name}</p>
+                <p className="text-[11px] text-[--color-text-muted]">{formatFileSize(item.file.size)}</p>
               </div>
               <button
                 type="button"
                 aria-label="Remover arquivo pendente"
                 className="text-[--color-text-muted] hover:text-[--status-late-text]"
-                onClick={() => removePendingFile(index)}
+                onClick={() => removePendingFile(item.id)}
               >
                 <X size={12} />
               </button>
@@ -612,8 +661,7 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between border-t border-[--color-border-subtle] px-3 py-2">
-        <span className="text-[12px] text-[--color-text-muted]">Imagens ficam no texto; documentos aparecem como anexos.</span>
+      <div className="flex items-center justify-end border-t border-[--color-border-subtle] px-3 py-2">
         <Button type="button" className="h-8 px-3 text-xs" disabled={disabled || !value.trim() || isUploading} onClick={submitComment}>
           <Send size={14} />
           {submitLabel}

@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import { Priority, TaskStatus } from "shared";
+import { Priority, ProjectStatus, TaskStatus } from "shared";
+import { projectPlatformTokens, projectStatusLabels, projectStatusTokens } from "../../lib/projectLabels";
 import { cn } from "../../lib/utils";
 
 const chipClassName = "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium tracking-wide whitespace-nowrap";
@@ -137,6 +138,28 @@ export function PlatformChip({ platform, fallback = "—" }: { platform?: string
   const key = normalizeEnumKey(platform);
   const tokens = platformTokens[key] ?? { bg: "--plat-none-bg", text: "--plat-none-text" };
   const label = platform ? platformLabels[key] ?? platform : fallback;
+
+  return (
+    <Chip bg={tokens.bg} text={tokens.text}>
+      {label}
+    </Chip>
+  );
+}
+
+export function ProjectStatusChip({ status }: { status: ProjectStatus }) {
+  const tokens = projectStatusTokens[status];
+
+  return (
+    <Chip bg={tokens.bg} text={tokens.text}>
+      {projectStatusLabels[status]}
+    </Chip>
+  );
+}
+
+export function ProjectPlatformChip({ platform, fallback = "—" }: { platform?: string | null; fallback?: string }) {
+  const key = platform ?? "";
+  const tokens = projectPlatformTokens[key] ?? { bg: "--plat-none-bg", text: "--plat-none-text" };
+  const label = platform ?? fallback;
 
   return (
     <Chip bg={tokens.bg} text={tokens.text}>

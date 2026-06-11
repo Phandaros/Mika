@@ -21,6 +21,7 @@ import { Priority, TaskStatus, type CreateTaskRequest, type Project, type Projec
 import { useProjects } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
+import { isTargetInsidePanelPortal } from "../../lib/panelOutsideClick";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
@@ -91,7 +92,7 @@ function isTargetInsidePanelShell(target: Element, aside: HTMLElement | null): b
     return true;
   }
 
-  return Boolean(target.closest('[data-mika-popover-content="true"], [data-radix-popper-content-wrapper]'));
+  return isTargetInsidePanelPortal(target);
 }
 
 export function TaskCreateSheet() {

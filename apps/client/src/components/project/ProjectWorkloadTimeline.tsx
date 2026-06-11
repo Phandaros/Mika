@@ -614,7 +614,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const todayIdx = days.indexOf(todayKey);
 
   const datedTasks = useMemo(() => filteredTasks.filter((t) => clientTaskBounds(t) !== null), [filteredTasks]);
-  const undatedTasks = useMemo(() => filteredTasks.filter((t) => clientTaskBounds(t) === null), [filteredTasks]);
+  const undatedTasks = useMemo(
+    () => filteredTasks.filter((t) => clientTaskBounds(t) === null && !t.completed),
+    [filteredTasks]
+  );
 
   const assigneeIdsWithTasks = useMemo(() => {
     const set = new Set<string>();

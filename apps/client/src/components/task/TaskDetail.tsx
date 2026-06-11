@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   addMonths,
   eachDayOfInterval,
@@ -26,7 +27,9 @@ import { useProjects } from "../../hooks/useProjects";
 import { useTaskHistory } from "../../hooks/useTaskHistory";
 import { useUpdateTask, useUpdateTaskCompletion } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
+import { api } from "../../lib/api";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
+import { isPointInsidePanelPortal, isTargetInsidePanelPortal } from "../../lib/panelOutsideClick";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
 import { PriorityBadge } from "../shared/PriorityBadge";
@@ -43,7 +46,7 @@ import {
 } from "./TaskInlineFields";
 import { TaskCompletionButton } from "./TaskCompletionButton";
 import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
-import { TaskCommentEditor, type CommentEditorHandle } from "./TaskCommentEditor";
+import { TaskCommentEditor, type CommentEditorHandle, type PendingCommentFile } from "./TaskCommentEditor";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
@@ -78,24 +81,12 @@ const priorityOptions: Array<{ value: Priority; label: string }> = [
 const promotedTaskFieldKeys = new Set(["status", "dias-estimados", "dias-conclusao", "estimated-time"]);
 function isTargetInsidePanelShell(target: Element, asideRef: RefObject<HTMLElement>): boolean {
   const asideEl = asideRef.current;
+
   if (asideEl?.contains(target)) {
     return true;
   }
 
-  return Boolean(target.closest('[data-mika-popover-content="true"], [data-radix-popper-content-wrapper]'));
-}
-
-function isPointInsideOpenPopover(clientX: number, clientY: number): boolean {
-  const popovers = document.querySelectorAll('[data-mika-popover-content="true"], [data-radix-popper-content-wrapper]');
-
-  for (const popover of popovers) {
-    const rect = popover.getBoundingClientRect();
-    if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-      return true;
-    }
-  }
-
-  return false;
+  return isTargetInsidePanelPortal(target);
 }
 
 export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) {
@@ -112,7 +103,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [comment, setComment] = useState("");
-  const [pendingCommentFiles, setPendingCommentFiles] = useState<File[]>([]);
+  const [pendingCommentFiles, setPendingCommentFiles] = useState<PendingCommentFile[]>([]);
   const [commentUploading, setCommentUploading] = useState(false);
   const [activityTab, setActivityTab] = useState<TaskActivityTab>("comments");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
@@ -121,8 +112,13 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
   const closePanelTimeoutRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const navigate = useNavigate();
   const projectId = visibleTask?.discipline?.projectId ?? "";
   const { data: projects = [] } = useProjects();
+  const mentionContext = useMemo(
+    () => (projectId && visibleTask?.id ? { projectId, taskId: visibleTask.id } : null),
+    [projectId, visibleTask?.id]
+  );
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
   const updateTaskCompletion = useUpdateTaskCompletion(projectId);
@@ -327,7 +323,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
         return;
       }
 
-      if (isTargetInsidePanelShell(event.target, asideRef) || isPointInsideOpenPopover(event.clientX, event.clientY)) {
+      if (isTargetInsidePanelShell(event.target, asideRef) || isPointInsidePanelPortal(event.clientX, event.clientY)) {
         return;
       }
 
@@ -344,6 +340,30 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
     document.addEventListener("pointerdown", handlePointerDownCapture, true);
     return () => document.removeEventListener("pointerdown", handlePointerDownCapture, true);
   }, [isOpen, visibleTask]);
+
+  const handleMentionTask = useCallback(
+    (taskId: string) => {
+      if (visibleTask?.id === taskId) {
+        return;
+      }
+
+      void (async () => {
+        try {
+          const response = await api.get<{ task: Task }>(`/tasks/${taskId}`);
+          const mentionedTask = response.data.task;
+          const targetProjectId =
+            mentionedTask.discipline?.projectId ?? mentionedTask.projects?.[0]?.id;
+
+          if (targetProjectId) {
+            navigate(`/projects/${targetProjectId}?task=${taskId}`);
+          }
+        } catch {
+          toast.error("Não foi possível abrir a tarefa mencionada.");
+        }
+      })();
+    },
+    [navigate, visibleTask?.id]
+  );
 
   if (!visibleTask) {
     return null;
@@ -401,13 +421,13 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
 
     const validFiles: File[] = [];
 
-    for (const file of pendingCommentFiles) {
-      if (classifyFile(file) === "document") {
-        validFiles.push(file);
+    for (const item of pendingCommentFiles) {
+      if (classifyFile(item.file) === "document") {
+        validFiles.push(item.file);
         continue;
       }
 
-      toast.error(getFileRejectionMessage(file));
+      toast.error(getFileRejectionMessage(item.file));
     }
 
     const createdComment = await createComment.mutateAsync({ content: submitContent });
@@ -485,6 +505,7 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
               pendingFiles={pendingCommentFiles}
               onPendingFilesChange={setPendingCommentFiles}
               onUploadingChange={setCommentUploading}
+              mentionContext={mentionContext}
             />
           </div>
         </div>
@@ -744,6 +765,8 @@ export function TaskDetail({ task, onClose, openVersion = 0 }: TaskDetailProps) 
             value={activityTab}
             onValueChange={setActivityTab}
             currentUser={user}
+            mentionContext={mentionContext}
+            onMentionTask={handleMentionTask}
           />
         </div>
     </TaskPanelShell>

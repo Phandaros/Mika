@@ -1,5 +1,4 @@
 import { getDay } from "date-fns";
-import { toDateOnly } from "./utils";
 
 const MS_PER_DAY = 86400000;
 
@@ -24,6 +23,21 @@ function parseYmdToLocalNoon(ymd: string): Date {
   return new Date(parts[0] ?? 0, (parts[1] ?? 1) - 1, parts[2] ?? 1, 12, 0, 0, 0);
 }
 
+export function buildNonWorkingDays(from: string, to: string, holidayDates: string[]): Set<string> {
+  const set = new Set<string>(holidayDates);
+  let current = from;
+
+  while (current <= to) {
+    const weekDay = getDay(parseYmdToLocalNoon(current));
+    if (weekDay === 0 || weekDay === 6) {
+      set.add(current);
+    }
+    current = addCalendarDaysYmd(current, 1);
+  }
+
+  return set;
+}
+
 export function countBusinessDaysBetween(from: string, to: string, nonWorkingDays: Set<string>): number {
   if (from > to) {
     return 0;
@@ -40,47 +54,4 @@ export function countBusinessDaysBetween(from: string, to: string, nonWorkingDay
   }
 
   return count;
-}
-
-export function buildNonWorkingDays(from: string, to: string, holidayDates: string[]): Set<string> {
-  const set = new Set<string>(holidayDates);
-  let current = from;
-
-  while (current <= to) {
-    const weekDay = getDay(parseYmdToLocalNoon(current));
-    if (weekDay === 0 || weekDay === 6) {
-      set.add(current);
-    }
-    current = addCalendarDaysYmd(current, 1);
-  }
-
-  return set;
-}
-
-export function recalculatedDueDate(startDate: string, estimatedDays: number, nonWorkingDays: Set<string>): string {
-  const targetWorkDays = Math.max(1, Math.ceil(estimatedDays));
-  let current = startDate;
-  let counted = 0;
-
-  while (counted < targetWorkDays) {
-    if (!nonWorkingDays.has(current)) {
-      counted += 1;
-    }
-
-    if (counted < targetWorkDays) {
-      current = addCalendarDaysYmd(current, 1);
-    }
-  }
-
-  return current;
-}
-
-export function canRecalculateTaskDates(task: {
-  startDate: string | null;
-  estimatedDays?: number | null;
-  estimatedTime?: number | null;
-}): boolean {
-  const startDate = toDateOnly(task.startDate);
-  const estimatedDays = task.estimatedDays ?? task.estimatedTime ?? null;
-  return Boolean(startDate && estimatedDays != null && estimatedDays > 0);
 }

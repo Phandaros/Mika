@@ -656,7 +656,7 @@ function ListView({
   projectId: string;
 }) {
   const groupedTasks = groupTasksByScope(tasks);
-  const columnCount = 11;
+  const columnCount = 10;
 
   if (isLoading) {
     return (
@@ -671,10 +671,9 @@ function ListView({
   return (
     <div className="grid gap-4">
       <DataTableContainer>
-        <DataTable minWidth="1220px" data-testid="project-list-table">
+        <DataTable minWidth="1100px" data-testid="project-list-table">
           <colgroup>
-            <col className="w-[200px]" />
-            <col className="w-[120px]" />
+            <col className="w-[320px]" />
             <col className="w-[140px]" />
             <col className="w-[150px]" />
             <col className="w-[90px]" />
@@ -688,7 +687,6 @@ function ListView({
           <DataTableHead>
             <tr className="border-b border-[--color-border]">
               <DataTableHeader>Tarefa</DataTableHeader>
-              <DataTableHeader>Seção</DataTableHeader>
               <DataTableHeader>Responsável</DataTableHeader>
               <DataTableHeader>Status</DataTableHeader>
               <DataTableHeader align="center">Plataforma</DataTableHeader>
@@ -720,21 +718,18 @@ function ListView({
                       fallbackLinkPath={`/projects/${projectId}`}
                     >
                       <DataTableRow className={cn(task.completed ? "opacity-70" : "")}>
-                        <DataTableCell>
+                        <DataTableCell className="max-w-0 overflow-hidden">
                           <button
                             type="button"
                             onClick={() => onOpenTask(task)}
                             title={task.title}
                             className={cn(
-                              "min-w-0 truncate text-left font-medium hover:text-brand-orange",
+                              "block w-full truncate text-left font-medium hover:text-brand-orange",
                               task.completed ? "text-text-muted" : "text-text-primary"
                             )}
                           >
                             {task.title || <EmptyCell />}
                           </button>
-                        </DataTableCell>
-                        <DataTableCell>
-                          <TruncatedCellValue value={task.discipline.name} />
                         </DataTableCell>
                         <DataTableCell>
                           {canManage ? (

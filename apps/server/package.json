@@ -18,7 +18,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:status": "prisma migrate status",
-    "db:import-asana-comments": "tsx prisma/importAsanaComments.ts"
+    "db:import-asana-comments": "tsx prisma/importAsanaComments.ts",
+    "db:fix-sprint-board-tasks": "tsx prisma/fixSprintBoardTasks.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",

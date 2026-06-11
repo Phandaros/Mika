@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { TaskStatus, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
+import { normalizedStatusWhere } from "../lib/taskStatusWhere.js";
 import { sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
 import { AppError } from "../middleware/errorHandler.js";
 
@@ -54,14 +55,6 @@ type SprintCursor = {
   id: string;
 };
 
-function todayDateOnly(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function todayStart(): Date {
-  return new Date(`${todayDateOnly()}T00:00:00.000Z`);
-}
-
 function encodeCursor(task: Pick<SprintTaskRecord, "updatedAt" | "id">): string {
   const payload: SprintCursor = {
     updatedAt: task.updatedAt.toISOString(),
@@ -104,111 +97,6 @@ function sprintScopeWhere(scope: Exclude<WorkloadScope, "general">): Prisma.Task
         ]
       }
     }
-  };
-}
-
-function overdueWhere(): Prisma.TaskWhereInput {
-  return {
-    completed: false,
-    AND: [
-      { OR: [{ dueOn: { lt: todayDateOnly() } }, { dueAt: { lt: todayStart() } }] },
-      { NOT: awaitingDefinitionStatusWhere() }
-    ]
-  };
-}
-
-function awaitingDefinitionStatusWhere(): Prisma.TaskWhereInput {
-  return {
-    OR: [
-      { mikaStatus: TaskStatus.AWAITING_DEFINITION },
-      { mikaStatus: "AWAITING_DEFINITION" },
-      { mikaStatus: "aguardando definicao" },
-      { mikaStatus: "Aguardando Definicao" },
-      { mikaStatus: "Aguardando Definição" },
-      { mikaStatus: "Aguardando DefiniÃ§Ã£o" },
-      { mikaStatus: "aguardando aprovacao" }
-    ]
-  };
-}
-
-function notOverdueWhere(): Prisma.TaskWhereInput {
-  return {
-    OR: [
-      { completed: true },
-      {
-        AND: [
-          { OR: [{ dueOn: null }, { dueOn: { gte: todayDateOnly() } }] },
-          { OR: [{ dueAt: null }, { dueAt: { gte: todayStart() } }] }
-        ]
-      }
-    ]
-  };
-}
-
-function normalizedStatusWhere(status: TaskStatusValue): Prisma.TaskWhereInput {
-  if (status === TaskStatus.OVERDUE) {
-    return overdueWhere();
-  }
-
-  if (status === TaskStatus.FINISHED) {
-    return {
-      completed: true
-    };
-  }
-
-  if (status === TaskStatus.TODO) {
-    return {
-      completed: false,
-      AND: [
-        notOverdueWhere(),
-        {
-          OR: [
-            { mikaStatus: null, assigneeStatus: { not: "later" } },
-            { mikaStatus: TaskStatus.TODO },
-            { mikaStatus: "TODO" },
-            { mikaStatus: "BACKLOG" },
-            { mikaStatus: "a fazer" },
-            { mikaStatus: "A fazer" }
-          ]
-        }
-      ]
-    };
-  }
-
-  if (status === TaskStatus.AWAITING_DEFINITION) {
-    return {
-      completed: false,
-      AND: [awaitingDefinitionStatusWhere()]
-    };
-  }
-
-  const legacyValues: Partial<Record<TaskStatusValue, string[]>> = {
-    [TaskStatus.ON_SCHEDULE]: ["ON_SCHEDULE", "BACKLOG", "later", "no cronograma", "No Cronograma"],
-    [TaskStatus.IN_PROGRESS]: ["IN_PROGRESS", "em andamento", "Em andamento"],
-    [TaskStatus.AWAITING_REVIEW]: ["AWAITING_REVIEW", "IN_REVIEW", "aguardando revisao", "Aguardando Revisao", "Aguardando Revisão"],
-    [TaskStatus.IN_ANALYSIS]: ["IN_ANALYSIS", "em analise", "Em Analise", "Em Análise"],
-    [TaskStatus.AWAITING_DEFINITION]: [
-      "AWAITING_DEFINITION",
-      "aguardando definicao",
-      "Aguardando Definicao",
-      "Aguardando Definição",
-      "aguardando aprovacao"
-    ]
-  };
-
-  return {
-    completed: false,
-    AND: [
-      notOverdueWhere(),
-      {
-        OR: [
-          { mikaStatus: status },
-          ...((legacyValues[status] ?? []).map((value) =>
-            value === "later" ? { mikaStatus: null, assigneeStatus: "later" } : { mikaStatus: value }
-          ) satisfies Prisma.TaskWhereInput[])
-        ]
-      }
-    ]
   };
 }
 

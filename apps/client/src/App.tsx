@@ -16,6 +16,7 @@ import { SprintBoardPage } from "./pages/SprintBoardPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { UsersPage } from "./pages/UsersPage";
 import { WeeklyReportPage } from "./pages/WeeklyReportPage";
+import { TeamBoardPage } from "./pages/TeamBoardPage";
 import { WeeklyReportsAdminPage } from "./pages/WeeklyReportsAdminPage";
 import { Role } from "shared";
 
@@ -137,6 +138,7 @@ export function App() {
               <Route path="/sprint/civil" element={<SprintBoardPage scope="civil" />} />
               <Route path="/sprint/eletrico" element={<SprintBoardPage scope="electrical" />} />
               <Route path="/reviews" element={<ReviewsPage />} />
+              <Route path="/team-board" element={<TeamBoardPage />} />
               <Route path="/users" element={<UsersPage />} />
             </Route>
             <Route element={<AdminPermissionRoute />}>

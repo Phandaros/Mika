@@ -425,7 +425,7 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     htmlDescription: project.htmlNotes,
     client: project.builder ?? project.team?.name ?? project.workspace.name,
     platform: project.platform,
-    builder: project.builder ?? project.team?.name ?? null,
+    builder: project.builder,
     areaM2: project.areaM2,
     status: project.archived ? ProjectStatus.COMPLETED : ProjectStatus.ACTIVE,
     startDate: project.startOn,

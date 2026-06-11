@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from "react";
-import { Inbox, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Inbox, Search, X } from "lucide-react";
 import type { DisciplineType, Task } from "shared";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 export const WORKLOAD_TASK_DRAG_MIME = "application/x-mk-workload-task";
 
@@ -33,10 +34,31 @@ export function WorkloadUndatedPanel({
   statusColorFor,
   onOpenTask
 }: WorkloadUndatedPanelProps) {
+  const [search, setSearch] = useState("");
+
   const sorted = useMemo(
     () => [...tasks].sort((a, b) => a.title.localeCompare(b.title, "pt-BR")),
     [tasks]
   );
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      return sorted;
+    }
+
+    return sorted.filter((task) => {
+      const label = labelForTask(task).toLowerCase();
+      return task.title.toLowerCase().includes(query) || label.includes(query);
+    });
+  }, [labelForTask, search, sorted]);
+
+  useEffect(() => {
+    if (!open) {
+      setSearch("");
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -52,10 +74,6 @@ export function WorkloadUndatedPanel({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
-
-  if (tasks.length === 0) {
-    return null;
-  }
 
   return (
     <div
@@ -88,27 +106,42 @@ export function WorkloadUndatedPanel({
             <X size={18} />
           </Button>
         </div>
+        <div className="relative shrink-0 border-b border-border-subtle px-4 py-2">
+          <Search size={14} className="pointer-events-none absolute left-7 top-1/2 -translate-y-1/2 text-text-muted" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar tarefa..."
+            className="h-8 pl-8"
+          />
+        </div>
         <p className="shrink-0 border-b border-border-subtle px-4 py-2 text-xs text-text-muted">
           Arraste uma tarefa para a grade de datas para definir início e entrega no mesmo dia.
         </p>
         <ul className="min-h-0 flex-1 list-none space-y-1 overflow-y-auto p-3">
-          {sorted.map((task) => (
-            <li key={task.id}>
-              <button
-                type="button"
-                draggable
-                onDragStart={(event) => {
-                  event.dataTransfer.setData(WORKLOAD_TASK_DRAG_MIME, task.id);
-                  event.dataTransfer.effectAllowed = "copyMove";
-                }}
-                onClick={() => onOpenTask(task)}
-                className="flex w-full cursor-grab items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange active:cursor-grabbing"
-                style={{ borderLeftWidth: 3, borderLeftColor: statusColorFor(task.status) }}
-              >
-                <span className="min-w-0 flex-1 truncate">{labelForTask(task)}</span>
-              </button>
+          {filtered.length === 0 ? (
+            <li className="px-2 py-8 text-center text-sm text-text-muted">
+              {search.trim() ? "Nenhuma tarefa encontrada." : "Nenhuma tarefa sem data."}
             </li>
-          ))}
+          ) : (
+            filtered.map((task) => (
+              <li key={task.id}>
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(WORKLOAD_TASK_DRAG_MIME, task.id);
+                    event.dataTransfer.effectAllowed = "copyMove";
+                  }}
+                  onClick={() => onOpenTask(task)}
+                  className="flex w-full cursor-grab items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange active:cursor-grabbing"
+                  style={{ borderLeftWidth: 3, borderLeftColor: statusColorFor(task.status) }}
+                >
+                  <span className="min-w-0 flex-1 truncate">{labelForTask(task)}</span>
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       </aside>
     </div>

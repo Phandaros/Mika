@@ -6,6 +6,7 @@ import { deleteCommentAttachments } from "../lib/attachmentCleanup.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
+import { extractUserMentionIds } from "../lib/commentMentions.js";
 import { taskActivityTypes } from "../lib/taskActivity.js";
 import { Role } from "../lib/enums.js";
 
@@ -72,6 +73,31 @@ function toCommentDto(comment: {
     author: toPublicUser(comment.author),
     attachments: (comment.attachments ?? []).map(toAttachmentDto)
   };
+}
+
+async function notifyMentionedUsers(options: {
+  content: string;
+  taskId: string;
+  taskName: string;
+  authorId: string;
+  skipUserIds?: Set<string>;
+}) {
+  const mentionedUserIds = extractUserMentionIds(options.content);
+  const skipUserIds = options.skipUserIds ?? new Set<string>();
+
+  for (const userId of mentionedUserIds) {
+    if (userId === options.authorId || skipUserIds.has(userId)) {
+      continue;
+    }
+
+    await createAndEmitNotification({
+      userId,
+      type: "MENTIONED",
+      title: "Você foi mencionado",
+      message: `${options.taskName}: ${options.content.slice(0, 120)}${options.content.length > 120 ? "…" : ""}`,
+      taskId: options.taskId
+    });
+  }
 }
 
 function canMutateComment(
@@ -169,6 +195,14 @@ export const createComment: RequestHandler = async (req, res, next) => {
           taskId: fullTask.id
         });
       }
+
+      await notifyMentionedUsers({
+        content: body.content,
+        taskId: fullTask.id,
+        taskName: fullTask.name,
+        authorId: authUser.id,
+        skipUserIds: recipients
+      });
     }
 
     res.status(201).json({
@@ -201,6 +235,20 @@ export const updateComment: RequestHandler = async (req, res, next) => {
       data: { content: body.content },
       include: commentInclude
     });
+
+    const task = await prisma.task.findUnique({
+      where: { id: comment.taskId },
+      select: { id: true, name: true }
+    });
+
+    if (task) {
+      await notifyMentionedUsers({
+        content: body.content,
+        taskId: task.id,
+        taskName: task.name,
+        authorId: authUser.id
+      });
+    }
 
     res.json({
       comment: toCommentDto(comment)

@@ -1,11 +1,14 @@
 import ReactMarkdown from "react-markdown";
 import { ImageOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuthenticatedAsset, openAuthenticatedAsset } from "../../hooks/useAuthenticatedAsset";
+import { parseMentionHref } from "../../lib/mentionUtils";
 import { cn } from "../../lib/utils";
 
 interface MarkdownCommentProps {
   content: string;
   className?: string;
+  onMentionTask?: (taskId: string) => void;
 }
 
 function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
@@ -41,7 +44,60 @@ function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
   );
 }
 
-export function MarkdownComment({ content, className }: MarkdownCommentProps) {
+function MentionLink({
+  href,
+  children,
+  onMentionTask
+}: {
+  href: string;
+  children: React.ReactNode;
+  onMentionTask?: (taskId: string) => void;
+}) {
+  const navigate = useNavigate();
+  const mention = parseMentionHref(href);
+
+  if (!mention) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="text-[--color-brand-orange] underline underline-offset-2">
+        {children}
+      </a>
+    );
+  }
+
+  function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+
+    const target = parseMentionHref(href);
+
+    if (!target) {
+      return;
+    }
+
+    if (target.type === "user") {
+      navigate(`/users/${target.id}`);
+      return;
+    }
+
+    if (target.type === "project") {
+      navigate(`/projects/${target.id}`);
+      return;
+    }
+
+    onMentionTask?.(target.id);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="inline rounded bg-[--color-brand-orange]/15 px-1 py-0.5 text-[13px] font-medium text-[--color-brand-orange] hover:bg-[--color-brand-orange]/25"
+    >
+      @{typeof children === "string" ? children.replace(/^@/, "") : children}
+    </button>
+  );
+}
+
+export function MarkdownComment({ content, className, onMentionTask }: MarkdownCommentProps) {
   return (
     <div className={cn("min-w-0", className)}>
       <ReactMarkdown
@@ -60,14 +116,9 @@ export function MarkdownComment({ content, className }: MarkdownCommentProps) {
             <blockquote className="my-2 border-l-2 border-[--color-border-focus] pl-3 text-[--color-text-secondary]">{children}</blockquote>
           ),
           a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[--color-brand-orange] underline underline-offset-2"
-            >
+            <MentionLink href={href ?? ""} onMentionTask={onMentionTask}>
               {children}
-            </a>
+            </MentionLink>
           )
         }}
         disallowedElements={["script", "iframe", "object", "embed"]}

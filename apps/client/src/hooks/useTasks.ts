@@ -10,6 +10,7 @@ import type {
 } from "shared";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
+import { invalidateTeamBoardQueries, teamBoardQueryPredicate } from "./useTeamBoard";
 
 interface TasksResponse {
   tasks: Task[];
@@ -658,6 +659,7 @@ export function useUpdateTask(projectId: string) {
         predicate: (query) =>
           workloadQueryPredicate(query) ||
           sprintBoardQueryPredicate(query) ||
+          teamBoardQueryPredicate(query) ||
           (Array.isArray(query.queryKey) &&
             (query.queryKey[0] === "projects" || (query.queryKey[0] === "task" && query.queryKey[1] === id)))
       });
@@ -699,6 +701,7 @@ export function useUpdateTask(projectId: string) {
       updateSprintBoardTaskCaches(updatedTask);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries("inactive");
+      invalidateTeamBoardQueries();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     },
     onSettled: async (_data, _error, variables) => {
@@ -740,6 +743,7 @@ export function useUpdateTaskStatus(projectId: string) {
         predicate: (query) =>
           workloadQueryPredicate(query) ||
           sprintBoardQueryPredicate(query) ||
+          teamBoardQueryPredicate(query) ||
           (Array.isArray(query.queryKey) &&
             (query.queryKey[0] === "projects" || (query.queryKey[0] === "task" && query.queryKey[1] === id)))
       });
@@ -781,6 +785,7 @@ export function useUpdateTaskStatus(projectId: string) {
       updateSprintBoardTaskCaches(updatedTask);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries("inactive");
+      invalidateTeamBoardQueries();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     }
   });
@@ -796,6 +801,7 @@ export function useUpdateTaskCompletion(projectId: string) {
       updateTaskInProjectCache(projectId, updatedTask);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries();
+      invalidateTeamBoardQueries();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     }
   });
@@ -939,6 +945,7 @@ export function useDeleteTask(projectId?: string) {
       optimisticallyRemoveTaskFromCaches(taskId, projectId);
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries();
+      invalidateTeamBoardQueries();
     }
   });
 }

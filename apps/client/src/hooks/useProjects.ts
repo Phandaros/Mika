@@ -5,6 +5,12 @@ import type {
   UpdateProjectRequest
 } from "shared";
 import { api } from "../lib/api";
+import {
+  applyOptimisticProjectPatch,
+  prepareProjectMutation,
+  restoreProjectCaches,
+  updateProjectInCaches
+} from "../lib/projectCache";
 import { queryClient } from "../lib/queryClient";
 
 interface ProjectsResponse {
@@ -54,9 +60,36 @@ export function useUpdateProject(projectId: string) {
       const response = await api.patch<ProjectResponse>(`/projects/${projectId}`, payload);
       return response.data.project;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      await queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
+    onMutate: async (payload) => {
+      const context = await prepareProjectMutation(projectId);
+      applyOptimisticProjectPatch(projectId, payload);
+      return context;
+    },
+    onError: (_error, _payload, context) => {
+      restoreProjectCaches(context);
+    },
+    onSuccess: (updatedProject) => {
+      updateProjectInCaches(projectId, updatedProject);
+    }
+  });
+}
+
+export function usePatchProject() {
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: UpdateProjectRequest }) => {
+      const response = await api.patch<ProjectResponse>(`/projects/${id}`, payload);
+      return response.data.project;
+    },
+    onMutate: async ({ id, payload }) => {
+      const context = await prepareProjectMutation(id);
+      applyOptimisticProjectPatch(id, payload);
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreProjectCaches(context);
+    },
+    onSuccess: (updatedProject, { id }) => {
+      updateProjectInCaches(id, updatedProject);
     }
   });
 }

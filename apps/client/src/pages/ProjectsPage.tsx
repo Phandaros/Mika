@@ -1,27 +1,42 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
 import { FolderKanban, ListFilter, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ProjectStatus, type Project } from "shared";
+import { ProjectStatus, type Project, type UpdateProjectRequest } from "shared";
+import { toast } from "sonner";
 import { ProjectForm } from "../components/project/ProjectForm";
-import { EmptyCell } from "../components/shared/DataTable";
+import {
+  EditableBuilderField,
+  EditableProjectAreaField,
+  EditableProjectEndDateField,
+  EditableProjectPlatformField,
+  EditableProjectStatusField
+} from "../components/project/ProjectInlineFields";
+import { DataTableContainer, EmptyCell } from "../components/shared/DataTable";
+import { ProjectPlatformChip, ProjectStatusChip } from "../components/shared/Chip";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { SearchableSelect } from "../components/ui/searchable-select";
-import { useProjects } from "../hooks/useProjects";
+import { useAuth } from "../hooks/useAuth";
+import { usePatchProject, useProjects } from "../hooks/useProjects";
 import { formatProjectArea, projectStatusLabels } from "../lib/projectLabels";
+import { canManageTasks } from "../lib/permissions";
+import { resolveAsanaColor } from "../lib/utils";
 
 export function ProjectsPage() {
+  const { user } = useAuth();
   const { data: projects = [], isLoading } = useProjects();
+  const patchProjectMutation = usePatchProject();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [platformFilter, setPlatformFilter] = useState("all");
+  const [builderFilter, setBuilderFilter] = useState("all");
   const [sortMode, setSortMode] = useState("updatedAt-desc");
+  const canManage = canManageTasks(user);
 
   useEffect(() => {
     if (searchParams.get("new") === "1") {
@@ -41,6 +56,17 @@ export function ProjectsPage() {
     const nextProjects = projects
       .filter((project) => statusFilter === "all" || project.status === statusFilter)
       .filter((project) => platformFilter === "all" || (platformFilter === "none" ? !project.platform : project.platform === platformFilter))
+      .filter((project) => {
+        if (builderFilter === "all") {
+          return true;
+        }
+
+        if (builderFilter === "none") {
+          return !project.builder?.trim();
+        }
+
+        return project.builder?.trim() === builderFilter;
+      })
       .slice();
 
     nextProjects.sort((a, b) => {
@@ -56,7 +82,21 @@ export function ProjectsPage() {
     });
 
     return nextProjects;
-  }, [platformFilter, projects, sortMode, statusFilter]);
+  }, [builderFilter, platformFilter, projects, sortMode, statusFilter]);
+
+  const patchProject = useCallback(
+    (id: string, payload: UpdateProjectRequest) => {
+      patchProjectMutation.mutate(
+        { id, payload },
+        {
+          onError: () => {
+            toast.error("Não foi possível salvar o projeto");
+          }
+        }
+      );
+    },
+    [patchProjectMutation]
+  );
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -104,6 +144,16 @@ export function ProjectsPage() {
                   searchPlaceholder="Buscar plataforma..."
                   onValueChange={setPlatformFilter}
                 />
+                <SearchableSelect
+                  value={builderFilter}
+                  options={[
+                    { value: "all", label: "Todas as construtoras" },
+                    { value: "none", label: "Sem construtora" },
+                    ...builderSuggestions.map((builder) => ({ value: builder, label: builder }))
+                  ]}
+                  searchPlaceholder="Buscar construtora..."
+                  onValueChange={setBuilderFilter}
+                />
               </PopoverContent>
             </Popover>
             <Popover>
@@ -126,15 +176,17 @@ export function ProjectsPage() {
                 />
               </PopoverContent>
             </Popover>
-            <Button className="h-9" onClick={() => setShowCreateModal(true)}>
-              <Plus size={16} />
-              Adicionar projeto
-            </Button>
+            {canManage ? (
+              <Button className="h-9" onClick={() => setShowCreateModal(true)}>
+                <Plus size={16} />
+                Adicionar projeto
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
 
-      {showCreateModal ? (
+      {showCreateModal && canManage ? (
         <ProjectModal title="Adicionar projeto" onClose={() => closeCreateModal(searchParams, setSearchParams, setShowCreateModal)}>
           <ProjectForm
             builderSuggestions={builderSuggestions}
@@ -144,7 +196,7 @@ export function ProjectsPage() {
         </ProjectModal>
       ) : null}
 
-      {editingProject ? (
+      {editingProject && canManage ? (
         <ProjectModal title="Editar projeto" onClose={() => setEditingProject(null)}>
           <ProjectForm
             project={normalizeProjectSections(editingProject)}
@@ -155,15 +207,33 @@ export function ProjectsPage() {
         </ProjectModal>
       ) : null}
 
-      <ProjectsPortfolioTable projects={filteredProjects} onEditProject={setEditingProject} />
+      <ProjectsPortfolioTable
+        projects={filteredProjects}
+        canManage={canManage}
+        builderSuggestions={builderSuggestions}
+        onEditProject={setEditingProject}
+        onPatchProject={patchProject}
+      />
       {filteredProjects.length === 0 ? <EmptyState title="Nenhum projeto encontrado" /> : null}
     </div>
   );
 }
 
-function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project[]; onEditProject: (project: Project) => void }) {
+function ProjectsPortfolioTable({
+  projects,
+  canManage,
+  builderSuggestions,
+  onEditProject,
+  onPatchProject
+}: {
+  projects: Project[];
+  canManage: boolean;
+  builderSuggestions: string[];
+  onEditProject: (project: Project) => void;
+  onPatchProject: (id: string, payload: UpdateProjectRequest) => void;
+}) {
   return (
-    <div className="overflow-x-auto rounded-md border border-[--color-border]">
+    <DataTableContainer>
       <table className="w-full min-w-[1040px] table-fixed border-collapse bg-[--bg-2] text-sm">
         <thead className="sticky top-0 z-10 bg-[--bg-1] text-left">
           <tr className="border-b border-[--color-border]">
@@ -175,59 +245,119 @@ function ProjectsPortfolioTable({ projects, onEditProject }: { projects: Project
             <th className="w-[120px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Tarefas</th>
             <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Entrega</th>
             <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Atualizado</th>
-            <th className="w-[90px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Editar</th>
+            {canManage ? (
+              <th className="w-[90px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Editar</th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {projects.map((project) => {
             const taskCount =
               (project.sections ?? project.disciplines)?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
+            const iconTokens = resolveAsanaColor(project.color ?? "");
+
             return (
               <tr key={project.id} className="border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]">
                 <td className="px-3 py-2">
                   <Link to={`/projects/${project.id}`} className="flex items-center gap-3 font-semibold text-text-primary">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-hover text-text-secondary">
-                      <FolderKanban size={16} />
+                    <span
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                      style={{ backgroundColor: iconTokens.bg, color: iconTokens.text }}
+                    >
+                      <FolderKanban size={16} aria-hidden="true" />
                     </span>
                     <span className="min-w-0 truncate">{project.name}</span>
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">
-                  <span className="block truncate" title={project.builder ?? undefined}>
-                    {project.builder ?? <EmptyCell />}
-                  </span>
+                <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
+                  {canManage ? (
+                    <EditableBuilderField
+                      value={project.builder}
+                      suggestions={builderSuggestions}
+                      variant="table"
+                      onSave={(builder) => {
+                        const normalized = builder?.trim() || null;
+                        onPatchProject(project.id, { builder: normalized, client: normalized });
+                      }}
+                    />
+                  ) : project.builder ? (
+                    <span className="block truncate" title={project.builder}>
+                      {project.builder}
+                    </span>
+                  ) : (
+                    <EmptyCell />
+                  )}
                 </td>
-                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">
-                  {project.platform ? <Badge tone="muted">{project.platform}</Badge> : <EmptyCell />}
+                <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
+                  {canManage ? (
+                    <EditableProjectPlatformField
+                      value={project.platform}
+                      variant="table"
+                      onSave={(platform) => onPatchProject(project.id, { platform })}
+                    />
+                  ) : project.platform ? (
+                    <ProjectPlatformChip platform={project.platform} />
+                  ) : (
+                    <EmptyCell />
+                  )}
                 </td>
-                <td className="px-3 py-2 text-right font-mono text-[12px] text-[--color-text-secondary]">
-                  {formatProjectArea(project.areaM2)}
+                <td className="px-3 py-2 text-right text-[13px] text-[--color-text-primary]">
+                  {canManage ? (
+                    <EditableProjectAreaField
+                      value={project.areaM2}
+                      variant="table"
+                      onSave={(areaM2) => onPatchProject(project.id, { areaM2 })}
+                    />
+                  ) : (
+                    <span className="font-mono text-[12px] text-[--color-text-secondary]">{formatProjectArea(project.areaM2)}</span>
+                  )}
                 </td>
                 <td className="px-3 py-2">
-                  <Badge tone="orange">{projectStatusLabels[project.status]}</Badge>
+                  {canManage ? (
+                    <EditableProjectStatusField
+                      value={project.status}
+                      variant="table"
+                      onSave={(status) => onPatchProject(project.id, { status })}
+                    />
+                  ) : (
+                    <ProjectStatusChip status={project.status} />
+                  )}
                 </td>
                 <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{taskCount}</td>
-                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">
-                  {project.endDate ? format(new Date(project.endDate), "dd/MM/yyyy") : <EmptyCell />}
+                <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
+                  {canManage ? (
+                    <EditableProjectEndDateField
+                      value={project.endDate}
+                      variant="table"
+                      onSave={(endDate) => onPatchProject(project.id, { endDate })}
+                    />
+                  ) : project.endDate ? (
+                    format(new Date(project.endDate), "dd/MM/yyyy")
+                  ) : (
+                    <EmptyCell />
+                  )}
                 </td>
                 <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
-                <td className="px-3 py-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-8 w-8 px-0 text-text-secondary hover:text-brand-orange"
-                    onClick={() => onEditProject(project)}
-                    title="Editar projeto"
-                  >
-                    <Pencil size={16} />
-                  </Button>
-                </td>
+                {canManage ? (
+                  <td className="px-3 py-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 w-8 px-0 text-text-secondary hover:text-brand-orange"
+                      onClick={() => onEditProject(project)}
+                      title="Editar projeto"
+                      aria-label="Editar projeto"
+                    >
+                      <Pencil size={16} />
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             );
           })}
         </tbody>
       </table>
-    </div>
+    </DataTableContainer>
   );
 }
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Comment, CreateCommentRequest, UpdateCommentRequest } from "shared";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
+import { invalidateTeamBoardQueries } from "./useTeamBoard";
 
 interface CommentsResponse {
   comments: Comment[];
@@ -29,6 +30,7 @@ export function useCreateComment(taskId: string | undefined) {
       return response.data.comment;
     },
     onSuccess: async () => {
+      invalidateTeamBoardQueries();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] }),
         queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "history"] })
@@ -56,6 +58,7 @@ export function useDeleteComment(taskId: string | undefined) {
       return commentId;
     },
     onSuccess: async () => {
+      invalidateTeamBoardQueries();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] }),
         queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "history"] })
