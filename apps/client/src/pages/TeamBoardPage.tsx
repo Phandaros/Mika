@@ -91,7 +91,7 @@ export function TeamBoardPage() {
     }
   }, [taskIdFromUrl, taskFromApi]);
 
-  function openTaskDetail(task: TeamBoardTaskDto) {
+  function openTaskDetail(task: Task) {
     setTaskDetailOpenVersion((version) => version + 1);
     setSelectedTask(task);
     const next = new URLSearchParams(searchParams);

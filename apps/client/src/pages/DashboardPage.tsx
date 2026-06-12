@@ -45,7 +45,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const { data: projects = [], isLoading } = useProjects();
   const { data: activities = [], isLoading: activityLoading } = useRecentActivity();
-  const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [homeTaskTab, setHomeTaskTab] = useState<"next" | "overdue" | "done">("overdue");
 
@@ -90,7 +90,7 @@ export function DashboardPage() {
     return <LoadingSpinner />;
   }
 
-  function openTaskDetail(task: TaskWithProject) {
+  function openTaskDetail(task: Task) {
     setTaskDetailOpenVersion((version) => version + 1);
     setSelectedTask(task);
   }

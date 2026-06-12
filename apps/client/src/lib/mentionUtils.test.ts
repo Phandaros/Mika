@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Project, User } from "shared";
+import type { Project, Task, User } from "shared";
 import { DisciplineStatus, DisciplineType, ProjectStatus, Role } from "shared";
 import {
   buildMentionMarkdown,
@@ -66,7 +66,7 @@ const projects: Project[] = [
           { id: "task-dup", title: "Memorial descritivo" },
           { id: "task-other", title: "Diagrama unifilar" },
           { id: "task-torino", title: "[Torino] PPCI - Executivo" }
-        ]
+        ] as Task[]
       },
       {
         id: "section-2",
@@ -78,7 +78,7 @@ const projects: Project[] = [
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-01T00:00:00.000Z",
         responsible: null,
-        tasks: [{ id: "task-dup", title: "Memorial descritivo" }]
+        tasks: [{ id: "task-dup", title: "Memorial descritivo" }] as Task[]
       }
     ]
   },
@@ -134,7 +134,7 @@ const projects: Project[] = [
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-01T00:00:00.000Z",
         responsible: null,
-        tasks: [{ id: "task-remote", title: "Planta baixa" }]
+        tasks: [{ id: "task-remote", title: "Planta baixa" }] as Task[]
       }
     ]
   }

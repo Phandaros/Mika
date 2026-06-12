@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, useEffect, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, Plus, Search, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -123,12 +123,12 @@ export function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<ProjectTab>("list");
   const [taskScope, setTaskScope] = useState<TaskScope>("general");
   const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectTaskStatusSelection);
-  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string[]>(defaultPrioritySelection);
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [search, setSearch] = useState("");
-  const [selectedTask, setSelectedTask] = useState<TaskWithDiscipline | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const openTaskCreate = useUiStore((state) => state.openTaskCreate);
@@ -142,11 +142,34 @@ export function ProjectDetailPage() {
   const disciplines = project?.sections ?? project?.disciplines ?? [];
   const allTasks = useMemo(() => tasksFromDisciplines(disciplines), [disciplines]);
 
+  const assigneeFilterInitialized = useRef(false);
+
   useEffect(() => {
-    if (assigneeFilter.length === 0) {
-      setAssigneeFilter(defaultAssigneeSelection(users.map((item) => item.id)));
+    assigneeFilterInitialized.current = false;
+    setAssigneeFilter([]);
+  }, [projectId]);
+
+  useEffect(() => {
+    if (users.length === 0) {
+      return;
     }
-  }, [assigneeFilter.length, users]);
+
+    const defaults = defaultAssigneeSelection(users.map((item) => item.id));
+
+    setAssigneeFilter((current) => {
+      const isUninitialized = current.length === 0;
+      const isStaleDefault =
+        !assigneeFilterInitialized.current && current.length === 1 && current[0] === "none";
+
+      if (isUninitialized || isStaleDefault) {
+        assigneeFilterInitialized.current = true;
+        return defaults;
+      }
+
+      assigneeFilterInitialized.current = true;
+      return current;
+    });
+  }, [users]);
 
   useEffect(() => {
     const taskId = searchParams.get("task");
@@ -166,7 +189,7 @@ export function ProjectDetailPage() {
     setSearchParams(next, { replace: true });
   }
 
-  function openTaskDetail(task: TaskWithDiscipline) {
+  function openTaskDetail(task: Task) {
     setTaskDetailOpenVersion((version) => version + 1);
     setSelectedTask(task);
     const next = new URLSearchParams(searchParams);

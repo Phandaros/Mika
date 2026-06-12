@@ -89,7 +89,7 @@ export function MyTasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<MyTasksView>("list");
   const [month, setMonth] = useState(() => new Date());
-  const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string[]>(defaultTaskStatusSelection);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
@@ -233,7 +233,7 @@ export function MyTasksPage() {
     setSearchParams(nextParams, { replace: true });
   }
 
-  function openTaskDetail(task: TaskWithProject) {
+  function openTaskDetail(task: Task) {
     setTaskDetailOpenVersion((version) => version + 1);
     setSelectedTask(task);
   }

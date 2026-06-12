@@ -27,7 +27,7 @@ import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { canManageTasks } from "../../lib/permissions";
 import { cn, toDateOnly } from "../../lib/utils";
-import { workloadTaskLabel } from "../../lib/workloadTaskLabel";
+import { workloadTaskDisplayLabel, workloadTaskLabel, type WorkloadTaskDisplayLabel } from "../../lib/workloadTaskLabel";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { taskStatusLabels } from "../shared/Chip";
@@ -47,11 +47,16 @@ import { WORKLOAD_TASK_DRAG_MIME, WorkloadUndatedPanel } from "./WorkloadUndated
 const DAY_W = 44;
 const HEADER_H = 40;
 const CHART_H = 26;
-const BAR_H = 22;
+const COMPACT_BAR_H = 22;
+const STACKED_BAR_H = 34;
 const BAR_GAP = 2;
-const LANE_STRIDE = BAR_H + BAR_GAP;
+const MIN_READABLE_LABEL_W = 184;
+const MAX_READABLE_LABEL_W = 320;
+const LABEL_CHAR_W = 6.4;
+const LABEL_OUTSIDE_GAP = 6;
 const NAME_COL = 192;
 const ROW_Y_PAD = 8;
+const ROW_BORDER_H = 1;
 const CHART_GAP = 4;
 const EXTENSION_DAYS = 28;
 const SCROLL_EDGE = 100;
@@ -388,10 +393,32 @@ function assignLanes(items: Array<{ startIdx: number; endIdx: number }>): number
 
 type PositionedTask = {
   task: TaskWithDiscipline;
-  clip: { startIdx: number; endIdx: number };
+  dateClip: { startIdx: number; endIdx: number };
+  labelClip: { startIdx: number; endIdx: number };
 };
 
-function layoutRowTasks(rowTasks: TaskWithDiscipline[], unionFrom: string, unionTo: string, includeLoadChart: boolean): {
+function workloadBarHeight(mode: "project" | "global"): number {
+  return mode === "global" ? STACKED_BAR_H : COMPACT_BAR_H;
+}
+
+function workloadLaneStride(mode: "project" | "global"): number {
+  return workloadBarHeight(mode) + BAR_GAP;
+}
+
+function readableLabelWidth(label: WorkloadTaskDisplayLabel, dateWidth: number): number {
+  const primaryTextWidth = Math.ceil(label.taskTitle.length * LABEL_CHAR_W) + 28;
+  const secondaryTextWidth = label.projectName ? Math.ceil(label.projectName.length * (LABEL_CHAR_W - 1.2)) + 28 : 0;
+  const estimatedTextWidth = Math.max(primaryTextWidth, secondaryTextWidth);
+  return Math.max(dateWidth, Math.min(MAX_READABLE_LABEL_W, Math.max(MIN_READABLE_LABEL_W, estimatedTextWidth)));
+}
+
+function layoutRowTasks(
+  rowTasks: TaskWithDiscipline[],
+  unionFrom: string,
+  unionTo: string,
+  includeLoadChart: boolean,
+  mode: "project" | "global"
+): {
   positioned: PositionedTask[];
   lanes: number[];
   rowH: number;
@@ -404,17 +431,27 @@ function layoutRowTasks(rowTasks: TaskWithDiscipline[], unionFrom: string, union
       continue;
     }
 
-    const clip = clipToViewport(bounds, unionFrom, unionTo);
-    if (!clip) {
+    const dateClip = clipToViewport(bounds, unionFrom, unionTo);
+    if (!dateClip) {
       continue;
     }
 
-    positioned.push({ task, clip });
+    const span = dateClip.endIdx - dateClip.startIdx + 1;
+    const dateWidth = span * DAY_W - 4;
+    const labelWidth = readableLabelWidth(workloadTaskDisplayLabel(task, mode), dateWidth);
+    const visualWidth = labelWidth <= dateWidth ? dateWidth : dateWidth + LABEL_OUTSIDE_GAP + labelWidth;
+    const labelSpan = Math.max(span, Math.ceil((visualWidth + 4) / DAY_W));
+    const labelClip = {
+      startIdx: dateClip.startIdx,
+      endIdx: Math.min(dateClip.startIdx + labelSpan - 1, diffCalendarDaysYmd(unionTo, unionFrom))
+    };
+
+    positioned.push({ task, dateClip, labelClip });
   }
 
-  const lanes = assignLanes(positioned.map((p) => p.clip));
+  const lanes = assignLanes(positioned.map((p) => p.labelClip));
   const maxLane = lanes.length ? Math.max(...lanes) : -1;
-  const lanesHeight = Math.max(1, maxLane + 1) * LANE_STRIDE;
+  const lanesHeight = Math.max(1, maxLane + 1) * workloadLaneStride(mode);
   const chartHeight = includeLoadChart ? CHART_H + CHART_GAP : 0;
   const rowH = ROW_Y_PAD * 2 + chartHeight + lanesHeight;
   return { positioned, lanes, rowH };
@@ -674,7 +711,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return [...map.entries()]
         .sort((a, b) => a[1].label.localeCompare(b[1].label, "pt-BR"))
         .map(([id, row]) => {
-          const { positioned, lanes, rowH } = layoutRowTasks(row.tasks, unionFrom, unionTo, showEstimatedDays);
+          const { positioned, lanes, rowH } = layoutRowTasks(row.tasks, unionFrom, unionTo, showEstimatedDays, mode);
           return {
             id,
             label: row.label,
@@ -689,7 +726,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     const rows: WorkloadRow[] = userRows.map((user) => {
       const rowTasks = datedTasks.filter((t) => t.assigneeId === user.id);
-      const { positioned, lanes, rowH } = layoutRowTasks(rowTasks, unionFrom, unionTo, showEstimatedDays);
+      const { positioned, lanes, rowH } = layoutRowTasks(rowTasks, unionFrom, unionTo, showEstimatedDays, mode);
       return {
         id: user.id,
         label: user.name,
@@ -705,7 +742,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
     const unassignedTasks = datedTasks.filter((t) => !t.assigneeId);
     if (unassignedTasks.length) {
-      const { positioned, lanes, rowH } = layoutRowTasks(unassignedTasks, unionFrom, unionTo, showEstimatedDays);
+      const { positioned, lanes, rowH } = layoutRowTasks(unassignedTasks, unionFrom, unionTo, showEstimatedDays, mode);
       rows.push({
         id: "unassigned",
         label: "Sem responsável",
@@ -1300,7 +1337,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         </div>
         ) : null}
         {positioned.map((p, i) => {
-          const { startIdx, endIdx } = p.clip;
+          const { startIdx, endIdx } = p.dateClip;
           const lane = lanes[i] ?? 0;
           const activeDragPreview = dragPreview?.taskId === p.task.id ? dragPreview : null;
           const previewAssigneeChanged =
@@ -1308,6 +1345,14 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           const span = endIdx - startIdx + 1;
           const left = startIdx * DAY_W + 2;
           const width = span * DAY_W - 4;
+          const label = workloadTaskDisplayLabel(p.task, mode);
+          const labelWidth = readableLabelWidth(label, width);
+          const labelFitsInside = labelWidth <= width;
+          const labelLeft = labelFitsInside ? 0 : width + LABEL_OUTSIDE_GAP;
+          const availableLabelWidth = Math.max(0, timelineWidth - left - labelLeft);
+          const renderedLabelWidth = Math.min(labelFitsInside ? width : labelWidth, availableLabelWidth);
+          const barHeight = workloadBarHeight(mode);
+          const laneStride = workloadLaneStride(mode);
           const previewClip = activeDragPreview
             ? clipToViewport({ start: activeDragPreview.startDate, end: activeDragPreview.dueDate }, unionFrom, unionTo)
             : null;
@@ -1328,8 +1373,8 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   style={{
                     left: previewLeft,
                     width: previewWidth,
-                    top: barTop + lane * LANE_STRIDE + activeDragPreview.targetRowOffset,
-                    height: BAR_H,
+                    top: barTop + lane * laneStride + activeDragPreview.targetRowOffset,
+                    height: barHeight,
                     borderColor: "var(--color-brand-orange)",
                     transition:
                       "left 120ms var(--ease-out-expo), top 120ms var(--ease-out-expo), opacity 120ms var(--ease-out-expo)"
@@ -1345,13 +1390,13 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 <button
                   type="button"
                   data-workload-task-bar="true"
-                  title={workloadTaskLabel(p.task, mode)}
+                  title={label.fullLabel}
                   style={{
                     position: "absolute",
                     left,
                     width,
-                    top: barTop + lane * LANE_STRIDE,
-                    height: BAR_H,
+                    top: barTop + lane * laneStride,
+                    height: barHeight,
                     ...statusTimelineStyle(p.task.status),
                     opacity: p.task.completed && !activeDragPreview ? 0.45 : 1,
                     transform: activeDragPreview && isMovingTask
@@ -1363,7 +1408,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     willChange: activeDragPreview ? "transform" : undefined
                   }}
                   className={cn(
-                    "z-[6] cursor-grab select-none overflow-hidden rounded-md border px-3 text-left text-[11px] font-semibold shadow-sm outline-none active:cursor-grabbing",
+                    "z-[6] cursor-grab select-none overflow-visible rounded-md border px-3 text-left text-[11px] font-semibold shadow-sm outline-none active:cursor-grabbing",
                     "transition-[transform,opacity,box-shadow,border-color] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-bg-1",
                     activeDragPreview &&
                       "z-[18] cursor-grabbing border-brand-orange shadow-2xl ring-2 ring-brand-orange"
@@ -1389,7 +1434,25 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                       handleBarPointerDown(e, p.task, b, "resize-start");
                     }}
                   />
-                  <span className="line-clamp-1">{workloadTaskLabel(p.task, mode)}</span>
+                  <span
+                    className={cn(
+                      "pointer-events-none absolute inset-y-0 flex min-w-0 flex-col items-start justify-center overflow-hidden rounded-md",
+                      labelFitsInside ? "px-3" : "px-0"
+                    )}
+                    style={{
+                      left: labelLeft,
+                      width: renderedLabelWidth
+                    }}
+                  >
+                    <span className="w-full truncate text-[11px] leading-none">
+                      {label.taskTitle}
+                    </span>
+                    {label.projectName ? (
+                      <span className="mt-0.5 w-full truncate text-[9px] font-medium leading-none text-text-secondary/80">
+                        {label.projectName}
+                      </span>
+                    ) : null}
+                  </span>
                   <span
                     aria-hidden="true"
                     className="absolute inset-y-0 right-0 z-[2] w-2 cursor-ew-resize bg-white/10 opacity-0 transition hover:opacity-100"
@@ -1452,22 +1515,26 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     const draggingTask = tasks.find((item) => item.id === undatedDropPreview.taskId);
+    const label = draggingTask ? workloadTaskDisplayLabel(draggingTask, mode) : null;
 
     return (
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute z-[5] overflow-hidden rounded-md border border-dashed bg-[var(--color-brand-orange-muted)] px-3 text-[11px] font-semibold text-text-primary"
+        className="pointer-events-none absolute z-[5] flex min-w-0 flex-col justify-center overflow-hidden rounded-md border border-dashed bg-[var(--color-brand-orange-muted)] px-3 text-[11px] font-semibold text-text-primary"
         style={{
           left,
           width,
           top: barTop,
-          height: BAR_H,
+          height: workloadBarHeight(mode),
           borderColor: "var(--color-brand-orange)"
         }}
       >
-        <span className="line-clamp-1">
-          {draggingTask ? workloadTaskLabel(draggingTask, mode) : "Nova tarefa"}
-        </span>
+        <span className="w-full truncate leading-none">{label?.taskTitle ?? "Nova tarefa"}</span>
+        {label?.projectName ? (
+          <span className="mt-0.5 w-full truncate text-[9px] font-medium leading-none text-text-secondary/80">
+            {label.projectName}
+          </span>
+        ) : null}
       </div>
     );
   }
@@ -1634,13 +1701,14 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               {showEstimatedDays ? (
                 <div
                   className="flex items-center border-b border-border-subtle px-3 text-xs font-semibold text-text-secondary"
-                  style={{ height: totalRowH }}
+                  style={{ height: totalRowH, boxSizing: "border-box" }}
                 >
                   Total (dias est.)
                 </div>
               ) : null}
               {workloadRows.map((row) => {
                 const chartSlotHeight = showEstimatedDays ? CHART_H + CHART_GAP : 0;
+                const rowContentHeight = Math.max(0, row.rowH - chartSlotHeight - ROW_BORDER_H);
 
                 return (
                   <div
@@ -1649,9 +1717,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                       "border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
                       highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
                     )}
-                    style={{ height: row.rowH, paddingTop: chartSlotHeight }}
+                    style={{ height: row.rowH, paddingTop: chartSlotHeight, boxSizing: "border-box" }}
                   >
-                    <div className="flex h-full items-center gap-2 px-3 py-2">
+                    <div
+                      className="flex items-center gap-2 px-3 py-2"
+                      style={{ height: rowContentHeight }}
+                    >
                       {row.avatarName ? (
                         <Avatar name={row.avatarName} imageUrl={row.avatarUrl} className="h-8 w-8 shrink-0" />
                       ) : (
@@ -1728,12 +1799,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   ) : null}
 
                   {showEstimatedDays ? (
-                    <div className="flex border-b border-border-subtle">
+                    <div className="flex border-b border-border-subtle" style={{ height: totalRowH, boxSizing: "border-box" }}>
                       <div
-                        className="relative"
-                        style={{ width: timelineWidth, minWidth: timelineWidth, height: totalRowH }}
+                        className="relative h-full"
+                        style={{ width: timelineWidth, minWidth: timelineWidth }}
                       >
-                        {renderNonWorkingBands(totalRowH, "total")}
+                        {renderNonWorkingBands(Math.max(0, totalRowH - ROW_BORDER_H), "total")}
                         <div className="absolute left-0 top-1">
                           <MiniLoadChart loads={totalLoads} height={CHART_H} />
                         </div>
@@ -1762,10 +1833,11 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                               "flex border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
                               highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
                             )}
+                            style={{ height: row.rowH, boxSizing: "border-box" }}
                             onContextMenu={(event) => handleEmptyRowContextMenu(event, row)}
                           >
-                            <div className="relative" style={{ width: timelineWidth, minWidth: timelineWidth, height: row.rowH }}>
-                              {renderNonWorkingBands(row.rowH, row.id)}
+                            <div className="relative h-full" style={{ width: timelineWidth, minWidth: timelineWidth }}>
+                              {renderNonWorkingBands(Math.max(0, row.rowH - ROW_BORDER_H), row.id)}
                               {renderUndatedDropGhost(row)}
                               {renderBars(row.positioned, row.lanes, loads, row.id)}
                             </div>
