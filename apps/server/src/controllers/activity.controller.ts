@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
-import { prisma } from "../lib/prisma.js";
+import { buildHomeDashboard, loadRecentActivity } from "../lib/homeDashboard.js";
+import { getAuthUser } from "../middleware/auth.js";
 
 export interface ActivityItem {
   id: string;
@@ -12,45 +13,19 @@ export interface ActivityItem {
 
 export const listRecentActivity: RequestHandler = async (_req, res, next) => {
   try {
-    const [comments, tasks] = await Promise.all([
-      prisma.comment.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        include: {
-          task: { select: { id: true, name: true } },
-          author: { select: { name: true } }
-        }
-      }),
-      prisma.task.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: 20,
-        select: { id: true, name: true, updatedAt: true }
-      })
-    ]);
+    const activities = await loadRecentActivity(30);
 
-    const fromComments: ActivityItem[] = comments.map((c) => ({
-      id: `comment:${c.id}`,
-      type: "comment" as const,
-      at: (c.asanaCreatedAt ?? c.createdAt).toISOString(),
-      title: c.task?.name ?? "Tarefa",
-      subtitle: `${c.author?.name ?? "Asana"}: ${c.content.slice(0, 120)}${c.content.length > 120 ? "…" : ""}`,
-      taskId: c.taskId
-    }));
+    res.json({ activities });
+  } catch (error) {
+    next(error);
+  }
+};
 
-    const fromTasks: ActivityItem[] = tasks.map((t) => ({
-      id: `task:${t.id}`,
-      type: "task" as const,
-      at: t.updatedAt.toISOString(),
-      title: t.name,
-      subtitle: "Tarefa atualizada",
-      taskId: t.id
-    }));
+export const getHomeDashboard: RequestHandler = async (req, res, next) => {
+  try {
+    const dashboard = await buildHomeDashboard(getAuthUser(req));
 
-    const merged = [...fromComments, ...fromTasks]
-      .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
-      .slice(0, 30);
-
-    res.json({ activities: merged });
+    res.json(dashboard);
   } catch (error) {
     next(error);
   }

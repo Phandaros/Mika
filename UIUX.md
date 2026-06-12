@@ -441,6 +441,7 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 - Footer: avatar 20px + nome `text-[11px] text-[--color-text-muted]` | chip prioridade + data
 - Badge de seção: chip `--disc-*`, `text-[10px]`
 - Estado dragging: `opacity-70 shadow-2xl scale-[1.02]`
+- Todo card/linha clicável que representa uma tarefa deve suportar o menu de contexto da tarefa no clique direito, usando `TaskContextMenu` ou o equivalente compartilhado. O menu deve preservar ações esperadas como abrir detalhes, copiar link, abrir projeto, alterar status, duplicar, recalcular datas e excluir quando a permissão permitir.
 
 ---
 

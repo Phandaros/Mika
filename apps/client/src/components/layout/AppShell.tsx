@@ -14,11 +14,11 @@ export function AppShell() {
   const updater = useUpdater();
 
   return (
-    <div className={cn("min-h-screen bg-bg-0 text-text-primary lg:flex", updater.showBanner && "pb-16 sm:pb-14")}>
+    <div className="h-dvh overflow-hidden bg-bg-0 text-text-primary lg:flex">
       <Sidebar />
-      <div className="min-w-0 flex-1">
+      <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", updater.showBanner && "pb-16 sm:pb-14")}>
         <Header updater={updater} />
-        <main className="w-full min-w-0 max-w-full overflow-x-hidden px-3 py-4 sm:px-6 lg:px-6">
+        <main className="min-h-0 w-full min-w-0 max-w-full flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 lg:px-6">
           <Outlet />
         </main>
       </div>
