@@ -327,6 +327,7 @@ export type AsanaCustomFieldWhereInput = {
   createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionListRelationFilter
   projectSettings?: Prisma.ProjectCustomFieldSettingListRelationFilter
+  projectValues?: Prisma.ProjectCustomFieldValueListRelationFilter
   taskValues?: Prisma.TaskCustomFieldValueListRelationFilter
 }
 
@@ -352,6 +353,7 @@ export type AsanaCustomFieldOrderByWithRelationInput = {
   createdBy?: Prisma.UserOrderByWithRelationInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionOrderByRelationAggregateInput
   projectSettings?: Prisma.ProjectCustomFieldSettingOrderByRelationAggregateInput
+  projectValues?: Prisma.ProjectCustomFieldValueOrderByRelationAggregateInput
   taskValues?: Prisma.TaskCustomFieldValueOrderByRelationAggregateInput
 }
 
@@ -380,6 +382,7 @@ export type AsanaCustomFieldWhereUniqueInput = Prisma.AtLeast<{
   createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionListRelationFilter
   projectSettings?: Prisma.ProjectCustomFieldSettingListRelationFilter
+  projectValues?: Prisma.ProjectCustomFieldValueListRelationFilter
   taskValues?: Prisma.TaskCustomFieldValueListRelationFilter
 }, "id" | "asanaGid">
 
@@ -454,6 +457,7 @@ export type AsanaCustomFieldCreateInput = {
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionCreateNestedManyWithoutCustomFieldInput
   projectSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -478,6 +482,7 @@ export type AsanaCustomFieldUncheckedCreateInput = {
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -502,6 +507,7 @@ export type AsanaCustomFieldUpdateInput = {
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUpdateManyWithoutCustomFieldNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -526,6 +532,7 @@ export type AsanaCustomFieldUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -762,6 +769,22 @@ export type AsanaCustomFieldUpdateOneRequiredWithoutProjectSettingsNestedInput =
   update?: Prisma.XOR<Prisma.XOR<Prisma.AsanaCustomFieldUpdateToOneWithWhereWithoutProjectSettingsInput, Prisma.AsanaCustomFieldUpdateWithoutProjectSettingsInput>, Prisma.AsanaCustomFieldUncheckedUpdateWithoutProjectSettingsInput>
 }
 
+export type AsanaCustomFieldCreateNestedOneWithoutProjectValuesInput = {
+  create?: Prisma.XOR<Prisma.AsanaCustomFieldCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldUncheckedCreateWithoutProjectValuesInput>
+  connectOrCreate?: Prisma.AsanaCustomFieldCreateOrConnectWithoutProjectValuesInput
+  connect?: Prisma.AsanaCustomFieldWhereUniqueInput
+}
+
+export type AsanaCustomFieldUpdateOneWithoutProjectValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.AsanaCustomFieldCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldUncheckedCreateWithoutProjectValuesInput>
+  connectOrCreate?: Prisma.AsanaCustomFieldCreateOrConnectWithoutProjectValuesInput
+  upsert?: Prisma.AsanaCustomFieldUpsertWithoutProjectValuesInput
+  disconnect?: Prisma.AsanaCustomFieldWhereInput | boolean
+  delete?: Prisma.AsanaCustomFieldWhereInput | boolean
+  connect?: Prisma.AsanaCustomFieldWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AsanaCustomFieldUpdateToOneWithWhereWithoutProjectValuesInput, Prisma.AsanaCustomFieldUpdateWithoutProjectValuesInput>, Prisma.AsanaCustomFieldUncheckedUpdateWithoutProjectValuesInput>
+}
+
 export type AsanaCustomFieldCreateNestedOneWithoutTaskValuesInput = {
   create?: Prisma.XOR<Prisma.AsanaCustomFieldCreateWithoutTaskValuesInput, Prisma.AsanaCustomFieldUncheckedCreateWithoutTaskValuesInput>
   connectOrCreate?: Prisma.AsanaCustomFieldCreateOrConnectWithoutTaskValuesInput
@@ -798,6 +821,7 @@ export type AsanaCustomFieldCreateWithoutCreatedByInput = {
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionCreateNestedManyWithoutCustomFieldInput
   projectSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -821,6 +845,7 @@ export type AsanaCustomFieldUncheckedCreateWithoutCreatedByInput = {
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -893,6 +918,7 @@ export type AsanaCustomFieldCreateWithoutEnumOptionsInput = {
   updatedAt?: Date | string
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
   projectSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -916,6 +942,7 @@ export type AsanaCustomFieldUncheckedCreateWithoutEnumOptionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -955,6 +982,7 @@ export type AsanaCustomFieldUpdateWithoutEnumOptionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -978,6 +1006,7 @@ export type AsanaCustomFieldUncheckedUpdateWithoutEnumOptionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -1001,6 +1030,7 @@ export type AsanaCustomFieldCreateWithoutProjectSettingsInput = {
   updatedAt?: Date | string
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -1024,6 +1054,7 @@ export type AsanaCustomFieldUncheckedCreateWithoutProjectSettingsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
 }
 
@@ -1063,6 +1094,7 @@ export type AsanaCustomFieldUpdateWithoutProjectSettingsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -1086,6 +1118,119 @@ export type AsanaCustomFieldUncheckedUpdateWithoutProjectSettingsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
+  taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
+}
+
+export type AsanaCustomFieldCreateWithoutProjectValuesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  description?: string | null
+  type: string
+  precision?: number | null
+  format?: string | null
+  currencyCode?: string | null
+  isGlobalToWorkspace?: boolean
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
+  enumOptions?: Prisma.AsanaCustomFieldEnumOptionCreateNestedManyWithoutCustomFieldInput
+  projectSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutCustomFieldInput
+  taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutCustomFieldInput
+}
+
+export type AsanaCustomFieldUncheckedCreateWithoutProjectValuesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  description?: string | null
+  type: string
+  precision?: number | null
+  format?: string | null
+  currencyCode?: string | null
+  isGlobalToWorkspace?: boolean
+  createdByGid?: string | null
+  mikaKey?: string | null
+  mikaLabel?: string | null
+  mikaTaskField?: boolean
+  mikaSortOrder?: number | null
+  mikaListVisible?: boolean
+  mikaDetailVisible?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
+  projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutCustomFieldInput
+  taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
+}
+
+export type AsanaCustomFieldCreateOrConnectWithoutProjectValuesInput = {
+  where: Prisma.AsanaCustomFieldWhereUniqueInput
+  create: Prisma.XOR<Prisma.AsanaCustomFieldCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldUncheckedCreateWithoutProjectValuesInput>
+}
+
+export type AsanaCustomFieldUpsertWithoutProjectValuesInput = {
+  update: Prisma.XOR<Prisma.AsanaCustomFieldUpdateWithoutProjectValuesInput, Prisma.AsanaCustomFieldUncheckedUpdateWithoutProjectValuesInput>
+  create: Prisma.XOR<Prisma.AsanaCustomFieldCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldUncheckedCreateWithoutProjectValuesInput>
+  where?: Prisma.AsanaCustomFieldWhereInput
+}
+
+export type AsanaCustomFieldUpdateToOneWithWhereWithoutProjectValuesInput = {
+  where?: Prisma.AsanaCustomFieldWhereInput
+  data: Prisma.XOR<Prisma.AsanaCustomFieldUpdateWithoutProjectValuesInput, Prisma.AsanaCustomFieldUncheckedUpdateWithoutProjectValuesInput>
+}
+
+export type AsanaCustomFieldUpdateWithoutProjectValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  precision?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
+  enumOptions?: Prisma.AsanaCustomFieldEnumOptionUpdateManyWithoutCustomFieldNestedInput
+  projectSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutCustomFieldNestedInput
+  taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
+}
+
+export type AsanaCustomFieldUncheckedUpdateWithoutProjectValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  precision?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  format?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isGlobalToWorkspace?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdByGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mikaTaskField?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaSortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mikaListVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mikaDetailVisible?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
+  projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -1110,6 +1255,7 @@ export type AsanaCustomFieldCreateWithoutTaskValuesInput = {
   createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCustomFieldsInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionCreateNestedManyWithoutCustomFieldInput
   projectSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutCustomFieldInput
 }
 
 export type AsanaCustomFieldUncheckedCreateWithoutTaskValuesInput = {
@@ -1133,6 +1279,7 @@ export type AsanaCustomFieldUncheckedCreateWithoutTaskValuesInput = {
   updatedAt?: Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedCreateNestedManyWithoutCustomFieldInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutCustomFieldInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutCustomFieldInput
 }
 
 export type AsanaCustomFieldCreateOrConnectWithoutTaskValuesInput = {
@@ -1172,6 +1319,7 @@ export type AsanaCustomFieldUpdateWithoutTaskValuesInput = {
   createdBy?: Prisma.UserUpdateOneWithoutCreatedCustomFieldsNestedInput
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUpdateManyWithoutCustomFieldNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
 }
 
 export type AsanaCustomFieldUncheckedUpdateWithoutTaskValuesInput = {
@@ -1195,6 +1343,7 @@ export type AsanaCustomFieldUncheckedUpdateWithoutTaskValuesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
 }
 
 export type AsanaCustomFieldCreateManyCreatedByInput = {
@@ -1237,6 +1386,7 @@ export type AsanaCustomFieldUpdateWithoutCreatedByInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUpdateManyWithoutCustomFieldNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -1260,6 +1410,7 @@ export type AsanaCustomFieldUncheckedUpdateWithoutCreatedByInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enumOptions?: Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNestedInput
   projectSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutCustomFieldNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutCustomFieldNestedInput
 }
 
@@ -1291,12 +1442,14 @@ export type AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByInput = {
 export type AsanaCustomFieldCountOutputType = {
   enumOptions: number
   projectSettings: number
+  projectValues: number
   taskValues: number
 }
 
 export type AsanaCustomFieldCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   enumOptions?: boolean | AsanaCustomFieldCountOutputTypeCountEnumOptionsArgs
   projectSettings?: boolean | AsanaCustomFieldCountOutputTypeCountProjectSettingsArgs
+  projectValues?: boolean | AsanaCustomFieldCountOutputTypeCountProjectValuesArgs
   taskValues?: boolean | AsanaCustomFieldCountOutputTypeCountTaskValuesArgs
 }
 
@@ -1322,6 +1475,13 @@ export type AsanaCustomFieldCountOutputTypeCountEnumOptionsArgs<ExtArgs extends 
  */
 export type AsanaCustomFieldCountOutputTypeCountProjectSettingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ProjectCustomFieldSettingWhereInput
+}
+
+/**
+ * AsanaCustomFieldCountOutputType without action
+ */
+export type AsanaCustomFieldCountOutputTypeCountProjectValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProjectCustomFieldValueWhereInput
 }
 
 /**
@@ -1354,6 +1514,7 @@ export type AsanaCustomFieldSelect<ExtArgs extends runtime.Types.Extensions.Inte
   createdBy?: boolean | Prisma.AsanaCustomField$createdByArgs<ExtArgs>
   enumOptions?: boolean | Prisma.AsanaCustomField$enumOptionsArgs<ExtArgs>
   projectSettings?: boolean | Prisma.AsanaCustomField$projectSettingsArgs<ExtArgs>
+  projectValues?: boolean | Prisma.AsanaCustomField$projectValuesArgs<ExtArgs>
   taskValues?: boolean | Prisma.AsanaCustomField$taskValuesArgs<ExtArgs>
   _count?: boolean | Prisma.AsanaCustomFieldCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["asanaCustomField"]>
@@ -1428,6 +1589,7 @@ export type AsanaCustomFieldInclude<ExtArgs extends runtime.Types.Extensions.Int
   createdBy?: boolean | Prisma.AsanaCustomField$createdByArgs<ExtArgs>
   enumOptions?: boolean | Prisma.AsanaCustomField$enumOptionsArgs<ExtArgs>
   projectSettings?: boolean | Prisma.AsanaCustomField$projectSettingsArgs<ExtArgs>
+  projectValues?: boolean | Prisma.AsanaCustomField$projectValuesArgs<ExtArgs>
   taskValues?: boolean | Prisma.AsanaCustomField$taskValuesArgs<ExtArgs>
   _count?: boolean | Prisma.AsanaCustomFieldCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1444,6 +1606,7 @@ export type $AsanaCustomFieldPayload<ExtArgs extends runtime.Types.Extensions.In
     createdBy: Prisma.$UserPayload<ExtArgs> | null
     enumOptions: Prisma.$AsanaCustomFieldEnumOptionPayload<ExtArgs>[]
     projectSettings: Prisma.$ProjectCustomFieldSettingPayload<ExtArgs>[]
+    projectValues: Prisma.$ProjectCustomFieldValuePayload<ExtArgs>[]
     taskValues: Prisma.$TaskCustomFieldValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1862,6 +2025,7 @@ export interface Prisma__AsanaCustomFieldClient<T, Null = never, ExtArgs extends
   createdBy<T extends Prisma.AsanaCustomField$createdByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomField$createdByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   enumOptions<T extends Prisma.AsanaCustomField$enumOptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomField$enumOptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AsanaCustomFieldEnumOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   projectSettings<T extends Prisma.AsanaCustomField$projectSettingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomField$projectSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectCustomFieldSettingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  projectValues<T extends Prisma.AsanaCustomField$projectValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomField$projectValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   taskValues<T extends Prisma.AsanaCustomField$taskValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomField$taskValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2373,6 +2537,30 @@ export type AsanaCustomField$projectSettingsArgs<ExtArgs extends runtime.Types.E
   take?: number
   skip?: number
   distinct?: Prisma.ProjectCustomFieldSettingScalarFieldEnum | Prisma.ProjectCustomFieldSettingScalarFieldEnum[]
+}
+
+/**
+ * AsanaCustomField.projectValues
+ */
+export type AsanaCustomField$projectValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProjectCustomFieldValue
+   */
+  select?: Prisma.ProjectCustomFieldValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProjectCustomFieldValue
+   */
+  omit?: Prisma.ProjectCustomFieldValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectCustomFieldValueInclude<ExtArgs> | null
+  where?: Prisma.ProjectCustomFieldValueWhereInput
+  orderBy?: Prisma.ProjectCustomFieldValueOrderByWithRelationInput | Prisma.ProjectCustomFieldValueOrderByWithRelationInput[]
+  cursor?: Prisma.ProjectCustomFieldValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProjectCustomFieldValueScalarFieldEnum | Prisma.ProjectCustomFieldValueScalarFieldEnum[]
 }
 
 /**

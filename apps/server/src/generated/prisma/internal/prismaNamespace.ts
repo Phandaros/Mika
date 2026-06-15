@@ -406,6 +406,7 @@ export const ModelName = {
   AsanaCustomField: 'AsanaCustomField',
   AsanaCustomFieldEnumOption: 'AsanaCustomFieldEnumOption',
   ProjectCustomFieldSetting: 'ProjectCustomFieldSetting',
+  ProjectCustomFieldValue: 'ProjectCustomFieldValue',
   TaskCustomFieldValue: 'TaskCustomFieldValue',
   WeeklyReport: 'WeeklyReport',
   WeeklyReportItem: 'WeeklyReportItem'
@@ -424,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
+    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2056,6 +2057,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ProjectCustomFieldValue: {
+      payload: Prisma.$ProjectCustomFieldValuePayload<ExtArgs>
+      fields: Prisma.ProjectCustomFieldValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProjectCustomFieldValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProjectCustomFieldValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>
+        }
+        findFirst: {
+          args: Prisma.ProjectCustomFieldValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProjectCustomFieldValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>
+        }
+        findMany: {
+          args: Prisma.ProjectCustomFieldValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>[]
+        }
+        create: {
+          args: Prisma.ProjectCustomFieldValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>
+        }
+        createMany: {
+          args: Prisma.ProjectCustomFieldValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProjectCustomFieldValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>[]
+        }
+        delete: {
+          args: Prisma.ProjectCustomFieldValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>
+        }
+        update: {
+          args: Prisma.ProjectCustomFieldValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.ProjectCustomFieldValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProjectCustomFieldValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProjectCustomFieldValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.ProjectCustomFieldValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldValuePayload>
+        }
+        aggregate: {
+          args: Prisma.ProjectCustomFieldValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProjectCustomFieldValue>
+        }
+        groupBy: {
+          args: Prisma.ProjectCustomFieldValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProjectCustomFieldValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProjectCustomFieldValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProjectCustomFieldValueCountAggregateOutputType> | number
+        }
+      }
+    }
     TaskCustomFieldValue: {
       payload: Prisma.$TaskCustomFieldValuePayload<ExtArgs>
       fields: Prisma.TaskCustomFieldValueFieldRefs
@@ -2653,6 +2728,27 @@ export const ProjectCustomFieldSettingScalarFieldEnum = {
 export type ProjectCustomFieldSettingScalarFieldEnum = (typeof ProjectCustomFieldSettingScalarFieldEnum)[keyof typeof ProjectCustomFieldSettingScalarFieldEnum]
 
 
+export const ProjectCustomFieldValueScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  customFieldGid: 'customFieldGid',
+  customFieldName: 'customFieldName',
+  type: 'type',
+  displayValue: 'displayValue',
+  precision: 'precision',
+  textValue: 'textValue',
+  numberValue: 'numberValue',
+  enumOptionGid: 'enumOptionGid',
+  enumOptionName: 'enumOptionName',
+  enumOptionColor: 'enumOptionColor',
+  multiEnumValues: 'multiEnumValues',
+  customFieldId: 'customFieldId',
+  enumOptionId: 'enumOptionId'
+} as const
+
+export type ProjectCustomFieldValueScalarFieldEnum = (typeof ProjectCustomFieldValueScalarFieldEnum)[keyof typeof ProjectCustomFieldValueScalarFieldEnum]
+
+
 export const TaskCustomFieldValueScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
@@ -2782,13 +2878,6 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
 
 
 /**
- * Reference to a field of type 'WeeklyReportStatus'
- */
-export type EnumWeeklyReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WeeklyReportStatus'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -2799,6 +2888,13 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'WeeklyReportStatus'
+ */
+export type EnumWeeklyReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WeeklyReportStatus'>
     
 
 /**
@@ -2933,6 +3029,7 @@ export type GlobalOmitConfig = {
   asanaCustomField?: Prisma.AsanaCustomFieldOmit
   asanaCustomFieldEnumOption?: Prisma.AsanaCustomFieldEnumOptionOmit
   projectCustomFieldSetting?: Prisma.ProjectCustomFieldSettingOmit
+  projectCustomFieldValue?: Prisma.ProjectCustomFieldValueOmit
   taskCustomFieldValue?: Prisma.TaskCustomFieldValueOmit
   weeklyReport?: Prisma.WeeklyReportOmit
   weeklyReportItem?: Prisma.WeeklyReportItemOmit

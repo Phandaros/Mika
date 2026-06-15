@@ -73,6 +73,7 @@ export const ModelName = {
   AsanaCustomField: 'AsanaCustomField',
   AsanaCustomFieldEnumOption: 'AsanaCustomFieldEnumOption',
   ProjectCustomFieldSetting: 'ProjectCustomFieldSetting',
+  ProjectCustomFieldValue: 'ProjectCustomFieldValue',
   TaskCustomFieldValue: 'TaskCustomFieldValue',
   WeeklyReport: 'WeeklyReport',
   WeeklyReportItem: 'WeeklyReportItem'
@@ -428,6 +429,27 @@ export const ProjectCustomFieldSettingScalarFieldEnum = {
 } as const
 
 export type ProjectCustomFieldSettingScalarFieldEnum = (typeof ProjectCustomFieldSettingScalarFieldEnum)[keyof typeof ProjectCustomFieldSettingScalarFieldEnum]
+
+
+export const ProjectCustomFieldValueScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  customFieldGid: 'customFieldGid',
+  customFieldName: 'customFieldName',
+  type: 'type',
+  displayValue: 'displayValue',
+  precision: 'precision',
+  textValue: 'textValue',
+  numberValue: 'numberValue',
+  enumOptionGid: 'enumOptionGid',
+  enumOptionName: 'enumOptionName',
+  enumOptionColor: 'enumOptionColor',
+  multiEnumValues: 'multiEnumValues',
+  customFieldId: 'customFieldId',
+  enumOptionId: 'enumOptionId'
+} as const
+
+export type ProjectCustomFieldValueScalarFieldEnum = (typeof ProjectCustomFieldValueScalarFieldEnum)[keyof typeof ProjectCustomFieldValueScalarFieldEnum]
 
 
 export const TaskCustomFieldValueScalarFieldEnum = {

@@ -206,13 +206,13 @@ describe("task rules", () => {
     tx.task.aggregate.mockResolvedValue({ _max: { adjustmentNumber: 1 } });
     tx.task.create.mockResolvedValue({ id: "task-3" });
 
-    const adjustmentTaskId = await createAdjustmentTask(tx as unknown as Prisma.TransactionClient, "review-1", "Corrigir prancha");
+    const adjustmentTaskId = await createAdjustmentTask(tx as unknown as Prisma.TransactionClient, "review-1");
 
     expect(adjustmentTaskId).toBe("task-3");
     expect(tx.task.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         name: "Tarefa 01 [AJUSTES 02]",
-        notes: "Corrigir prancha",
+        notes: null,
         mikaStatus: TaskStatus.TODO,
         assigneeGid: "designer-gid",
         workflowRootTaskId: "task-1",

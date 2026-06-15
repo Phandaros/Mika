@@ -1,18 +1,26 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CheckCircle2, ClipboardCheck, XCircle } from "lucide-react";
-import { Role, TaskReviewStatus, type TaskReview } from "shared";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { format } from "date-fns";
+import { CheckCircle2, ClipboardCheck, ExternalLink, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { Role, TaskReviewStatus, type Task, type TaskReview } from "shared";
 import { Avatar } from "../components/shared/Avatar";
-import { Chip, CompletionStatusChip, DisciplineChip } from "../components/shared/Chip";
+import { Chip, DisciplineChip } from "../components/shared/Chip";
 import { EmptyCell } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
-import { LoadingSpinner } from "../components/shared/LoadingSpinner";
+import { PriorityBadge } from "../components/shared/PriorityBadge";
 import { Button } from "../components/ui/button";
 import { DatePicker } from "../components/ui/date-picker";
 import { SearchableSelect } from "../components/ui/searchable-select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../components/ui/sheet";
-import { Textarea } from "../components/ui/textarea";
+import { Skeleton } from "../components/ui/skeleton";
+import { TaskDetail } from "../components/task/TaskDetail";
+import { TaskCommentEditor, type CommentEditorHandle, type PendingCommentFile } from "../components/task/TaskCommentEditor";
+import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
+import { EmptyField, TaskFixedFieldGrid, TaskPanelShell } from "../components/task/TaskPanelPrimitives";
+import { useAuth } from "../hooks/useAuth";
 import { useApproveReview, useRejectReview, useReviews, useUpdateReview } from "../hooks/useReviews";
+import { useTaskById } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
+import { classifyFile, getFileRejectionMessage } from "../lib/attachmentUtils";
 import { cn, formatDateOnly } from "../lib/utils";
 
 const reviewStatusLabels: Record<TaskReviewStatus, string> = {
@@ -30,8 +38,13 @@ const reviewStatusTokens: Record<TaskReviewStatus, { bg: string; text: string }>
 export function ReviewsPage() {
   const [page, setPage] = useState(1);
   const [selectedReview, setSelectedReview] = useState<TaskReview | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTaskSeed, setSelectedTaskSeed] = useState<Task | null>(null);
+  const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const { data, isLoading } = useReviews({ status: TaskReviewStatus.PENDING, assigneeId: "me", page, limit: 25 });
+  const { data: selectedTaskFromApi } = useTaskById(selectedTaskId);
   const reviews = data?.reviews ?? [];
+  const selectedTask = selectedTaskFromApi ?? selectedTaskSeed;
 
   useEffect(() => {
     if (!selectedReview) {
@@ -44,8 +57,22 @@ export function ReviewsPage() {
     }
   }, [reviews, selectedReview]);
 
-  if (isLoading) {
-    return <LoadingSpinner />;
+  function openOriginalTask(review: TaskReview) {
+    setSelectedReview(null);
+    setSelectedTaskSeed(review.sourceTask ?? null);
+    setSelectedTaskId(review.sourceTaskId);
+    setTaskDetailOpenVersion((version) => version + 1);
+  }
+
+  function openTaskDetail(task: Task) {
+    setSelectedTaskSeed(task);
+    setSelectedTaskId(task.id);
+    setTaskDetailOpenVersion((version) => version + 1);
+  }
+
+  function closeTaskDetail() {
+    setSelectedTaskSeed(null);
+    setSelectedTaskId(null);
   }
 
   return (
@@ -66,50 +93,50 @@ export function ReviewsPage() {
 
       <section className="overflow-hidden rounded-md border border-border bg-surface">
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed border-collapse bg-[--bg-2] text-sm" style={{ minWidth: "920px" }}>
+          <table className="w-full min-w-[1120px] table-fixed border-collapse bg-[--bg-2] text-sm">
             <thead className="sticky top-0 z-10 bg-[--bg-1]">
               <tr className="border-b border-[--color-border]">
-                <HeaderCell className="w-[280px]">Tarefa</HeaderCell>
-                <HeaderCell className="w-[150px]">Responsável</HeaderCell>
-                <HeaderCell className="w-[220px]">Origem</HeaderCell>
-                <HeaderCell className="w-[120px]">Disciplina</HeaderCell>
-                <HeaderCell className="w-[120px]">Entrega</HeaderCell>
+                <HeaderCell className="w-[240px]">Origem</HeaderCell>
+                <HeaderCell className="w-[320px]">Tarefa original</HeaderCell>
+                <HeaderCell className="w-[170px]">Projetista</HeaderCell>
+                <HeaderCell className="w-[170px]">Revisor</HeaderCell>
+                <HeaderCell className="w-[120px]">Entrega da revisão</HeaderCell>
                 <HeaderCell className="w-[120px]">Status</HeaderCell>
               </tr>
             </thead>
             <tbody>
-              {reviews.map((review) => (
-                <tr
-                  key={review.id}
-                  className="h-10 cursor-pointer border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]"
-                  onClick={() => setSelectedReview(review)}
-                >
-                  <BodyCell>
-                    <span className="block truncate font-semibold text-text-primary">{review.title}</span>
-                  </BodyCell>
-                  <BodyCell>
-                    <span className="flex min-w-0 items-center gap-2">
-                      <Avatar name={review.reviewer?.name ?? "Sem responsável"} imageUrl={review.reviewer?.avatarUrl} className="h-5 w-5 shrink-0" />
-                      <span className="truncate">{review.reviewer?.name ?? "Sem responsável"}</span>
-                    </span>
-                  </BodyCell>
-                  <BodyCell>
-                    <span className="block truncate">{review.sourceTask?.projects?.[0]?.name ?? "Sem projeto"}</span>
-                  </BodyCell>
-                  <BodyCell>
-                    <DisciplineChip discipline="Revisão" />
-                  </BodyCell>
-                  <BodyCell>{review.dueDate ? formatDateOnly(review.dueDate, "dd/MM/yyyy") : <EmptyCell />}</BodyCell>
-                  <BodyCell>
-                    <ReviewStatusChip status={review.status} />
-                  </BodyCell>
-                </tr>
-              ))}
+              {isLoading ? <ReviewTableSkeleton /> : null}
+              {!isLoading
+                ? reviews.map((review) => (
+                    <tr
+                      key={review.id}
+                      className="h-10 cursor-pointer border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]"
+                      onClick={() => setSelectedReview(review)}
+                    >
+                      <BodyCell>
+                        <OriginCell review={review} />
+                      </BodyCell>
+                      <BodyCell>
+                        <span className="block truncate font-semibold text-text-primary">{reviewTitle(review)}</span>
+                      </BodyCell>
+                      <BodyCell>
+                        <UserCell user={review.sourceTask?.assignee ?? null} fallback="Sem responsável" />
+                      </BodyCell>
+                      <BodyCell>
+                        <UserCell user={review.reviewer ?? null} fallback="Sem revisor" />
+                      </BodyCell>
+                      <BodyCell>{review.dueDate ? formatDateOnly(review.dueDate, "dd/MM/yyyy") : <EmptyCell />}</BodyCell>
+                      <BodyCell>
+                        <ReviewStatusChip status={review.status} />
+                      </BodyCell>
+                    </tr>
+                  ))
+                : null}
             </tbody>
           </table>
         </div>
 
-        {reviews.length === 0 ? (
+        {!isLoading && reviews.length === 0 ? (
           <div className="p-10">
             <EmptyState icon={<ClipboardCheck size={32} />} title="Nenhuma revisão pendente" />
           </div>
@@ -135,164 +162,406 @@ export function ReviewsPage() {
         </div>
       </section>
 
-      <ReviewDetailSheet review={selectedReview} onOpenChange={(open) => !open && setSelectedReview(null)} />
+      <ReviewDetailPanel
+        review={selectedReview}
+        onClose={() => setSelectedReview(null)}
+        onOpenOriginal={openOriginalTask}
+      />
+      <TaskDetail
+        task={selectedTask}
+        onClose={closeTaskDetail}
+        openVersion={taskDetailOpenVersion}
+        onOpenTask={openTaskDetail}
+      />
     </div>
   );
 }
 
-function ReviewDetailSheet({ review, onOpenChange }: { review: TaskReview | null; onOpenChange: (open: boolean) => void }) {
+function ReviewDetailPanel({
+  review,
+  onClose,
+  onOpenOriginal
+}: {
+  review: TaskReview | null;
+  onClose: () => void;
+  onOpenOriginal: (review: TaskReview) => void;
+}) {
+  const [visibleReview, setVisibleReview] = useState<TaskReview | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<PendingCommentFile[]>([]);
+  const [commentUploading, setCommentUploading] = useState(false);
+  const closeTimeoutRef = useRef<number | null>(null);
+  const commentEditorRef = useRef<CommentEditorHandle | null>(null);
+  const { user } = useAuth();
   const { data: users = [] } = useUsers();
   const updateReview = useUpdateReview();
   const approveReview = useApproveReview();
   const rejectReview = useRejectReview();
+  const currentReview = visibleReview;
+  const sourceTask = currentReview?.sourceTask ?? null;
+  const sourceOrigin = taskOrigin(sourceTask);
+  const isPending = currentReview?.status === TaskReviewStatus.PENDING;
+  const isBusy = updateReview.isPending || approveReview.isPending || rejectReview.isPending || commentUploading;
+  const mentionContext = useMemo(
+    () => (sourceTask?.discipline?.projectId && sourceTask.id ? { projectId: sourceTask.discipline.projectId, taskId: sourceTask.id } : null),
+    [sourceTask?.discipline?.projectId, sourceTask?.id]
+  );
   const coordinatorOptions = useMemo(
     () =>
       users
-        .filter((user) => user.role === Role.ADMIN || user.role === Role.COORDINATOR)
-        .map((user) => ({
-          value: user.id,
-          label: user.name,
-          description: user.email,
-          avatarUrl: user.avatarUrl
+        .filter((item) => item.role === Role.ADMIN || item.role === Role.COORDINATOR)
+        .map((item) => ({
+          value: item.id,
+          label: item.name,
+          description: item.email,
+          avatarUrl: item.avatarUrl
         })),
     [users]
   );
 
   useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current != null) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!review) {
+      setIsOpen(false);
+      if (closeTimeoutRef.current != null) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+      closeTimeoutRef.current = window.setTimeout(() => {
+        closeTimeoutRef.current = null;
+        setVisibleReview(null);
+      }, 480);
+      return undefined;
+    }
+
+    if (closeTimeoutRef.current != null) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+
+    setVisibleReview(review);
     setMessage("");
-  }, [review?.id]);
+    setPendingFiles([]);
+    setCommentUploading(false);
+    setIsOpen(false);
+    const frame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setIsOpen(true));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [review]);
+
+  if (!currentReview) {
+    return null;
+  }
+
+  function requestClose() {
+    setIsOpen(false);
+    if (closeTimeoutRef.current != null) {
+      return;
+    }
+    closeTimeoutRef.current = window.setTimeout(() => {
+      closeTimeoutRef.current = null;
+      onClose();
+    }, 480);
+  }
 
   async function patchReview(payload: { reviewerId?: string; startDate?: string | null; dueDate?: string | null }) {
-    if (!review) {
+    if (!currentReview) {
       return;
     }
 
-    await updateReview.mutateAsync({ id: review.id, payload });
+    const updatedReview = await updateReview.mutateAsync({ id: currentReview.id, payload });
+    setVisibleReview(updatedReview);
   }
 
-  async function handleApprove(event: FormEvent) {
-    event.preventDefault();
-    if (!review) {
+  function validPendingFiles(): File[] {
+    const files: File[] = [];
+
+    for (const item of pendingFiles) {
+      if (classifyFile(item.file) === "document") {
+        files.push(item.file);
+        continue;
+      }
+
+      toast.error(getFileRejectionMessage(item.file));
+    }
+
+    return files;
+  }
+
+  async function approve() {
+    if (!currentReview) {
       return;
     }
 
-    await approveReview.mutateAsync({ id: review.id, payload: { message: message.trim() || undefined } });
+    const reviewId = currentReview.id;
+    const content = commentEditorRef.current?.getSubmitContent().trim() ?? message.trim();
+    const files = validPendingFiles();
+
+    await approveReview.mutateAsync({
+      id: reviewId,
+      payload: {
+        message: content || undefined,
+        files: files.length > 0 ? files : undefined
+      }
+    });
     setMessage("");
-    onOpenChange(false);
+    setPendingFiles([]);
+    requestClose();
   }
 
-  async function handleReject() {
-    if (!review || !message.trim()) {
+  async function reject() {
+    if (!currentReview) {
       return;
     }
 
-    await rejectReview.mutateAsync({ id: review.id, payload: { message: message.trim() } });
-    setMessage("");
-    onOpenChange(false);
-  }
+    const reviewId = currentReview.id;
+    const content = commentEditorRef.current?.getSubmitContent().trim() ?? message.trim();
 
-  const isPending = review?.status === TaskReviewStatus.PENDING;
+    if (!content) {
+      toast.error("Informe uma mensagem para o projetista.");
+      return;
+    }
+
+    const files = validPendingFiles();
+
+    await rejectReview.mutateAsync({
+      id: reviewId,
+      payload: {
+        message: content,
+        files: files.length > 0 ? files : undefined
+      }
+    });
+    setMessage("");
+    setPendingFiles([]);
+    requestClose();
+  }
 
   return (
-    <Sheet open={Boolean(review)} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 border-border bg-surface p-0 sm:max-w-xl">
-        <SheetHeader className="border-b border-border bg-surface-card px-6 py-4">
-          <SheetTitle className="flex min-w-0 items-center gap-2 text-[16px]">
-            <ClipboardCheck size={17} className="shrink-0 text-brand-orange" />
-            <span className="truncate">{review?.title ?? "Revisão"}</span>
-          </SheetTitle>
-          <SheetDescription className="sr-only">Detalhe da revisão de tarefa</SheetDescription>
-        </SheetHeader>
-
-        {review ? (
-          <form onSubmit={handleApprove} className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-              <div className="grid grid-cols-[140px_1fr] gap-x-4">
-                <DetailLabel>Status de conclusão</DetailLabel>
-                <DetailValue>
-                  <CompletionStatusChip completed={review.status !== TaskReviewStatus.PENDING} />
-                </DetailValue>
-                <DetailLabel>Título</DetailLabel>
-                <DetailValue>
-                  <span className="truncate text-text-primary">{review.title}</span>
-                </DetailValue>
-                <DetailLabel>Disciplina</DetailLabel>
-                <DetailValue>
-                  <DisciplineChip discipline="Revisão" />
-                </DetailValue>
-                <DetailLabel>Responsável</DetailLabel>
-                <DetailValue>
-                  <SearchableSelect
-                    value={review.reviewerId}
-                    options={coordinatorOptions}
-                    disabled={!isPending || updateReview.isPending}
-                    searchPlaceholder="Buscar responsável..."
-                    triggerClassName="h-8 max-w-[260px] bg-bg-3"
-                    contentClassName="min-w-[240px] max-w-[320px]"
-                    renderValue={(option) => (
-                      <span className="flex min-w-0 items-center gap-2">
-                        <Avatar name={option.label} imageUrl={option.avatarUrl} className="h-6 w-6 shrink-0" />
-                        <span className="truncate">{option.label}</span>
-                      </span>
-                    )}
-                    onValueChange={(reviewerId) => void patchReview({ reviewerId })}
-                  />
-                </DetailValue>
-                <DetailLabel>Início</DetailLabel>
-                <DetailValue>
-                  <DatePicker
-                    value={review.startDate}
-                    disabled={!isPending || updateReview.isPending}
-                    onValueChange={(startDate) => void patchReview({ startDate })}
-                    placeholder="Sem data"
-                    className="h-8 max-w-[180px] justify-between bg-bg-3 px-3"
-                  />
-                </DetailValue>
-                <DetailLabel>Entrega</DetailLabel>
-                <DetailValue>
-                  <DatePicker
-                    value={review.dueDate}
-                    disabled={!isPending || updateReview.isPending}
-                    onValueChange={(dueDate) => void patchReview({ dueDate })}
-                    placeholder="Sem data"
-                    className="h-8 max-w-[180px] justify-between bg-bg-3 px-3"
-                  />
-                </DetailValue>
-                <DetailLabel>Origem</DetailLabel>
-                <DetailValue>
-                  <span className="truncate text-text-secondary">{review.sourceTask?.title ?? "Tarefa original"}</span>
-                </DetailValue>
+    <TaskPanelShell
+      isOpen={isOpen}
+      onClose={requestClose}
+      headerContent={
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <ClipboardCheck size={18} className="shrink-0 text-brand-orange" />
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 className="truncate text-[16px] font-semibold text-text-primary">{reviewTitle(currentReview)}</h2>
+                <ReviewStatusChip status={currentReview.status} />
               </div>
+              <p className="mt-0.5 truncate text-[12px] text-text-secondary">
+                {sourceOrigin.project} {sourceOrigin.section ? `/ ${sourceOrigin.section}` : ""}
+              </p>
             </div>
-
-            <div className="border-t border-border p-5">
-              <Textarea
+          </div>
+          <Button variant="secondary" className="h-8 shrink-0 px-3 text-xs" onClick={() => onOpenOriginal(currentReview)}>
+            <ExternalLink size={14} />
+            Abrir tarefa original
+          </Button>
+        </div>
+      }
+      footer={
+        isPending ? (
+          <div className="flex items-start gap-3 border-t border-[--color-border] bg-[--bg-2] p-5">
+            {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
+            <div className="min-w-0 flex-1">
+              <TaskCommentEditor
+                ref={commentEditorRef}
                 value={message}
-                disabled={!isPending}
-                onChange={(event) => setMessage(event.target.value)}
+                onChange={setMessage}
+                onSubmit={() => void approve()}
+                disabled={isBusy}
                 placeholder="Mensagem ao projetista"
-                className="min-h-24 resize-none bg-bg-3"
+                pendingFiles={pendingFiles}
+                onPendingFilesChange={setPendingFiles}
+                onUploadingChange={setCommentUploading}
+                mentionContext={mentionContext}
+                footerActions={
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      className="h-8 px-3 text-xs"
+                      disabled={!isPending || isBusy || !message.trim()}
+                      onClick={() => void reject()}
+                    >
+                      <XCircle size={14} />
+                      Recusar
+                    </Button>
+                    <Button className="h-8 px-3 text-xs" disabled={!isPending || isBusy} onClick={() => void approve()}>
+                      <CheckCircle2 size={14} />
+                      Aprovar
+                    </Button>
+                  </div>
+                }
               />
-              <div className="mt-3 flex items-center justify-end gap-2">
-                <Button
-                  variant="secondary"
-                  disabled={!isPending || rejectReview.isPending || approveReview.isPending || !message.trim()}
-                  onClick={() => void handleReject()}
-                >
-                  <XCircle size={16} />
-                  Recusar
-                </Button>
-                <Button type="submit" disabled={!isPending || approveReview.isPending || rejectReview.isPending}>
-                  <CheckCircle2 size={16} />
-                  Aprovar
-                </Button>
-              </div>
             </div>
-          </form>
-        ) : null}
-      </SheetContent>
-    </Sheet>
+          </div>
+        ) : null
+      }
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <PanelSectionTitle>Tarefa original</PanelSectionTitle>
+        <TaskFixedFieldGrid
+          fields={[
+            {
+              key: "origin",
+              label: "Origem",
+              render: () => <ReadOnlyValue value={sourceOrigin.label} />
+            },
+            {
+              key: "designer",
+              label: "Projetista",
+              render: () => <ReadOnlyUser user={sourceTask?.assignee ?? null} fallback="Sem responsável" />
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: () => (sourceTask ? <TaskStatusBadge status={sourceTask.status} /> : <EmptyField />)
+            },
+            {
+              key: "priority",
+              label: "Prioridade",
+              render: () => (sourceTask ? <PriorityBadge priority={sourceTask.priority} /> : <EmptyField />)
+            },
+            {
+              key: "sourceStart",
+              label: "Início original",
+              render: () => <ReadOnlyValue value={formatDateValue(sourceTask?.startDate)} />
+            },
+            {
+              key: "sourceDue",
+              label: "Entrega original",
+              render: () => <ReadOnlyValue value={formatDateValue(sourceTask?.dueDate)} />
+            }
+          ]}
+        />
+
+        <PanelSectionTitle className="mt-8">Revisão</PanelSectionTitle>
+        <TaskFixedFieldGrid
+          fields={[
+            {
+              key: "discipline",
+              label: "Disciplina",
+              render: () => <DisciplineChip discipline="Revisão" />
+            },
+            {
+              key: "reviewer",
+              label: "Revisor",
+              render: () => (
+                <SearchableSelect
+                  value={currentReview.reviewerId}
+                  options={coordinatorOptions}
+                  disabled={!isPending || updateReview.isPending}
+                  searchPlaceholder="Buscar revisor..."
+                  triggerClassName="h-8 max-w-[260px] bg-bg-3"
+                  contentClassName="min-w-[240px] max-w-[320px]"
+                  renderValue={(option) => (
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Avatar name={option.label} imageUrl={option.avatarUrl} className="h-6 w-6 shrink-0" />
+                      <span className="truncate">{option.label}</span>
+                    </span>
+                  )}
+                  onValueChange={(reviewerId) => void patchReview({ reviewerId })}
+                />
+              )
+            },
+            {
+              key: "reviewStart",
+              label: "Início da revisão",
+              render: () => (
+                <DatePicker
+                  value={currentReview.startDate}
+                  disabled={!isPending || updateReview.isPending}
+                  onValueChange={(startDate) => void patchReview({ startDate })}
+                  placeholder="Sem data"
+                  className="h-8 max-w-[180px] justify-between bg-bg-3 px-3"
+                />
+              )
+            },
+            {
+              key: "reviewDue",
+              label: "Entrega da revisão",
+              render: () => (
+                <DatePicker
+                  value={currentReview.dueDate}
+                  disabled={!isPending || updateReview.isPending}
+                  onValueChange={(dueDate) => void patchReview({ dueDate })}
+                  placeholder="Sem data"
+                  className="h-8 max-w-[180px] justify-between bg-bg-3 px-3"
+                />
+              )
+            },
+            {
+              key: "requestedBy",
+              label: "Solicitada por",
+              render: () => <ReadOnlyUser user={currentReview.requestedBy ?? null} fallback="Sem solicitante" />
+            },
+            {
+              key: "createdAt",
+              label: "Criada em",
+              render: () => <ReadOnlyValue value={formatDateTime(currentReview.createdAt)} />
+            }
+          ]}
+        />
+      </div>
+    </TaskPanelShell>
+  );
+}
+
+function ReviewTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <tr key={index} className="h-10 border-b border-[--color-border-subtle]">
+          {Array.from({ length: 6 }).map((__, cellIndex) => (
+            <td key={cellIndex} className="px-3 py-2">
+              <Skeleton className="h-4 w-full" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+function OriginCell({ review }: { review: TaskReview }) {
+  const origin = taskOrigin(review.sourceTask ?? null);
+
+  return (
+    <span className="block min-w-0">
+      <span className="block truncate font-medium text-text-primary">{origin.project}</span>
+      <span className="block truncate text-[12px] text-text-muted">{origin.section || "Sem seção"}</span>
+    </span>
+  );
+}
+
+function UserCell({ user, fallback }: { user: { name: string; avatarUrl?: string | null } | null; fallback: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <Avatar name={user?.name ?? fallback} imageUrl={user?.avatarUrl} className="h-5 w-5 shrink-0" />
+      <span className="truncate">{user?.name ?? fallback}</span>
+    </span>
+  );
+}
+
+function ReadOnlyUser({ user, fallback }: { user: { name: string; avatarUrl?: string | null } | null; fallback: string }) {
+  if (!user) {
+    return <span className="text-[13px] text-[--color-text-muted]">{fallback}</span>;
+  }
+
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <Avatar name={user.name} imageUrl={user.avatarUrl} className="h-6 w-6 shrink-0" />
+      <span className="truncate text-[13px] text-text-primary">{user.name}</span>
+    </span>
   );
 }
 
@@ -313,14 +582,46 @@ function BodyCell({ children }: { children: ReactNode }) {
   return <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{children}</td>;
 }
 
-function DetailLabel({ children }: { children: string }) {
+function PanelSectionTitle({ children, className }: { children: string; className?: string }) {
   return (
-    <div className="flex min-h-8 items-center border-b border-border-subtle">
-      <span className="text-[13px] font-normal text-text-secondary">{children}</span>
-    </div>
+    <h3 className={cn("text-[11px] font-semibold uppercase tracking-widest text-[--color-text-muted]", className)}>
+      {children}
+    </h3>
   );
 }
 
-function DetailValue({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-8 min-w-0 items-center border-b border-border-subtle">{children}</div>;
+function ReadOnlyValue({ value }: { value: string | null | undefined }) {
+  if (!value) {
+    return <EmptyField />;
+  }
+
+  return <span className="min-w-0 truncate text-[13px] text-text-primary">{value}</span>;
+}
+
+function reviewTitle(review: TaskReview): string {
+  return stripReviewPrefix(review.sourceTask?.title ?? review.title);
+}
+
+function stripReviewPrefix(title: string): string {
+  return title.replace(/^\s*\[REV\]\s*/i, "");
+}
+
+function taskOrigin(task: Task | null): { project: string; section: string | null; label: string } {
+  const membership = task?.projects?.[0];
+  const project = membership?.name ?? task?.discipline?.projectName ?? "Sem projeto";
+  const section = membership?.sectionName ?? task?.discipline?.name ?? null;
+
+  return {
+    project,
+    section,
+    label: section ? `${project} / ${section}` : project
+  };
+}
+
+function formatDateValue(value: string | null | undefined): string | null {
+  return value ? formatDateOnly(value, "dd/MM/yyyy") : null;
+}
+
+function formatDateTime(value: string): string {
+  return format(new Date(value), "dd/MM/yyyy HH:mm");
 }

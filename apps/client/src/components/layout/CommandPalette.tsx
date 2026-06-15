@@ -6,6 +6,7 @@ import { Role } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useProjects } from "../../hooks/useProjects";
 import { useUsers } from "../../hooks/useUsers";
+import { queryClient } from "../../lib/queryClient";
 import { cn } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
 import { Dialog, DialogContent } from "../ui/dialog";
@@ -52,6 +53,12 @@ export function CommandPalette() {
   function go(path: string) {
     setOpen(false);
     navigate(path);
+  }
+
+  function goProject(projectId: string, taskId?: string) {
+    queryClient.removeQueries({ queryKey: ["projects", projectId], exact: true });
+    setOpen(false);
+    navigate(`/projects/${projectId}${taskId ? `?task=${encodeURIComponent(taskId)}` : ""}`);
   }
 
   return (
@@ -121,7 +128,7 @@ export function CommandPalette() {
                       <Command.Item
                         key={project.id}
                         value={project.name}
-                        onSelect={() => go(`/projects/${project.id}`)}
+                        onSelect={() => goProject(project.id)}
                         className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                       >
                         <FolderKanban size={16} className="text-text-muted" />
@@ -146,7 +153,7 @@ export function CommandPalette() {
                       <Command.Item
                         key={task.id}
                         value={`${task.title} ${task.subtitle}`}
-                        onSelect={() => go(`/projects/${task.projectId}?task=${encodeURIComponent(task.id)}`)}
+                        onSelect={() => goProject(task.projectId, task.id)}
                         className="flex cursor-pointer flex-col gap-0.5 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                       >
                         <span className="truncate font-medium">{task.title}</span>

@@ -65,11 +65,13 @@ interface CommentEditorProps {
   onSubmit: () => void;
   disabled?: boolean;
   submitLabel?: string;
+  placeholder?: string;
   minHeightClassName?: string;
   pendingFiles?: PendingCommentFile[];
   onPendingFilesChange?: (files: PendingCommentFile[]) => void;
   onUploadingChange?: (uploading: boolean) => void;
   mentionContext?: MentionContext | null;
+  footerActions?: ReactNode;
 }
 
 export interface CommentEditorHandle {
@@ -110,11 +112,13 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
     onSubmit,
     disabled,
     submitLabel = "Comentar",
+    placeholder = "Adicionar um comentário",
     minHeightClassName = "min-h-[112px]",
     pendingFiles = [],
     onPendingFilesChange,
     onUploadingChange,
-    mentionContext = null
+    mentionContext = null,
+    footerActions
   },
   ref
 ) {
@@ -361,7 +365,7 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
       }),
       Markdown,
       Placeholder.configure({
-        placeholder: "Adicionar um comentário"
+        placeholder
       }),
       ...(mentionContext ? [mentionExtension] : [])
     ],
@@ -662,10 +666,12 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
       ) : null}
 
       <div className="flex items-center justify-end border-t border-[--color-border-subtle] px-3 py-2">
-        <Button type="button" className="h-8 px-3 text-xs" disabled={disabled || !value.trim() || isUploading} onClick={submitComment}>
-          <Send size={14} />
-          {submitLabel}
-        </Button>
+        {footerActions ?? (
+          <Button type="button" className="h-8 px-3 text-xs" disabled={disabled || !value.trim() || isUploading} onClick={submitComment}>
+            <Send size={14} />
+            {submitLabel}
+          </Button>
+        )}
       </div>
     </div>
   );

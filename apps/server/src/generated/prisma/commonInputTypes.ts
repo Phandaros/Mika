@@ -225,23 +225,6 @@ export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
-export type EnumWeeklyReportStatusFilter<$PrismaModel = never> = {
-  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.WeeklyReportStatus[]
-  notIn?: $Enums.WeeklyReportStatus[]
-  not?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel> | $Enums.WeeklyReportStatus
-}
-
-export type EnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.WeeklyReportStatus[]
-  notIn?: $Enums.WeeklyReportStatus[]
-  not?: Prisma.NestedEnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel> | $Enums.WeeklyReportStatus
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
-}
-
 export type JsonNullableFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -281,6 +264,23 @@ export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedJsonNullableFilter<$PrismaModel>
   _max?: Prisma.NestedJsonNullableFilter<$PrismaModel>
+}
+
+export type EnumWeeklyReportStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WeeklyReportStatus[]
+  notIn?: $Enums.WeeklyReportStatus[]
+  not?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel> | $Enums.WeeklyReportStatus
+}
+
+export type EnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WeeklyReportStatus[]
+  notIn?: $Enums.WeeklyReportStatus[]
+  not?: Prisma.NestedEnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel> | $Enums.WeeklyReportStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
 }
 
 export type NestedStringFilter<$PrismaModel = never> = {
@@ -500,23 +500,6 @@ export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
-export type NestedEnumWeeklyReportStatusFilter<$PrismaModel = never> = {
-  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.WeeklyReportStatus[]
-  notIn?: $Enums.WeeklyReportStatus[]
-  not?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel> | $Enums.WeeklyReportStatus
-}
-
-export type NestedEnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.WeeklyReportStatus[]
-  notIn?: $Enums.WeeklyReportStatus[]
-  not?: Prisma.NestedEnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel> | $Enums.WeeklyReportStatus
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
-}
-
 export type NestedJsonNullableFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -534,6 +517,23 @@ export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
   array_starts_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
   array_ends_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type NestedEnumWeeklyReportStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WeeklyReportStatus[]
+  notIn?: $Enums.WeeklyReportStatus[]
+  not?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel> | $Enums.WeeklyReportStatus
+}
+
+export type NestedEnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WeeklyReportStatus | Prisma.EnumWeeklyReportStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WeeklyReportStatus[]
+  notIn?: $Enums.WeeklyReportStatus[]
+  not?: Prisma.NestedEnumWeeklyReportStatusWithAggregatesFilter<$PrismaModel> | $Enums.WeeklyReportStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWeeklyReportStatusFilter<$PrismaModel>
 }
 
 

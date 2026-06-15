@@ -270,6 +270,45 @@ def task_custom_field_scalar(cf: dict[str, Any]) -> str | float | None:
     return text or None
 
 
+def custom_field_text_value(cf: dict[str, Any]) -> str | None:
+    value = cf.get("text_value")
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def custom_field_number_value(cf: dict[str, Any]) -> float | None:
+    value = cf.get("number_value")
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def custom_field_display_value(cf: dict[str, Any]) -> str | None:
+    value = cf.get("display_value")
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def custom_field_multi_enum_values(cf: dict[str, Any]) -> list[dict[str, str | None]]:
+    values: list[dict[str, str | None]] = []
+    for option in cf.get("multi_enum_values") or []:
+        if not isinstance(option, dict) or not option.get("name"):
+            continue
+        values.append({
+            "gid": str(option["gid"]) if option.get("gid") else None,
+            "name": str(option["name"]),
+            "color": str(option["color"]) if option.get("color") else None,
+        })
+    return values
+
+
 def task_fixed_field_value(key: str, cf: dict[str, Any]) -> str | float | None:
     value = task_custom_field_scalar(cf)
     if value is None:
@@ -524,6 +563,193 @@ def import_custom_fields(conn: sqlite3.Connection, settings: list[dict[str, Any]
             })
 
 
+def import_project_custom_field_definition(
+    conn: sqlite3.Connection,
+    cf: dict[str, Any],
+    password_hash: str,
+    sort_order: int | None = None,
+) -> str | None:
+    if not isinstance(cf, dict) or not cf.get("gid"):
+        return None
+
+    ensure_user(conn, cf.get("created_by"), password_hash)
+    cf_gid = str(cf["gid"])
+    insert_or_update(conn, "AsanaCustomField", ["asanaGid"], {
+        "id": new_id(),
+        "asanaGid": cf_gid,
+        "name": cf.get("name") or cf_gid,
+        "description": cf.get("description"),
+        "type": cf.get("type") or "unknown",
+        "precision": cf.get("precision"),
+        "format": cf.get("format"),
+        "currencyCode": cf.get("currency_code"),
+        "isGlobalToWorkspace": boolv(cf.get("is_global_to_workspace")),
+        "createdByGid": asana_ref_gid(cf.get("created_by")),
+        "mikaKey": normalize_field_key(cf.get("name")).replace(" ", "-") if cf.get("name") else None,
+        "mikaLabel": cf.get("name"),
+        "mikaTaskField": 0,
+        "mikaSortOrder": sort_order,
+        "mikaListVisible": 1,
+        "mikaDetailVisible": 1,
+        "createdAt": now_iso(),
+        "updatedAt": now_iso(),
+    })
+
+    cf_id = get_id_by(conn, "AsanaCustomField", "asanaGid", cf_gid)
+    if not cf_id:
+        return None
+
+    for idx, option in enumerate(cf.get("enum_options") or []):
+        ogid = option.get("gid")
+        if ogid:
+            insert_or_update(conn, "AsanaCustomFieldEnumOption", ["asanaGid"], {
+                "id": new_id(),
+                "asanaGid": str(ogid),
+                "customFieldId": cf_id,
+                "name": option.get("name") or str(ogid),
+                "color": option.get("color"),
+                "enabled": boolv(option.get("enabled"), True),
+                "sortOrder": idx,
+            })
+
+    return cf_id
+
+
+def import_portfolio_custom_field_settings(
+    conn: sqlite3.Connection,
+    settings: list[dict[str, Any]],
+    password_hash: str,
+) -> None:
+    for idx, setting in enumerate(settings):
+        cf = setting.get("custom_field") if isinstance(setting.get("custom_field"), dict) else setting
+        import_project_custom_field_definition(conn, cf, password_hash, idx)
+
+
+def ensure_project_value_enum_options(conn: sqlite3.Connection, cf_id: str | None, cf: dict[str, Any]) -> None:
+    if not cf_id:
+        return
+
+    enum_value = cf.get("enum_value") if isinstance(cf.get("enum_value"), dict) else None
+    options = [enum_value] if enum_value else []
+    options.extend(option for option in cf.get("multi_enum_values") or [] if isinstance(option, dict))
+    for idx, option in enumerate(options):
+        ogid = option.get("gid")
+        if not ogid:
+            continue
+        insert_or_update(conn, "AsanaCustomFieldEnumOption", ["asanaGid"], {
+            "id": new_id(),
+            "asanaGid": str(ogid),
+            "customFieldId": cf_id,
+            "name": option.get("name") or str(ogid),
+            "color": option.get("color"),
+            "enabled": 1,
+            "sortOrder": idx,
+        })
+
+
+def fixed_project_field_update(custom_fields: list[dict[str, Any]]) -> dict[str, str | float | None]:
+    values: dict[str, str | float | None] = {}
+    for cf in custom_fields:
+        key = project_fixed_field_key(cf)
+        if not key:
+            continue
+        value = task_custom_field_scalar(cf)
+        if key == "areaM2":
+            values[key] = float(value) if isinstance(value, (int, float)) else None
+            continue
+        values[key] = str(value).strip() if value is not None and str(value).strip() else None
+    return values
+
+
+def import_project_custom_field_value(conn: sqlite3.Connection, project_id: str, cf: dict[str, Any], password_hash: str) -> str | None:
+    cf_gid = cf.get("gid")
+    if not cf_gid:
+        return None
+
+    cf_id = import_project_custom_field_definition(conn, cf, password_hash)
+    ensure_project_value_enum_options(conn, cf_id, cf)
+    enum_value = cf.get("enum_value") if isinstance(cf.get("enum_value"), dict) else None
+    enum_option_gid = str(enum_value["gid"]) if enum_value and enum_value.get("gid") else None
+    enum_option_id = get_id_by(conn, "AsanaCustomFieldEnumOption", "asanaGid", enum_option_gid) if enum_option_gid else None
+    multi_values = custom_field_multi_enum_values(cf)
+    multi_json = json.dumps(multi_values, ensure_ascii=False) if multi_values else None
+
+    insert_or_update(conn, "ProjectCustomFieldValue", ["projectId", "customFieldGid"], {
+        "id": new_id(),
+        "projectId": project_id,
+        "customFieldGid": str(cf_gid),
+        "customFieldName": cf.get("name"),
+        "type": cf.get("type") or "unknown",
+        "displayValue": custom_field_display_value(cf),
+        "precision": cf.get("precision"),
+        "textValue": custom_field_text_value(cf),
+        "numberValue": custom_field_number_value(cf),
+        "enumOptionGid": enum_option_gid,
+        "enumOptionName": enum_value.get("name") if enum_value else None,
+        "enumOptionColor": enum_value.get("color") if enum_value else None,
+        "multiEnumValues": multi_json,
+        "customFieldId": cf_id,
+        "enumOptionId": enum_option_id,
+    })
+
+    return str(cf.get("name") or cf_gid)
+
+
+def import_portfolio_project_fields(
+    conn: sqlite3.Connection,
+    portfolio_items: list[dict[str, Any]],
+    password_hash: str,
+) -> None:
+    matched = 0
+    missing: list[str] = []
+    values_by_field: dict[str, int] = {}
+    financeiro_count = 0
+
+    for item in portfolio_items:
+        gid = str(item.get("gid")) if item.get("gid") else None
+        if not gid:
+            continue
+
+        project_id = get_id_by(conn, "Project", "asanaGid", gid)
+        if not project_id:
+            missing.append(f"{item.get('name') or gid} ({gid})")
+            continue
+
+        matched += 1
+        custom_fields = [cf for cf in item.get("custom_fields") or [] if isinstance(cf, dict)]
+        conn.execute('DELETE FROM "ProjectCustomFieldValue" WHERE "projectId" = ?', (project_id,))
+
+        fixed_values = fixed_project_field_update(custom_fields)
+        if fixed_values:
+            assignments = ", ".join(f"{q(column)} = ?" for column in fixed_values)
+            params = [fixed_values[column] for column in fixed_values]
+            conn.execute(
+                f'UPDATE "Project" SET {assignments}, "updatedAt" = ? WHERE id = ?',
+                [*params, now_iso(), project_id],
+            )
+
+        for cf in custom_fields:
+            field_name = import_project_custom_field_value(conn, project_id, cf, password_hash)
+            if not field_name:
+                continue
+            if custom_field_display_value(cf):
+                values_by_field[field_name] = values_by_field.get(field_name, 0) + 1
+            if normalize_field_key(field_name) == "financeiro." and custom_field_display_value(cf):
+                financeiro_count += 1
+
+    print("\nResumo do sync de campos do portfólio:")
+    print(f"  Itens lidos: {len(portfolio_items)}")
+    print(f"  Projetos encontrados no Mika: {matched}")
+    print(f"  Projetos não encontrados no Mika: {len(missing)}")
+    for item in missing[:20]:
+        print(f"    - {item}")
+    if len(missing) > 20:
+        print(f"    ... +{len(missing) - 20} projeto(s)")
+    print(f"  Projetos com Financeiro. preenchido: {financeiro_count}")
+    for name, count in sorted(values_by_field.items(), key=lambda row: normalize_field_key(row[0])):
+        print(f"  {name}: {count} valor(es)")
+
+
 def all_task_records(tasks: list[dict[str, Any]], subtasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_gid: dict[str, dict[str, Any]] = {}
     for t in tasks + subtasks:
@@ -731,6 +957,11 @@ def main() -> int:
     parser.add_argument("--clear", action="store_true", help="Apaga os dados das tabelas importadas antes de popular")
     parser.add_argument("--import-users", action="store_true", help="Tambem cria/atualiza usuarios do dump. Por padrao, usuarios sao preservados.")
     parser.add_argument("--clear-comments", action="store_true", help="Remove comentarios importados (asanaGid NOT NULL) antes de importar stories")
+    parser.add_argument(
+        "--sync-portfolio-fields",
+        action="store_true",
+        help="Sincroniza custom fields de portfolio_items_*.json para ProjectCustomFieldValue e colunas fixas de Project",
+    )
     args = parser.parse_args()
     global IMPORT_USERS
     IMPORT_USERS = args.import_users
@@ -756,6 +987,8 @@ def main() -> int:
     custom_fields = load_list(json_dir, r"^custom_fields.*\.json$")
     tasks = load_list(json_dir, r"^tasks.*\.json$")
     subtasks = load_list(json_dir, r"^subtasks.*\.json$")
+    portfolio_custom_fields = load_list(json_dir, r"^portfolio_custom_fields.*\.json$")
+    portfolio_items = load_list(json_dir, r"^portfolio_items.*\.json$")
 
     default_workspace_gid = workspaces[0].get("gid") if workspaces else None
     task_records = all_task_records(tasks, subtasks)
@@ -766,6 +999,24 @@ def main() -> int:
             print("[info] Limpando tabelas importadas...")
             clear_asana_tables(conn)
 
+        if args.sync_portfolio_fields:
+            print("[info] Sincronizando apenas campos do portfólio...")
+            if portfolio_custom_fields:
+                import_portfolio_custom_field_settings(conn, portfolio_custom_fields, args.password_hash)
+            else:
+                print("[aviso] Nenhum portfolio_custom_fields_*.json encontrado.")
+            source_items = portfolio_items if portfolio_items else [project for project in projects if project.get("custom_fields")]
+            if source_items:
+                import_portfolio_project_fields(conn, source_items, args.password_hash)
+            else:
+                print("[aviso] Nenhum portfolio_items_*.json ou projects.json com custom_fields encontrado para sincronizar.")
+            conn.commit()
+            print("\nResumo:")
+            for table in ["Project", "AsanaCustomField", "AsanaCustomFieldEnumOption", "ProjectCustomFieldValue"]:
+                print(f"  {table}: {count_table(conn, table)}")
+            print("\n[ok] Sincronização de campos do portfólio finalizada.")
+            return 0
+
         print("[info] Importando...")
         import_workspaces(conn, workspaces)
         import_users(conn, users, args.password_hash)
@@ -774,9 +1025,20 @@ def main() -> int:
         import_sections(conn, sections)
         import_tags(conn, tags)
         import_custom_fields(conn, custom_fields, args.password_hash)
+        if args.sync_portfolio_fields:
+            if portfolio_custom_fields:
+                import_portfolio_custom_field_settings(conn, portfolio_custom_fields, args.password_hash)
+            elif not portfolio_items:
+                print("[aviso] Nenhum portfolio_custom_fields_*.json encontrado.")
         import_tasks_base(conn, task_records, args.password_hash)
         resolve_task_parents(conn)
         import_task_relations(conn, task_records)
+        if args.sync_portfolio_fields:
+            source_items = portfolio_items if portfolio_items else [project for project in projects if project.get("custom_fields")]
+            if source_items:
+                import_portfolio_project_fields(conn, source_items, args.password_hash)
+            else:
+                print("[aviso] Nenhum portfolio_items_*.json ou projects.json com custom_fields encontrado para sincronizar.")
         comment_rows = load_comment_json_records(json_dir)
         if args.clear_comments:
             print("[info] Limpando comentarios importados do Asana...")
@@ -791,6 +1053,7 @@ def main() -> int:
             "AsanaWorkspace", "Team", "User", "Project", "Section", "Tag", "Task",
             "TaskMembership", "TaskFollower", "TaskLike", "TaskTag",
             "AsanaCustomField", "AsanaCustomFieldEnumOption", "ProjectCustomFieldSetting", "TaskCustomFieldValue",
+            "ProjectCustomFieldValue",
             "Comment",
         ]:
             print(f"  {table}: {count_table(conn, table)}")

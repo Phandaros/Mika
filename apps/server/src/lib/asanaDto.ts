@@ -94,6 +94,19 @@ export const projectInclude = {
       }
     },
     orderBy: { isImportant: "desc" as const }
+  },
+  customFieldValues: {
+    include: {
+      customField: {
+        include: {
+          enumOptions: {
+            where: { enabled: true },
+            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
+          }
+        }
+      },
+      enumOption: true
+    }
   }
 } satisfies Prisma.ProjectInclude;
 
@@ -388,6 +401,68 @@ function taskCustomFieldsFromCatalog(task: TaskRecord, catalog: TaskCustomFieldC
   });
 }
 
+function projectMultiEnumValues(value: Prisma.JsonValue | null | undefined) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null;
+      }
+
+      const record = item as Record<string, Prisma.JsonValue>;
+      const name = typeof record.name === "string" ? record.name : null;
+      if (!name) {
+        return null;
+      }
+
+      return {
+        gid: typeof record.gid === "string" ? record.gid : null,
+        name,
+        color: typeof record.color === "string" ? record.color : null
+      };
+    })
+    .filter((item): item is { gid: string | null; name: string; color: string | null } => Boolean(item));
+}
+
+function projectCustomFieldValueDtos(project: ProjectRecord) {
+  return [...project.customFieldValues]
+    .sort((a, b) => {
+      const left = a.customField?.mikaSortOrder ?? 9999;
+      const right = b.customField?.mikaSortOrder ?? 9999;
+      if (left !== right) {
+        return left - right;
+      }
+
+      return (a.customField?.name ?? a.customFieldName ?? "").localeCompare(b.customField?.name ?? b.customFieldName ?? "", "pt-BR");
+    })
+    .map((row) => ({
+      id: row.id,
+      customFieldId: row.customFieldId,
+      customFieldGid: row.customFieldGid,
+      customFieldName: row.customFieldName ?? row.customField?.name ?? null,
+      mikaKey: row.customField?.mikaKey ?? null,
+      mikaLabel: row.customField?.mikaLabel ?? row.customField?.name ?? row.customFieldName ?? null,
+      mikaSortOrder: row.customField?.mikaSortOrder ?? null,
+      mikaListVisible: row.customField?.mikaListVisible ?? true,
+      mikaDetailVisible: row.customField?.mikaDetailVisible ?? true,
+      type: row.type,
+      displayValue: row.displayValue,
+      textValue: row.textValue,
+      numberValue: row.numberValue,
+      enumOptionName: row.enumOptionName ?? row.enumOption?.name ?? null,
+      enumOptionColor: row.enumOptionColor ?? row.enumOption?.color ?? null,
+      multiEnumValues: projectMultiEnumValues(row.multiEnumValues),
+      enumOptions: row.customField?.enumOptions?.map((option) => ({
+        id: option.id,
+        name: option.name,
+        color: option.color
+      }))
+    }));
+}
+
 export function toDisciplineDto(section: SectionRecord, projectId: string, taskFieldCatalog?: TaskCustomFieldCatalog) {
   const tasks = section.memberships
     .filter((membership) => !membership.task.parentId)
@@ -434,6 +509,7 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     color: project.color,
     defaultView: project.defaultView,
     owner: toPublicUser(project.owner),
+    customFieldValues: projectCustomFieldValueDtos(project),
     customFields: project.customFieldSettings.map((setting) => ({
       id: setting.id,
       asanaGid: setting.asanaGid,

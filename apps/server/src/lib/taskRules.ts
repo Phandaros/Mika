@@ -247,7 +247,7 @@ async function resolveReviewer(
   });
 }
 
-export async function createAdjustmentTask(tx: Prisma.TransactionClient, reviewId: string, message: string): Promise<string> {
+export async function createAdjustmentTask(tx: Prisma.TransactionClient, reviewId: string): Promise<string> {
   const review = await tx.taskReview.findUniqueOrThrow({
     where: { id: reviewId },
     include: {
@@ -273,7 +273,7 @@ export async function createAdjustmentTask(tx: Prisma.TransactionClient, reviewI
     data: {
       asanaGid: makeLocalAsanaGid("task"),
       name: adjustmentName,
-      notes: message,
+      notes: null,
       mikaStatus: TaskStatus.TODO,
       priority: sourceTask.priority,
       assigneeGid: sourceTask.assigneeGid,

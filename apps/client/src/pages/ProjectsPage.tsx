@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { format } from "date-fns";
 import { FolderKanban, ListFilter, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ProjectStatus, type Project, type UpdateProjectRequest } from "shared";
+import { ProjectStatus, type Project, type ProjectCustomFieldValue, type UpdateProjectRequest } from "shared";
 import { toast } from "sonner";
 import { ProjectForm } from "../components/project/ProjectForm";
 import {
@@ -33,6 +33,19 @@ import { formatProjectArea, projectStatusLabels } from "../lib/projectLabels";
 import { canManageTasks } from "../lib/permissions";
 import { resolveAsanaColor } from "../lib/utils";
 
+const portfolioFieldLabels = {
+  priority: "Priority",
+  ppciGas: "PPCI / GÁS",
+  eleApproval: "ELE APROV.",
+  hidApproval: "HID APROV.",
+  eleExecution: "ELE EXEC.",
+  hidExecution: "HID EXEC.",
+  projectCount: "Número de Projetos",
+  disciplineCount: "Número de Disciplinas (n)",
+  projectedArea: "Área projetada",
+  finance: "Financeiro."
+} as const;
+
 export function ProjectsPage() {
   const { user } = useAuth();
   const { data: projects = [], isLoading } = useProjects();
@@ -43,6 +56,7 @@ export function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectStatusSelection);
   const [platformFilter, setPlatformFilter] = useState<string[]>(defaultPlatformSelection);
   const [builderFilter, setBuilderFilter] = useState<string[]>([]);
+  const [builderFilterTouched, setBuilderFilterTouched] = useState(false);
   const [sortMode, setSortMode] = useState("updatedAt-desc");
   const canManage = canManageTasks(user);
 
@@ -81,10 +95,10 @@ export function ProjectsPage() {
   );
 
   useEffect(() => {
-    if (builderFilter.length === 0 && builderSuggestions.length >= 0) {
+    if (!builderFilterTouched) {
       setBuilderFilter(defaultBuilderSelection(builderSuggestions));
     }
-  }, [builderFilter.length, builderSuggestions]);
+  }, [builderFilterTouched, builderSuggestions]);
 
   const activeFilterCount = countActiveFilterDimensions([
     { selected: statusFilter, all: statusOptions.map((option) => option.value) },
@@ -183,7 +197,10 @@ export function ProjectsPage() {
                   allSelectedLabel="Todas as construtoras"
                   noneSelectedLabel="Nenhuma construtora"
                   partialSelectedLabel={(count) => `${count} construtoras`}
-                  onValuesChange={setBuilderFilter}
+                  onValuesChange={(values) => {
+                    setBuilderFilterTouched(true);
+                    setBuilderFilter(values);
+                  }}
                 />
               </PopoverContent>
             </Popover>
@@ -265,13 +282,23 @@ function ProjectsPortfolioTable({
 }) {
   return (
     <DataTableContainer>
-      <table className="w-full min-w-[1040px] table-fixed border-collapse bg-[--bg-2] text-sm">
+      <table className="w-full min-w-[2380px] table-fixed border-collapse bg-[--bg-2] text-sm">
         <thead className="sticky top-0 z-10 bg-[--bg-1] text-left">
           <tr className="border-b border-[--color-border]">
             <th className="w-[320px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Nome</th>
             <th className="w-[180px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Construtora</th>
             <th className="w-[130px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Plataforma</th>
             <th className="w-[130px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Área</th>
+            <th className="w-[240px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Financeiro</th>
+            <th className="w-[220px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Número de Projetos</th>
+            <th className="w-[92px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Disc.</th>
+            <th className="w-[130px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Área proj.</th>
+            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Prioridade</th>
+            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">PPCI/GÁS</th>
+            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">ELE APROV.</th>
+            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">HID APROV.</th>
+            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">ELE EXEC.</th>
+            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">HID EXEC.</th>
             <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Status</th>
             <th className="w-[120px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Tarefas</th>
             <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Entrega</th>
@@ -286,6 +313,7 @@ function ProjectsPortfolioTable({
             const taskCount =
               (project.sections ?? project.disciplines)?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
             const iconTokens = resolveAsanaColor(project.color ?? "");
+            const financeField = projectCustomField(project, portfolioFieldLabels.finance);
 
             return (
               <tr key={project.id} className="border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]">
@@ -344,6 +372,36 @@ function ProjectsPortfolioTable({
                   )}
                 </td>
                 <td className="px-3 py-2">
+                  <MultiEnumChips field={financeField} maxVisible={2} />
+                </td>
+                <td className="px-3 py-2">
+                  <MultiEnumChips field={projectCustomField(project, portfolioFieldLabels.projectCount)} maxVisible={2} />
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <PortfolioNumberValue field={projectCustomField(project, portfolioFieldLabels.disciplineCount)} />
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <PortfolioNumberValue field={projectCustomField(project, portfolioFieldLabels.projectedArea)} />
+                </td>
+                <td className="px-3 py-2">
+                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.priority)} />
+                </td>
+                <td className="px-3 py-2">
+                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.ppciGas)} />
+                </td>
+                <td className="px-3 py-2">
+                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.eleApproval)} />
+                </td>
+                <td className="px-3 py-2">
+                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.hidApproval)} />
+                </td>
+                <td className="px-3 py-2">
+                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.eleExecution)} />
+                </td>
+                <td className="px-3 py-2">
+                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.hidExecution)} />
+                </td>
+                <td className="px-3 py-2">
                   {canManage ? (
                     <EditableProjectStatusField
                       value={project.status}
@@ -390,6 +448,119 @@ function ProjectsPortfolioTable({
       </table>
     </DataTableContainer>
   );
+}
+
+function projectCustomField(project: Project, name: string): ProjectCustomFieldValue | undefined {
+  const target = normalizeProjectFieldName(name);
+  return project.customFieldValues?.find((field) => normalizeProjectFieldName(field.customFieldName ?? field.mikaLabel) === target);
+}
+
+function MultiEnumChips({ field, maxVisible }: { field: ProjectCustomFieldValue | undefined; maxVisible: number }) {
+  const values = fieldMultiValues(field);
+  if (!values.length) {
+    return <EmptyCell />;
+  }
+
+  const visibleValues = values.slice(0, maxVisible);
+  const hiddenCount = values.length - visibleValues.length;
+  const title = values.map((value) => value.name).join(", ");
+
+  return (
+    <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden" title={title}>
+      {visibleValues.map((value) => (
+        <span
+          key={`${field?.id ?? "field"}-${value.name}`}
+          className="min-w-0 max-w-[92px] truncate rounded bg-[--status-done-bg] px-2 py-0.5 text-[11px] font-medium text-[--status-done-text]"
+        >
+          {compactFinanceLabel(value.name)}
+        </span>
+      ))}
+      {hiddenCount > 0 ? (
+        <span className="shrink-0 rounded bg-[--bg-4] px-1.5 py-0.5 text-[11px] font-medium text-[--color-text-secondary]">
+          +{hiddenCount}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function PortfolioChip({ field }: { field: ProjectCustomFieldValue | undefined }) {
+  const value = field?.enumOptionName ?? field?.displayValue;
+  if (!value) {
+    return <EmptyCell />;
+  }
+
+  return (
+    <span className={`inline-flex max-w-full truncate rounded px-2 py-0.5 text-[11px] font-medium ${portfolioChipTone(value)}`} title={value}>
+      {value}
+    </span>
+  );
+}
+
+function PortfolioNumberValue({ field }: { field: ProjectCustomFieldValue | undefined }) {
+  const value = field?.numberValue;
+  if (value == null) {
+    return <EmptyCell />;
+  }
+
+  return <span className="font-mono text-[12px] text-[--color-text-secondary]">{formatPortfolioNumber(value)}</span>;
+}
+
+function fieldMultiValues(field: ProjectCustomFieldValue | undefined): Array<{ name: string; color: string | null }> {
+  if (field?.multiEnumValues?.length) {
+    return field.multiEnumValues;
+  }
+
+  return (field?.displayValue ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, color: null }));
+}
+
+function compactFinanceLabel(value: string): string {
+  return value
+    .replace("Parcela - ", "P - ")
+    .replace("Estudo Preliminar + ART", "Estudo + ART")
+    .replace("Projeto Executivo", "Executivo")
+    .replace("Liberado Obra", "Obra");
+}
+
+function formatPortfolioNumber(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function portfolioChipTone(value: string): string {
+  const normalized = normalizeProjectFieldName(value);
+  if (["aprovado", "completo"].includes(normalized)) {
+    return "bg-[--status-done-bg] text-[--status-done-text]";
+  }
+  if (["parcial", "em analise"].includes(normalized)) {
+    return "bg-[--priority-low-bg] text-[--priority-low-text]";
+  }
+  if (normalized === "high") {
+    return "bg-[--priority-high-bg] text-[--priority-high-text]";
+  }
+  if (normalized === "medium") {
+    return "bg-[--priority-medium-bg] text-[--priority-medium-text]";
+  }
+  if (normalized === "low") {
+    return "bg-[--priority-low-bg] text-[--priority-low-text]";
+  }
+
+  return "bg-[--bg-4] text-[--color-text-secondary]";
+}
+
+function normalizeProjectFieldName(value: string | null | undefined): string {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeProjectSections(project: Project): Project {

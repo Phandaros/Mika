@@ -233,6 +233,7 @@ export type AsanaCustomFieldEnumOptionWhereInput = {
   enabled?: Prisma.BoolFilter<"AsanaCustomFieldEnumOption"> | boolean
   sortOrder?: Prisma.IntNullableFilter<"AsanaCustomFieldEnumOption"> | number | null
   customField?: Prisma.XOR<Prisma.AsanaCustomFieldScalarRelationFilter, Prisma.AsanaCustomFieldWhereInput>
+  projectValues?: Prisma.ProjectCustomFieldValueListRelationFilter
   taskValues?: Prisma.TaskCustomFieldValueListRelationFilter
 }
 
@@ -245,6 +246,7 @@ export type AsanaCustomFieldEnumOptionOrderByWithRelationInput = {
   enabled?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrderInput | Prisma.SortOrder
   customField?: Prisma.AsanaCustomFieldOrderByWithRelationInput
+  projectValues?: Prisma.ProjectCustomFieldValueOrderByRelationAggregateInput
   taskValues?: Prisma.TaskCustomFieldValueOrderByRelationAggregateInput
 }
 
@@ -260,6 +262,7 @@ export type AsanaCustomFieldEnumOptionWhereUniqueInput = Prisma.AtLeast<{
   enabled?: Prisma.BoolFilter<"AsanaCustomFieldEnumOption"> | boolean
   sortOrder?: Prisma.IntNullableFilter<"AsanaCustomFieldEnumOption"> | number | null
   customField?: Prisma.XOR<Prisma.AsanaCustomFieldScalarRelationFilter, Prisma.AsanaCustomFieldWhereInput>
+  projectValues?: Prisma.ProjectCustomFieldValueListRelationFilter
   taskValues?: Prisma.TaskCustomFieldValueListRelationFilter
 }, "id" | "asanaGid">
 
@@ -299,6 +302,7 @@ export type AsanaCustomFieldEnumOptionCreateInput = {
   enabled?: boolean
   sortOrder?: number | null
   customField: Prisma.AsanaCustomFieldCreateNestedOneWithoutEnumOptionsInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutEnumOptionInput
   taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutEnumOptionInput
 }
 
@@ -310,6 +314,7 @@ export type AsanaCustomFieldEnumOptionUncheckedCreateInput = {
   color?: string | null
   enabled?: boolean
   sortOrder?: number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutEnumOptionInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutEnumOptionInput
 }
 
@@ -321,6 +326,7 @@ export type AsanaCustomFieldEnumOptionUpdateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   customField?: Prisma.AsanaCustomFieldUpdateOneRequiredWithoutEnumOptionsNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutEnumOptionNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutEnumOptionNestedInput
 }
 
@@ -332,6 +338,7 @@ export type AsanaCustomFieldEnumOptionUncheckedUpdateInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput
 }
 
@@ -459,6 +466,22 @@ export type AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldNeste
   deleteMany?: Prisma.AsanaCustomFieldEnumOptionScalarWhereInput | Prisma.AsanaCustomFieldEnumOptionScalarWhereInput[]
 }
 
+export type AsanaCustomFieldEnumOptionCreateNestedOneWithoutProjectValuesInput = {
+  create?: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedCreateWithoutProjectValuesInput>
+  connectOrCreate?: Prisma.AsanaCustomFieldEnumOptionCreateOrConnectWithoutProjectValuesInput
+  connect?: Prisma.AsanaCustomFieldEnumOptionWhereUniqueInput
+}
+
+export type AsanaCustomFieldEnumOptionUpdateOneWithoutProjectValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedCreateWithoutProjectValuesInput>
+  connectOrCreate?: Prisma.AsanaCustomFieldEnumOptionCreateOrConnectWithoutProjectValuesInput
+  upsert?: Prisma.AsanaCustomFieldEnumOptionUpsertWithoutProjectValuesInput
+  disconnect?: Prisma.AsanaCustomFieldEnumOptionWhereInput | boolean
+  delete?: Prisma.AsanaCustomFieldEnumOptionWhereInput | boolean
+  connect?: Prisma.AsanaCustomFieldEnumOptionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionUpdateToOneWithWhereWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUpdateWithoutProjectValuesInput>, Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateWithoutProjectValuesInput>
+}
+
 export type AsanaCustomFieldEnumOptionCreateNestedOneWithoutTaskValuesInput = {
   create?: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionCreateWithoutTaskValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedCreateWithoutTaskValuesInput>
   connectOrCreate?: Prisma.AsanaCustomFieldEnumOptionCreateOrConnectWithoutTaskValuesInput
@@ -482,6 +505,7 @@ export type AsanaCustomFieldEnumOptionCreateWithoutCustomFieldInput = {
   color?: string | null
   enabled?: boolean
   sortOrder?: number | null
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutEnumOptionInput
   taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutEnumOptionInput
 }
 
@@ -492,6 +516,7 @@ export type AsanaCustomFieldEnumOptionUncheckedCreateWithoutCustomFieldInput = {
   color?: string | null
   enabled?: boolean
   sortOrder?: number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutEnumOptionInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutEnumOptionInput
 }
 
@@ -533,6 +558,66 @@ export type AsanaCustomFieldEnumOptionScalarWhereInput = {
   sortOrder?: Prisma.IntNullableFilter<"AsanaCustomFieldEnumOption"> | number | null
 }
 
+export type AsanaCustomFieldEnumOptionCreateWithoutProjectValuesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  color?: string | null
+  enabled?: boolean
+  sortOrder?: number | null
+  customField: Prisma.AsanaCustomFieldCreateNestedOneWithoutEnumOptionsInput
+  taskValues?: Prisma.TaskCustomFieldValueCreateNestedManyWithoutEnumOptionInput
+}
+
+export type AsanaCustomFieldEnumOptionUncheckedCreateWithoutProjectValuesInput = {
+  id?: string
+  asanaGid: string
+  customFieldId: string
+  name: string
+  color?: string | null
+  enabled?: boolean
+  sortOrder?: number | null
+  taskValues?: Prisma.TaskCustomFieldValueUncheckedCreateNestedManyWithoutEnumOptionInput
+}
+
+export type AsanaCustomFieldEnumOptionCreateOrConnectWithoutProjectValuesInput = {
+  where: Prisma.AsanaCustomFieldEnumOptionWhereUniqueInput
+  create: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedCreateWithoutProjectValuesInput>
+}
+
+export type AsanaCustomFieldEnumOptionUpsertWithoutProjectValuesInput = {
+  update: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionUpdateWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateWithoutProjectValuesInput>
+  create: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionCreateWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedCreateWithoutProjectValuesInput>
+  where?: Prisma.AsanaCustomFieldEnumOptionWhereInput
+}
+
+export type AsanaCustomFieldEnumOptionUpdateToOneWithWhereWithoutProjectValuesInput = {
+  where?: Prisma.AsanaCustomFieldEnumOptionWhereInput
+  data: Prisma.XOR<Prisma.AsanaCustomFieldEnumOptionUpdateWithoutProjectValuesInput, Prisma.AsanaCustomFieldEnumOptionUncheckedUpdateWithoutProjectValuesInput>
+}
+
+export type AsanaCustomFieldEnumOptionUpdateWithoutProjectValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customField?: Prisma.AsanaCustomFieldUpdateOneRequiredWithoutEnumOptionsNestedInput
+  taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutEnumOptionNestedInput
+}
+
+export type AsanaCustomFieldEnumOptionUncheckedUpdateWithoutProjectValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  customFieldId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput
+}
+
 export type AsanaCustomFieldEnumOptionCreateWithoutTaskValuesInput = {
   id?: string
   asanaGid: string
@@ -541,6 +626,7 @@ export type AsanaCustomFieldEnumOptionCreateWithoutTaskValuesInput = {
   enabled?: boolean
   sortOrder?: number | null
   customField: Prisma.AsanaCustomFieldCreateNestedOneWithoutEnumOptionsInput
+  projectValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutEnumOptionInput
 }
 
 export type AsanaCustomFieldEnumOptionUncheckedCreateWithoutTaskValuesInput = {
@@ -551,6 +637,7 @@ export type AsanaCustomFieldEnumOptionUncheckedCreateWithoutTaskValuesInput = {
   color?: string | null
   enabled?: boolean
   sortOrder?: number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutEnumOptionInput
 }
 
 export type AsanaCustomFieldEnumOptionCreateOrConnectWithoutTaskValuesInput = {
@@ -577,6 +664,7 @@ export type AsanaCustomFieldEnumOptionUpdateWithoutTaskValuesInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   customField?: Prisma.AsanaCustomFieldUpdateOneRequiredWithoutEnumOptionsNestedInput
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutEnumOptionNestedInput
 }
 
 export type AsanaCustomFieldEnumOptionUncheckedUpdateWithoutTaskValuesInput = {
@@ -587,6 +675,7 @@ export type AsanaCustomFieldEnumOptionUncheckedUpdateWithoutTaskValuesInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput
 }
 
 export type AsanaCustomFieldEnumOptionCreateManyCustomFieldInput = {
@@ -605,6 +694,7 @@ export type AsanaCustomFieldEnumOptionUpdateWithoutCustomFieldInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutEnumOptionNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUpdateManyWithoutEnumOptionNestedInput
 }
 
@@ -615,6 +705,7 @@ export type AsanaCustomFieldEnumOptionUncheckedUpdateWithoutCustomFieldInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sortOrder?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  projectValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput
   taskValues?: Prisma.TaskCustomFieldValueUncheckedUpdateManyWithoutEnumOptionNestedInput
 }
 
@@ -633,10 +724,12 @@ export type AsanaCustomFieldEnumOptionUncheckedUpdateManyWithoutCustomFieldInput
  */
 
 export type AsanaCustomFieldEnumOptionCountOutputType = {
+  projectValues: number
   taskValues: number
 }
 
 export type AsanaCustomFieldEnumOptionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  projectValues?: boolean | AsanaCustomFieldEnumOptionCountOutputTypeCountProjectValuesArgs
   taskValues?: boolean | AsanaCustomFieldEnumOptionCountOutputTypeCountTaskValuesArgs
 }
 
@@ -648,6 +741,13 @@ export type AsanaCustomFieldEnumOptionCountOutputTypeDefaultArgs<ExtArgs extends
    * Select specific fields to fetch from the AsanaCustomFieldEnumOptionCountOutputType
    */
   select?: Prisma.AsanaCustomFieldEnumOptionCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * AsanaCustomFieldEnumOptionCountOutputType without action
+ */
+export type AsanaCustomFieldEnumOptionCountOutputTypeCountProjectValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProjectCustomFieldValueWhereInput
 }
 
 /**
@@ -667,6 +767,7 @@ export type AsanaCustomFieldEnumOptionSelect<ExtArgs extends runtime.Types.Exten
   enabled?: boolean
   sortOrder?: boolean
   customField?: boolean | Prisma.AsanaCustomFieldDefaultArgs<ExtArgs>
+  projectValues?: boolean | Prisma.AsanaCustomFieldEnumOption$projectValuesArgs<ExtArgs>
   taskValues?: boolean | Prisma.AsanaCustomFieldEnumOption$taskValuesArgs<ExtArgs>
   _count?: boolean | Prisma.AsanaCustomFieldEnumOptionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["asanaCustomFieldEnumOption"]>
@@ -706,6 +807,7 @@ export type AsanaCustomFieldEnumOptionSelectScalar = {
 export type AsanaCustomFieldEnumOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "customFieldId" | "name" | "color" | "enabled" | "sortOrder", ExtArgs["result"]["asanaCustomFieldEnumOption"]>
 export type AsanaCustomFieldEnumOptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customField?: boolean | Prisma.AsanaCustomFieldDefaultArgs<ExtArgs>
+  projectValues?: boolean | Prisma.AsanaCustomFieldEnumOption$projectValuesArgs<ExtArgs>
   taskValues?: boolean | Prisma.AsanaCustomFieldEnumOption$taskValuesArgs<ExtArgs>
   _count?: boolean | Prisma.AsanaCustomFieldEnumOptionCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -720,6 +822,7 @@ export type $AsanaCustomFieldEnumOptionPayload<ExtArgs extends runtime.Types.Ext
   name: "AsanaCustomFieldEnumOption"
   objects: {
     customField: Prisma.$AsanaCustomFieldPayload<ExtArgs>
+    projectValues: Prisma.$ProjectCustomFieldValuePayload<ExtArgs>[]
     taskValues: Prisma.$TaskCustomFieldValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1125,6 +1228,7 @@ readonly fields: AsanaCustomFieldEnumOptionFieldRefs;
 export interface Prisma__AsanaCustomFieldEnumOptionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   customField<T extends Prisma.AsanaCustomFieldDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomFieldDefaultArgs<ExtArgs>>): Prisma.Prisma__AsanaCustomFieldClient<runtime.Types.Result.GetResult<Prisma.$AsanaCustomFieldPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  projectValues<T extends Prisma.AsanaCustomFieldEnumOption$projectValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomFieldEnumOption$projectValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   taskValues<T extends Prisma.AsanaCustomFieldEnumOption$taskValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AsanaCustomFieldEnumOption$taskValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1558,6 +1662,30 @@ export type AsanaCustomFieldEnumOptionDeleteManyArgs<ExtArgs extends runtime.Typ
    * Limit how many AsanaCustomFieldEnumOptions to delete.
    */
   limit?: number
+}
+
+/**
+ * AsanaCustomFieldEnumOption.projectValues
+ */
+export type AsanaCustomFieldEnumOption$projectValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProjectCustomFieldValue
+   */
+  select?: Prisma.ProjectCustomFieldValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProjectCustomFieldValue
+   */
+  omit?: Prisma.ProjectCustomFieldValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectCustomFieldValueInclude<ExtArgs> | null
+  where?: Prisma.ProjectCustomFieldValueWhereInput
+  orderBy?: Prisma.ProjectCustomFieldValueOrderByWithRelationInput | Prisma.ProjectCustomFieldValueOrderByWithRelationInput[]
+  cursor?: Prisma.ProjectCustomFieldValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProjectCustomFieldValueScalarFieldEnum | Prisma.ProjectCustomFieldValueScalarFieldEnum[]
 }
 
 /**

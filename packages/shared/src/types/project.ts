@@ -20,6 +20,7 @@ export interface Project {
   defaultView?: string | null;
   owner?: import("./user.js").User | null;
   customFields?: ProjectCustomField[];
+  customFieldValues?: ProjectCustomFieldValue[];
   taskCustomFields?: ProjectCustomField[];
   createdAt: string;
   updatedAt: string;
@@ -47,6 +48,34 @@ export interface ProjectCustomField {
     name: string;
     color: string | null;
     enabled: boolean;
+  }>;
+}
+
+export interface ProjectCustomFieldValue {
+  id: string;
+  customFieldId?: string | null;
+  customFieldGid?: string | null;
+  customFieldName: string | null;
+  mikaKey?: string | null;
+  mikaLabel?: string | null;
+  mikaSortOrder?: number | null;
+  mikaListVisible?: boolean;
+  mikaDetailVisible?: boolean;
+  type: string;
+  displayValue: string | null;
+  textValue?: string | null;
+  numberValue: number | null;
+  enumOptionName: string | null;
+  enumOptionColor?: string | null;
+  multiEnumValues?: Array<{
+    gid: string | null;
+    name: string;
+    color: string | null;
+  }>;
+  enumOptions?: Array<{
+    id: string;
+    name: string;
+    color: string | null;
   }>;
 }
 

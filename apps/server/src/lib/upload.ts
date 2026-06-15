@@ -14,7 +14,9 @@ export const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.ms-excel",
   "text/plain",
   "application/zip",
-  "application/x-zip-compressed"
+  "application/x-zip-compressed",
+  "application/vnd.rar",
+  "application/x-rar-compressed"
 ]);
 
 export const IMAGE_MIME_TYPES = new Set([
@@ -23,6 +25,9 @@ export const IMAGE_MIME_TYPES = new Set([
   "image/gif",
   "image/webp"
 ]);
+
+const ALLOWED_EXTENSION_FALLBACKS = new Set([".rar"]);
+const GENERIC_MIME_TYPES = new Set(["", "application/octet-stream"]);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -42,6 +47,12 @@ export const upload = multer({
   },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (GENERIC_MIME_TYPES.has(file.mimetype) && ALLOWED_EXTENSION_FALLBACKS.has(ext)) {
       cb(null, true);
       return;
     }

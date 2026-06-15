@@ -21,6 +21,10 @@ interface UseReviewsParams {
   limit?: number;
 }
 
+export interface ReviewDecisionPayload extends TaskReviewDecisionRequest {
+  files?: File[];
+}
+
 export function useReviews(params: UseReviewsParams) {
   return useQuery({
     queryKey: ["reviews", params],
@@ -57,8 +61,8 @@ export function useUpdateReview() {
 
 export function useApproveReview() {
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: TaskReviewDecisionRequest }) => {
-      const response = await api.post<ReviewResponse>(`/reviews/${id}/approve`, payload);
+    mutationFn: async ({ id, payload }: { id: string; payload: ReviewDecisionPayload }) => {
+      const response = await api.post<ReviewResponse>(`/reviews/${id}/approve`, reviewDecisionRequestBody(payload));
       return response.data.review;
     },
     onSuccess: () => {
@@ -69,14 +73,32 @@ export function useApproveReview() {
 
 export function useRejectReview() {
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: TaskReviewDecisionRequest }) => {
-      const response = await api.post<ReviewResponse>(`/reviews/${id}/reject`, payload);
+    mutationFn: async ({ id, payload }: { id: string; payload: ReviewDecisionPayload }) => {
+      const response = await api.post<ReviewResponse>(`/reviews/${id}/reject`, reviewDecisionRequestBody(payload));
       return response.data;
     },
     onSuccess: () => {
       void invalidateReviewWorkflowCaches();
     }
   });
+}
+
+function reviewDecisionRequestBody(payload: ReviewDecisionPayload): TaskReviewDecisionRequest | FormData {
+  if (!payload.files?.length) {
+    return { message: payload.message };
+  }
+
+  const formData = new FormData();
+
+  if (payload.message) {
+    formData.append("message", payload.message);
+  }
+
+  for (const file of payload.files) {
+    formData.append("files", file);
+  }
+
+  return formData;
 }
 
 async function invalidateReviewWorkflowCaches() {

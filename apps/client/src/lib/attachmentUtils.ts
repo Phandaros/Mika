@@ -11,7 +11,9 @@ export const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.ms-excel",
   "text/plain",
   "application/zip",
-  "application/x-zip-compressed"
+  "application/x-zip-compressed",
+  "application/vnd.rar",
+  "application/x-rar-compressed"
 ]);
 
 const IMAGE_MIME_TYPES = new Set([
@@ -32,7 +34,9 @@ const EXTENSION_TO_MIME: Record<string, string> = {
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ".xls": "application/vnd.ms-excel",
   ".txt": "text/plain",
-  ".zip": "application/zip"
+  ".msg": "text/plain",
+  ".zip": "application/zip",
+  ".rar": "application/vnd.rar"
 };
 
 export const ALLOWED_EXTENSIONS = new Set(Object.keys(EXTENSION_TO_MIME));
@@ -124,7 +128,7 @@ export function formatFileSize(bytes: number): string {
 }
 
 export const DOCUMENT_ACCEPT =
-  "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,application/vnd.ms-excel,.xls,text/plain,.txt,application/zip,.zip";
+  "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,application/vnd.ms-excel,.xls,text/plain,.txt,application/zip,.zip,application/vnd.rar,application/x-rar-compressed,.rar";
 
 export const IMAGE_ACCEPT = "image/jpeg,image/png,image/gif,image/webp";
 

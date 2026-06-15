@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { z } from "zod";
@@ -7,6 +8,9 @@ import { TaskStatus } from "../lib/enums.js";
 import { createAdjustmentTask } from "../lib/taskRules.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getAuthUser } from "../middleware/auth.js";
+import { createAndEmitNotification } from "../lib/notify.js";
+import { extractUserMentionIds } from "../lib/commentMentions.js";
+import { taskActivityTypes } from "../lib/taskActivity.js";
 
 const reviewStatusValues = ["PENDING", "APPROVED", "REJECTED"] as const;
 const listReviewsQuerySchema = z.object({
@@ -14,6 +18,9 @@ const listReviewsQuerySchema = z.object({
   assigneeId: z.string().optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(25)
+});
+const reviewDecisionSchema = z.object({
+  message: z.string().trim().optional()
 });
 
 const reviewInclude = {
@@ -24,6 +31,7 @@ const reviewInclude = {
 } satisfies Prisma.TaskReviewInclude;
 
 type ReviewRecord = Prisma.TaskReviewGetPayload<{ include: typeof reviewInclude }>;
+type UploadedFile = Express.Multer.File;
 
 async function taskFieldCatalog() {
   return prisma.asanaCustomField.findMany({
@@ -47,7 +55,7 @@ function toReviewDto(review: ReviewRecord, catalog: Awaited<ReturnType<typeof ta
 
   return {
     id: review.id,
-    title: `[REV] ${sourceTask.title}`,
+    title: sourceTask.title,
     discipline: "Revisão" as const,
     sourceTaskId: review.sourceTaskId,
     rootTaskId: review.rootTaskId,
@@ -65,6 +73,119 @@ function toReviewDto(review: ReviewRecord, catalog: Awaited<ReturnType<typeof ta
     reviewer: toPublicUser(review.reviewer),
     requestedBy: toPublicUser(review.requestedBy)
   };
+}
+
+function uploadedFiles(req: Parameters<RequestHandler>[0]): UploadedFile[] {
+  return Array.isArray(req.files) ? req.files : [];
+}
+
+async function cleanupFiles(files: UploadedFile[]): Promise<void> {
+  await Promise.all(files.map((file) => fs.unlink(file.path).catch(() => undefined)));
+}
+
+function parseDecisionBody(body: unknown): { message?: string } {
+  const parsed = reviewDecisionSchema.safeParse(body);
+
+  if (!parsed.success) {
+    throw new AppError(400, "Dados da decisão de revisão inválidos", parsed.error.flatten());
+  }
+
+  return parsed.data;
+}
+
+async function createReviewComment(
+  tx: Prisma.TransactionClient,
+  input: {
+    taskId: string;
+    authorId: string;
+    content: string;
+    files: UploadedFile[];
+  }
+): Promise<void> {
+  const comment = await tx.comment.create({
+    data: {
+      taskId: input.taskId,
+      authorId: input.authorId,
+      content: input.content
+    }
+  });
+
+  await tx.taskActivity.create({
+    data: {
+      taskId: input.taskId,
+      actorId: input.authorId,
+      type: taskActivityTypes.COMMENTED,
+      field: "comment",
+      toValue: comment.id
+    }
+  });
+
+  for (const file of input.files) {
+    await tx.attachment.create({
+      data: {
+        commentId: comment.id,
+        filename: file.originalname,
+        storedAs: file.filename,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        uploadedById: input.authorId
+      }
+    });
+  }
+}
+
+async function notifyReviewComment(options: {
+  taskId: string;
+  taskName: string;
+  content: string;
+  authorId: string;
+}) {
+  const task = await prisma.task.findUnique({
+    where: { id: options.taskId },
+    include: {
+      assignee: { select: { id: true } },
+      followers: { include: { user: { select: { id: true } } } }
+    }
+  });
+
+  if (!task) {
+    return;
+  }
+
+  const recipients = new Set<string>();
+  if (task.assignee) {
+    recipients.add(task.assignee.id);
+  }
+  for (const follower of task.followers) {
+    if (follower.user) {
+      recipients.add(follower.user.id);
+    }
+  }
+  recipients.delete(options.authorId);
+
+  for (const userId of recipients) {
+    await createAndEmitNotification({
+      userId,
+      type: "COMMENT_ADDED",
+      title: "Novo comentário",
+      message: `${options.taskName}: ${options.content.slice(0, 120)}${options.content.length > 120 ? "..." : ""}`,
+      taskId: options.taskId
+    });
+  }
+
+  for (const userId of extractUserMentionIds(options.content)) {
+    if (userId === options.authorId || recipients.has(userId)) {
+      continue;
+    }
+
+    await createAndEmitNotification({
+      userId,
+      type: "MENTIONED",
+      title: "Você foi mencionado",
+      message: `${options.taskName}: ${options.content.slice(0, 120)}${options.content.length > 120 ? "..." : ""}`,
+      taskId: options.taskId
+    });
+  }
 }
 
 export const listReviews: RequestHandler = async (req, res, next) => {
@@ -159,16 +280,20 @@ export const updateReview: RequestHandler = async (req, res, next) => {
 };
 
 export const approveReview: RequestHandler = async (req, res, next) => {
+  const files = uploadedFiles(req);
+  let filesLinked = false;
   try {
-    const body = req.body as { message?: string };
+    const body = parseDecisionBody(req.body);
     const reviewId = req.params.id;
     if (!reviewId) {
       throw new AppError(400, "Review id is required");
     }
-    const review = await prisma.$transaction(async (tx) => {
+    const authUser = getAuthUser(req);
+    const message = body.message?.trim() ?? "";
+    const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.taskReview.findUnique({
         where: { id: reviewId },
-        select: { id: true, sourceTaskId: true, status: true }
+        select: { id: true, sourceTaskId: true, status: true, sourceTask: { select: { id: true, name: true } } }
       });
 
       if (!existing) {
@@ -177,6 +302,15 @@ export const approveReview: RequestHandler = async (req, res, next) => {
 
       if (existing.status !== "PENDING") {
         throw new AppError(400, "Esta revisao ja foi decidida");
+      }
+
+      if (message || files.length > 0) {
+        await createReviewComment(tx, {
+          taskId: existing.sourceTaskId,
+          authorId: authUser.id,
+          content: message || "Anexos da revisão.",
+          files
+        });
       }
 
       await tx.task.update({
@@ -188,31 +322,52 @@ export const approveReview: RequestHandler = async (req, res, next) => {
         }
       });
 
-      return tx.taskReview.update({
+      const review = await tx.taskReview.update({
         where: { id: reviewId },
         data: {
           status: "APPROVED",
-          message: body.message?.trim() || null,
+          message: message || null,
           decidedAt: new Date()
         },
         include: reviewInclude
       });
+
+      return {
+        review,
+        commentTask: message || files.length > 0 ? { id: existing.sourceTaskId, name: existing.sourceTask.name, content: message || "Anexos da revisão." } : null
+      };
     });
+    filesLinked = Boolean(result.commentTask);
     const catalog = await taskFieldCatalog();
 
-    res.json({ review: toReviewDto(review, catalog) });
+    if (result.commentTask) {
+      await notifyReviewComment({
+        taskId: result.commentTask.id,
+        taskName: result.commentTask.name,
+        content: result.commentTask.content,
+        authorId: authUser.id
+      }).catch(() => undefined);
+    }
+
+    res.json({ review: toReviewDto(result.review, catalog) });
   } catch (error) {
+    if (!filesLinked) {
+      await cleanupFiles(files);
+    }
     next(error);
   }
 };
 
 export const rejectReview: RequestHandler = async (req, res, next) => {
+  const files = uploadedFiles(req);
+  let filesLinked = false;
   try {
-    const body = req.body as { message?: string };
+    const body = parseDecisionBody(req.body);
     const reviewId = req.params.id;
     if (!reviewId) {
       throw new AppError(400, "Review id is required");
     }
+    const authUser = getAuthUser(req);
     const message = body.message?.trim();
 
     if (!message) {
@@ -233,10 +388,20 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
         throw new AppError(400, "Esta revisao ja foi decidida");
       }
 
-      const adjustmentTaskId = await createAdjustmentTask(tx, reviewId, message);
+      const adjustmentTaskId = await createAdjustmentTask(tx, reviewId);
       const reviewSource = await tx.taskReview.findUniqueOrThrow({
         where: { id: reviewId },
         select: { sourceTaskId: true }
+      });
+      const adjustmentTask = await tx.task.findUniqueOrThrow({
+        where: { id: adjustmentTaskId },
+        select: { id: true, name: true }
+      });
+      await createReviewComment(tx, {
+        taskId: adjustmentTaskId,
+        authorId: authUser.id,
+        content: message,
+        files
       });
       await tx.task.update({
         where: { id: reviewSource.sourceTaskId },
@@ -256,12 +421,23 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
         include: reviewInclude
       });
 
-      return { review, adjustmentTaskId };
+      return { review, adjustmentTaskId, adjustmentTaskName: adjustmentTask.name };
     });
+    filesLinked = true;
     const catalog = await taskFieldCatalog();
+
+    await notifyReviewComment({
+      taskId: result.adjustmentTaskId,
+      taskName: result.adjustmentTaskName,
+      content: message,
+      authorId: authUser.id
+    }).catch(() => undefined);
 
     res.json({ review: toReviewDto(result.review, catalog), adjustmentTaskId: result.adjustmentTaskId });
   } catch (error) {
+    if (!filesLinked) {
+      await cleanupFiles(files);
+    }
     next(error);
   }
 };

@@ -10,27 +10,27 @@ datasource db {
 /// Usuários do app e usuários importados do Asana.
 /// Para usuários vindos do Asana, `passwordHash` pode ficar nulo.
 model User {
-  id           String   @id @default(cuid())
-  asanaGid     String?  @unique
-  email        String   @unique
+  id           String  @id @default(cuid())
+  asanaGid     String? @unique
+  email        String  @unique
   name         String
   passwordHash String?
-  role         String   @default("MEMBER")
-  isActive     Boolean  @default(true)
+  role         String  @default("MEMBER")
+  isActive     Boolean @default(true)
 
-  photo21x21   String?
-  photo27x27   String?
-  photo36x36   String?
-  photo60x60   String?
-  photo128x128 String?
+  photo21x21    String?
+  photo27x27    String?
+  photo36x36    String?
+  photo60x60    String?
+  photo128x128  String?
   photoOriginal String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownedProjects       Project[]             @relation("ProjectOwner")
-  assignedTasks       Task[]                @relation("TaskAssignee")
-  createdCustomFields AsanaCustomField[]    @relation("CustomFieldCreatedBy")
+  ownedProjects       Project[]          @relation("ProjectOwner")
+  assignedTasks       Task[]             @relation("TaskAssignee")
+  createdCustomFields AsanaCustomField[] @relation("CustomFieldCreatedBy")
   projectFollowers    ProjectFollower[]
   projectMembers      ProjectMember[]
   taskFollowers       TaskFollower[]
@@ -38,11 +38,11 @@ model User {
   comments            Comment[]
   taskActivities      TaskActivity[]
   notifications       Notification[]
-  createdHolidays     CompanyHoliday[]      @relation("HolidayCreator")
-  createdTasks        Task[]                @relation("TaskCreator")
-  requestedReviews    TaskReview[]          @relation("TaskReviewRequester")
-  assignedReviews     TaskReview[]          @relation("TaskReviewReviewer")
-  uploadedAttachments Attachment[]          @relation("AttachmentUploader")
+  createdHolidays     CompanyHoliday[]   @relation("HolidayCreator")
+  createdTasks        Task[]             @relation("TaskCreator")
+  requestedReviews    TaskReview[]       @relation("TaskReviewRequester")
+  assignedReviews     TaskReview[]       @relation("TaskReviewReviewer")
+  uploadedAttachments Attachment[]       @relation("AttachmentUploader")
   weeklyReports       WeeklyReport[]
 
   @@index([asanaGid])
@@ -81,8 +81,8 @@ model Notification {
 }
 
 model AsanaWorkspace {
-  id           String   @id @default(cuid())
-  asanaGid     String   @unique
+  id           String  @id @default(cuid())
+  asanaGid     String  @unique
   resourceType String?
   name         String
 
@@ -94,10 +94,10 @@ model AsanaWorkspace {
 }
 
 model Team {
-  id          String  @id @default(cuid())
-  asanaGid    String  @unique
-  name        String
-  description String?
+  id           String  @id @default(cuid())
+  asanaGid     String  @unique
+  name         String
+  description  String?
   workspaceGid String?
 
   createdAt DateTime @default(now())
@@ -110,8 +110,8 @@ model Team {
 }
 
 model Project {
-  id        String @id @default(cuid())
-  asanaGid  String @unique
+  id       String @id @default(cuid())
+  asanaGid String @unique
 
   name         String
   notes        String?
@@ -140,8 +140,8 @@ model Project {
   asanaCreatedAt  DateTime?
   asanaModifiedAt DateTime?
 
-  ownerGid    String?
-  teamGid     String?
+  ownerGid     String?
+  teamGid      String?
   workspaceGid String
 
   createdAt DateTime @default(now())
@@ -156,6 +156,7 @@ model Project {
   followers           ProjectFollower[]
   members             ProjectMember[]
   customFieldSettings ProjectCustomFieldSetting[]
+  customFieldValues   ProjectCustomFieldValue[]
 
   @@index([name])
   @@index([ownerGid])
@@ -216,39 +217,39 @@ model Task {
   resourceType String?
 
   assigneeStatus String?
-  completed      Boolean  @default(false)
-  liked          Boolean  @default(false)
-  numLikes       Int      @default(0)
-  numSubtasks    Int      @default(0)
+  completed      Boolean @default(false)
+  liked          Boolean @default(false)
+  numLikes       Int     @default(0)
+  numSubtasks    Int     @default(0)
 
   /// Campo local opcional para sua aplicação, sem depender do Asana.
   /// Status Mika opcional, preservado na coluna legado `localStatus`.
   mikaStatus String? @map("localStatus")
-  priority    String?
+  priority   String?
 
   /// Datas completas do Asana.
-  dueAt           DateTime?
+  dueAt            DateTime?
   completedAtAsana DateTime?
-  asanaCreatedAt  DateTime?
-  asanaModifiedAt DateTime?
+  asanaCreatedAt   DateTime?
+  asanaModifiedAt  DateTime?
 
   /// Campos date-only do Asana são mantidos como String para preservar YYYY-MM-DD.
   dueOn   String?
   startOn String?
 
   /// Esforço planejado (dias) para gráficos de carga; independente do Asana.
-  estimatedDays Float?
-  platform String?
-  discipline String?
-  estimatedTime Float?
-  maxDeadline DateTime?
+  estimatedDays  Float?
+  platform       String?
+  discipline     String?
+  estimatedTime  Float?
+  maxDeadline    DateTime?
   conclusionDays Float?
-  stage String?
+  stage          String?
 
-  assigneeGid String?
-  createdByUserId String?
+  assigneeGid        String?
+  createdByUserId    String?
   workflowRootTaskId String?
-  adjustmentNumber Int @default(0)
+  adjustmentNumber   Int     @default(0)
 
   /// `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
   parentAsanaGid String?
@@ -258,11 +259,11 @@ model Task {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignee User? @relation("TaskAssignee", fields: [assigneeGid], references: [asanaGid])
-  creator  User? @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  parent   Task? @relation("TaskSubtasks", fields: [parentId], references: [id])
-  subtasks Task[] @relation("TaskSubtasks")
-  workflowRoot Task? @relation("TaskWorkflowRoot", fields: [workflowRootTaskId], references: [id])
+  assignee            User?  @relation("TaskAssignee", fields: [assigneeGid], references: [asanaGid])
+  creator             User?  @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  parent              Task?  @relation("TaskSubtasks", fields: [parentId], references: [id])
+  subtasks            Task[] @relation("TaskSubtasks")
+  workflowRoot        Task?  @relation("TaskWorkflowRoot", fields: [workflowRootTaskId], references: [id])
   workflowAdjustments Task[] @relation("TaskWorkflowRoot")
 
   memberships       TaskMembership[]
@@ -271,9 +272,9 @@ model Task {
   tags              TaskTag[]
   customFieldValues TaskCustomFieldValue[]
   comments          Comment[]
-  activities         TaskActivity[]
-  requestedReviews  TaskReview[] @relation("TaskReviewSource")
-  rootReviews       TaskReview[] @relation("TaskReviewRoot")
+  activities        TaskActivity[]
+  requestedReviews  TaskReview[]           @relation("TaskReviewSource")
+  rootReviews       TaskReview[]           @relation("TaskReviewRoot")
   weeklyReportItems WeeklyReportItem[]
 
   @@index([name])
@@ -287,18 +288,18 @@ model Task {
 }
 
 model TaskReview {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   sourceTaskId  String
   rootTaskId    String
   reviewerId    String
   requestedById String?
-  status        String   @default("PENDING")
+  status        String    @default("PENDING")
   message       String?
   startOn       String?
   dueOn         String?
   decidedAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   sourceTask  Task  @relation("TaskReviewSource", fields: [sourceTaskId], references: [id], onDelete: Cascade)
   rootTask    Task  @relation("TaskReviewRoot", fields: [rootTaskId], references: [id], onDelete: Cascade)
@@ -313,15 +314,15 @@ model TaskReview {
 }
 
 model Comment {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   taskId   String
   authorId String?
   content  String
 
   /// Idempotência / rastreio de comentários importados do Asana
-  asanaGid         String?   @unique
-  authorAsanaGid   String?
-  asanaCreatedAt   DateTime?
+  asanaGid       String?   @unique
+  authorAsanaGid String?
+  asanaCreatedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -414,10 +415,10 @@ model TaskLike {
 }
 
 model Tag {
-  id            String   @id @default(cuid())
-  asanaGid      String   @unique
-  name          String
-  color         String?
+  id             String    @id @default(cuid())
+  asanaGid       String    @unique
+  name           String
+  color          String?
   asanaCreatedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -462,9 +463,10 @@ model AsanaCustomField {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  createdBy       User?                       @relation("CustomFieldCreatedBy", fields: [createdByGid], references: [asanaGid])
+  createdBy       User?                        @relation("CustomFieldCreatedBy", fields: [createdByGid], references: [asanaGid])
   enumOptions     AsanaCustomFieldEnumOption[]
   projectSettings ProjectCustomFieldSetting[]
+  projectValues   ProjectCustomFieldValue[]
   taskValues      TaskCustomFieldValue[]
 
   @@index([name])
@@ -478,14 +480,15 @@ model AsanaCustomFieldEnumOption {
   id       String @id @default(cuid())
   asanaGid String @unique
 
-  customFieldId  String
-  name           String
-  color          String?
-  enabled        Boolean @default(true)
-  sortOrder      Int?
+  customFieldId String
+  name          String
+  color         String?
+  enabled       Boolean @default(true)
+  sortOrder     Int?
 
-  customField AsanaCustomField      @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
-  taskValues  TaskCustomFieldValue[]
+  customField   AsanaCustomField          @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  projectValues ProjectCustomFieldValue[]
+  taskValues    TaskCustomFieldValue[]
 
   @@index([customFieldId])
   @@index([name])
@@ -503,6 +506,38 @@ model ProjectCustomFieldSetting {
   customField AsanaCustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, customFieldId])
+  @@index([customFieldId])
+}
+
+model ProjectCustomFieldValue {
+  id        String @id @default(cuid())
+  projectId String
+
+  /// Estes campos preservam o payload do Asana mesmo se a definicao nao tiver sido importada ainda.
+  customFieldGid  String
+  customFieldName String?
+  type            String
+  displayValue    String?
+  precision       Int?
+
+  textValue   String?
+  numberValue Float?
+
+  enumOptionGid   String?
+  enumOptionName  String?
+  enumOptionColor String?
+
+  multiEnumValues Json?
+
+  customFieldId String?
+  enumOptionId  String?
+
+  project     Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customField AsanaCustomField?           @relation(fields: [customFieldId], references: [id])
+  enumOption  AsanaCustomFieldEnumOption? @relation(fields: [enumOptionId], references: [id])
+
+  @@unique([projectId, customFieldGid])
+  @@index([customFieldGid])
   @@index([customFieldId])
 }
 
@@ -526,9 +561,9 @@ model TaskCustomFieldValue {
   customFieldId String?
   enumOptionId  String?
 
-  task        Task                         @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  customField AsanaCustomField?            @relation(fields: [customFieldId], references: [id])
-  enumOption  AsanaCustomFieldEnumOption?  @relation(fields: [enumOptionId], references: [id])
+  task        Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  customField AsanaCustomField?           @relation(fields: [customFieldId], references: [id])
+  enumOption  AsanaCustomFieldEnumOption? @relation(fields: [enumOptionId], references: [id])
 
   @@unique([taskId, customFieldGid])
   @@index([customFieldGid])
