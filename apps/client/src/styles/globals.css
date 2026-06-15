@@ -76,6 +76,24 @@
   --disc-ep-text: #facc15;
   --disc-none-bg: rgba(71,85,105,0.15);
   --disc-none-text: #64748b;
+  --disc-san-bg: rgba(56,189,248,0.15);
+  --disc-san-text: #7dd3fc;
+  --disc-arch-bg: rgba(99,102,241,0.15);
+  --disc-arch-text: #a5b4fc;
+  --disc-auto-bg: rgba(236,72,153,0.15);
+  --disc-auto-text: #f472b6;
+  --disc-gas-bg: rgba(244,114,182,0.15);
+  --disc-gas-text: #f9a8d4;
+  --disc-sprinkler-bg: rgba(132,204,22,0.15);
+  --disc-sprinkler-text: #a3e635;
+  --disc-drain-bg: rgba(45,212,191,0.15);
+  --disc-drain-text: #5eead4;
+  --disc-exhaust-bg: rgba(139,92,246,0.15);
+  --disc-exhaust-text: #c4b5fd;
+  --disc-vacuum-bg: rgba(167,139,250,0.15);
+  --disc-vacuum-text: #ddd6fe;
+  --disc-stair-bg: rgba(225,29,72,0.15);
+  --disc-stair-text: #fb7185;
 
   --plat-cad-bg: rgba(59,130,246,0.12);
   --plat-cad-text: #7db3f5;

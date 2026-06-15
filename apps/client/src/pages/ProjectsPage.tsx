@@ -1,19 +1,25 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { format } from "date-fns";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { FolderKanban, ListFilter, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ProjectStatus, type Project, type ProjectCustomFieldValue, type UpdateProjectRequest } from "shared";
+import {
+  ProjectStatus,
+  type PortfolioProjectSort,
+  type Project,
+  type ProjectCustomFieldValue,
+  type UpdateProjectRequest
+} from "shared";
 import { toast } from "sonner";
 import { ProjectForm } from "../components/project/ProjectForm";
 import {
   EditableBuilderField,
   EditableProjectAreaField,
-  EditableProjectEndDateField,
-  EditableProjectPlatformField,
-  EditableProjectStatusField
+  EditableProjectEnumField,
+  EditableProjectMultiEnumField,
+  EditableProjectPlatformField
 } from "../components/project/ProjectInlineFields";
+import { ProjectEnumChip, ProjectMultiEnumChips, ProjectPortfolioNumberValue } from "../components/project/ProjectPortfolioChips";
 import { DataTableContainer, EmptyCell } from "../components/shared/DataTable";
-import { ProjectPlatformChip, ProjectStatusChip } from "../components/shared/Chip";
+import { ProjectPlatformChip } from "../components/shared/Chip";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
@@ -21,34 +27,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
-import { usePatchProject, useProjects } from "../hooks/useProjects";
+import { usePatchProject, usePortfolioFacets, usePortfolioProjectsInfinite } from "../hooks/useProjects";
 import {
   countActiveFilterDimensions,
   defaultBuilderSelection,
   defaultPlatformSelection,
   defaultProjectStatusSelection,
-  matchesMultiSelect
+  isAllSelected
 } from "../lib/multiSelectFilter";
 import { formatProjectArea, projectStatusLabels } from "../lib/projectLabels";
 import { canManageTasks } from "../lib/permissions";
+import { buildProjectCustomFieldPatch, isProjectCustomFieldPatchValid, portfolioFieldLabels, projectCustomField } from "../lib/portfolioFields";
+import { resolveMutationErrorMessage } from "../lib/mutationErrors";
 import { resolveAsanaColor } from "../lib/utils";
 
-const portfolioFieldLabels = {
-  priority: "Priority",
-  ppciGas: "PPCI / GÁS",
-  eleApproval: "ELE APROV.",
-  hidApproval: "HID APROV.",
-  eleExecution: "ELE EXEC.",
-  hidExecution: "HID EXEC.",
-  projectCount: "Número de Projetos",
-  disciplineCount: "Número de Disciplinas (n)",
-  projectedArea: "Área projetada",
-  finance: "Financeiro."
-} as const;
+const ALL_PLATFORM_VALUES = ["CAD", "BIM", "none"] as const;
 
 export function ProjectsPage() {
   const { user } = useAuth();
-  const { data: projects = [], isLoading } = useProjects();
+  const { data: builderSuggestions = [], isLoading: facetsLoading } = usePortfolioFacets();
   const patchProjectMutation = usePatchProject();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -56,8 +53,8 @@ export function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectStatusSelection);
   const [platformFilter, setPlatformFilter] = useState<string[]>(defaultPlatformSelection);
   const [builderFilter, setBuilderFilter] = useState<string[]>([]);
-  const [builderFilterTouched, setBuilderFilterTouched] = useState(false);
-  const [sortMode, setSortMode] = useState("updatedAt-desc");
+  const builderFilterInitializedRef = useRef(false);
+  const [sortMode, setSortMode] = useState<PortfolioProjectSort>("updatedAt-desc");
   const canManage = canManageTasks(user);
 
   useEffect(() => {
@@ -66,13 +63,14 @@ export function ProjectsPage() {
     }
   }, [searchParams]);
 
-  const builderSuggestions = useMemo(
-    () =>
-      Array.from(new Set(projects.map((project) => project.builder?.trim()).filter((builder): builder is string => Boolean(builder)))).sort(
-        (a, b) => a.localeCompare(b, "pt-BR")
-      ),
-    [projects]
-  );
+  useEffect(() => {
+    if (builderFilterInitializedRef.current || facetsLoading) {
+      return;
+    }
+
+    setBuilderFilter(defaultBuilderSelection(builderSuggestions));
+    builderFilterInitializedRef.current = true;
+  }, [builderSuggestions, facetsLoading]);
 
   const statusOptions = useMemo(
     () => Object.values(ProjectStatus).map((status) => ({ value: status, label: projectStatusLabels[status] })),
@@ -94,11 +92,37 @@ export function ProjectsPage() {
     [builderSuggestions]
   );
 
-  useEffect(() => {
-    if (!builderFilterTouched) {
-      setBuilderFilter(defaultBuilderSelection(builderSuggestions));
-    }
-  }, [builderFilterTouched, builderSuggestions]);
+  const portfolioFilters = useMemo(() => {
+    const allStatuses = Object.values(ProjectStatus);
+    const allBuilders = ["none", ...builderSuggestions];
+
+    return {
+      sort: sortMode,
+      status: isAllSelected(new Set(statusFilter), allStatuses) ? undefined : statusFilter,
+      platform: isAllSelected(new Set(platformFilter), ALL_PLATFORM_VALUES) ? undefined : platformFilter,
+      builder: !builderFilterInitializedRef.current
+        ? undefined
+        : isAllSelected(new Set(builderFilter), allBuilders)
+          ? undefined
+          : builderFilter
+    };
+  }, [builderFilter, builderSuggestions, platformFilter, sortMode, statusFilter]);
+
+  const portfolioQueryEnabled = builderFilterInitializedRef.current || facetsLoading === false;
+  const {
+    data: portfolioPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: portfolioLoading
+  } = usePortfolioProjectsInfinite(portfolioFilters, portfolioQueryEnabled);
+
+  const projects = useMemo(() => portfolioPages?.pages.flatMap((page) => page.projects) ?? [], [portfolioPages]);
+  const totalCount = portfolioPages?.pages[0]?.totalCount ?? 0;
+  const showEmptySelection =
+    statusFilter.length === 0 ||
+    platformFilter.length === 0 ||
+    (builderFilterInitializedRef.current && builderFilter.length === 0);
 
   const activeFilterCount = countActiveFilterDimensions([
     { selected: statusFilter, all: statusOptions.map((option) => option.value) },
@@ -106,39 +130,14 @@ export function ProjectsPage() {
     { selected: builderFilter, all: builderOptions.map((option) => option.value) }
   ]);
 
-  const filteredProjects = useMemo(() => {
-    const statusSet = new Set(statusFilter);
-    const platformSet = new Set(platformFilter);
-    const builderSet = new Set(builderFilter);
-
-    const nextProjects = projects
-      .filter((project) => matchesMultiSelect(project.status, statusSet))
-      .filter((project) => matchesMultiSelect(project.platform ?? "none", platformSet))
-      .filter((project) => matchesMultiSelect(project.builder?.trim() || "none", builderSet))
-      .slice();
-
-    nextProjects.sort((a, b) => {
-      if (sortMode === "name-asc") {
-        return a.name.localeCompare(b.name, "pt-BR");
-      }
-
-      if (sortMode === "endDate-asc") {
-        return String(a.endDate ?? "9999").localeCompare(String(b.endDate ?? "9999"));
-      }
-
-      return String(b.updatedAt).localeCompare(String(a.updatedAt));
-    });
-
-    return nextProjects;
-  }, [builderFilter, platformFilter, projects, sortMode, statusFilter]);
-
   const patchProject = useCallback(
     (id: string, payload: UpdateProjectRequest) => {
       patchProjectMutation.mutate(
         { id, payload },
         {
-          onError: () => {
-            toast.error("Não foi possível salvar o projeto");
+          onError: (error) => {
+            console.error("[projects] Falha ao salvar projeto", error);
+            toast.error(resolveMutationErrorMessage(error, "Não foi possível salvar o projeto"));
           }
         }
       );
@@ -146,9 +145,11 @@ export function ProjectsPage() {
     [patchProjectMutation]
   );
 
-  if (isLoading) {
+  if (facetsLoading || portfolioLoading) {
     return <LoadingSpinner />;
   }
+
+  const visibleProjects = showEmptySelection ? [] : projects;
 
   return (
     <div className="grid gap-6">
@@ -160,7 +161,12 @@ export function ProjectsPage() {
             </span>
             <div>
               <p className="text-sm font-semibold uppercase text-brand-orange">Portfólio</p>
-              <h1 className="text-2xl font-bold text-text-primary">Projetos ativos</h1>
+              <h1 className="text-2xl font-bold text-text-primary">
+                Projetos ativos
+                {totalCount > 0 ? (
+                  <span className="ml-2 text-base font-medium text-[--color-text-muted]">({totalCount})</span>
+                ) : null}
+              </h1>
             </div>
           </div>
           <div className="relative flex flex-wrap items-center gap-2">
@@ -179,6 +185,7 @@ export function ProjectsPage() {
                   allSelectedLabel="Todos os status"
                   noneSelectedLabel="Nenhum status"
                   partialSelectedLabel={(count) => `${count} status`}
+                  showIsolateActions
                   onValuesChange={setStatusFilter}
                 />
                 <SearchableMultiSelect
@@ -188,6 +195,7 @@ export function ProjectsPage() {
                   allSelectedLabel="Todas as plataformas"
                   noneSelectedLabel="Nenhuma plataforma"
                   partialSelectedLabel={(count) => `${count} plataformas`}
+                  showIsolateActions
                   onValuesChange={setPlatformFilter}
                 />
                 <SearchableMultiSelect
@@ -197,10 +205,8 @@ export function ProjectsPage() {
                   allSelectedLabel="Todas as construtoras"
                   noneSelectedLabel="Nenhuma construtora"
                   partialSelectedLabel={(count) => `${count} construtoras`}
-                  onValuesChange={(values) => {
-                    setBuilderFilterTouched(true);
-                    setBuilderFilter(values);
-                  }}
+                  showIsolateActions
+                  onValuesChange={setBuilderFilter}
                 />
               </PopoverContent>
             </Popover>
@@ -220,7 +226,7 @@ export function ProjectsPage() {
                     { value: "endDate-asc", label: "Entrega mais próxima" }
                   ]}
                   searchPlaceholder="Buscar ordenação..."
-                  onValueChange={setSortMode}
+                  onValueChange={(value) => setSortMode(value as PortfolioProjectSort)}
                 />
               </PopoverContent>
             </Popover>
@@ -256,13 +262,18 @@ export function ProjectsPage() {
       ) : null}
 
       <ProjectsPortfolioTable
-        projects={filteredProjects}
+        projects={visibleProjects}
         canManage={canManage}
         builderSuggestions={builderSuggestions}
+        hasNextPage={Boolean(hasNextPage)}
+        isFetchingNextPage={isFetchingNextPage}
         onEditProject={setEditingProject}
+        onLoadMore={() => {
+          void fetchNextPage();
+        }}
         onPatchProject={patchProject}
       />
-      {filteredProjects.length === 0 ? <EmptyState title="Nenhum projeto encontrado" /> : null}
+      {visibleProjects.length === 0 ? <EmptyState title="Nenhum projeto encontrado" /> : null}
     </div>
   );
 }
@@ -271,18 +282,50 @@ function ProjectsPortfolioTable({
   projects,
   canManage,
   builderSuggestions,
+  hasNextPage,
+  isFetchingNextPage,
   onEditProject,
+  onLoadMore,
   onPatchProject
 }: {
   projects: Project[];
   canManage: boolean;
   builderSuggestions: string[];
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
   onEditProject: (project: Project) => void;
+  onLoadMore: () => void;
   onPatchProject: (id: string, payload: UpdateProjectRequest) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    const root = scrollRef.current;
+    if (!target || !root || !hasNextPage) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !isFetchingNextPage) {
+          onLoadMore();
+        }
+      },
+      { root, rootMargin: "240px" }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, onLoadMore, projects.length]);
+
   return (
-    <DataTableContainer>
-      <table className="w-full min-w-[2380px] table-fixed border-collapse bg-[--bg-2] text-sm">
+    <DataTableContainer ref={scrollRef} className="max-h-[calc(100vh-220px)] overflow-y-auto">
+      <table className="w-full min-w-[1680px] table-fixed border-collapse bg-[--bg-2] text-sm">
         <thead className="sticky top-0 z-10 bg-[--bg-1] text-left">
           <tr className="border-b border-[--color-border]">
             <th className="w-[320px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Nome</th>
@@ -290,19 +333,13 @@ function ProjectsPortfolioTable({
             <th className="w-[130px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Plataforma</th>
             <th className="w-[130px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Área</th>
             <th className="w-[240px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Financeiro</th>
-            <th className="w-[220px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Número de Projetos</th>
-            <th className="w-[92px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Disc.</th>
+            <th className="w-[220px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Disciplinas</th>
             <th className="w-[130px] px-3 py-2 text-right text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Área proj.</th>
-            <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Prioridade</th>
             <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">PPCI/GÁS</th>
             <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">ELE APROV.</th>
             <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">HID APROV.</th>
             <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">ELE EXEC.</th>
             <th className="w-[110px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">HID EXEC.</th>
-            <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Status</th>
-            <th className="w-[120px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Tarefas</th>
-            <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Entrega</th>
-            <th className="w-[150px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Atualizado</th>
             {canManage ? (
               <th className="w-[90px] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted]">Editar</th>
             ) : null}
@@ -310,8 +347,6 @@ function ProjectsPortfolioTable({
         </thead>
         <tbody>
           {projects.map((project) => {
-            const taskCount =
-              (project.sections ?? project.disciplines)?.reduce((total, discipline) => total + (discipline.tasks?.length ?? 0), 0) ?? 0;
             const iconTokens = resolveAsanaColor(project.color ?? "");
             const financeField = projectCustomField(project, portfolioFieldLabels.finance);
 
@@ -372,61 +407,123 @@ function ProjectsPortfolioTable({
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <MultiEnumChips field={financeField} maxVisible={2} />
-                </td>
-                <td className="px-3 py-2">
-                  <MultiEnumChips field={projectCustomField(project, portfolioFieldLabels.projectCount)} maxVisible={2} />
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <PortfolioNumberValue field={projectCustomField(project, portfolioFieldLabels.disciplineCount)} />
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <PortfolioNumberValue field={projectCustomField(project, portfolioFieldLabels.projectedArea)} />
-                </td>
-                <td className="px-3 py-2">
-                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.priority)} />
-                </td>
-                <td className="px-3 py-2">
-                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.ppciGas)} />
-                </td>
-                <td className="px-3 py-2">
-                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.eleApproval)} />
-                </td>
-                <td className="px-3 py-2">
-                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.hidApproval)} />
-                </td>
-                <td className="px-3 py-2">
-                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.eleExecution)} />
-                </td>
-                <td className="px-3 py-2">
-                  <PortfolioChip field={projectCustomField(project, portfolioFieldLabels.hidExecution)} />
+                  {canManage ? (
+                    <EditableProjectMultiEnumField
+                      field={financeField}
+                      compactLabels
+                      variant="table"
+                      onSave={(value) => saveProjectCustomField(project, financeField, value, onPatchProject)}
+                    />
+                  ) : (
+                    <ProjectMultiEnumChips field={financeField} maxVisible={2} compactLabels />
+                  )}
                 </td>
                 <td className="px-3 py-2">
                   {canManage ? (
-                    <EditableProjectStatusField
-                      value={project.status}
+                    <EditableProjectMultiEnumField
+                      field={projectCustomField(project, portfolioFieldLabels.projectCount)}
                       variant="table"
-                      onSave={(status) => onPatchProject(project.id, { status })}
+                      onSave={(value) =>
+                        saveProjectCustomField(
+                          project,
+                          projectCustomField(project, portfolioFieldLabels.projectCount),
+                          value,
+                          onPatchProject
+                        )
+                      }
                     />
                   ) : (
-                    <ProjectStatusChip status={project.status} />
+                    <ProjectMultiEnumChips field={projectCustomField(project, portfolioFieldLabels.projectCount)} maxVisible={2} />
                   )}
                 </td>
-                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{taskCount}</td>
-                <td className="px-3 py-2 text-[13px] text-[--color-text-primary]">
+                <td className="px-3 py-2 text-right">
+                  <ProjectPortfolioNumberValue field={projectCustomField(project, portfolioFieldLabels.projectedArea)} />
+                </td>
+                <td className="px-3 py-2">
                   {canManage ? (
-                    <EditableProjectEndDateField
-                      value={project.endDate}
+                    <EditableProjectEnumField
+                      field={projectCustomField(project, portfolioFieldLabels.ppciGas)}
                       variant="table"
-                      onSave={(endDate) => onPatchProject(project.id, { endDate })}
+                      onSave={(value) =>
+                        saveProjectCustomField(project, projectCustomField(project, portfolioFieldLabels.ppciGas), value, onPatchProject)
+                      }
                     />
-                  ) : project.endDate ? (
-                    format(new Date(project.endDate), "dd/MM/yyyy")
                   ) : (
-                    <EmptyCell />
+                    <ProjectEnumChip field={projectCustomField(project, portfolioFieldLabels.ppciGas)} />
                   )}
                 </td>
-                <td className="px-3 py-2 text-[13px] text-[--color-text-secondary]">{format(new Date(project.updatedAt), "dd/MM/yyyy")}</td>
+                <td className="px-3 py-2">
+                  {canManage ? (
+                    <EditableProjectEnumField
+                      field={projectCustomField(project, portfolioFieldLabels.eleApproval)}
+                      variant="table"
+                      onSave={(value) =>
+                        saveProjectCustomField(
+                          project,
+                          projectCustomField(project, portfolioFieldLabels.eleApproval),
+                          value,
+                          onPatchProject
+                        )
+                      }
+                    />
+                  ) : (
+                    <ProjectEnumChip field={projectCustomField(project, portfolioFieldLabels.eleApproval)} />
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {canManage ? (
+                    <EditableProjectEnumField
+                      field={projectCustomField(project, portfolioFieldLabels.hidApproval)}
+                      variant="table"
+                      onSave={(value) =>
+                        saveProjectCustomField(
+                          project,
+                          projectCustomField(project, portfolioFieldLabels.hidApproval),
+                          value,
+                          onPatchProject
+                        )
+                      }
+                    />
+                  ) : (
+                    <ProjectEnumChip field={projectCustomField(project, portfolioFieldLabels.hidApproval)} />
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {canManage ? (
+                    <EditableProjectEnumField
+                      field={projectCustomField(project, portfolioFieldLabels.eleExecution)}
+                      variant="table"
+                      onSave={(value) =>
+                        saveProjectCustomField(
+                          project,
+                          projectCustomField(project, portfolioFieldLabels.eleExecution),
+                          value,
+                          onPatchProject
+                        )
+                      }
+                    />
+                  ) : (
+                    <ProjectEnumChip field={projectCustomField(project, portfolioFieldLabels.eleExecution)} />
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {canManage ? (
+                    <EditableProjectEnumField
+                      field={projectCustomField(project, portfolioFieldLabels.hidExecution)}
+                      variant="table"
+                      onSave={(value) =>
+                        saveProjectCustomField(
+                          project,
+                          projectCustomField(project, portfolioFieldLabels.hidExecution),
+                          value,
+                          onPatchProject
+                        )
+                      }
+                    />
+                  ) : (
+                    <ProjectEnumChip field={projectCustomField(project, portfolioFieldLabels.hidExecution)} />
+                  )}
+                </td>
                 {canManage ? (
                   <td className="px-3 py-2">
                     <Button
@@ -444,123 +541,38 @@ function ProjectsPortfolioTable({
               </tr>
             );
           })}
+          {hasNextPage ? (
+            <tr ref={loadMoreRef}>
+              <td colSpan={canManage ? 13 : 12} className="px-3 py-4 text-center text-sm text-[--color-text-muted]">
+                {isFetchingNextPage ? "Carregando mais projetos..." : "Role para carregar mais"}
+              </td>
+            </tr>
+          ) : null}
         </tbody>
       </table>
     </DataTableContainer>
   );
 }
 
-function projectCustomField(project: Project, name: string): ProjectCustomFieldValue | undefined {
-  const target = normalizeProjectFieldName(name);
-  return project.customFieldValues?.find((field) => normalizeProjectFieldName(field.customFieldName ?? field.mikaLabel) === target);
-}
-
-function MultiEnumChips({ field, maxVisible }: { field: ProjectCustomFieldValue | undefined; maxVisible: number }) {
-  const values = fieldMultiValues(field);
-  if (!values.length) {
-    return <EmptyCell />;
+function saveProjectCustomField(
+  project: Project,
+  field: ProjectCustomFieldValue | undefined,
+  value: string | number | string[] | null,
+  onPatchProject: (id: string, payload: UpdateProjectRequest) => void
+) {
+  if (!field) {
+    return;
   }
 
-  const visibleValues = values.slice(0, maxVisible);
-  const hiddenCount = values.length - visibleValues.length;
-  const title = values.map((value) => value.name).join(", ");
-
-  return (
-    <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden" title={title}>
-      {visibleValues.map((value) => (
-        <span
-          key={`${field?.id ?? "field"}-${value.name}`}
-          className="min-w-0 max-w-[92px] truncate rounded bg-[--status-done-bg] px-2 py-0.5 text-[11px] font-medium text-[--status-done-text]"
-        >
-          {compactFinanceLabel(value.name)}
-        </span>
-      ))}
-      {hiddenCount > 0 ? (
-        <span className="shrink-0 rounded bg-[--bg-4] px-1.5 py-0.5 text-[11px] font-medium text-[--color-text-secondary]">
-          +{hiddenCount}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function PortfolioChip({ field }: { field: ProjectCustomFieldValue | undefined }) {
-  const value = field?.enumOptionName ?? field?.displayValue;
-  if (!value) {
-    return <EmptyCell />;
+  const patch = buildProjectCustomFieldPatch(project, field, value);
+  if (!isProjectCustomFieldPatchValid(patch)) {
+    toast.error("Não foi possível identificar o campo do projeto para salvar.");
+    return;
   }
 
-  return (
-    <span className={`inline-flex max-w-full truncate rounded px-2 py-0.5 text-[11px] font-medium ${portfolioChipTone(value)}`} title={value}>
-      {value}
-    </span>
-  );
-}
-
-function PortfolioNumberValue({ field }: { field: ProjectCustomFieldValue | undefined }) {
-  const value = field?.numberValue;
-  if (value == null) {
-    return <EmptyCell />;
-  }
-
-  return <span className="font-mono text-[12px] text-[--color-text-secondary]">{formatPortfolioNumber(value)}</span>;
-}
-
-function fieldMultiValues(field: ProjectCustomFieldValue | undefined): Array<{ name: string; color: string | null }> {
-  if (field?.multiEnumValues?.length) {
-    return field.multiEnumValues;
-  }
-
-  return (field?.displayValue ?? "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .map((name) => ({ name, color: null }));
-}
-
-function compactFinanceLabel(value: string): string {
-  return value
-    .replace("Parcela - ", "P - ")
-    .replace("Estudo Preliminar + ART", "Estudo + ART")
-    .replace("Projeto Executivo", "Executivo")
-    .replace("Liberado Obra", "Obra");
-}
-
-function formatPortfolioNumber(value: number): string {
-  return value.toLocaleString("pt-BR", {
-    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
-    maximumFractionDigits: 2
+  onPatchProject(project.id, {
+    customFieldValues: [patch]
   });
-}
-
-function portfolioChipTone(value: string): string {
-  const normalized = normalizeProjectFieldName(value);
-  if (["aprovado", "completo"].includes(normalized)) {
-    return "bg-[--status-done-bg] text-[--status-done-text]";
-  }
-  if (["parcial", "em analise"].includes(normalized)) {
-    return "bg-[--priority-low-bg] text-[--priority-low-text]";
-  }
-  if (normalized === "high") {
-    return "bg-[--priority-high-bg] text-[--priority-high-text]";
-  }
-  if (normalized === "medium") {
-    return "bg-[--priority-medium-bg] text-[--priority-medium-text]";
-  }
-  if (normalized === "low") {
-    return "bg-[--priority-low-bg] text-[--priority-low-text]";
-  }
-
-  return "bg-[--bg-4] text-[--color-text-secondary]";
-}
-
-function normalizeProjectFieldName(value: string | null | undefined): string {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
 }
 
 function normalizeProjectSections(project: Project): Project {

@@ -24,6 +24,8 @@ interface SearchableMultiSelectProps {
   noneSelectedLabel?: string;
   partialSelectedLabel?: (count: number) => string;
   renderOption?: (option: SearchableSelectOption) => ReactNode;
+  renderTrigger?: (values: string[], placeholder: string) => ReactNode;
+  showIsolateActions?: boolean;
   showBulkActions?: boolean;
 }
 
@@ -43,6 +45,8 @@ export function SearchableMultiSelect({
   noneSelectedLabel = "Nenhum selecionado",
   partialSelectedLabel = (count) => `${count} selecionados`,
   renderOption,
+  renderTrigger,
+  showIsolateActions = false,
   showBulkActions = true
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false);
@@ -102,8 +106,8 @@ export function SearchableMultiSelect({
           className={cn("h-10 w-full justify-between px-3 text-left", className, triggerClassName)}
           disabled={disabled}
         >
-          <span className={cn("min-w-0 truncate", values.length > 0 ? "text-text-primary" : "text-text-muted")}>
-            {values.length > 0 ? triggerLabel : placeholder}
+          <span className={cn("min-w-0 flex-1 overflow-hidden", values.length > 0 ? "text-text-primary" : "text-text-muted")}>
+            {renderTrigger ? renderTrigger(values, placeholder) : values.length > 0 ? triggerLabel : placeholder}
           </span>
           <ChevronDown size={16} className="shrink-0 text-text-muted" />
         </Button>
@@ -156,7 +160,29 @@ export function SearchableMultiSelect({
                     >
                       {checked ? <Check size={12} className="text-brand-orange" /> : null}
                     </span>
-                    {renderOption?.(option) ?? option.render ?? <DefaultOption option={option} />}
+                    <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                      {renderOption?.(option) ?? option.render ?? <DefaultOption option={option} />}
+                    </span>
+                    {showIsolateActions ? (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="ml-auto shrink-0 text-[11px] font-semibold text-[--color-text-secondary] transition hover:text-brand-orange"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onValuesChange([option.value]);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onValuesChange([option.value]);
+                          }
+                        }}
+                      >
+                        Apenas
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}

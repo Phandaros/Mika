@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
-import { ProjectStatus } from "shared";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ProjectStatus, type ProjectCustomFieldValue } from "shared";
 import { projectStatusLabels } from "../../lib/projectLabels";
+import { fieldMultiValues } from "../../lib/portfolioFields";
+import { portfolioEnumColor, portfolioFieldLabel } from "../../lib/portfolioEnumColor";
 import { cn } from "../../lib/utils";
 import { ProjectPlatformChip, ProjectStatusChip } from "../shared/Chip";
+import { StatusOptionPill } from "../shared/statusVisuals";
 import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
+import { SearchableMultiSelect } from "../ui/searchable-multi-select";
 import { SearchableSelect } from "../ui/searchable-select";
 import { EmptyField, formatDecimal } from "../task/TaskPanelPrimitives";
+import { ProjectMultiEnumChips, ProjectEnumChip } from "./ProjectPortfolioChips";
 import { BuilderCombobox } from "./BuilderCombobox";
 
 export type ProjectInlineFieldVariant = "detail" | "table";
@@ -184,6 +189,144 @@ export function EditableProjectEndDateField({
       onValueChange={(endDate) => onSave(endDate)}
       placeholder="—"
       className={datePickerClass(variant)}
+    />
+  );
+}
+
+export function EditableProjectEnumField({
+  field,
+  onSave,
+  variant = "table"
+}: {
+  field: ProjectCustomFieldValue | undefined;
+  onSave: (value: string | null) => void;
+  variant?: ProjectInlineFieldVariant;
+}) {
+  const fieldLabel = portfolioFieldLabel(field);
+  const enumOptions = field?.enumOptions?.filter((option) => option.name) ?? [];
+  const currentValue = field?.enumOptionName ?? field?.displayValue ?? null;
+
+  if (!field || enumOptions.length === 0) {
+    return <ProjectEnumChip field={field} />;
+  }
+
+  return (
+    <SearchableSelect
+      value={currentValue ?? "none"}
+      options={[
+        { value: "none", label: "—", render: <EmptyField /> },
+        ...enumOptions.map((option) => ({
+          value: option.name,
+          label: option.name,
+          render: (
+            <StatusOptionPill
+              label={option.name}
+              color={portfolioEnumColor(fieldLabel, option.name, option.color)}
+            />
+          )
+        }))
+      ]}
+      searchPlaceholder="Buscar..."
+      triggerClassName={selectTriggerClass(variant)}
+      contentClassName={popoverContentClass(variant)}
+      showSelectionIndicator={false}
+      renderValue={(option) =>
+        option.value === "none" ? (
+          <EmptyField />
+        ) : (
+          <StatusOptionPill
+            label={option.label}
+            color={portfolioEnumColor(fieldLabel, option.label, enumOptions.find((item) => item.name === option.label)?.color)}
+          />
+        )
+      }
+      onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
+    />
+  );
+}
+
+export function EditableProjectMultiEnumField({
+  field,
+  onSave,
+  variant = "table",
+  compactLabels = false
+}: {
+  field: ProjectCustomFieldValue | undefined;
+  onSave: (value: string[]) => void;
+  variant?: ProjectInlineFieldVariant;
+  compactLabels?: boolean;
+}) {
+  const fieldLabel = portfolioFieldLabel(field);
+  const enumOptions = field?.enumOptions?.filter((option) => option.name) ?? [];
+  const selectedValues = useMemo(() => fieldMultiValues(field).map((value) => value.name), [field]);
+  const [draftValues, setDraftValues] = useState(selectedValues);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setDraftValues(selectedValues);
+  }, [selectedValues]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  if (!field || enumOptions.length === 0) {
+    return <ProjectMultiEnumChips field={field} compactLabels={compactLabels} />;
+  }
+
+  const options = enumOptions.map((option) => ({
+    value: option.name,
+    label: option.name,
+    render: (
+      <StatusOptionPill label={option.name} color={portfolioEnumColor(fieldLabel, option.name, option.color)} />
+    )
+  }));
+
+  return (
+    <SearchableMultiSelect
+      values={draftValues}
+      options={options}
+      searchPlaceholder="Buscar..."
+      placeholder="—"
+      triggerClassName={cn(
+        selectTriggerClass(variant),
+        "h-auto min-h-7 max-w-full items-start py-1",
+        variant === "table" ? "max-w-none" : ""
+      )}
+      contentClassName={popoverContentClass(variant)}
+      noneSelectedLabel="Nenhum selecionado"
+      partialSelectedLabel={(count) => `${count} selecionados`}
+      showBulkActions
+      renderTrigger={(values) =>
+        values.length > 0 ? (
+          <ProjectMultiEnumChips
+            field={{
+              ...field,
+              multiEnumValues: values.map((name) => {
+                const match = enumOptions.find((option) => option.name === name);
+                return { gid: null, name, color: match?.color ?? null };
+              })
+            }}
+            maxVisible={2}
+            compactLabels={compactLabels}
+          />
+        ) : (
+          <span className="text-[--color-text-muted]">—</span>
+        )
+      }
+      onValuesChange={(nextValues) => {
+        setDraftValues(nextValues);
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => {
+          onSave(nextValues);
+        }, 350);
+      }}
     />
   );
 }

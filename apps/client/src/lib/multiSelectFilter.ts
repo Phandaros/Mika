@@ -57,5 +57,11 @@ export function formatMultiSelectTriggerLabel(
 export function countActiveFilterDimensions(
   dimensions: Array<{ selected: readonly string[]; all: readonly string[] }>
 ): number {
-  return dimensions.filter(({ selected, all }) => !isAllSelected(new Set(selected), all)).length;
+  return dimensions.filter(({ selected, all }) => {
+    if (selected.length === 0) {
+      return false;
+    }
+
+    return !isAllSelected(new Set(selected), all);
+  }).length;
 }

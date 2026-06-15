@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode, ThHTMLAttributes } from "react";
+import { forwardRef, type HTMLAttributes, ReactNode, ThHTMLAttributes } from "react";
 import { ArrowDown, ArrowDownUp, ArrowUp } from "lucide-react";
 import { cn, formatDateOnly } from "../../lib/utils";
 
@@ -24,13 +24,16 @@ interface DataTableCellProps extends HTMLAttributes<HTMLTableCellElement> {
   align?: Align;
 }
 
-export function DataTableContainer({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+export const DataTableContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function DataTableContainer(
+  { className, children, ...props },
+  ref
+) {
   return (
-    <div className={cn("w-full overflow-x-auto rounded-md border border-[--color-border]", className)} {...props}>
+    <div ref={ref} className={cn("w-full overflow-x-auto rounded-md border border-[--color-border]", className)} {...props}>
       {children}
     </div>
   );
-}
+});
 
 export function DataTable({ minWidth = "1100px", className, style, children, ...props }: DataTableProps) {
   return (

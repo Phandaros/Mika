@@ -1,7 +1,7 @@
 import type { DownloadProgress, UpdateInfo } from "shared";
 
 const DEFAULT_SERVER_HOST = (import.meta.env.VITE_DEFAULT_SERVER_HOST as string | undefined)?.trim() || "";
-const SERVER_PORT = "3001";
+const SERVER_PORT = import.meta.env.DEV ? "3101" : "3001";
 
 interface DesktopApi {
   isDesktop: true;
@@ -70,6 +70,8 @@ function browserServerUrl(): string {
 
     if (!parsedEnvUrl.port) {
       parsedEnvUrl.port = SERVER_PORT;
+    } else if (import.meta.env.DEV && parsedEnvUrl.port === "3001") {
+      parsedEnvUrl.port = "3101";
     }
 
     return trimTrailingSlash(parsedEnvUrl.toString());

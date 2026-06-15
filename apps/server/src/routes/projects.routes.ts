@@ -4,6 +4,8 @@ import {
   createProject,
   deleteProject,
   getProjectById,
+  listPortfolioFacets,
+  listPortfolioProjects,
   listProjects,
   listWorkloadTasks,
   updateProject
@@ -15,6 +17,13 @@ import { validateBody } from "../middleware/validate.js";
 
 const router = Router();
 
+const customFieldValueSchema = z.object({
+  id: z.string().optional(),
+  customFieldGid: z.string().optional(),
+  mikaKey: z.string().optional(),
+  value: z.union([z.string(), z.number(), z.array(z.string())]).nullable()
+});
+
 const projectSchema = z.object({
   name: z.string().min(2),
   description: z.string().nullable().optional(),
@@ -25,11 +34,14 @@ const projectSchema = z.object({
   status: z.nativeEnum(ProjectStatus).optional(),
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),
-  disciplineTypes: z.array(z.string()).optional()
+  disciplineTypes: z.array(z.string()).optional(),
+  customFieldValues: z.array(customFieldValueSchema).optional()
 });
 
 const updateProjectSchema = projectSchema.partial();
 
+router.get("/projects/portfolio/facets", auth, listPortfolioFacets);
+router.get("/projects/portfolio", auth, listPortfolioProjects);
 router.get("/projects", auth, listProjects);
 router.get("/projects/:id/workload-tasks", auth, listWorkloadTasks);
 router.get("/projects/:id", auth, getProjectById);

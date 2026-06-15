@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "../generated/prisma/client.js";
 import { DisciplineStatus, DisciplineType, Priority, ProjectStatus } from "./enums.js";
+import { enrichDerivedPortfolioCustomFieldValues } from "./projectCustomFields.js";
 import { publicTaskStatus } from "./taskStatus.js";
 
 export const userSelect = {
@@ -110,9 +111,41 @@ export const projectInclude = {
   }
 } satisfies Prisma.ProjectInclude;
 
+export const projectPortfolioInclude = {
+  owner: { select: userSelect },
+  team: true,
+  workspace: true,
+  customFieldSettings: {
+    include: {
+      customField: {
+        include: {
+          enumOptions: {
+            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
+          }
+        }
+      }
+    },
+    orderBy: { isImportant: "desc" as const }
+  },
+  customFieldValues: {
+    include: {
+      customField: {
+        include: {
+          enumOptions: {
+            where: { enabled: true },
+            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
+          }
+        }
+      },
+      enumOption: true
+    }
+  }
+} satisfies Prisma.ProjectInclude;
+
 type UserRecord = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 type TaskRecord = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
 type ProjectRecord = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
+type PortfolioProjectRecord = Prisma.ProjectGetPayload<{ include: typeof projectPortfolioInclude }>;
 type SectionRecord = ProjectRecord["sections"][number];
 export type TaskCustomFieldCatalog = Prisma.AsanaCustomFieldGetPayload<{ include: typeof taskCustomFieldCatalogInclude }>[];
 
@@ -428,39 +461,39 @@ function projectMultiEnumValues(value: Prisma.JsonValue | null | undefined) {
 }
 
 function projectCustomFieldValueDtos(project: ProjectRecord) {
-  return [...project.customFieldValues]
-    .sort((a, b) => {
-      const left = a.customField?.mikaSortOrder ?? 9999;
-      const right = b.customField?.mikaSortOrder ?? 9999;
-      if (left !== right) {
-        return left - right;
-      }
+  const enrichedRows = enrichDerivedPortfolioCustomFieldValues(project.areaM2, [...project.customFieldValues]).sort((a, b) => {
+    const left = a.customField?.mikaSortOrder ?? 9999;
+    const right = b.customField?.mikaSortOrder ?? 9999;
+    if (left !== right) {
+      return left - right;
+    }
 
-      return (a.customField?.name ?? a.customFieldName ?? "").localeCompare(b.customField?.name ?? b.customFieldName ?? "", "pt-BR");
-    })
-    .map((row) => ({
-      id: row.id,
-      customFieldId: row.customFieldId,
-      customFieldGid: row.customFieldGid,
-      customFieldName: row.customFieldName ?? row.customField?.name ?? null,
-      mikaKey: row.customField?.mikaKey ?? null,
-      mikaLabel: row.customField?.mikaLabel ?? row.customField?.name ?? row.customFieldName ?? null,
-      mikaSortOrder: row.customField?.mikaSortOrder ?? null,
-      mikaListVisible: row.customField?.mikaListVisible ?? true,
-      mikaDetailVisible: row.customField?.mikaDetailVisible ?? true,
-      type: row.type,
-      displayValue: row.displayValue,
-      textValue: row.textValue,
-      numberValue: row.numberValue,
-      enumOptionName: row.enumOptionName ?? row.enumOption?.name ?? null,
-      enumOptionColor: row.enumOptionColor ?? row.enumOption?.color ?? null,
-      multiEnumValues: projectMultiEnumValues(row.multiEnumValues),
-      enumOptions: row.customField?.enumOptions?.map((option) => ({
-        id: option.id,
-        name: option.name,
-        color: option.color
-      }))
-    }));
+    return (a.customField?.name ?? a.customFieldName ?? "").localeCompare(b.customField?.name ?? b.customFieldName ?? "", "pt-BR");
+  });
+
+  return enrichedRows.map((row) => ({
+    id: row.id,
+    customFieldId: row.customFieldId,
+    customFieldGid: row.customFieldGid,
+    customFieldName: row.customFieldName ?? row.customField?.name ?? null,
+    mikaKey: row.customField?.mikaKey ?? null,
+    mikaLabel: row.customField?.mikaLabel ?? row.customField?.name ?? row.customFieldName ?? null,
+    mikaSortOrder: row.customField?.mikaSortOrder ?? null,
+    mikaListVisible: row.customField?.mikaListVisible ?? true,
+    mikaDetailVisible: row.customField?.mikaDetailVisible ?? true,
+    type: row.type,
+    displayValue: row.displayValue,
+    textValue: row.textValue,
+    numberValue: row.numberValue,
+    enumOptionName: row.enumOptionName ?? row.enumOption?.name ?? null,
+    enumOptionColor: row.enumOptionColor ?? row.enumOption?.color ?? null,
+    multiEnumValues: projectMultiEnumValues(row.multiEnumValues),
+    enumOptions: row.customField?.enumOptions?.map((option) => ({
+      id: option.id,
+      name: option.name,
+      color: option.color
+    }))
+  }));
 }
 
 export function toDisciplineDto(section: SectionRecord, projectId: string, taskFieldCatalog?: TaskCustomFieldCatalog) {
@@ -498,7 +531,7 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     name: project.name,
     description: project.notes ?? project.currentStatusText,
     htmlDescription: project.htmlNotes,
-    client: project.builder ?? project.team?.name ?? project.workspace.name,
+    client: project.builder ?? project.team?.name ?? project.workspace?.name ?? null,
     platform: project.platform,
     builder: project.builder,
     areaM2: project.areaM2,
@@ -513,6 +546,8 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     customFields: project.customFieldSettings.map((setting) => ({
       id: setting.id,
       asanaGid: setting.asanaGid,
+      customFieldDefinitionGid: setting.customField.asanaGid,
+      customFieldDefinitionId: setting.customField.id,
       isImportant: setting.isImportant,
       name: setting.customField.name,
       description: setting.customField.description,
@@ -536,5 +571,53 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     updatedAt: project.asanaModifiedAt ?? project.updatedAt,
     disciplines,
     sections: disciplines
+  };
+}
+
+export function toProjectPortfolioDto(project: PortfolioProjectRecord, taskFieldCatalog?: TaskCustomFieldCatalog) {
+  return {
+    id: project.id,
+    asanaGid: project.asanaGid,
+    name: project.name,
+    description: project.notes ?? project.currentStatusText,
+    htmlDescription: project.htmlNotes,
+    client: project.builder ?? project.team?.name ?? project.workspace?.name ?? null,
+    platform: project.platform,
+    builder: project.builder,
+    areaM2: project.areaM2,
+    status: project.archived ? ProjectStatus.COMPLETED : ProjectStatus.ACTIVE,
+    startDate: project.startOn,
+    endDate: project.dueOn ?? project.dueDate,
+    permalinkUrl: project.permalinkUrl,
+    color: project.color,
+    defaultView: project.defaultView,
+    owner: toPublicUser(project.owner),
+    customFieldValues: projectCustomFieldValueDtos(project),
+    customFields: project.customFieldSettings.map((setting) => ({
+      id: setting.id,
+      asanaGid: setting.asanaGid,
+      customFieldDefinitionGid: setting.customField.asanaGid,
+      customFieldDefinitionId: setting.customField.id,
+      isImportant: setting.isImportant,
+      name: setting.customField.name,
+      description: setting.customField.description,
+      type: setting.customField.type,
+      mikaKey: setting.customField.mikaKey,
+      mikaLabel: setting.customField.mikaLabel,
+      mikaSortOrder: setting.customField.mikaSortOrder,
+      mikaTaskField: setting.customField.mikaTaskField,
+      mikaListVisible: setting.customField.mikaListVisible,
+      mikaDetailVisible: setting.customField.mikaDetailVisible,
+      enumOptions: setting.customField.enumOptions.map((option) => ({
+        id: option.id,
+        asanaGid: option.asanaGid,
+        name: option.name,
+        color: option.color,
+        enabled: option.enabled
+      }))
+    })),
+    taskCustomFields: taskFieldCatalog ? toTaskCustomFieldDefinitionDtos(taskFieldCatalog) : undefined,
+    createdAt: project.asanaCreatedAt ?? project.createdAt,
+    updatedAt: project.asanaModifiedAt ?? project.updatedAt
   };
 }

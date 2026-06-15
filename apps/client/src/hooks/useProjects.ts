@@ -1,14 +1,17 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import type {
   CreateProjectRequest,
+  PortfolioFacetsResponse,
+  PortfolioProjectSort,
+  PortfolioProjectsResponse,
   Project,
   UpdateProjectRequest
 } from "shared";
 import { api } from "../lib/api";
+import { isAllSelected } from "../lib/multiSelectFilter";
 import {
-  applyOptimisticProjectPatch,
-  prepareProjectMutation,
   restoreProjectCaches,
+  runOptimisticProjectMutation,
   updateProjectInCaches
 } from "../lib/projectCache";
 import { queryClient } from "../lib/queryClient";
@@ -21,6 +24,23 @@ interface ProjectResponse {
   project: Project;
 }
 
+export interface PortfolioProjectsFilters {
+  sort: PortfolioProjectSort;
+  status?: string[];
+  platform?: string[];
+  builder?: string[];
+}
+
+function buildPortfolioQueryParams(filters: PortfolioProjectsFilters, cursor?: string) {
+  return {
+    cursor,
+    sort: filters.sort,
+    ...(filters.status?.length ? { status: filters.status } : {}),
+    ...(filters.platform?.length ? { platform: filters.platform } : {}),
+    ...(filters.builder !== undefined ? { builder: filters.builder } : {})
+  };
+}
+
 export function useProjects() {
   return useQuery({
     queryKey: ["projects"],
@@ -28,6 +48,34 @@ export function useProjects() {
       const response = await api.get<ProjectsResponse>("/projects");
       return response.data.projects;
     }
+  });
+}
+
+export function usePortfolioFacets() {
+  return useQuery({
+    queryKey: ["projects", "portfolio", "facets"],
+    queryFn: async () => {
+      const response = await api.get<PortfolioFacetsResponse>("/projects/portfolio/facets");
+      return response.data.builders;
+    }
+  });
+}
+
+export function usePortfolioProjectsInfinite(filters: PortfolioProjectsFilters, enabled = true) {
+  return useInfiniteQuery({
+    queryKey: ["projects", "portfolio", filters],
+    enabled,
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const response = await api.get<PortfolioProjectsResponse>("/projects/portfolio", {
+        params: buildPortfolioQueryParams(filters, pageParam),
+        paramsSerializer: {
+          indexes: null
+        }
+      });
+      return response.data;
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined
   });
 }
 
@@ -50,6 +98,7 @@ export function useCreateProject() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      await queryClient.invalidateQueries({ queryKey: ["projects", "portfolio"] });
     }
   });
 }
@@ -61,15 +110,18 @@ export function useUpdateProject(projectId: string) {
       return response.data.project;
     },
     onMutate: async (payload) => {
-      const context = await prepareProjectMutation(projectId);
-      applyOptimisticProjectPatch(projectId, payload);
-      return context;
+      return runOptimisticProjectMutation(projectId, payload);
     },
     onError: (_error, _payload, context) => {
       restoreProjectCaches(context);
     },
     onSuccess: (updatedProject) => {
-      updateProjectInCaches(projectId, updatedProject);
+      try {
+        updateProjectInCaches(projectId, updatedProject);
+      } catch (error) {
+        console.error("[projects] Falha ao atualizar cache após salvar", error);
+        void queryClient.invalidateQueries({ queryKey: ["projects", "portfolio"] });
+      }
     }
   });
 }
@@ -81,15 +133,18 @@ export function usePatchProject() {
       return response.data.project;
     },
     onMutate: async ({ id, payload }) => {
-      const context = await prepareProjectMutation(id);
-      applyOptimisticProjectPatch(id, payload);
-      return context;
+      return runOptimisticProjectMutation(id, payload);
     },
     onError: (_error, _variables, context) => {
       restoreProjectCaches(context);
     },
     onSuccess: (updatedProject, { id }) => {
-      updateProjectInCaches(id, updatedProject);
+      try {
+        updateProjectInCaches(id, updatedProject);
+      } catch (error) {
+        console.error("[projects] Falha ao atualizar cache após salvar", error);
+        void queryClient.invalidateQueries({ queryKey: ["projects", "portfolio"] });
+      }
     }
   });
 }

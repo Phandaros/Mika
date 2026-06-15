@@ -32,6 +32,10 @@ export interface Project {
 export interface ProjectCustomField {
   id: string;
   asanaGid: string;
+  /** GID da definição AsanaCustomField (usado em PATCH de valores). */
+  customFieldDefinitionGid: string;
+  /** ID interno da definição AsanaCustomField. */
+  customFieldDefinitionId: string;
   isImportant: boolean;
   name: string;
   description: string | null;
@@ -92,6 +96,13 @@ export interface CreateProjectRequest {
   disciplineTypes?: DisciplineType[];
 }
 
+export interface UpdateProjectCustomFieldValueRequest {
+  id?: string;
+  customFieldGid?: string;
+  mikaKey?: string;
+  value: string | number | string[] | null;
+}
+
 export interface UpdateProjectRequest {
   name?: string;
   description?: string | null;
@@ -103,4 +114,17 @@ export interface UpdateProjectRequest {
   startDate?: string | null;
   endDate?: string | null;
   disciplineTypes?: DisciplineType[];
+  customFieldValues?: UpdateProjectCustomFieldValueRequest[];
+}
+
+export type PortfolioProjectSort = "updatedAt-desc" | "name-asc" | "endDate-asc";
+
+export interface PortfolioProjectsResponse {
+  projects: Project[];
+  nextCursor: string | null;
+  totalCount: number;
+}
+
+export interface PortfolioFacetsResponse {
+  builders: string[];
 }

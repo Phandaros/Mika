@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ProjectStatus, type Project } from "shared";
 import { toast } from "sonner";
 import { useCreateProject, useUpdateProject } from "../../hooks/useProjects";
+import { resolveMutationErrorMessage } from "../../lib/mutationErrors";
 import { projectStatusLabels } from "../../lib/projectLabels";
 import { Button } from "../ui/button";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
@@ -79,8 +80,14 @@ export function ProjectForm({ project, builderSuggestions = [], onCancel, onCrea
       setDescription("");
       setStatus(ProjectStatus.ACTIVE);
       onCreated?.();
-    } catch {
-      toast.error(project ? "Não foi possível salvar o projeto" : "Não foi possível criar o projeto");
+    } catch (error) {
+      console.error("[projects] Falha ao salvar formulário do projeto", error);
+      toast.error(
+        resolveMutationErrorMessage(
+          error,
+          project ? "Não foi possível salvar o projeto" : "Não foi possível criar o projeto"
+        )
+      );
     }
   }
 

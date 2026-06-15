@@ -6,12 +6,21 @@ import { ProjectStatus, type ProjectStatus as ProjectStatusValue } from "../lib/
 import {
   makeLocalAsanaGid,
   projectInclude,
+  projectPortfolioInclude,
   taskCustomFieldCatalogInclude,
   taskInclude,
   toProjectDto,
+  toProjectPortfolioDto,
   toTaskDto
 } from "../lib/asanaDto.js";
 import { ensureCanonicalSectionsForProject } from "../lib/canonicalSections.js";
+import {
+  applyProjectCustomFieldPatches,
+  ensurePortfolioCustomFieldSettingsForProject,
+  ensurePortfolioCustomFieldSettingsForProjectIfMissing,
+  recalculatePortfolioDerivedFields,
+  type ProjectCustomFieldPatch
+} from "../lib/projectCustomFields.js";
 import { isBacklogTask } from "../lib/taskStatusWhere.js";
 import { AppError } from "../middleware/errorHandler.js";
 
@@ -26,6 +35,7 @@ interface ProjectBody {
   startDate?: string | null;
   endDate?: string | null;
   disciplineTypes?: string[];
+  customFieldValues?: ProjectCustomFieldPatch[];
 }
 
 function firstDateOnly(value: string | null | undefined): string | null | undefined {
@@ -59,6 +69,17 @@ async function workspaceGid(tx: Prisma.TransactionClient): Promise<string> {
 
 export const listProjects: RequestHandler = async (_req, res, next) => {
   try {
+    await prisma.$transaction(async (tx) => {
+      const projectsWithoutSettings = await tx.project.findMany({
+        where: { customFieldSettings: { none: {} } },
+        select: { id: true }
+      });
+
+      for (const project of projectsWithoutSettings) {
+        await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, project.id);
+      }
+    });
+
     const [projects, taskFieldCatalog] = await Promise.all([
       prisma.project.findMany({
         orderBy: { updatedAt: "desc" },
@@ -72,6 +93,288 @@ export const listProjects: RequestHandler = async (_req, res, next) => {
     ]);
 
     res.json({ projects: projects.map((project) => toProjectDto(project, taskFieldCatalog)) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const PORTFOLIO_LIMIT_DEFAULT = 25;
+const PORTFOLIO_LIMIT_MAX = 50;
+const PORTFOLIO_SORT_VALUES = ["updatedAt-desc", "name-asc", "endDate-asc"] as const;
+const PORTFOLIO_PLATFORM_VALUES = ["CAD", "BIM", "none"] as const;
+
+const portfolioProjectsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(PORTFOLIO_LIMIT_MAX).optional().default(PORTFOLIO_LIMIT_DEFAULT),
+  cursor: z.string().optional(),
+  sort: z.enum(PORTFOLIO_SORT_VALUES).optional().default("updatedAt-desc"),
+  status: z.union([z.string(), z.array(z.string())]).optional(),
+  platform: z.union([z.string(), z.array(z.string())]).optional(),
+  builder: z.union([z.string(), z.array(z.string())]).optional()
+});
+
+type PortfolioSort = (typeof PORTFOLIO_SORT_VALUES)[number];
+
+type PortfolioCursor = {
+  sort: PortfolioSort;
+  id: string;
+  updatedAt?: string;
+  name?: string;
+  endDate?: string | null;
+};
+
+function queryStringArray(value: string | string[] | undefined): string[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return Array.isArray(value) ? value : [value];
+}
+
+function encodePortfolioCursor(project: {
+  id: string;
+  updatedAt: Date;
+  name: string;
+  dueOn: string | null;
+  dueDate: Date | null;
+}, sort: PortfolioSort): string {
+  const payload: PortfolioCursor = {
+    sort,
+    id: project.id,
+    updatedAt: project.updatedAt.toISOString(),
+    name: project.name,
+    endDate: project.dueOn ?? project.dueDate?.toISOString().slice(0, 10) ?? null
+  };
+
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+function decodePortfolioCursor(value: string | undefined): PortfolioCursor | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Partial<PortfolioCursor>;
+
+    if (!parsed.sort || !parsed.id || !PORTFOLIO_SORT_VALUES.includes(parsed.sort as PortfolioSort)) {
+      return null;
+    }
+
+    return {
+      sort: parsed.sort as PortfolioSort,
+      id: parsed.id,
+      updatedAt: parsed.updatedAt,
+      name: parsed.name,
+      endDate: parsed.endDate ?? null
+    };
+  } catch {
+    throw new AppError(400, "Cursor invalido");
+  }
+}
+
+function portfolioStatusWhere(statuses: string[] | undefined): Prisma.ProjectWhereInput {
+  const allStatuses = Object.values(ProjectStatus);
+
+  if (statuses !== undefined && statuses.length === 0) {
+    return { id: { in: [] } };
+  }
+
+  if (!statuses?.length || statuses.length >= allStatuses.length) {
+    return {};
+  }
+
+  const archivedValues = new Set(
+    statuses.map((status) => status !== ProjectStatus.ACTIVE)
+  );
+
+  if (archivedValues.size === 1) {
+    return { archived: archivedValues.has(true) };
+  }
+
+  return {
+    OR: statuses.map((status) => ({
+      archived: status !== ProjectStatus.ACTIVE
+    }))
+  };
+}
+
+function portfolioPlatformWhere(platforms: string[] | undefined): Prisma.ProjectWhereInput {
+  if (platforms !== undefined && platforms.length === 0) {
+    return { id: { in: [] } };
+  }
+
+  if (!platforms?.length || platforms.length >= PORTFOLIO_PLATFORM_VALUES.length) {
+    return {};
+  }
+
+  return {
+    OR: platforms.map((platform) =>
+      platform === "none" ? { platform: null } : { platform: platform as "CAD" | "BIM" }
+    )
+  };
+}
+
+function portfolioBuilderWhere(builders: string[] | undefined): Prisma.ProjectWhereInput {
+  if (builders === undefined) {
+    return {};
+  }
+
+  if (builders.length === 0) {
+    return { id: { in: [] } };
+  }
+
+  return {
+    OR: builders.map((builder) =>
+      builder === "none"
+        ? { OR: [{ builder: null }, { builder: "" }] }
+        : { builder }
+    )
+  };
+}
+
+function buildPortfolioWhere(query: {
+  status?: string[];
+  platform?: string[];
+  builder?: string[];
+}): Prisma.ProjectWhereInput {
+  const clauses = [
+    portfolioStatusWhere(query.status),
+    portfolioPlatformWhere(query.platform),
+    portfolioBuilderWhere(query.builder)
+  ].filter((clause) => Object.keys(clause).length > 0);
+
+  return clauses.length ? { AND: clauses } : {};
+}
+
+function portfolioCursorWhere(cursor: PortfolioCursor | null, sort: PortfolioSort): Prisma.ProjectWhereInput {
+  if (!cursor || cursor.sort !== sort) {
+    return {};
+  }
+
+  if (sort === "name-asc" && cursor.name) {
+    return {
+      OR: [{ name: { gt: cursor.name } }, { name: cursor.name, id: { gt: cursor.id } }]
+    };
+  }
+
+  if (sort === "endDate-asc") {
+    const endDate = cursor.endDate ?? "9999-12-31";
+    return {
+      OR: [
+        { dueOn: { gt: endDate } },
+        { dueOn: endDate, id: { gt: cursor.id } },
+        { dueOn: null, id: { gt: cursor.id } }
+      ]
+    };
+  }
+
+  if (!cursor.updatedAt) {
+    return {};
+  }
+
+  const updatedAt = new Date(cursor.updatedAt);
+  return {
+    OR: [{ updatedAt: { lt: updatedAt } }, { updatedAt, id: { lt: cursor.id } }]
+  };
+}
+
+function portfolioOrderBy(sort: PortfolioSort): Prisma.ProjectOrderByWithRelationInput[] {
+  if (sort === "name-asc") {
+    return [{ name: "asc" }, { id: "asc" }];
+  }
+
+  if (sort === "endDate-asc") {
+    return [{ dueOn: { sort: "asc", nulls: "last" } }, { id: "asc" }];
+  }
+
+  return [{ updatedAt: "desc" }, { id: "desc" }];
+}
+
+async function loadTaskFieldCatalog() {
+  return prisma.asanaCustomField.findMany({
+    where: { mikaTaskField: true },
+    include: taskCustomFieldCatalogInclude,
+    orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
+  });
+}
+
+export const listPortfolioFacets: RequestHandler = async (_req, res, next) => {
+  try {
+    const rows = await prisma.project.findMany({
+      where: { builder: { not: null } },
+      select: { builder: true },
+      distinct: ["builder"]
+    });
+
+    const builders = rows
+      .map((row) => row.builder?.trim())
+      .filter((builder): builder is string => Boolean(builder))
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    res.json({ builders });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listPortfolioProjects: RequestHandler = async (req, res, next) => {
+  try {
+    const parsed = portfolioProjectsQuerySchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      throw new AppError(400, "Parametros de portfólio invalidos");
+    }
+
+    const sort = parsed.data.sort;
+    const cursor = decodePortfolioCursor(parsed.data.cursor);
+    const filters = {
+      status: queryStringArray(parsed.data.status),
+      platform: queryStringArray(parsed.data.platform),
+      builder: queryStringArray(parsed.data.builder)
+    };
+    const where = {
+      AND: [buildPortfolioWhere(filters), portfolioCursorWhere(cursor, sort)]
+    };
+
+    const [totalCount, projects, taskFieldCatalog] = await Promise.all([
+      prisma.project.count({ where: buildPortfolioWhere(filters) }),
+      prisma.project.findMany({
+        where,
+        include: projectPortfolioInclude,
+        orderBy: portfolioOrderBy(sort),
+        take: parsed.data.limit + 1
+      }),
+      loadTaskFieldCatalog()
+    ]);
+
+    let pageProjects = projects.slice(0, parsed.data.limit);
+
+    if (pageProjects.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        for (const project of pageProjects) {
+          await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, project.id);
+        }
+      });
+
+      const refreshedProjects = await prisma.project.findMany({
+        where: { id: { in: pageProjects.map((project) => project.id) } },
+        include: projectPortfolioInclude
+      });
+      const refreshedById = new Map(refreshedProjects.map((project) => [project.id, project]));
+      pageProjects = pageProjects.map((project) => refreshedById.get(project.id) ?? project);
+    }
+
+    const lastVisibleProject = pageProjects[pageProjects.length - 1];
+    const nextCursor =
+      projects.length > parsed.data.limit && lastVisibleProject
+        ? encodePortfolioCursor(lastVisibleProject, sort)
+        : null;
+
+    res.json({
+      projects: pageProjects.map((project) => toProjectPortfolioDto(project, taskFieldCatalog)),
+      nextCursor,
+      totalCount
+    });
   } catch (error) {
     next(error);
   }
@@ -225,14 +528,20 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
 
 export const getProjectById: RequestHandler = async (req, res, next) => {
   try {
-    const project = await prisma.project.findUnique({
-      where: { id: req.params.id },
-      include: projectInclude
-    });
+    const project = await prisma.$transaction(async (tx) => {
+      await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, req.params.id);
 
-    if (!project) {
-      throw new AppError(404, "Project not found");
-    }
+      const existing = await tx.project.findUnique({
+        where: { id: req.params.id },
+        include: projectInclude
+      });
+
+      if (!existing) {
+        throw new AppError(404, "Project not found");
+      }
+
+      return existing;
+    });
 
     const taskFieldCatalog = await prisma.asanaCustomField.findMany({
       where: { mikaTaskField: true },
@@ -271,6 +580,8 @@ export const createProject: RequestHandler = async (req, res, next) => {
         asanaGid: createdProject.asanaGid,
         name: createdProject.name
       });
+
+      await ensurePortfolioCustomFieldSettingsForProject(tx, createdProject.id);
 
       return tx.project.findUniqueOrThrow({
         where: { id: createdProject.id },
@@ -316,9 +627,22 @@ export const updateProject: RequestHandler = async (req, res, next) => {
         name: updatedProject.name
       });
 
+      await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, req.params.id);
+
+      let shouldRecalculate = body.areaM2 !== undefined;
+
+      if (body.customFieldValues?.length) {
+        const updatedProjectCount = await applyProjectCustomFieldPatches(tx, req.params.id, body.customFieldValues);
+        shouldRecalculate = shouldRecalculate || updatedProjectCount;
+      }
+
+      if (shouldRecalculate) {
+        await recalculatePortfolioDerivedFields(tx, req.params.id);
+      }
+
       return tx.project.findUniqueOrThrow({
         where: { id: req.params.id },
-        include: projectInclude
+        include: projectPortfolioInclude
       });
     });
 
@@ -328,7 +652,7 @@ export const updateProject: RequestHandler = async (req, res, next) => {
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
 
-    res.json({ project: toProjectDto(project, taskFieldCatalog) });
+    res.json({ project: toProjectPortfolioDto(project, taskFieldCatalog) });
   } catch (error) {
     next(error);
   }
