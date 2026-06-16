@@ -1,6 +1,7 @@
 import type { ProjectCustomFieldValue } from "shared";
-import { compactFinanceLabel, fieldMultiValues, formatPortfolioNumber } from "../../lib/portfolioFields";
+import { compactFinanceLabel, fieldMultiValues } from "../../lib/portfolioFields";
 import { portfolioEnumColor, portfolioFieldLabel } from "../../lib/portfolioEnumColor";
+import { formatProjectArea } from "../../lib/projectLabels";
 import { EmptyCell } from "../shared/DataTable";
 import { StatusOptionPill } from "../shared/statusVisuals";
 
@@ -68,5 +69,5 @@ export function ProjectPortfolioNumberValue({ field }: { field: ProjectCustomFie
     return <EmptyCell />;
   }
 
-  return <span className="font-mono text-[12px] text-[--color-text-secondary]">{formatPortfolioNumber(value)}</span>;
+  return <span className="font-mono text-[12px] text-[--color-text-secondary]">{formatProjectArea(value)}</span>;
 }

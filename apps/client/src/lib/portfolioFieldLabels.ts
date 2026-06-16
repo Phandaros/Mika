@@ -1,7 +1,19 @@
 export const PORTFOLIO_FIELD_LABELS = {
-  projectCount: "Número de Projetos",
+  disciplinas: "Disciplinas",
   disciplineCount: "Número de Disciplinas (n)",
   projectedArea: "Área projetada"
+} as const;
+
+export const PORTFOLIO_FIELD_KEYS = {
+  financeiro: "financeiro",
+  disciplinas: "disciplinas",
+  ppciGas: "ppciGas",
+  eleAprov: "eleAprov",
+  hidAprov: "hidAprov",
+  eleExec: "eleExec",
+  hidExec: "hidExec",
+  disciplineCount: "disciplineCount",
+  projectedArea: "projectedArea"
 } as const;
 
 export function normalizeProjectFieldName(value: string | null | undefined): string {

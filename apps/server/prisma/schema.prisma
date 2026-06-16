@@ -155,7 +155,6 @@ model Project {
   memberships         TaskMembership[]
   followers           ProjectFollower[]
   members             ProjectMember[]
-  customFieldSettings ProjectCustomFieldSetting[]
   customFieldValues   ProjectCustomFieldValue[]
 
   @@index([name])
@@ -465,7 +464,6 @@ model AsanaCustomField {
 
   createdBy       User?                        @relation("CustomFieldCreatedBy", fields: [createdByGid], references: [asanaGid])
   enumOptions     AsanaCustomFieldEnumOption[]
-  projectSettings ProjectCustomFieldSetting[]
   projectValues   ProjectCustomFieldValue[]
   taskValues      TaskCustomFieldValue[]
 
@@ -492,21 +490,6 @@ model AsanaCustomFieldEnumOption {
 
   @@index([customFieldId])
   @@index([name])
-}
-
-model ProjectCustomFieldSetting {
-  id       String @id @default(cuid())
-  asanaGid String @unique
-
-  projectId     String
-  customFieldId String
-  isImportant   Boolean @default(false)
-
-  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  customField AsanaCustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
-
-  @@unique([projectId, customFieldId])
-  @@index([customFieldId])
 }
 
 model ProjectCustomFieldValue {

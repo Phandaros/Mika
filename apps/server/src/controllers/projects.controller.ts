@@ -16,9 +16,6 @@ import {
 import { ensureCanonicalSectionsForProject } from "../lib/canonicalSections.js";
 import {
   applyProjectCustomFieldPatches,
-  ensurePortfolioCustomFieldSettingsForProject,
-  ensurePortfolioCustomFieldSettingsForProjectIfMissing,
-  recalculatePortfolioDerivedFields,
   type ProjectCustomFieldPatch
 } from "../lib/projectCustomFields.js";
 import { isBacklogTask } from "../lib/taskStatusWhere.js";
@@ -69,17 +66,6 @@ async function workspaceGid(tx: Prisma.TransactionClient): Promise<string> {
 
 export const listProjects: RequestHandler = async (_req, res, next) => {
   try {
-    await prisma.$transaction(async (tx) => {
-      const projectsWithoutSettings = await tx.project.findMany({
-        where: { customFieldSettings: { none: {} } },
-        select: { id: true }
-      });
-
-      for (const project of projectsWithoutSettings) {
-        await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, project.id);
-      }
-    });
-
     const [projects, taskFieldCatalog] = await Promise.all([
       prisma.project.findMany({
         orderBy: { updatedAt: "desc" },
@@ -135,14 +121,17 @@ function encodePortfolioCursor(project: {
   updatedAt: Date;
   name: string;
   dueOn: string | null;
-  dueDate: Date | null;
+  dueDate: string | Date | null;
 }, sort: PortfolioSort): string {
   const payload: PortfolioCursor = {
     sort,
     id: project.id,
     updatedAt: project.updatedAt.toISOString(),
     name: project.name,
-    endDate: project.dueOn ?? project.dueDate?.toISOString().slice(0, 10) ?? null
+    endDate:
+      project.dueOn ??
+      (project.dueDate instanceof Date ? project.dueDate.toISOString().slice(0, 10) : project.dueDate) ??
+      null
   };
 
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
@@ -349,21 +338,6 @@ export const listPortfolioProjects: RequestHandler = async (req, res, next) => {
 
     let pageProjects = projects.slice(0, parsed.data.limit);
 
-    if (pageProjects.length > 0) {
-      await prisma.$transaction(async (tx) => {
-        for (const project of pageProjects) {
-          await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, project.id);
-        }
-      });
-
-      const refreshedProjects = await prisma.project.findMany({
-        where: { id: { in: pageProjects.map((project) => project.id) } },
-        include: projectPortfolioInclude
-      });
-      const refreshedById = new Map(refreshedProjects.map((project) => [project.id, project]));
-      pageProjects = pageProjects.map((project) => refreshedById.get(project.id) ?? project);
-    }
-
     const lastVisibleProject = pageProjects[pageProjects.length - 1];
     const nextCursor =
       projects.length > parsed.data.limit && lastVisibleProject
@@ -528,20 +502,14 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
 
 export const getProjectById: RequestHandler = async (req, res, next) => {
   try {
-    const project = await prisma.$transaction(async (tx) => {
-      await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, req.params.id);
-
-      const existing = await tx.project.findUnique({
-        where: { id: req.params.id },
-        include: projectInclude
-      });
-
-      if (!existing) {
-        throw new AppError(404, "Project not found");
-      }
-
-      return existing;
+    const project = await prisma.project.findUnique({
+      where: { id: req.params.id },
+      include: projectInclude
     });
+
+    if (!project) {
+      throw new AppError(404, "Project not found");
+    }
 
     const taskFieldCatalog = await prisma.asanaCustomField.findMany({
       where: { mikaTaskField: true },
@@ -581,8 +549,6 @@ export const createProject: RequestHandler = async (req, res, next) => {
         name: createdProject.name
       });
 
-      await ensurePortfolioCustomFieldSettingsForProject(tx, createdProject.id);
-
       return tx.project.findUniqueOrThrow({
         where: { id: createdProject.id },
         include: projectInclude
@@ -603,11 +569,16 @@ export const createProject: RequestHandler = async (req, res, next) => {
 
 export const updateProject: RequestHandler = async (req, res, next) => {
   try {
+    const projectId = req.params.id;
+    if (!projectId) {
+      throw new AppError(400, "Project id is required");
+    }
+
     const body = req.body as ProjectBody;
 
     const project = await prisma.$transaction(async (tx) => {
       const updatedProject = await tx.project.update({
-        where: { id: req.params.id },
+        where: { id: projectId },
         data: {
           name: body.name,
           notes: body.description,
@@ -627,21 +598,12 @@ export const updateProject: RequestHandler = async (req, res, next) => {
         name: updatedProject.name
       });
 
-      await ensurePortfolioCustomFieldSettingsForProjectIfMissing(tx, req.params.id);
-
-      let shouldRecalculate = body.areaM2 !== undefined;
-
       if (body.customFieldValues?.length) {
-        const updatedProjectCount = await applyProjectCustomFieldPatches(tx, req.params.id, body.customFieldValues);
-        shouldRecalculate = shouldRecalculate || updatedProjectCount;
-      }
-
-      if (shouldRecalculate) {
-        await recalculatePortfolioDerivedFields(tx, req.params.id);
+        await applyProjectCustomFieldPatches(tx, projectId, body.customFieldValues);
       }
 
       return tx.project.findUniqueOrThrow({
-        where: { id: req.params.id },
+        where: { id: projectId },
         include: projectPortfolioInclude
       });
     });

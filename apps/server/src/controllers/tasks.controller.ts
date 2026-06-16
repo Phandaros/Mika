@@ -564,16 +564,16 @@ export const createTask: RequestHandler = async (req, res, next) => {
             continue;
           }
 
-          const setting = await tx.projectCustomFieldSetting.findUnique({
-            where: { id: field.settingId },
+          const customField = await tx.asanaCustomField.findFirst({
+            where: {
+              OR: [{ id: field.settingId }, { mikaKey: field.settingId }, { asanaGid: field.settingId }]
+            },
             include: {
-              customField: {
-                include: { enumOptions: { where: { enabled: true } } }
-              }
+              enumOptions: { where: { enabled: true } }
             }
           });
 
-          if (!setting || (body.projectId && setting.projectId !== body.projectId)) {
+          if (!customField) {
             continue;
           }
 
@@ -582,30 +582,31 @@ export const createTask: RequestHandler = async (req, res, next) => {
             continue;
           }
 
-          const enumMatch = setting.customField.enumOptions.find(
-            (option) => option.name === stringValue || option.asanaGid === stringValue
+          const enumMatch = customField.enumOptions.find(
+            (option: { name: string; asanaGid: string }) =>
+              option.name === stringValue || option.asanaGid === stringValue
           );
           const numericValue =
             typeof field.value === "number"
               ? field.value
-              : setting.customField.type === "number" || setting.customField.type === "integer"
+              : customField.type === "number" || customField.type === "integer"
                 ? Number(stringValue.replace(",", "."))
                 : null;
 
           await tx.taskCustomFieldValue.create({
             data: {
               taskId: createdTask.id,
-              customFieldGid: setting.customField.asanaGid,
-              customFieldName: setting.customField.name,
-              type: setting.customField.type,
-              precision: setting.customField.precision,
+              customFieldGid: customField.asanaGid,
+              customFieldName: customField.name,
+              type: customField.type,
+              precision: customField.precision,
               displayValue: enumMatch?.name ?? stringValue,
               numberValue: numericValue !== null && !Number.isNaN(numericValue) ? numericValue : null,
               enumOptionName: enumMatch?.name ?? null,
               enumOptionId: enumMatch?.id ?? null,
               enumOptionGid: enumMatch?.asanaGid ?? null,
               enumOptionColor: enumMatch?.color ?? null,
-              customFieldId: setting.customField.id
+              customFieldId: customField.id
             }
           });
         }

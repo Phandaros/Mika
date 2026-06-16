@@ -5,6 +5,7 @@ import {
   normalizeProjectFieldName,
   PORTFOLIO_FIELD_LABELS
 } from "./portfolioFieldLabels";
+import { formatProjectAreaValue } from "./projectLabels";
 
 export {
   computeDerivedPortfolioFields,
@@ -14,16 +15,17 @@ export {
 };
 
 export const portfolioFieldLabels = {
-  priority: "Priority",
+  finance: "Financeiro",
+  disciplinas: PORTFOLIO_FIELD_LABELS.disciplinas,
+  /** @deprecated use disciplinas */
+  projectCount: PORTFOLIO_FIELD_LABELS.disciplinas,
+  disciplineCount: PORTFOLIO_FIELD_LABELS.disciplineCount,
+  projectedArea: PORTFOLIO_FIELD_LABELS.projectedArea,
   ppciGas: "PPCI / GÁS",
   eleApproval: "ELE APROV.",
   hidApproval: "HID APROV.",
   eleExecution: "ELE EXEC.",
-  hidExecution: "HID EXEC.",
-  projectCount: PORTFOLIO_FIELD_LABELS.projectCount,
-  disciplineCount: PORTFOLIO_FIELD_LABELS.disciplineCount,
-  projectedArea: PORTFOLIO_FIELD_LABELS.projectedArea,
-  finance: "Financeiro."
+  hidExecution: "HID EXEC."
 } as const;
 
 export function isSyntheticProjectCustomFieldId(id: string | undefined): boolean {
@@ -65,21 +67,25 @@ function definitionToSyntheticValue(definition: ProjectCustomField): ProjectCust
 function findProjectCustomFieldDefinition(project: Project, name: string): ProjectCustomField | undefined {
   const target = normalizeProjectFieldName(name);
   return project.customFields?.find(
-    (field) => normalizeProjectFieldName(field.mikaLabel ?? field.name) === target
+    (field) =>
+      field.mikaKey === name ||
+      normalizeProjectFieldName(field.mikaLabel ?? field.name) === target
   );
 }
 
-function findRawProjectCustomField(project: Project, name: string): ProjectCustomFieldValue | undefined {
-  const target = normalizeProjectFieldName(name);
+function findRawProjectCustomField(project: Project, nameOrKey: string): ProjectCustomFieldValue | undefined {
+  const target = normalizeProjectFieldName(nameOrKey);
   const existing = project.customFieldValues?.find(
-    (field) => normalizeProjectFieldName(field.customFieldName ?? field.mikaLabel) === target
+    (field) =>
+      field.mikaKey === nameOrKey ||
+      normalizeProjectFieldName(field.customFieldName ?? field.mikaLabel) === target
   );
 
   if (existing) {
     return existing;
   }
 
-  const definition = findProjectCustomFieldDefinition(project, name);
+  const definition = findProjectCustomFieldDefinition(project, nameOrKey);
   return definition ? definitionToSyntheticValue(definition) ?? undefined : undefined;
 }
 
@@ -96,7 +102,7 @@ function applyDerivedPortfolioFieldValue(
   field: ProjectCustomFieldValue,
   name: string
 ): ProjectCustomFieldValue {
-  const projectCountField = findRawProjectCustomField(project, portfolioFieldLabels.projectCount);
+  const projectCountField = findRawProjectCustomField(project, portfolioFieldLabels.disciplinas);
   const disciplineCount = disciplineCountFromMultiEnum(projectCountField?.multiEnumValues);
   const derived = computeDerivedPortfolioFields(project.areaM2, disciplineCount);
   const normalized = normalizeProjectFieldName(name);
@@ -150,10 +156,7 @@ export function compactFinanceLabel(value: string): string {
 }
 
 export function formatPortfolioNumber(value: number): string {
-  return value.toLocaleString("pt-BR", {
-    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
-    maximumFractionDigits: 2
-  });
+  return formatProjectAreaValue(value);
 }
 
 type ProjectCustomFieldPatchValue = string | number | string[] | null;
@@ -211,7 +214,7 @@ function applyCustomFieldPatchValue(field: ProjectCustomFieldValue, value: Proje
 }
 
 function recalculateDerivedCustomFields(project: Project): ProjectCustomFieldValue[] {
-  const projectCountField = findRawProjectCustomField(project, portfolioFieldLabels.projectCount);
+  const projectCountField = findRawProjectCustomField(project, portfolioFieldLabels.disciplinas);
   const disciplineCount = disciplineCountFromMultiEnum(projectCountField?.multiEnumValues);
   const derived = computeDerivedPortfolioFields(project.areaM2, disciplineCount);
   const values = [...(project.customFieldValues ?? [])];
@@ -422,7 +425,7 @@ export function applyProjectCustomFieldPatchesLocally(
 
     customFieldValues[index] = applyCustomFieldPatchValue(currentField, patch.value);
 
-    if (normalizeProjectFieldName(currentField.customFieldName ?? currentField.mikaLabel) === normalizeProjectFieldName(portfolioFieldLabels.projectCount)) {
+    if (normalizeProjectFieldName(currentField.customFieldName ?? currentField.mikaLabel ?? currentField.mikaKey) === normalizeProjectFieldName(portfolioFieldLabels.disciplinas)) {
       shouldRecalculate = true;
     }
   }

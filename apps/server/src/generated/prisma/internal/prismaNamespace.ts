@@ -405,7 +405,6 @@ export const ModelName = {
   TaskTag: 'TaskTag',
   AsanaCustomField: 'AsanaCustomField',
   AsanaCustomFieldEnumOption: 'AsanaCustomFieldEnumOption',
-  ProjectCustomFieldSetting: 'ProjectCustomFieldSetting',
   ProjectCustomFieldValue: 'ProjectCustomFieldValue',
   TaskCustomFieldValue: 'TaskCustomFieldValue',
   WeeklyReport: 'WeeklyReport',
@@ -425,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldSetting" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
+    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1983,80 +1982,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    ProjectCustomFieldSetting: {
-      payload: Prisma.$ProjectCustomFieldSettingPayload<ExtArgs>
-      fields: Prisma.ProjectCustomFieldSettingFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.ProjectCustomFieldSettingFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.ProjectCustomFieldSettingFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>
-        }
-        findFirst: {
-          args: Prisma.ProjectCustomFieldSettingFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.ProjectCustomFieldSettingFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>
-        }
-        findMany: {
-          args: Prisma.ProjectCustomFieldSettingFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>[]
-        }
-        create: {
-          args: Prisma.ProjectCustomFieldSettingCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>
-        }
-        createMany: {
-          args: Prisma.ProjectCustomFieldSettingCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.ProjectCustomFieldSettingCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>[]
-        }
-        delete: {
-          args: Prisma.ProjectCustomFieldSettingDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>
-        }
-        update: {
-          args: Prisma.ProjectCustomFieldSettingUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>
-        }
-        deleteMany: {
-          args: Prisma.ProjectCustomFieldSettingDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.ProjectCustomFieldSettingUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.ProjectCustomFieldSettingUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>[]
-        }
-        upsert: {
-          args: Prisma.ProjectCustomFieldSettingUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectCustomFieldSettingPayload>
-        }
-        aggregate: {
-          args: Prisma.ProjectCustomFieldSettingAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateProjectCustomFieldSetting>
-        }
-        groupBy: {
-          args: Prisma.ProjectCustomFieldSettingGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ProjectCustomFieldSettingGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.ProjectCustomFieldSettingCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ProjectCustomFieldSettingCountAggregateOutputType> | number
-        }
-      }
-    }
     ProjectCustomFieldValue: {
       payload: Prisma.$ProjectCustomFieldValuePayload<ExtArgs>
       fields: Prisma.ProjectCustomFieldValueFieldRefs
@@ -2717,17 +2642,6 @@ export const AsanaCustomFieldEnumOptionScalarFieldEnum = {
 export type AsanaCustomFieldEnumOptionScalarFieldEnum = (typeof AsanaCustomFieldEnumOptionScalarFieldEnum)[keyof typeof AsanaCustomFieldEnumOptionScalarFieldEnum]
 
 
-export const ProjectCustomFieldSettingScalarFieldEnum = {
-  id: 'id',
-  asanaGid: 'asanaGid',
-  projectId: 'projectId',
-  customFieldId: 'customFieldId',
-  isImportant: 'isImportant'
-} as const
-
-export type ProjectCustomFieldSettingScalarFieldEnum = (typeof ProjectCustomFieldSettingScalarFieldEnum)[keyof typeof ProjectCustomFieldSettingScalarFieldEnum]
-
-
 export const ProjectCustomFieldValueScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
@@ -3028,7 +2942,6 @@ export type GlobalOmitConfig = {
   taskTag?: Prisma.TaskTagOmit
   asanaCustomField?: Prisma.AsanaCustomFieldOmit
   asanaCustomFieldEnumOption?: Prisma.AsanaCustomFieldEnumOptionOmit
-  projectCustomFieldSetting?: Prisma.ProjectCustomFieldSettingOmit
   projectCustomFieldValue?: Prisma.ProjectCustomFieldValueOmit
   taskCustomFieldValue?: Prisma.TaskCustomFieldValueOmit
   weeklyReport?: Prisma.WeeklyReportOmit

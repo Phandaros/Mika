@@ -137,7 +137,7 @@ export function portfolioEnumColor(fieldLabel: string, optionName: string, asana
     return financeColor(optionName) ?? asanaFallbackColor(asanaColor) ?? noneColor;
   }
 
-  if (context.includes("numero de projetos")) {
+  if (context.includes("disciplinas") || context.includes("numero de projetos")) {
     return disciplineColor(optionName) ?? asanaFallbackColor(asanaColor) ?? noneColor;
   }
 

@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "../generated/prisma/client.js";
 import { DisciplineStatus, DisciplineType, Priority, ProjectStatus } from "./enums.js";
-import { enrichDerivedPortfolioCustomFieldValues } from "./projectCustomFields.js";
+import {
+  computeDerivedPortfolioFields,
+  disciplineCountFromMultiEnum,
+  normalizePortfolioFieldName,
+  PORTFOLIO_CATALOG,
+  PORTFOLIO_DERIVED_LABELS,
+  portfolioCatalogGid
+} from "./portfolioCatalog.js";
 import { publicTaskStatus } from "./taskStatus.js";
 
 export const userSelect = {
@@ -84,18 +91,6 @@ export const projectInclude = {
       }
     }
   },
-  customFieldSettings: {
-    include: {
-      customField: {
-        include: {
-          enumOptions: {
-            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
-          }
-        }
-      }
-    },
-    orderBy: { isImportant: "desc" as const }
-  },
   customFieldValues: {
     include: {
       customField: {
@@ -115,18 +110,6 @@ export const projectPortfolioInclude = {
   owner: { select: userSelect },
   team: true,
   workspace: true,
-  customFieldSettings: {
-    include: {
-      customField: {
-        include: {
-          enumOptions: {
-            orderBy: [{ sortOrder: "asc" as const }, { name: "asc" as const }]
-          }
-        }
-      }
-    },
-    orderBy: { isImportant: "desc" as const }
-  },
   customFieldValues: {
     include: {
       customField: {
@@ -460,40 +443,146 @@ function projectMultiEnumValues(value: Prisma.JsonValue | null | undefined) {
     .filter((item): item is { gid: string | null; name: string; color: string | null } => Boolean(item));
 }
 
-function projectCustomFieldValueDtos(project: ProjectRecord) {
-  const enrichedRows = enrichDerivedPortfolioCustomFieldValues(project.areaM2, [...project.customFieldValues]).sort((a, b) => {
-    const left = a.customField?.mikaSortOrder ?? 9999;
-    const right = b.customField?.mikaSortOrder ?? 9999;
-    if (left !== right) {
-      return left - right;
-    }
+type ProjectCustomFieldValueRecord = ProjectRecord["customFieldValues"][number];
 
-    return (a.customField?.name ?? a.customFieldName ?? "").localeCompare(b.customField?.name ?? b.customFieldName ?? "", "pt-BR");
+function findStoredPortfolioValue(
+  values: ProjectCustomFieldValueRecord[],
+  catalogKey: string
+): ProjectCustomFieldValueRecord | undefined {
+  const catalogField = PORTFOLIO_CATALOG.find((field) => field.key === catalogKey);
+  if (!catalogField) {
+    return undefined;
+  }
+
+  const canonicalGid = portfolioCatalogGid(catalogKey);
+  const byCanonical = values.find((row) => row.customFieldGid === canonicalGid);
+  if (byCanonical) {
+    return byCanonical;
+  }
+
+  const legacyLabels = new Set([
+    normalizePortfolioFieldName(catalogField.label),
+    ...catalogField.legacyLabels.map((label) => normalizePortfolioFieldName(label))
+  ]);
+
+  return values.find((row) => {
+    const candidates = [row.customFieldName, row.customField?.mikaLabel, row.customField?.name];
+    return candidates.some((candidate) => legacyLabels.has(normalizePortfolioFieldName(candidate)));
   });
+}
 
-  return enrichedRows.map((row) => ({
-    id: row.id,
-    customFieldId: row.customFieldId,
-    customFieldGid: row.customFieldGid,
-    customFieldName: row.customFieldName ?? row.customField?.name ?? null,
-    mikaKey: row.customField?.mikaKey ?? null,
-    mikaLabel: row.customField?.mikaLabel ?? row.customField?.name ?? row.customFieldName ?? null,
-    mikaSortOrder: row.customField?.mikaSortOrder ?? null,
-    mikaListVisible: row.customField?.mikaListVisible ?? true,
-    mikaDetailVisible: row.customField?.mikaDetailVisible ?? true,
-    type: row.type,
-    displayValue: row.displayValue,
-    textValue: row.textValue,
-    numberValue: row.numberValue,
-    enumOptionName: row.enumOptionName ?? row.enumOption?.name ?? null,
-    enumOptionColor: row.enumOptionColor ?? row.enumOption?.color ?? null,
-    multiEnumValues: projectMultiEnumValues(row.multiEnumValues),
-    enumOptions: row.customField?.enumOptions?.map((option) => ({
-      id: option.id,
+function mapStoredPortfolioValueToDto(
+  catalogField: (typeof PORTFOLIO_CATALOG)[number],
+  row: ProjectCustomFieldValueRecord | undefined
+) {
+  const canonicalGid = portfolioCatalogGid(catalogField.key);
+
+  return {
+    id: row?.id ?? `pending:${canonicalGid}`,
+    customFieldId: row?.customFieldId ?? null,
+    customFieldGid: canonicalGid,
+    customFieldName: catalogField.label,
+    mikaKey: catalogField.key,
+    mikaLabel: catalogField.label,
+    mikaSortOrder: catalogField.sortOrder,
+    mikaListVisible: true,
+    mikaDetailVisible: true,
+    type: catalogField.type,
+    displayValue: row?.displayValue ?? null,
+    textValue: row?.textValue ?? null,
+    numberValue: row?.numberValue ?? null,
+    enumOptionName: row?.enumOptionName ?? row?.enumOption?.name ?? null,
+    enumOptionColor: row?.enumOptionColor ?? row?.enumOption?.color ?? null,
+    multiEnumValues: projectMultiEnumValues(row?.multiEnumValues),
+    enumOptions: catalogField.enumOptions.map((option, index) => ({
+      id: `catalog:${catalogField.key}:${index}`,
       name: option.name,
       color: option.color
     }))
-  }));
+  };
+}
+
+export function toPortfolioCatalogFieldDtos() {
+  return PORTFOLIO_CATALOG.map((field) => {
+    const gid = portfolioCatalogGid(field.key);
+    return {
+      id: field.key,
+      asanaGid: gid,
+      customFieldDefinitionGid: gid,
+      customFieldDefinitionId: field.key,
+      isImportant: false,
+      name: field.label,
+      description: null,
+      type: field.type,
+      mikaKey: field.key,
+      mikaLabel: field.label,
+      mikaSortOrder: field.sortOrder,
+      mikaTaskField: false,
+      mikaListVisible: true,
+      mikaDetailVisible: true,
+      enumOptions: field.enumOptions.map((option, index) => ({
+        id: `catalog:${field.key}:${index}`,
+        asanaGid: `catalog:${field.key}:${index}`,
+        name: option.name,
+        color: option.color,
+        enabled: true
+      }))
+    };
+  });
+}
+
+export function projectCustomFieldValueDtos(project: Pick<ProjectRecord, "areaM2" | "customFieldValues">) {
+  const catalogDtos = PORTFOLIO_CATALOG.map((catalogField) => {
+    const stored = findStoredPortfolioValue(project.customFieldValues, catalogField.key);
+    return mapStoredPortfolioValueToDto(catalogField, stored);
+  });
+
+  const disciplinasStored = findStoredPortfolioValue(project.customFieldValues, "disciplinas");
+  const disciplineCount = disciplineCountFromMultiEnum(disciplinasStored?.multiEnumValues);
+  const derived = computeDerivedPortfolioFields(project.areaM2, disciplineCount);
+
+  const derivedDtos = [
+    {
+      id: "derived:disciplineCount",
+      customFieldId: null,
+      customFieldGid: portfolioCatalogGid("disciplineCount"),
+      customFieldName: PORTFOLIO_DERIVED_LABELS.disciplineCount,
+      mikaKey: "disciplineCount",
+      mikaLabel: PORTFOLIO_DERIVED_LABELS.disciplineCount,
+      mikaSortOrder: 100,
+      mikaListVisible: true,
+      mikaDetailVisible: true,
+      type: "number",
+      displayValue: String(derived.disciplineCount),
+      textValue: null,
+      numberValue: derived.disciplineCount,
+      enumOptionName: null,
+      enumOptionColor: null,
+      multiEnumValues: [],
+      enumOptions: []
+    },
+    {
+      id: "derived:projectedArea",
+      customFieldId: null,
+      customFieldGid: portfolioCatalogGid("projectedArea"),
+      customFieldName: PORTFOLIO_DERIVED_LABELS.projectedArea,
+      mikaKey: "projectedArea",
+      mikaLabel: PORTFOLIO_DERIVED_LABELS.projectedArea,
+      mikaSortOrder: 101,
+      mikaListVisible: true,
+      mikaDetailVisible: true,
+      type: "number",
+      displayValue: derived.projectedArea == null ? null : String(derived.projectedArea),
+      textValue: null,
+      numberValue: derived.projectedArea,
+      enumOptionName: null,
+      enumOptionColor: null,
+      multiEnumValues: [],
+      enumOptions: []
+    }
+  ];
+
+  return [...catalogDtos, ...derivedDtos];
 }
 
 export function toDisciplineDto(section: SectionRecord, projectId: string, taskFieldCatalog?: TaskCustomFieldCatalog) {
@@ -543,29 +632,7 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     defaultView: project.defaultView,
     owner: toPublicUser(project.owner),
     customFieldValues: projectCustomFieldValueDtos(project),
-    customFields: project.customFieldSettings.map((setting) => ({
-      id: setting.id,
-      asanaGid: setting.asanaGid,
-      customFieldDefinitionGid: setting.customField.asanaGid,
-      customFieldDefinitionId: setting.customField.id,
-      isImportant: setting.isImportant,
-      name: setting.customField.name,
-      description: setting.customField.description,
-      type: setting.customField.type,
-      mikaKey: setting.customField.mikaKey,
-      mikaLabel: setting.customField.mikaLabel,
-      mikaSortOrder: setting.customField.mikaSortOrder,
-      mikaTaskField: setting.customField.mikaTaskField,
-      mikaListVisible: setting.customField.mikaListVisible,
-      mikaDetailVisible: setting.customField.mikaDetailVisible,
-      enumOptions: setting.customField.enumOptions.map((option) => ({
-        id: option.id,
-        asanaGid: option.asanaGid,
-        name: option.name,
-        color: option.color,
-        enabled: option.enabled
-      }))
-    })),
+    customFields: toPortfolioCatalogFieldDtos(),
     taskCustomFields: taskFieldCatalog ? toTaskCustomFieldDefinitionDtos(taskFieldCatalog) : undefined,
     createdAt: project.asanaCreatedAt ?? project.createdAt,
     updatedAt: project.asanaModifiedAt ?? project.updatedAt,
@@ -593,29 +660,7 @@ export function toProjectPortfolioDto(project: PortfolioProjectRecord, taskField
     defaultView: project.defaultView,
     owner: toPublicUser(project.owner),
     customFieldValues: projectCustomFieldValueDtos(project),
-    customFields: project.customFieldSettings.map((setting) => ({
-      id: setting.id,
-      asanaGid: setting.asanaGid,
-      customFieldDefinitionGid: setting.customField.asanaGid,
-      customFieldDefinitionId: setting.customField.id,
-      isImportant: setting.isImportant,
-      name: setting.customField.name,
-      description: setting.customField.description,
-      type: setting.customField.type,
-      mikaKey: setting.customField.mikaKey,
-      mikaLabel: setting.customField.mikaLabel,
-      mikaSortOrder: setting.customField.mikaSortOrder,
-      mikaTaskField: setting.customField.mikaTaskField,
-      mikaListVisible: setting.customField.mikaListVisible,
-      mikaDetailVisible: setting.customField.mikaDetailVisible,
-      enumOptions: setting.customField.enumOptions.map((option) => ({
-        id: option.id,
-        asanaGid: option.asanaGid,
-        name: option.name,
-        color: option.color,
-        enabled: option.enabled
-      }))
-    })),
+    customFields: toPortfolioCatalogFieldDtos(),
     taskCustomFields: taskFieldCatalog ? toTaskCustomFieldDefinitionDtos(taskFieldCatalog) : undefined,
     createdAt: project.asanaCreatedAt ?? project.createdAt,
     updatedAt: project.asanaModifiedAt ?? project.updatedAt

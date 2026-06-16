@@ -124,11 +124,6 @@ export type AsanaCustomField = Prisma.AsanaCustomFieldModel
  */
 export type AsanaCustomFieldEnumOption = Prisma.AsanaCustomFieldEnumOptionModel
 /**
- * Model ProjectCustomFieldSetting
- * 
- */
-export type ProjectCustomFieldSetting = Prisma.ProjectCustomFieldSettingModel
-/**
  * Model ProjectCustomFieldValue
  * 
  */

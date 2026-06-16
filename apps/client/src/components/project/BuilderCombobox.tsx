@@ -31,7 +31,6 @@ export function BuilderCombobox({ value, suggestions, onChange, variant = "form"
 
   function selectBuilder(nextValue: string) {
     onChange(nextValue.trim());
-    setQuery("");
     setOpen(false);
   }
 
@@ -47,8 +46,6 @@ export function BuilderCombobox({ value, suggestions, onChange, variant = "form"
         setOpen(nextOpen);
         if (nextOpen) {
           setQuery(value);
-        } else {
-          setQuery("");
         }
       }}
     >

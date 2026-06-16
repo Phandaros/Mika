@@ -421,19 +421,19 @@ function ProjectsPortfolioTable({
                 <td className="px-3 py-2">
                   {canManage ? (
                     <EditableProjectMultiEnumField
-                      field={projectCustomField(project, portfolioFieldLabels.projectCount)}
+                      field={projectCustomField(project, portfolioFieldLabels.disciplinas)}
                       variant="table"
                       onSave={(value) =>
                         saveProjectCustomField(
                           project,
-                          projectCustomField(project, portfolioFieldLabels.projectCount),
+                          projectCustomField(project, portfolioFieldLabels.disciplinas),
                           value,
                           onPatchProject
                         )
                       }
                     />
                   ) : (
-                    <ProjectMultiEnumChips field={projectCustomField(project, portfolioFieldLabels.projectCount)} maxVisible={2} />
+                    <ProjectMultiEnumChips field={projectCustomField(project, portfolioFieldLabels.disciplinas)} maxVisible={2} />
                   )}
                 </td>
                 <td className="px-3 py-2 text-right">

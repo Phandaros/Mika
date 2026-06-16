@@ -399,7 +399,6 @@ export type ProjectWhereInput = {
   memberships?: Prisma.TaskMembershipListRelationFilter
   followers?: Prisma.ProjectFollowerListRelationFilter
   members?: Prisma.ProjectMemberListRelationFilter
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingListRelationFilter
   customFieldValues?: Prisma.ProjectCustomFieldValueListRelationFilter
 }
 
@@ -438,7 +437,6 @@ export type ProjectOrderByWithRelationInput = {
   memberships?: Prisma.TaskMembershipOrderByRelationAggregateInput
   followers?: Prisma.ProjectFollowerOrderByRelationAggregateInput
   members?: Prisma.ProjectMemberOrderByRelationAggregateInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingOrderByRelationAggregateInput
   customFieldValues?: Prisma.ProjectCustomFieldValueOrderByRelationAggregateInput
 }
 
@@ -480,7 +478,6 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   memberships?: Prisma.TaskMembershipListRelationFilter
   followers?: Prisma.ProjectFollowerListRelationFilter
   members?: Prisma.ProjectMemberListRelationFilter
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingListRelationFilter
   customFieldValues?: Prisma.ProjectCustomFieldValueListRelationFilter
 }, "id" | "asanaGid">
 
@@ -584,7 +581,6 @@ export type ProjectCreateInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -620,7 +616,6 @@ export type ProjectUncheckedCreateInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -656,7 +651,6 @@ export type ProjectUpdateInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -692,7 +686,6 @@ export type ProjectUncheckedUpdateInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -1097,20 +1090,6 @@ export type ProjectUpdateOneWithoutMembershipsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutMembershipsInput, Prisma.ProjectUpdateWithoutMembershipsInput>, Prisma.ProjectUncheckedUpdateWithoutMembershipsInput>
 }
 
-export type ProjectCreateNestedOneWithoutCustomFieldSettingsInput = {
-  create?: Prisma.XOR<Prisma.ProjectCreateWithoutCustomFieldSettingsInput, Prisma.ProjectUncheckedCreateWithoutCustomFieldSettingsInput>
-  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutCustomFieldSettingsInput
-  connect?: Prisma.ProjectWhereUniqueInput
-}
-
-export type ProjectUpdateOneRequiredWithoutCustomFieldSettingsNestedInput = {
-  create?: Prisma.XOR<Prisma.ProjectCreateWithoutCustomFieldSettingsInput, Prisma.ProjectUncheckedCreateWithoutCustomFieldSettingsInput>
-  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutCustomFieldSettingsInput
-  upsert?: Prisma.ProjectUpsertWithoutCustomFieldSettingsInput
-  connect?: Prisma.ProjectWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutCustomFieldSettingsInput, Prisma.ProjectUpdateWithoutCustomFieldSettingsInput>, Prisma.ProjectUncheckedUpdateWithoutCustomFieldSettingsInput>
-}
-
 export type ProjectCreateNestedOneWithoutCustomFieldValuesInput = {
   create?: Prisma.XOR<Prisma.ProjectCreateWithoutCustomFieldValuesInput, Prisma.ProjectUncheckedCreateWithoutCustomFieldValuesInput>
   connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutCustomFieldValuesInput
@@ -1156,7 +1135,6 @@ export type ProjectCreateWithoutOwnerInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1191,7 +1169,6 @@ export type ProjectUncheckedCreateWithoutOwnerInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -1284,7 +1261,6 @@ export type ProjectCreateWithoutWorkspaceInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1319,7 +1295,6 @@ export type ProjectUncheckedCreateWithoutWorkspaceInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -1379,7 +1354,6 @@ export type ProjectCreateWithoutTeamInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1414,7 +1388,6 @@ export type ProjectUncheckedCreateWithoutTeamInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -1474,7 +1447,6 @@ export type ProjectCreateWithoutFollowersInput = {
   sections?: Prisma.SectionCreateNestedManyWithoutProjectInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1509,7 +1481,6 @@ export type ProjectUncheckedCreateWithoutFollowersInput = {
   sections?: Prisma.SectionUncheckedCreateNestedManyWithoutProjectInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -1560,7 +1531,6 @@ export type ProjectUpdateWithoutFollowersInput = {
   sections?: Prisma.SectionUpdateManyWithoutProjectNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -1595,7 +1565,6 @@ export type ProjectUncheckedUpdateWithoutFollowersInput = {
   sections?: Prisma.SectionUncheckedUpdateManyWithoutProjectNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -1630,7 +1599,6 @@ export type ProjectCreateWithoutMembersInput = {
   sections?: Prisma.SectionCreateNestedManyWithoutProjectInput
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1665,7 +1633,6 @@ export type ProjectUncheckedCreateWithoutMembersInput = {
   sections?: Prisma.SectionUncheckedCreateNestedManyWithoutProjectInput
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -1716,7 +1683,6 @@ export type ProjectUpdateWithoutMembersInput = {
   sections?: Prisma.SectionUpdateManyWithoutProjectNestedInput
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -1751,7 +1717,6 @@ export type ProjectUncheckedUpdateWithoutMembersInput = {
   sections?: Prisma.SectionUncheckedUpdateManyWithoutProjectNestedInput
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -1786,7 +1751,6 @@ export type ProjectCreateWithoutSectionsInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1821,7 +1785,6 @@ export type ProjectUncheckedCreateWithoutSectionsInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -1872,7 +1835,6 @@ export type ProjectUpdateWithoutSectionsInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -1907,7 +1869,6 @@ export type ProjectUncheckedUpdateWithoutSectionsInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -1942,7 +1903,6 @@ export type ProjectCreateWithoutMembershipsInput = {
   sections?: Prisma.SectionCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
 }
 
@@ -1977,7 +1937,6 @@ export type ProjectUncheckedCreateWithoutMembershipsInput = {
   sections?: Prisma.SectionUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -2028,7 +1987,6 @@ export type ProjectUpdateWithoutMembershipsInput = {
   sections?: Prisma.SectionUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -2061,163 +2019,6 @@ export type ProjectUncheckedUpdateWithoutMembershipsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sections?: Prisma.SectionUncheckedUpdateManyWithoutProjectNestedInput
-  followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
-  members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
-}
-
-export type ProjectCreateWithoutCustomFieldSettingsInput = {
-  id?: string
-  asanaGid: string
-  name: string
-  notes?: string | null
-  htmlNotes?: string | null
-  permalinkUrl?: string | null
-  platform?: string | null
-  builder?: string | null
-  areaM2?: number | null
-  archived?: boolean
-  color?: string | null
-  public?: boolean
-  defaultView?: string | null
-  currentStatusGid?: string | null
-  currentStatusColor?: string | null
-  currentStatusText?: string | null
-  statusUpdateGid?: string | null
-  startOn?: string | null
-  dueOn?: string | null
-  dueDate?: string | null
-  asanaCreatedAt?: Date | string | null
-  asanaModifiedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  owner?: Prisma.UserCreateNestedOneWithoutOwnedProjectsInput
-  team?: Prisma.TeamCreateNestedOneWithoutProjectsInput
-  workspace: Prisma.AsanaWorkspaceCreateNestedOneWithoutProjectsInput
-  sections?: Prisma.SectionCreateNestedManyWithoutProjectInput
-  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
-  followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
-  members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
-}
-
-export type ProjectUncheckedCreateWithoutCustomFieldSettingsInput = {
-  id?: string
-  asanaGid: string
-  name: string
-  notes?: string | null
-  htmlNotes?: string | null
-  permalinkUrl?: string | null
-  platform?: string | null
-  builder?: string | null
-  areaM2?: number | null
-  archived?: boolean
-  color?: string | null
-  public?: boolean
-  defaultView?: string | null
-  currentStatusGid?: string | null
-  currentStatusColor?: string | null
-  currentStatusText?: string | null
-  statusUpdateGid?: string | null
-  startOn?: string | null
-  dueOn?: string | null
-  dueDate?: string | null
-  asanaCreatedAt?: Date | string | null
-  asanaModifiedAt?: Date | string | null
-  ownerGid?: string | null
-  teamGid?: string | null
-  workspaceGid: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  sections?: Prisma.SectionUncheckedCreateNestedManyWithoutProjectInput
-  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
-  followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
-  members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
-}
-
-export type ProjectCreateOrConnectWithoutCustomFieldSettingsInput = {
-  where: Prisma.ProjectWhereUniqueInput
-  create: Prisma.XOR<Prisma.ProjectCreateWithoutCustomFieldSettingsInput, Prisma.ProjectUncheckedCreateWithoutCustomFieldSettingsInput>
-}
-
-export type ProjectUpsertWithoutCustomFieldSettingsInput = {
-  update: Prisma.XOR<Prisma.ProjectUpdateWithoutCustomFieldSettingsInput, Prisma.ProjectUncheckedUpdateWithoutCustomFieldSettingsInput>
-  create: Prisma.XOR<Prisma.ProjectCreateWithoutCustomFieldSettingsInput, Prisma.ProjectUncheckedCreateWithoutCustomFieldSettingsInput>
-  where?: Prisma.ProjectWhereInput
-}
-
-export type ProjectUpdateToOneWithWhereWithoutCustomFieldSettingsInput = {
-  where?: Prisma.ProjectWhereInput
-  data: Prisma.XOR<Prisma.ProjectUpdateWithoutCustomFieldSettingsInput, Prisma.ProjectUncheckedUpdateWithoutCustomFieldSettingsInput>
-}
-
-export type ProjectUpdateWithoutCustomFieldSettingsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  public?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  defaultView?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  currentStatusGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  currentStatusColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  currentStatusText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  statusUpdateGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  owner?: Prisma.UserUpdateOneWithoutOwnedProjectsNestedInput
-  team?: Prisma.TeamUpdateOneWithoutProjectsNestedInput
-  workspace?: Prisma.AsanaWorkspaceUpdateOneRequiredWithoutProjectsNestedInput
-  sections?: Prisma.SectionUpdateManyWithoutProjectNestedInput
-  memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
-  followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
-  members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
-}
-
-export type ProjectUncheckedUpdateWithoutCustomFieldSettingsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  public?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  defaultView?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  currentStatusGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  currentStatusColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  currentStatusText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  statusUpdateGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  dueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ownerGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  teamGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  workspaceGid?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  sections?: Prisma.SectionUncheckedUpdateManyWithoutProjectNestedInput
-  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
@@ -2255,7 +2056,6 @@ export type ProjectCreateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutCustomFieldValuesInput = {
@@ -2290,7 +2090,6 @@ export type ProjectUncheckedCreateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutCustomFieldValuesInput = {
@@ -2341,7 +2140,6 @@ export type ProjectUpdateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutCustomFieldValuesInput = {
@@ -2376,7 +2174,6 @@ export type ProjectUncheckedUpdateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateManyOwnerInput = {
@@ -2439,7 +2236,6 @@ export type ProjectUpdateWithoutOwnerInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -2474,7 +2270,6 @@ export type ProjectUncheckedUpdateWithoutOwnerInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -2567,7 +2362,6 @@ export type ProjectUpdateWithoutWorkspaceInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -2602,7 +2396,6 @@ export type ProjectUncheckedUpdateWithoutWorkspaceInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -2695,7 +2488,6 @@ export type ProjectUpdateWithoutTeamInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
 }
 
@@ -2730,7 +2522,6 @@ export type ProjectUncheckedUpdateWithoutTeamInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
-  customFieldSettings?: Prisma.ProjectCustomFieldSettingUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -2773,7 +2564,6 @@ export type ProjectCountOutputType = {
   memberships: number
   followers: number
   members: number
-  customFieldSettings: number
   customFieldValues: number
 }
 
@@ -2782,7 +2572,6 @@ export type ProjectCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   memberships?: boolean | ProjectCountOutputTypeCountMembershipsArgs
   followers?: boolean | ProjectCountOutputTypeCountFollowersArgs
   members?: boolean | ProjectCountOutputTypeCountMembersArgs
-  customFieldSettings?: boolean | ProjectCountOutputTypeCountCustomFieldSettingsArgs
   customFieldValues?: boolean | ProjectCountOutputTypeCountCustomFieldValuesArgs
 }
 
@@ -2822,13 +2611,6 @@ export type ProjectCountOutputTypeCountFollowersArgs<ExtArgs extends runtime.Typ
  */
 export type ProjectCountOutputTypeCountMembersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ProjectMemberWhereInput
-}
-
-/**
- * ProjectCountOutputType without action
- */
-export type ProjectCountOutputTypeCountCustomFieldSettingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ProjectCustomFieldSettingWhereInput
 }
 
 /**
@@ -2874,7 +2656,6 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   memberships?: boolean | Prisma.Project$membershipsArgs<ExtArgs>
   followers?: boolean | Prisma.Project$followersArgs<ExtArgs>
   members?: boolean | Prisma.Project$membersArgs<ExtArgs>
-  customFieldSettings?: boolean | Prisma.Project$customFieldSettingsArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Project$customFieldValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["project"]>
@@ -2984,7 +2765,6 @@ export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   memberships?: boolean | Prisma.Project$membershipsArgs<ExtArgs>
   followers?: boolean | Prisma.Project$followersArgs<ExtArgs>
   members?: boolean | Prisma.Project$membersArgs<ExtArgs>
-  customFieldSettings?: boolean | Prisma.Project$customFieldSettingsArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Project$customFieldValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -3009,7 +2789,6 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     memberships: Prisma.$TaskMembershipPayload<ExtArgs>[]
     followers: Prisma.$ProjectFollowerPayload<ExtArgs>[]
     members: Prisma.$ProjectMemberPayload<ExtArgs>[]
-    customFieldSettings: Prisma.$ProjectCustomFieldSettingPayload<ExtArgs>[]
     customFieldValues: Prisma.$ProjectCustomFieldValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -3447,7 +3226,6 @@ export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.
   memberships<T extends Prisma.Project$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskMembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   followers<T extends Prisma.Project$followersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$followersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectFollowerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   members<T extends Prisma.Project$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  customFieldSettings<T extends Prisma.Project$customFieldSettingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$customFieldSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectCustomFieldSettingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customFieldValues<T extends Prisma.Project$customFieldValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$customFieldValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -4035,30 +3813,6 @@ export type Project$membersArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.ProjectMemberScalarFieldEnum | Prisma.ProjectMemberScalarFieldEnum[]
-}
-
-/**
- * Project.customFieldSettings
- */
-export type Project$customFieldSettingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ProjectCustomFieldSetting
-   */
-  select?: Prisma.ProjectCustomFieldSettingSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ProjectCustomFieldSetting
-   */
-  omit?: Prisma.ProjectCustomFieldSettingOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ProjectCustomFieldSettingInclude<ExtArgs> | null
-  where?: Prisma.ProjectCustomFieldSettingWhereInput
-  orderBy?: Prisma.ProjectCustomFieldSettingOrderByWithRelationInput | Prisma.ProjectCustomFieldSettingOrderByWithRelationInput[]
-  cursor?: Prisma.ProjectCustomFieldSettingWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ProjectCustomFieldSettingScalarFieldEnum | Prisma.ProjectCustomFieldSettingScalarFieldEnum[]
 }
 
 /**

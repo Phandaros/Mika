@@ -24,8 +24,12 @@ export function formatProjectArea(areaM2: number | null | undefined): string {
     return "—";
   }
 
-  return `${areaM2.toLocaleString("pt-BR", {
+  return `${formatProjectAreaValue(areaM2)} m²`;
+}
+
+export function formatProjectAreaValue(areaM2: number): string {
+  return areaM2.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  })} m²`;
+  });
 }
