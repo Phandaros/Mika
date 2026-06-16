@@ -45,7 +45,7 @@ export function BuilderCombobox({ value, suggestions, onChange, variant = "form"
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
         if (nextOpen) {
-          setQuery(value);
+          setQuery("");
         }
       }}
     >

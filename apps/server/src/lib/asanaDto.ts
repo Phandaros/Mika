@@ -57,6 +57,14 @@ export const taskInclude = {
     include: {
       tag: true
     }
+  },
+  requestedReviews: {
+    where: { status: "PENDING" },
+    include: {
+      reviewer: { select: userSelect }
+    },
+    orderBy: { createdAt: "desc" as const },
+    take: 1
   }
 } satisfies Prisma.TaskInclude;
 
@@ -309,6 +317,7 @@ export function toTaskDto(
       : project && "name" in project && typeof (project as { name?: string }).name === "string"
         ? (project as { name: string }).name
         : undefined;
+  const pendingReview = task.requestedReviews?.[0] ?? null;
 
   const customFieldValues = taskFieldCatalog?.length
     ? taskCustomFieldsFromCatalog(task, taskFieldCatalog)
@@ -366,6 +375,13 @@ export function toTaskDto(
     comments: [],
     customFieldValues,
     tags: task.tags.map((item) => item.tag),
+    pendingReview: pendingReview
+      ? {
+          id: pendingReview.id,
+          reviewerId: pendingReview.reviewerId,
+          reviewer: toPublicUser(pendingReview.reviewer)
+        }
+      : null,
     projects: taskProjectDtos(task),
     discipline: {
       id: disciplineId,

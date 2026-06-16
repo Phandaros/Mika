@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { format } from "date-fns";
 import { CheckCircle2, ClipboardCheck, ExternalLink, XCircle } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Role, TaskReviewStatus, type Task, type TaskReview } from "shared";
 import { Avatar } from "../components/shared/Avatar";
@@ -21,6 +22,7 @@ import { useApproveReview, useRejectReview, useReviews, useUpdateReview } from "
 import { useTaskById } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import { classifyFile, getFileRejectionMessage } from "../lib/attachmentUtils";
+import { isPointInsidePanelPortal, isTargetInsidePanelPortal } from "../lib/panelOutsideClick";
 import { cn, formatDateOnly } from "../lib/utils";
 
 const reviewStatusLabels: Record<TaskReviewStatus, string> = {
@@ -35,16 +37,50 @@ const reviewStatusTokens: Record<TaskReviewStatus, { bg: string; text: string }>
   [TaskReviewStatus.REJECTED]: { bg: "--status-late-bg", text: "--status-late-text" }
 };
 
+type ReviewScope = "mine" | "all";
+
+function isTargetInsidePanelShell(target: Element, asideRef: RefObject<HTMLElement>): boolean {
+  const asideEl = asideRef.current;
+
+  if (asideEl?.contains(target)) {
+    return true;
+  }
+
+  return isTargetInsidePanelPortal(target);
+}
+
 export function ReviewsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [selectedReview, setSelectedReview] = useState<TaskReview | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedTaskSeed, setSelectedTaskSeed] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
-  const { data, isLoading } = useReviews({ status: TaskReviewStatus.PENDING, assigneeId: "me", page, limit: 25 });
+  const reviewScope: ReviewScope = searchParams.get("scope") === "all" ? "all" : "mine";
+  const { data: users = [] } = useUsers();
+  const updateReview = useUpdateReview();
+  const { data, isLoading } = useReviews({
+    status: TaskReviewStatus.PENDING,
+    assigneeId: reviewScope === "mine" ? "me" : undefined,
+    page,
+    limit: 25
+  });
   const { data: selectedTaskFromApi } = useTaskById(selectedTaskId);
   const reviews = data?.reviews ?? [];
   const selectedTask = selectedTaskFromApi ?? selectedTaskSeed;
+  const pendingCountLabel = reviewScope === "mine" ? "Minhas pendentes" : "Todas pendentes";
+  const coordinatorOptions = useMemo(
+    () =>
+      users
+        .filter((item) => item.role === Role.ADMIN || item.role === Role.COORDINATOR)
+        .map((item) => ({
+          value: item.id,
+          label: item.name,
+          description: item.email,
+          avatarUrl: item.avatarUrl
+        })),
+    [users]
+  );
 
   useEffect(() => {
     if (!selectedReview) {
@@ -75,6 +111,31 @@ export function ReviewsPage() {
     setSelectedTaskId(null);
   }
 
+  async function patchReviewReviewer(review: TaskReview, reviewerId: string) {
+    if (review.reviewerId === reviewerId) {
+      return;
+    }
+
+    const updatedReview = await updateReview.mutateAsync({ id: review.id, payload: { reviewerId } });
+
+    setSelectedReview((current) => (current?.id === updatedReview.id ? updatedReview : current));
+  }
+
+  function setReviewScope(scope: ReviewScope) {
+    setPage(1);
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      if (scope === "all") {
+        nextParams.set("scope", "all");
+      } else {
+        nextParams.delete("scope");
+      }
+
+      return nextParams;
+    });
+  }
+
   return (
     <div className="grid min-w-0 gap-5">
       <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
@@ -85,9 +146,12 @@ export function ReviewsPage() {
             Tarefas aguardando aprovação de coordenadores e gerentes.
           </p>
         </div>
-        <div className="rounded-md border border-border bg-surface-card px-3 py-2 text-sm">
-          <p className="text-[11px] font-semibold uppercase text-text-muted">Pendentes</p>
-          <p className="mt-1 text-lg font-bold text-text-primary">{data?.total ?? 0}</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <ReviewScopeToggle value={reviewScope} onValueChange={setReviewScope} />
+          <div className="min-w-[136px] rounded-md border border-border bg-surface-card px-3 py-2 text-sm">
+            <p className="text-[11px] font-semibold uppercase text-text-muted">{pendingCountLabel}</p>
+            <p className="mt-1 text-lg font-bold text-text-primary">{data?.total ?? 0}</p>
+          </div>
         </div>
       </header>
 
@@ -123,7 +187,14 @@ export function ReviewsPage() {
                         <UserCell user={review.sourceTask?.assignee ?? null} fallback="Sem responsável" />
                       </BodyCell>
                       <BodyCell>
-                        <UserCell user={review.reviewer ?? null} fallback="Sem revisor" />
+                        <div onClick={(event) => event.stopPropagation()}>
+                          <ReviewReviewerSelect
+                            review={review}
+                            options={coordinatorOptions}
+                            disabled={updateReview.isPending}
+                            onValueChange={(reviewerId) => void patchReviewReviewer(review, reviewerId)}
+                          />
+                        </div>
                       </BodyCell>
                       <BodyCell>{review.dueDate ? formatDateOnly(review.dueDate, "dd/MM/yyyy") : <EmptyCell />}</BodyCell>
                       <BodyCell>
@@ -191,6 +262,7 @@ function ReviewDetailPanel({
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingCommentFile[]>([]);
   const [commentUploading, setCommentUploading] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
   const closeTimeoutRef = useRef<number | null>(null);
   const commentEditorRef = useRef<CommentEditorHandle | null>(null);
   const { user } = useAuth();
@@ -202,6 +274,7 @@ function ReviewDetailPanel({
   const sourceTask = currentReview?.sourceTask ?? null;
   const sourceOrigin = taskOrigin(sourceTask);
   const isPending = currentReview?.status === TaskReviewStatus.PENDING;
+  const canDecideReview = Boolean(isPending && user && currentReview?.reviewerId === user.id);
   const isBusy = updateReview.isPending || approveReview.isPending || rejectReview.isPending || commentUploading;
   const mentionContext = useMemo(
     () => (sourceTask?.discipline?.projectId && sourceTask.id ? { projectId: sourceTask.discipline.projectId, taskId: sourceTask.id } : null),
@@ -257,6 +330,27 @@ function ReviewDetailPanel({
     return () => window.cancelAnimationFrame(frame);
   }, [review]);
 
+  useEffect(() => {
+    if (!currentReview || !isOpen) {
+      return undefined;
+    }
+
+    function handlePointerDownCapture(event: PointerEvent) {
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      if (isTargetInsidePanelShell(event.target, asideRef) || isPointInsidePanelPortal(event.clientX, event.clientY)) {
+        return;
+      }
+
+      requestClose();
+    }
+
+    document.addEventListener("pointerdown", handlePointerDownCapture, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDownCapture, true);
+  }, [currentReview, isOpen]);
+
   if (!currentReview) {
     return null;
   }
@@ -301,6 +395,11 @@ function ReviewDetailPanel({
       return;
     }
 
+    if (!canDecideReview) {
+      toast.error("Apenas o revisor atribuido pode aprovar esta revisao.");
+      return;
+    }
+
     const reviewId = currentReview.id;
     const content = commentEditorRef.current?.getSubmitContent().trim() ?? message.trim();
     const files = validPendingFiles();
@@ -319,6 +418,11 @@ function ReviewDetailPanel({
 
   async function reject() {
     if (!currentReview) {
+      return;
+    }
+
+    if (!canDecideReview) {
+      toast.error("Apenas o revisor atribuido pode recusar esta revisao.");
       return;
     }
 
@@ -347,6 +451,7 @@ function ReviewDetailPanel({
   return (
     <TaskPanelShell
       isOpen={isOpen}
+      asideRef={asideRef}
       onClose={requestClose}
       headerContent={
         <div className="flex min-w-0 items-center justify-between gap-3">
@@ -373,35 +478,41 @@ function ReviewDetailPanel({
           <div className="flex items-start gap-3 border-t border-[--color-border] bg-[--bg-2] p-5">
             {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
             <div className="min-w-0 flex-1">
-              <TaskCommentEditor
-                ref={commentEditorRef}
-                value={message}
-                onChange={setMessage}
-                onSubmit={() => void approve()}
-                disabled={isBusy}
-                placeholder="Mensagem ao projetista"
-                pendingFiles={pendingFiles}
-                onPendingFilesChange={setPendingFiles}
-                onUploadingChange={setCommentUploading}
-                mentionContext={mentionContext}
-                footerActions={
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="secondary"
-                      className="h-8 px-3 text-xs"
-                      disabled={!isPending || isBusy || !message.trim()}
-                      onClick={() => void reject()}
-                    >
-                      <XCircle size={14} />
-                      Recusar
-                    </Button>
-                    <Button className="h-8 px-3 text-xs" disabled={!isPending || isBusy} onClick={() => void approve()}>
-                      <CheckCircle2 size={14} />
-                      Aprovar
-                    </Button>
-                  </div>
-                }
-              />
+              {canDecideReview ? (
+                <TaskCommentEditor
+                  ref={commentEditorRef}
+                  value={message}
+                  onChange={setMessage}
+                  onSubmit={() => void approve()}
+                  disabled={isBusy}
+                  placeholder="Mensagem ao projetista"
+                  pendingFiles={pendingFiles}
+                  onPendingFilesChange={setPendingFiles}
+                  onUploadingChange={setCommentUploading}
+                  mentionContext={mentionContext}
+                  footerActions={
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="secondary"
+                        className="h-8 px-3 text-xs"
+                        disabled={isBusy || !message.trim()}
+                        onClick={() => void reject()}
+                      >
+                        <XCircle size={14} />
+                        Recusar
+                      </Button>
+                      <Button className="h-8 px-3 text-xs" disabled={isBusy} onClick={() => void approve()}>
+                        <CheckCircle2 size={14} />
+                        Aprovar
+                      </Button>
+                    </div>
+                  }
+                />
+              ) : (
+                <div className="rounded-md border border-[--color-border-subtle] bg-[--bg-1] px-3 py-2 text-[13px] text-[--color-text-secondary]">
+                  Apenas o revisor atribuido pode aprovar ou recusar esta revisao.
+                </div>
+              )}
             </div>
           </div>
         ) : null
@@ -516,6 +627,37 @@ function ReviewDetailPanel({
   );
 }
 
+function ReviewReviewerSelect({
+  review,
+  options,
+  disabled,
+  onValueChange
+}: {
+  review: TaskReview;
+  options: Array<{ value: string; label: string; description?: string; avatarUrl?: string | null }>;
+  disabled: boolean;
+  onValueChange: (reviewerId: string) => void;
+}) {
+  return (
+    <SearchableSelect
+      value={review.reviewerId}
+      options={options}
+      disabled={disabled}
+      placeholder="Sem revisor"
+      searchPlaceholder="Buscar revisor..."
+      triggerClassName="h-7 min-h-0 w-full min-w-0 max-w-[160px] justify-start border-transparent bg-transparent px-1.5 text-left hover:bg-[--bg-3]"
+      contentClassName="min-w-[240px] max-w-[320px]"
+      renderValue={(option) => (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <Avatar name={option.label} imageUrl={option.avatarUrl} className="h-5 w-5 shrink-0" />
+          <span className="truncate">{option.label}</span>
+        </span>
+      )}
+      onValueChange={onValueChange}
+    />
+  );
+}
+
 function ReviewTableSkeleton() {
   return (
     <>
@@ -529,6 +671,38 @@ function ReviewTableSkeleton() {
         </tr>
       ))}
     </>
+  );
+}
+
+function ReviewScopeToggle({ value, onValueChange }: { value: ReviewScope; onValueChange: (value: ReviewScope) => void }) {
+  return (
+    <div className="inline-flex h-9 rounded-md border border-[--color-border] bg-[--bg-1] p-1" aria-label="Escopo das revisoes">
+      <button
+        type="button"
+        className={reviewScopeButtonClass(value === "mine")}
+        aria-pressed={value === "mine"}
+        onClick={() => onValueChange("mine")}
+      >
+        Minhas
+      </button>
+      <button
+        type="button"
+        className={reviewScopeButtonClass(value === "all")}
+        aria-pressed={value === "all"}
+        onClick={() => onValueChange("all")}
+      >
+        Todas
+      </button>
+    </div>
+  );
+}
+
+function reviewScopeButtonClass(active: boolean): string {
+  return cn(
+    "min-w-[72px] rounded-[4px] px-3 text-[12px] font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[--color-brand-orange] focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-1]",
+    active
+      ? "bg-[--bg-3] text-[--color-text-primary] shadow-[inset_0_0_0_1px_var(--color-border-subtle)]"
+      : "text-[--color-text-secondary] hover:text-[--color-text-primary]"
   );
 }
 

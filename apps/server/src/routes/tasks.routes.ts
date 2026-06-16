@@ -5,6 +5,7 @@ import {
   deleteTask,
   getTaskById,
   listTaskHistory,
+  sendTaskToReview,
   listTasks,
   updateTask,
   updateTaskCompletion,
@@ -67,6 +68,10 @@ const taskCompletionSchema = z.object({
   completed: z.boolean()
 });
 
+const sendTaskToReviewSchema = z.object({
+  reviewerId: z.string()
+});
+
 router.get("/sections/:sectionId/tasks", auth, listTasks);
 router.get("/disciplines/:disciplineId/tasks", auth, listTasks);
 router.get("/tasks/:id", auth, getTaskById);
@@ -76,6 +81,7 @@ router.post("/sections/:sectionId/tasks", auth, requireRole(Role.COORDINATOR), v
 router.post("/disciplines/:disciplineId/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
 router.patch("/tasks/:id", auth, requireRole(Role.COORDINATOR), validateBody(updateTaskSchema), updateTask);
 router.delete("/tasks/:id", auth, requireRole(Role.COORDINATOR), deleteTask);
+router.post("/tasks/:id/send-to-review", auth, requireRole(Role.COORDINATOR), validateBody(sendTaskToReviewSchema), sendTaskToReview);
 router.patch("/tasks/:id/status", auth, requireRole(Role.COORDINATOR), validateBody(taskStatusSchema), updateTaskStatus);
 router.patch("/tasks/:id/completed", auth, requireRole(Role.DESIGNER), validateBody(taskCompletionSchema), updateTaskCompletion);
 

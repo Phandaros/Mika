@@ -34,6 +34,7 @@ const teamBoardTaskInclude = {
   },
   customFieldValues: taskInclude.customFieldValues,
   tags: taskInclude.tags,
+  requestedReviews: taskInclude.requestedReviews,
   _count: { select: { comments: true } }
 } satisfies Prisma.TaskInclude;
 

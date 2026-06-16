@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { AppError } from "../middleware/errorHandler.js";
-import { isBacklogTask } from "../lib/taskStatusWhere.js";
+import { excludeBacklogWhere, isBacklogTask } from "../lib/taskStatusWhere.js";
 import { parseWorkloadScope, sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
 
 const globalWorkloadQuerySchema = z.object({
@@ -30,7 +30,8 @@ const globalWorkloadTaskInclude = {
     }
   },
   customFieldValues: taskInclude.customFieldValues,
-  tags: taskInclude.tags
+  tags: taskInclude.tags,
+  requestedReviews: taskInclude.requestedReviews
 } satisfies Prisma.TaskInclude;
 
 type GlobalWorkloadTaskRecord = Prisma.TaskGetPayload<{ include: typeof globalWorkloadTaskInclude }>;
@@ -68,6 +69,34 @@ function calendarDaysInclusive(from: string, to: string): number {
 
 function rangeOverlaps(bounds: { start: string; end: string }, from: string, to: string): boolean {
   return !(bounds.end < from || bounds.start > to);
+}
+
+function workloadDateWindowWhere(from: string, to: string, includeUndated: boolean): Prisma.TaskWhereInput {
+  const fromDate = new Date(`${from}T00:00:00.000Z`);
+  const toDate = new Date(`${to}T23:59:59.999Z`);
+  const datedWhere: Prisma.TaskWhereInput = {
+    AND: [
+      { OR: [{ startOn: { not: null } }, { dueOn: { not: null } }, { dueAt: { not: null } }] },
+      { OR: [{ startOn: { lte: to } }, { dueOn: { lte: to } }, { dueAt: { lte: toDate } }] },
+      { OR: [{ startOn: { gte: from } }, { dueOn: { gte: from } }, { dueAt: { gte: fromDate } }] }
+    ]
+  };
+
+  if (!includeUndated) {
+    return datedWhere;
+  }
+
+  return {
+    OR: [
+      datedWhere,
+      {
+        startOn: null,
+        dueOn: null,
+        dueAt: null,
+        ...excludeBacklogWhere()
+      }
+    ]
+  };
 }
 
 function taskHasActiveProjectMembership(task: GlobalWorkloadTaskRecord): boolean {
@@ -150,20 +179,27 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
     const tasks = await prisma.task.findMany({
       where: {
         parentId: null,
-        ...(scope === "general"
-          ? {
-              OR: [
-                { memberships: { none: {} } },
-                { memberships: { some: { OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }] } } }
-              ]
-            }
-          : {
-              memberships: {
-                some: {
-                  OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }]
+        AND: [
+          workloadDateWindowWhere(from, to, includeUndated),
+          scope === "general"
+            ? {
+                OR: [
+                  { memberships: { none: {} } },
+                  {
+                    memberships: {
+                      some: { OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }] }
+                    }
+                  }
+                ]
+              }
+            : {
+                memberships: {
+                  some: {
+                    OR: [{ project: { archived: false } }, { section: { project: { archived: false } } }]
+                  }
                 }
               }
-            })
+        ]
       },
       include: globalWorkloadTaskInclude
     });

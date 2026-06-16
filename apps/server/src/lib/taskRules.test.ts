@@ -41,6 +41,7 @@ function txMock() {
       findUniqueOrThrow: vi.fn(),
       findFirst: vi.fn(),
       deleteMany: vi.fn(),
+      update: vi.fn(),
       create: vi.fn()
     },
     user: {
@@ -172,6 +173,150 @@ describe("task rules", () => {
 
     expect(tx.task.findUnique).not.toHaveBeenCalled();
     expect(tx.taskReview.create).not.toHaveBeenCalled();
+  });
+
+  it("creates pending review with an explicit reviewer", async () => {
+    const tx = txMock();
+    tx.taskReview.findFirst.mockResolvedValue(null);
+    tx.task.findUnique.mockResolvedValue(taskFixture({ createdByUserId: "requester-1" }));
+    tx.taskReview.create.mockResolvedValue({
+      id: "review-1",
+      sourceTaskId: "task-1",
+      rootTaskId: "task-1",
+      reviewerId: "coordinator-2",
+      requestedById: "requester-1",
+      status: "PENDING",
+      message: null,
+      startOn: null,
+      dueOn: null,
+      decidedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await ensurePendingTaskReview(tx as unknown as Prisma.TransactionClient, "task-1", "requester-1", {
+      reviewerId: "coordinator-2"
+    });
+
+    expect(tx.user.findUnique).not.toHaveBeenCalled();
+    expect(tx.user.findFirst).not.toHaveBeenCalled();
+    expect(tx.taskReview.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        reviewerId: "coordinator-2",
+        requestedById: "requester-1"
+      })
+    });
+  });
+
+  it("reassigns an existing pending review without creating another review", async () => {
+    const tx = txMock();
+    tx.taskReview.findFirst.mockResolvedValue({
+      id: "review-1",
+      sourceTaskId: "task-1",
+      rootTaskId: "task-1",
+      reviewerId: "coordinator-1",
+      requestedById: "requester-1",
+      status: "PENDING",
+      message: null,
+      startOn: null,
+      dueOn: null,
+      decidedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    tx.taskReview.update.mockResolvedValue({
+      id: "review-1",
+      sourceTaskId: "task-1",
+      rootTaskId: "task-1",
+      reviewerId: "coordinator-2",
+      requestedById: "requester-1",
+      status: "PENDING",
+      message: null,
+      startOn: null,
+      dueOn: null,
+      decidedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await ensurePendingTaskReview(tx as unknown as Prisma.TransactionClient, "task-1", "requester-1", {
+      reviewerId: "coordinator-2"
+    });
+
+    expect(tx.taskReview.update).toHaveBeenCalledWith({
+      where: { id: "review-1" },
+      data: { reviewerId: "coordinator-2" },
+      select: expect.any(Object)
+    });
+    expect(tx.taskReview.create).not.toHaveBeenCalled();
+  });
+
+  it("selects another coordinator for manual review when excluding the requester", async () => {
+    const tx = txMock();
+    tx.taskReview.findFirst.mockResolvedValue(null);
+    tx.task.findUnique.mockResolvedValue(taskFixture({ createdByUserId: "requester-1" }));
+    tx.user.findUnique.mockResolvedValue({ id: "requester-1", role: Role.COORDINATOR, isActive: true });
+    tx.user.findFirst.mockResolvedValue({ id: "coordinator-2", role: Role.COORDINATOR, isActive: true });
+    tx.taskReview.create.mockResolvedValue({
+      id: "review-1",
+      sourceTaskId: "task-1",
+      rootTaskId: "task-1",
+      reviewerId: "coordinator-2",
+      requestedById: "requester-1",
+      status: "PENDING",
+      message: null,
+      startOn: null,
+      dueOn: null,
+      decidedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await ensurePendingTaskReview(tx as unknown as Prisma.TransactionClient, "task-1", "requester-1", {
+      excludeReviewerId: "requester-1"
+    });
+
+    expect(tx.taskReview.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        reviewerId: "coordinator-2",
+        requestedById: "requester-1"
+      })
+    });
+  });
+
+  it("falls back to the requester when no other coordinator can review", async () => {
+    const tx = txMock();
+    tx.taskReview.findFirst.mockResolvedValue(null);
+    tx.task.findUnique.mockResolvedValue(taskFixture({ createdByUserId: "requester-1" }));
+    tx.user.findUnique
+      .mockResolvedValueOnce({ id: "requester-1", role: Role.COORDINATOR, isActive: true })
+      .mockResolvedValueOnce({ id: "requester-1", role: Role.COORDINATOR, isActive: true });
+    tx.user.findFirst.mockResolvedValue(null);
+    tx.taskReview.create.mockResolvedValue({
+      id: "review-1",
+      sourceTaskId: "task-1",
+      rootTaskId: "task-1",
+      reviewerId: "requester-1",
+      requestedById: "requester-1",
+      status: "PENDING",
+      message: null,
+      startOn: null,
+      dueOn: null,
+      decidedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await ensurePendingTaskReview(tx as unknown as Prisma.TransactionClient, "task-1", "requester-1", {
+      excludeReviewerId: "requester-1"
+    });
+
+    expect(tx.taskReview.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        reviewerId: "requester-1",
+        requestedById: "requester-1"
+      })
+    });
   });
 
   it("creates adjustment tasks with the next sequence and copied memberships", async () => {

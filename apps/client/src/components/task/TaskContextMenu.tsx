@@ -1,8 +1,10 @@
-import type { MouseEvent, ReactNode } from "react";
+import { useMemo, type MouseEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Check,
   CheckCircle2,
   ChevronRight,
+  ClipboardCheck,
   Copy,
   CopyPlus,
   Eye,
@@ -11,11 +13,12 @@ import {
   RotateCcw,
   Trash2
 } from "lucide-react";
-import type { Task } from "shared";
+import { Role, type Task } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useCopyTaskLink } from "../../hooks/useCopyTaskLink";
 import { useDeferredTaskDelete } from "../../hooks/useDeferredTaskDelete";
 import { useTaskContextActions } from "../../hooks/useTaskContextActions";
+import { useUsers } from "../../hooks/useUsers";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
 import { resolveTaskProjectId } from "../../lib/taskLink";
 import { editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
@@ -51,6 +54,7 @@ export function TaskContextMenu<TTask extends Task>({
   const { user } = useAuth();
   const canManage = canManageTasks(user);
   const canComplete = canCompleteTasks(user);
+  const { data: users = [] } = useUsers();
   const { copyTaskLink } = useCopyTaskLink();
   const { scheduleTaskDelete } = useDeferredTaskDelete(projectId);
   const {
@@ -58,13 +62,25 @@ export function TaskContextMenu<TTask extends Task>({
     recalculateDates,
     changeStatus,
     toggleCompletion,
+    sendToReview,
     canRecalculate,
+    canSendToReview,
     isDuplicating,
     isUpdating
   } = useTaskContextActions(task, projectId);
 
   const taskProjectId = resolveTaskProjectId(task);
   const statusOptions = editableTaskStatusOptions(task);
+  const reviewerOptions = useMemo(
+    () =>
+      users
+        .filter((item) => item.isActive && (item.role === Role.ADMIN || item.role === Role.COORDINATOR))
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    [users]
+  );
+  const currentReviewer = task.pendingReview?.reviewer;
+  const currentReviewerName = currentReviewer?.name ?? (task.pendingReview ? "Sem revisor" : null);
+  const reviewTriggerLabel = currentReviewerName ? `Revisão: ${currentReviewerName}` : "Enviar para revisão";
 
   return (
     <ContextMenu>
@@ -91,6 +107,37 @@ export function TaskContextMenu<TTask extends Task>({
             {task.completed ? <RotateCcw className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
             {task.completed ? "Reabrir tarefa" : "Marcar como concluída"}
           </ContextMenuItem>
+        ) : null}
+        {canManage && canSendToReview ? (
+          <ContextMenuSub>
+            <ContextMenuSubTrigger disabled={isUpdating || reviewerOptions.length === 0}>
+              <ClipboardCheck className="h-4 w-4" />
+              <span className="max-w-[180px] truncate">{reviewTriggerLabel}</span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-64">
+              {reviewerOptions.length === 0 ? (
+                <ContextMenuItem disabled>Nenhum coordenador ativo</ContextMenuItem>
+              ) : (
+                reviewerOptions.map((reviewer) => {
+                  const isCurrentReviewer = reviewer.id === task.pendingReview?.reviewerId;
+
+                  return (
+                    <ContextMenuItem
+                      key={reviewer.id}
+                      disabled={isCurrentReviewer || isUpdating}
+                      onSelect={() => void sendToReview(reviewer.id)}
+                    >
+                      {isCurrentReviewer ? <Check className="h-4 w-4 text-brand-orange" /> : <span className="h-4 w-4" />}
+                      <span className="min-w-0 flex-1 truncate">{reviewer.name}</span>
+                      <span className="ml-auto text-[11px] font-semibold text-text-muted">
+                        {reviewer.role === Role.ADMIN ? "Admin" : "Coord."}
+                      </span>
+                    </ContextMenuItem>
+                  );
+                })
+              )}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
         ) : null}
         {canManage ? (
           <ContextMenuSub>

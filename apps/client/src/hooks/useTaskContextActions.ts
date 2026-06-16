@@ -3,10 +3,11 @@ import { addCalendarDaysYmd, buildNonWorkingDays, canRecalculateTaskDates, recal
 import { toDateOnly } from "../lib/utils";
 import { resolveTaskProjectId } from "../lib/taskLink";
 import { toast } from "sonner";
-import type { CreateTaskRequest, Task, TaskStatus } from "shared";
+import { TaskStatus, type CreateTaskRequest, type Task } from "shared";
 import { useCompanyHolidays } from "./useCompanyHolidays";
 import {
   useCreateTaskInSection,
+  useSendTaskToReview,
   useUpdateTask,
   useUpdateTaskCompletion,
   useUpdateTaskStatus
@@ -18,6 +19,7 @@ export function useTaskContextActions(task: Task, projectId = "") {
   const updateTask = useUpdateTask(resolvedProjectId);
   const updateTaskStatus = useUpdateTaskStatus(resolvedProjectId);
   const updateTaskCompletion = useUpdateTaskCompletion(resolvedProjectId);
+  const sendTaskToReviewMutation = useSendTaskToReview(resolvedProjectId);
 
   const startDate = toDateOnly(task.startDate);
   const holidayFrom = startDate ?? new Date().toISOString().slice(0, 10);
@@ -127,16 +129,32 @@ export function useTaskContextActions(task: Task, projectId = "") {
     }
   }
 
+  async function sendToReview(reviewerId: string) {
+    const isReassignment = Boolean(task.pendingReview);
+
+    try {
+      await sendTaskToReviewMutation.mutateAsync({ taskId: task.id, reviewerId });
+      toast.success(isReassignment ? "Revisão reatribuída" : "Tarefa enviada para revisão");
+    } catch {
+      toast.error("Não foi possível enviar para revisão");
+    }
+  }
+
+  const canSendToReview = task.status !== TaskStatus.FINISHED;
+
   return {
     duplicateTask,
     recalculateDates,
     changeStatus,
     toggleCompletion,
+    sendToReview,
     canRecalculate,
+    canSendToReview,
     isDuplicating: createTaskInSection.isPending,
     isUpdating:
       updateTask.isPending ||
       updateTaskStatus.isPending ||
-      updateTaskCompletion.isPending
+      updateTaskCompletion.isPending ||
+      sendTaskToReviewMutation.isPending
   };
 }

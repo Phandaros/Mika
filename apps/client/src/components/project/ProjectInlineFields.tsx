@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ProjectStatus, type ProjectCustomFieldValue } from "shared";
-import { projectStatusLabels } from "../../lib/projectLabels";
+import { formatProjectAreaValue, projectStatusLabels } from "../../lib/projectLabels";
 import { fieldMultiValues } from "../../lib/portfolioFields";
 import { portfolioEnumColor, portfolioFieldLabel } from "../../lib/portfolioEnumColor";
 import { cn } from "../../lib/utils";
@@ -10,7 +10,7 @@ import { DatePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { SearchableMultiSelect } from "../ui/searchable-multi-select";
 import { SearchableSelect } from "../ui/searchable-select";
-import { EmptyField, formatDecimal } from "../task/TaskPanelPrimitives";
+import { EmptyField } from "../task/TaskPanelPrimitives";
 import { ProjectMultiEnumChips, ProjectEnumChip } from "./ProjectPortfolioChips";
 import { BuilderCombobox } from "./BuilderCombobox";
 
@@ -138,7 +138,7 @@ export function EditableProjectAreaField({
   onSave: (value: number | null) => void;
   variant?: ProjectInlineFieldVariant;
 }) {
-  const initialValue = value == null ? "" : formatDecimal(value);
+  const initialValue = value == null ? "" : formatProjectAreaValue(value);
   const [draft, setDraft] = useState(initialValue);
 
   useEffect(() => {
@@ -153,6 +153,7 @@ export function EditableProjectAreaField({
         onBlur={() => {
           const parsed = parseDecimalInput(draft);
           const nextValue = parsed === null || Number.isNaN(parsed) ? null : Number(parsed.toFixed(2));
+          setDraft(nextValue === null ? "" : formatProjectAreaValue(nextValue));
           if (nextValue !== (value ?? null)) {
             onSave(nextValue);
           }

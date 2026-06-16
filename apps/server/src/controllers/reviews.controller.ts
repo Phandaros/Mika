@@ -293,7 +293,7 @@ export const approveReview: RequestHandler = async (req, res, next) => {
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.taskReview.findUnique({
         where: { id: reviewId },
-        select: { id: true, sourceTaskId: true, status: true, sourceTask: { select: { id: true, name: true } } }
+        select: { id: true, sourceTaskId: true, reviewerId: true, status: true, sourceTask: { select: { id: true, name: true } } }
       });
 
       if (!existing) {
@@ -302,6 +302,10 @@ export const approveReview: RequestHandler = async (req, res, next) => {
 
       if (existing.status !== "PENDING") {
         throw new AppError(400, "Esta revisao ja foi decidida");
+      }
+
+      if (existing.reviewerId !== authUser.id) {
+        throw new AppError(403, "Apenas o revisor atribuido pode aprovar esta revisao");
       }
 
       if (message || files.length > 0) {
@@ -377,7 +381,7 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.taskReview.findUnique({
         where: { id: reviewId },
-        select: { id: true, status: true }
+        select: { id: true, reviewerId: true, status: true }
       });
 
       if (!existing) {
@@ -386,6 +390,10 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
 
       if (existing.status !== "PENDING") {
         throw new AppError(400, "Esta revisao ja foi decidida");
+      }
+
+      if (existing.reviewerId !== authUser.id) {
+        throw new AppError(403, "Apenas o revisor atribuido pode recusar esta revisao");
       }
 
       const adjustmentTaskId = await createAdjustmentTask(tx, reviewId);

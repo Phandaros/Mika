@@ -56,6 +56,11 @@ export interface Task {
     name: string;
     color: string | null;
   }>;
+  pendingReview?: {
+    id: string;
+    reviewerId: string;
+    reviewer?: User | null;
+  } | null;
   assignee?: User | null;
   creator?: User;
   comments?: Comment[];

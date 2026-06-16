@@ -152,14 +152,68 @@ export async function deletePendingTaskReview(tx: Prisma.TransactionClient, sour
   });
 }
 
-export async function ensurePendingTaskReview(tx: Prisma.TransactionClient, sourceTaskId: string, requestedById: string): Promise<void> {
+type PendingTaskReview = {
+  id: string;
+  sourceTaskId: string;
+  rootTaskId: string;
+  reviewerId: string;
+  requestedById: string | null;
+  status: string;
+  message: string | null;
+  startOn: string | null;
+  dueOn: string | null;
+  decidedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function ensurePendingTaskReview(
+  tx: Prisma.TransactionClient,
+  sourceTaskId: string,
+  requestedById: string,
+  options: { excludeReviewerId?: string; reviewerId?: string } = {}
+): Promise<PendingTaskReview | null> {
   const existing = await tx.taskReview.findFirst({
     where: { sourceTaskId, status: "PENDING" },
-    select: { id: true }
+    select: {
+      id: true,
+      sourceTaskId: true,
+      rootTaskId: true,
+      reviewerId: true,
+      requestedById: true,
+      status: true,
+      message: true,
+      startOn: true,
+      dueOn: true,
+      decidedAt: true,
+      createdAt: true,
+      updatedAt: true
+    }
   });
 
   if (existing) {
-    return;
+    if (!options.reviewerId || existing.reviewerId === options.reviewerId) {
+      return existing;
+    }
+
+    return tx.taskReview.update({
+      where: { id: existing.id },
+      data: { reviewerId: options.reviewerId },
+      select: {
+        id: true,
+        sourceTaskId: true,
+        rootTaskId: true,
+        reviewerId: true,
+        requestedById: true,
+        status: true,
+        message: true,
+        startOn: true,
+        dueOn: true,
+        decidedAt: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
   }
 
   const task = await tx.task.findUnique({
@@ -179,16 +233,18 @@ export async function ensurePendingTaskReview(tx: Prisma.TransactionClient, sour
   });
 
   if (!task) {
-    return;
+    return null;
   }
 
-  const reviewer = await resolveReviewer(tx, task);
+  const reviewer = options.reviewerId
+    ? { id: options.reviewerId }
+    : await resolveReviewer(tx, task, options.excludeReviewerId);
 
   if (!reviewer) {
-    return;
+    return null;
   }
 
-  await tx.taskReview.create({
+  return tx.taskReview.create({
     data: {
       sourceTaskId,
       rootTaskId: task.workflowRootTaskId ?? task.id,
@@ -209,7 +265,8 @@ async function resolveReviewer(
       section: { project: { ownerGid: string | null } } | null;
       project: { ownerGid: string | null } | null;
     }>;
-  }
+  },
+  excludeReviewerId?: string
 ) {
   if (task.createdByUserId) {
     const creator = await tx.user.findUnique({
@@ -217,7 +274,7 @@ async function resolveReviewer(
       select: { id: true, role: true, isActive: true }
     });
 
-    if (creator?.isActive && coordinatorRoles.has(creator.role)) {
+    if (creator?.isActive && coordinatorRoles.has(creator.role) && creator.id !== excludeReviewerId) {
       return creator;
     }
   }
@@ -232,19 +289,31 @@ async function resolveReviewer(
       select: { id: true, role: true, isActive: true }
     });
 
-    if (owner?.isActive && coordinatorRoles.has(owner.role)) {
+    if (owner?.isActive && coordinatorRoles.has(owner.role) && owner.id !== excludeReviewerId) {
       return owner;
     }
   }
 
-  return tx.user.findFirst({
+  const otherReviewer = await tx.user.findFirst({
     where: {
       isActive: true,
-      role: { in: [Role.COORDINATOR, Role.ADMIN] }
+      role: { in: [Role.COORDINATOR, Role.ADMIN] },
+      ...(excludeReviewerId ? { id: { not: excludeReviewerId } } : {})
     },
     orderBy: [{ role: "asc" }, { name: "asc" }],
     select: { id: true, role: true, isActive: true }
   });
+
+  if (otherReviewer || !excludeReviewerId) {
+    return otherReviewer;
+  }
+
+  const fallbackReviewer = await tx.user.findUnique({
+    where: { id: excludeReviewerId },
+    select: { id: true, role: true, isActive: true }
+  });
+
+  return fallbackReviewer?.isActive && coordinatorRoles.has(fallbackReviewer.role) ? fallbackReviewer : null;
 }
 
 export async function createAdjustmentTask(tx: Prisma.TransactionClient, reviewId: string): Promise<string> {

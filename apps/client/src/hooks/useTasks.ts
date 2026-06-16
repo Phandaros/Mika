@@ -5,6 +5,7 @@ import type {
   CreateTaskRequest,
   Project,
   Task,
+  TaskReview,
   TaskStatus,
   UpdateTaskRequest
 } from "shared";
@@ -30,6 +31,11 @@ interface SprintSummaryResponse {
 
 interface TaskResponse {
   task: Task;
+}
+
+interface SendTaskToReviewResponse {
+  task: Task;
+  review: TaskReview;
 }
 
 type UpdateTaskMutationContext = {
@@ -812,6 +818,25 @@ export function useUpdateTaskCompletion(projectId: string) {
       invalidateTeamBoardQueries();
       invalidateHomeDashboardQuery();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
+    }
+  });
+}
+
+export function useSendTaskToReview(projectId: string) {
+  return useMutation({
+    mutationFn: async ({ taskId, reviewerId }: { taskId: string; reviewerId: string }) => {
+      const response = await api.post<SendTaskToReviewResponse>(`/tasks/${taskId}/send-to-review`, { reviewerId });
+      return response.data;
+    },
+    onSuccess: ({ task }) => {
+      updateTaskInProjectCache(projectId, task);
+      updateSprintBoardTaskCaches(task);
+      invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
+      invalidateTeamBoardQueries();
+      invalidateHomeDashboardQuery();
+      void queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      void queryClient.invalidateQueries({ queryKey: ["tasks", task.id, "history"] });
     }
   });
 }

@@ -85,6 +85,9 @@ export function NotificationBell() {
                     if (notification.type === NotificationType.WEEKLY_REPORT_DUE) {
                       setOpen(false);
                       navigate("/weekly-reports/mine");
+                    } else if (notification.type === NotificationType.TASK_REVIEW_REQUESTED) {
+                      setOpen(false);
+                      navigate("/reviews");
                     }
                   }}
                   className="grid w-full gap-1 rounded-md p-3 text-left transition hover:bg-surface-hover"

@@ -46,7 +46,8 @@ const sprintTaskInclude = {
     }
   },
   customFieldValues: taskInclude.customFieldValues,
-  tags: taskInclude.tags
+  tags: taskInclude.tags,
+  requestedReviews: taskInclude.requestedReviews
 } satisfies Prisma.TaskInclude;
 
 type SprintTaskRecord = Prisma.TaskGetPayload<{ include: typeof sprintTaskInclude }>;

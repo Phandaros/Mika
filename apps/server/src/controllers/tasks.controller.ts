@@ -1,14 +1,15 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
+import { NotificationType } from "shared";
 import { prisma } from "../lib/prisma.js";
-import { Priority, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
+import { Priority, Role, TaskStatus, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
 import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification } from "../lib/notify.js";
 import { getAuthUser } from "../middleware/auth.js";
-import { applyTaskRules } from "../lib/taskRules.js";
+import { applyTaskRules, ensurePendingTaskReview } from "../lib/taskRules.js";
 import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
 
 function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
@@ -53,6 +54,25 @@ interface StatusBody {
 interface CompletionBody {
   completed: boolean;
 }
+
+interface SendToReviewBody {
+  reviewerId: string;
+}
+
+type PendingTaskReviewDtoInput = {
+  id: string;
+  sourceTaskId: string;
+  rootTaskId: string;
+  reviewerId: string;
+  requestedById: string | null;
+  status: string;
+  message: string | null;
+  startOn: string | null;
+  dueOn: string | null;
+  decidedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 type ExistingTaskForActivity = Prisma.TaskGetPayload<{
   include: {
@@ -263,6 +283,36 @@ function taskMembershipSummary(memberships: Array<{ projectName: string | null; 
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return labels.length > 0 ? labels.join(", ") : null;
+}
+
+function toPendingTaskReviewDto(review: PendingTaskReviewDtoInput, title: string) {
+  return {
+    id: review.id,
+    title,
+    discipline: "Revisão" as const,
+    sourceTaskId: review.sourceTaskId,
+    rootTaskId: review.rootTaskId,
+    reviewerId: review.reviewerId,
+    requestedById: review.requestedById,
+    status: review.status,
+    message: review.message,
+    startDate: review.startOn,
+    dueDate: review.dueOn,
+    decidedAt: review.decidedAt?.toISOString() ?? null,
+    createdAt: review.createdAt.toISOString(),
+    updatedAt: review.updatedAt.toISOString()
+  };
+}
+
+async function validateReviewAssignee(tx: Prisma.TransactionClient, reviewerId: string): Promise<void> {
+  const reviewer = await tx.user.findUnique({
+    where: { id: reviewerId },
+    select: { id: true, role: true, isActive: true }
+  });
+
+  if (!reviewer?.isActive || (reviewer.role !== Role.ADMIN && reviewer.role !== Role.COORDINATOR)) {
+    throw new AppError(400, "Responsável de revisão inválido");
+  }
 }
 
 async function recordTaskFieldActivities(
@@ -884,6 +934,118 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
     const catalog = await taskFieldCatalog();
 
     res.json({ task: toTaskDto(task, undefined, catalog) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendTaskToReview: RequestHandler = async (req, res, next) => {
+  try {
+    const authUser = getAuthUser(req);
+    const body = req.body as SendToReviewBody;
+    const taskId = req.params.id;
+
+    if (!taskId) {
+      throw new AppError(400, "Task id is required");
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.task.findUnique({
+        where: { id: taskId },
+        select: {
+          id: true,
+          name: true,
+          mikaStatus: true,
+          completed: true
+        }
+      });
+
+      if (!existing) {
+        throw new AppError(404, "Task not found");
+      }
+
+      if (existing.mikaStatus === TaskStatus.FINISHED) {
+        throw new AppError(400, "Tarefas finalizadas não podem ser enviadas para revisão");
+      }
+
+      await validateReviewAssignee(tx, body.reviewerId);
+
+      const pendingReview = await tx.taskReview.findFirst({
+        where: { sourceTaskId: taskId, status: "PENDING" },
+        select: { id: true, reviewerId: true }
+      });
+
+      if (!pendingReview) {
+        await tx.task.update({
+          where: { id: taskId },
+          data: {
+            mikaStatus: TaskStatus.AWAITING_REVIEW,
+            completed: true,
+            completedAtAsana: new Date()
+          }
+        });
+      }
+
+      const review = await ensurePendingTaskReview(tx, taskId, authUser.id, { reviewerId: body.reviewerId });
+
+      if (!review) {
+        throw new AppError(400, "Nenhum coordenador ativo disponível para revisar esta tarefa");
+      }
+
+      const updatedTask = await tx.task.findUniqueOrThrow({
+        where: { id: taskId },
+        include: taskInclude
+      });
+
+      if (!pendingReview) {
+        await createTaskUpdateActivity(tx, {
+          taskId,
+          actorId: authUser.id,
+          type: taskActivityTypes.COMPLETED,
+          field: "status",
+          fromValue: existing.mikaStatus,
+          toValue: updatedTask.mikaStatus
+        });
+      } else if (pendingReview.reviewerId !== review.reviewerId) {
+        await createTaskUpdateActivity(tx, {
+          taskId,
+          actorId: authUser.id,
+          field: "reviewer",
+          fromValue: pendingReview.reviewerId,
+          toValue: review.reviewerId
+        });
+      }
+
+      if (!pendingReview && !existing.completed) {
+        await createTaskUpdateActivity(tx, {
+          taskId,
+          actorId: authUser.id,
+          field: "completed",
+          fromValue: existing.completed,
+          toValue: updatedTask.completed
+        });
+      }
+
+      return { task: updatedTask, review, shouldNotify: !pendingReview || pendingReview.reviewerId !== review.reviewerId };
+    });
+
+    if (result.shouldNotify) {
+      await createAndEmitNotification({
+        userId: result.review.reviewerId,
+        type: NotificationType.TASK_REVIEW_REQUESTED,
+        title: "Nova revisão",
+        message: result.task.name,
+        taskId: result.task.id
+      });
+    }
+
+    const catalog = await taskFieldCatalog();
+    const task = toTaskDto(result.task, undefined, catalog);
+
+    res.json({
+      task,
+      review: toPendingTaskReviewDto(result.review, task.title)
+    });
   } catch (error) {
     next(error);
   }
