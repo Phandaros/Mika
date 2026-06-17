@@ -5,6 +5,8 @@ import type {
   PortfolioProjectSort,
   PortfolioProjectsResponse,
   Project,
+  ProjectOption,
+  ProjectOptionsResponse,
   UpdateProjectRequest
 } from "shared";
 import { api } from "../lib/api";
@@ -48,6 +50,17 @@ export function useProjects() {
       const response = await api.get<ProjectsResponse>("/projects");
       return response.data.projects;
     }
+  });
+}
+
+export function useProjectOptions() {
+  return useQuery({
+    queryKey: ["projects", "options"],
+    queryFn: async () => {
+      const response = await api.get<ProjectOptionsResponse>("/projects/options");
+      return response.data.projects;
+    },
+    staleTime: 60_000
   });
 }
 
@@ -98,6 +111,7 @@ export function useCreateProject() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      await queryClient.invalidateQueries({ queryKey: ["projects", "options"] });
       await queryClient.invalidateQueries({ queryKey: ["projects", "portfolio"] });
     }
   });

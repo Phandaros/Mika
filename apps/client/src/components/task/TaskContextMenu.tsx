@@ -1,26 +1,21 @@
 import { useMemo, type MouseEvent, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Check,
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
-  Copy,
   CopyPlus,
   Eye,
-  FolderKanban,
   RefreshCw,
   RotateCcw,
   Trash2
 } from "lucide-react";
 import { Role, type Task } from "shared";
 import { useAuth } from "../../hooks/useAuth";
-import { useCopyTaskLink } from "../../hooks/useCopyTaskLink";
 import { useDeferredTaskDelete } from "../../hooks/useDeferredTaskDelete";
 import { useTaskContextActions } from "../../hooks/useTaskContextActions";
 import { useUsers } from "../../hooks/useUsers";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
-import { resolveTaskProjectId } from "../../lib/taskLink";
 import { editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
 import {
   ContextMenu,
@@ -32,6 +27,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger
 } from "../ui/context-menu";
+import { TaskCommonActionItems } from "./TaskCommonActionItems";
 
 interface TaskContextMenuProps<TTask extends Task> {
   task: TTask;
@@ -50,13 +46,11 @@ export function TaskContextMenu<TTask extends Task>({
   fallbackLinkPath,
   onContextMenu
 }: TaskContextMenuProps<TTask>) {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const canManage = canManageTasks(user);
   const canComplete = canCompleteTasks(user);
-  const { data: users = [] } = useUsers();
-  const { copyTaskLink } = useCopyTaskLink();
   const { scheduleTaskDelete } = useDeferredTaskDelete(projectId);
+  const { data: users = [] } = useUsers();
   const {
     duplicateTask,
     recalculateDates,
@@ -69,7 +63,6 @@ export function TaskContextMenu<TTask extends Task>({
     isUpdating
   } = useTaskContextActions(task, projectId);
 
-  const taskProjectId = resolveTaskProjectId(task);
   const statusOptions = editableTaskStatusOptions(task);
   const reviewerOptions = useMemo(
     () =>
@@ -92,16 +85,13 @@ export function TaskContextMenu<TTask extends Task>({
           <Eye className="h-4 w-4" />
           Abrir detalhes da tarefa
         </ContextMenuItem>
-        <ContextMenuItem onSelect={() => void copyTaskLink(task, { fallbackPath: fallbackLinkPath })}>
-          <Copy className="h-4 w-4" />
-          Copiar link da tarefa
-        </ContextMenuItem>
-        {taskProjectId ? (
-          <ContextMenuItem onSelect={() => navigate(`/projects/${taskProjectId}`)}>
-            <FolderKanban className="h-4 w-4" />
-            Abrir projeto
-          </ContextMenuItem>
-        ) : null}
+        <TaskCommonActionItems
+          task={task}
+          menu="context"
+          projectId={projectId}
+          fallbackLinkPath={fallbackLinkPath}
+          includeDelete={false}
+        />
         {canComplete ? (
           <ContextMenuItem disabled={isUpdating} onSelect={() => void toggleCompletion()}>
             {task.completed ? <RotateCcw className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}

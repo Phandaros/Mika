@@ -9,11 +9,12 @@ import {
   type MentionContext,
   type MentionSuggestionItem
 } from "./mentionUtils";
-import type { Project, User } from "shared";
+import type { MentionProject } from "./mentionUtils";
+import type { User } from "shared";
 
 type MentionDataSource = {
   usersRef: RefObject<User[]>;
-  projectsRef: RefObject<Project[]>;
+  projectsRef: RefObject<MentionProject[]>;
   contextRef: RefObject<MentionContext | null>;
 };
 

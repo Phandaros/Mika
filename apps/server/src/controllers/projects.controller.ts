@@ -6,10 +6,12 @@ import { ProjectStatus, type ProjectStatus as ProjectStatusValue } from "../lib/
 import {
   makeLocalAsanaGid,
   projectInclude,
+  projectOptionsInclude,
   projectPortfolioInclude,
   taskCustomFieldCatalogInclude,
   taskInclude,
   toProjectDto,
+  toProjectOptionDto,
   toProjectPortfolioDto,
   toTaskDto
 } from "../lib/asanaDto.js";
@@ -79,6 +81,20 @@ export const listProjects: RequestHandler = async (_req, res, next) => {
     ]);
 
     res.json({ projects: projects.map((project) => toProjectDto(project, taskFieldCatalog)) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listProjectOptions: RequestHandler = async (_req, res, next) => {
+  try {
+    const projects = await prisma.project.findMany({
+      where: { archived: false },
+      orderBy: { name: "asc" },
+      include: projectOptionsInclude
+    });
+
+    res.json({ projects: projects.map((project) => toProjectOptionDto(project)) });
   } catch (error) {
     next(error);
   }

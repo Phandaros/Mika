@@ -41,7 +41,7 @@ import { Input } from "../components/ui/input";
 import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
-import { useProject, useProjects } from "../hooks/useProjects";
+import { usePortfolioFacets, useProject } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import {
@@ -137,7 +137,7 @@ export function ProjectDetailPage() {
   const canComplete = canCompleteTasks(user);
 
   const { data: users = [] } = useUsers();
-  const { data: projects = [] } = useProjects();
+  const { data: portfolioBuilders = [] } = usePortfolioFacets();
 
   const disciplines = project?.sections ?? project?.disciplines ?? [];
   const allTasks = useMemo(() => tasksFromDisciplines(disciplines), [disciplines]);
@@ -214,11 +214,8 @@ export function ProjectDetailPage() {
   }, [disciplines, taskScope]);
 
   const builderSuggestions = useMemo(
-    () =>
-      Array.from(
-        new Set(projects.map((item) => item.builder?.trim()).filter((builder): builder is string => Boolean(builder)))
-      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
-    [projects]
+    () => [...portfolioBuilders].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [portfolioBuilders]
   );
 
   const disciplineFilteredTasks = useMemo(

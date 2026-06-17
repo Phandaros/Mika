@@ -87,16 +87,26 @@ export function sortHomeTasks(tasks: HomeDashboardTask[], today = todayDateOnly(
 }
 
 export async function buildHomeDashboard(authUser: JwtUser): Promise<HomeDashboardResponse> {
-  const capabilities = homeDashboardCapabilities(authUser.role);
+  const dashboard = await buildUserHomeDashboard(authUser.id, { includeGlobalSections: true });
+  return dashboard ?? emptyDashboard(homeDashboardCapabilities(authUser.role));
+}
+
+export async function buildUserHomeDashboard(
+  targetUserId: string,
+  options: { includeGlobalSections?: boolean } = {}
+): Promise<HomeDashboardResponse | null> {
+  const includeGlobalSections = options.includeGlobalSections ?? false;
+
   const user = await prisma.user.findUnique({
-    where: { id: authUser.id },
+    where: { id: targetUserId },
     select: { id: true, asanaGid: true, role: true }
   });
 
   if (!user) {
-    return emptyDashboard(capabilities);
+    return null;
   }
 
+  const capabilities = homeDashboardCapabilities(user.role);
   const today = todayDateOnly();
   const weekStart = getCurrentWeekStart();
   const weekEnd = getCurrentWeekEnd();
@@ -150,10 +160,10 @@ export async function buildHomeDashboard(authUser: JwtUser): Promise<HomeDashboa
         })
       : Promise.resolve(0),
     assigneeGid ? loadMyTaskRows(assigneeGid) : Promise.resolve([]),
-    loadRecentActivity(10),
-    loadActiveProjectSummaries(today),
-    capabilities.canSeeReviews ? loadMyReviews(authUser.id) : Promise.resolve(undefined),
-    capabilities.canSeeMyWeeklyReport ? loadMyWeeklyReport(authUser.id, weekStart) : Promise.resolve(null),
+    includeGlobalSections ? loadRecentActivity(10) : Promise.resolve([]),
+    includeGlobalSections ? loadActiveProjectSummaries(today) : Promise.resolve([]),
+    capabilities.canSeeReviews ? loadMyReviews(user.id) : Promise.resolve(undefined),
+    capabilities.canSeeMyWeeklyReport ? loadMyWeeklyReport(user.id, weekStart) : Promise.resolve(null),
     capabilities.canSeeWeeklyReportsSummary ? loadWeeklyReportsSummary(weekStart) : Promise.resolve(undefined)
   ]);
 
@@ -326,6 +336,7 @@ async function loadMyReviews(userId: string) {
         requestedBy: { select: { name: true } },
         sourceTask: {
           select: {
+            id: true,
             name: true,
             memberships: {
               take: 1,
@@ -348,6 +359,7 @@ async function loadMyReviews(userId: string) {
 
       return {
         id: review.id,
+        taskId: review.sourceTask.id,
         title: `[REV] ${review.sourceTask.name}`,
         dueDate: review.dueOn,
         projectName: membership?.section?.project.name ?? membership?.project?.name ?? membership?.projectName ?? null,

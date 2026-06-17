@@ -4,6 +4,7 @@ import {
   createUser,
   deleteUser,
   getUserById,
+  getUserHome,
   listUsers,
   resetUserPassword,
   updateUser
@@ -33,6 +34,7 @@ const updateUserSchema = z.object({
 });
 
 router.get("/users", auth, listUsers);
+router.get("/users/:id/home", auth, requireRole(Role.COORDINATOR), getUserHome);
 router.get("/users/:id", auth, getUserById);
 router.post("/users", auth, requireRole(Role.COORDINATOR), validateBody(createUserSchema), createUser);
 router.patch("/users/:id", auth, requireRole(Role.COORDINATOR), validateBody(updateUserSchema), updateUser);

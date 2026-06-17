@@ -6,6 +6,7 @@ import {
   getProjectById,
   listPortfolioFacets,
   listPortfolioProjects,
+  listProjectOptions,
   listProjects,
   listWorkloadTasks,
   updateProject
@@ -42,6 +43,7 @@ const updateProjectSchema = projectSchema.partial();
 
 router.get("/projects/portfolio/facets", auth, listPortfolioFacets);
 router.get("/projects/portfolio", auth, listPortfolioProjects);
+router.get("/projects/options", auth, listProjectOptions);
 router.get("/projects", auth, listProjects);
 router.get("/projects/:id/workload-tasks", auth, listWorkloadTasks);
 router.get("/projects/:id", auth, getProjectById);

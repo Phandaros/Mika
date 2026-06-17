@@ -41,6 +41,7 @@ export interface HomeDashboardProject {
 
 export interface HomeDashboardReview {
   id: string;
+  taskId: string;
   title: string;
   dueDate: string | null;
   projectName: string | null;

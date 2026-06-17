@@ -133,10 +133,24 @@ export const projectPortfolioInclude = {
   }
 } satisfies Prisma.ProjectInclude;
 
+export const projectOptionsInclude = {
+  sections: {
+    orderBy: { name: "asc" as const },
+    select: {
+      id: true,
+      asanaGid: true,
+      name: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  }
+} satisfies Prisma.ProjectInclude;
+
 type UserRecord = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 type TaskRecord = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
 type ProjectRecord = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 type PortfolioProjectRecord = Prisma.ProjectGetPayload<{ include: typeof projectPortfolioInclude }>;
+type ProjectOptionsRecord = Prisma.ProjectGetPayload<{ include: typeof projectOptionsInclude }>;
 type SectionRecord = ProjectRecord["sections"][number];
 export type TaskCustomFieldCatalog = Prisma.AsanaCustomFieldGetPayload<{ include: typeof taskCustomFieldCatalogInclude }>[];
 
@@ -279,10 +293,11 @@ function taskProjectDtos(task: TaskRecord) {
       continue;
     }
 
-    const current = projects.get(asanaGid);
+    const mapKey = project?.id ?? asanaGid;
+    const current = projects.get(mapKey);
     if (!current || (!current.sectionId && membership.section)) {
-      projects.set(asanaGid, {
-        id: project?.id ?? asanaGid,
+      projects.set(mapKey, {
+        id: project?.id ?? mapKey,
         asanaGid,
         name,
         ...(membership.section
@@ -654,6 +669,29 @@ export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCust
     updatedAt: project.asanaModifiedAt ?? project.updatedAt,
     disciplines,
     sections: disciplines
+  };
+}
+
+export function toProjectOptionDto(project: ProjectOptionsRecord) {
+  const sections = project.sections.map((section) => ({
+    id: section.id,
+    asanaGid: section.asanaGid,
+    projectId: project.id,
+    name: section.name,
+    type: DisciplineType.OTHER,
+    status: DisciplineStatus.IN_PROGRESS,
+    responsibleId: null,
+    createdAt: section.createdAt.toISOString(),
+    updatedAt: section.updatedAt.toISOString()
+  }));
+
+  return {
+    id: project.id,
+    asanaGid: project.asanaGid,
+    name: project.name,
+    builder: project.builder,
+    sections,
+    disciplines: sections
   };
 }
 

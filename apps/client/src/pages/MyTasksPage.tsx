@@ -1,4 +1,5 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import {
   addMonths,
@@ -16,7 +17,7 @@ import {
 } from "date-fns";
 import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { TaskStatus, type Task, type UpdateTaskRequest } from "shared";
+import { Role, TaskStatus, type Task, type UpdateTaskRequest, type User } from "shared";
 import {
   DataTable,
   DataTableCell,
@@ -29,7 +30,6 @@ import {
   TruncatedCellValue
 } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
-import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { ViewTab } from "../components/shared/ViewTab";
 import { Avatar } from "../components/shared/Avatar";
 import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusTokens } from "../components/shared/Chip";
@@ -52,9 +52,11 @@ import { Input } from "../components/ui/input";
 import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
-import { useProjects } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
-import { defaultTaskStatusSelection, matchesMultiSelect } from "../lib/multiSelectFilter";
+import { useMyTasks } from "../hooks/useMyTasks";
+import { useProjectOptions } from "../hooks/useProjects";
+import { useCreateTask, useTaskById, useUpdateTask, useUpdateTaskCompletion } from "../hooks/useTasks";
+import { api } from "../lib/api";
+import { defaultTaskStatusSelection, isAllSelected, matchesMultiSelect } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
 import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
 
@@ -85,14 +87,47 @@ export function MyTasksPage() {
   const { user } = useAuth();
   const canManage = canManageTasks(user);
   const canComplete = canCompleteTasks(user);
-  const { data: projects = [], isLoading } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("search") ?? "";
+  const taskIdFromUrl = searchParams.get("task");
+  const requestedUserId = searchParams.get("userId");
+  const isCoordinatorOrAdmin = user?.role === Role.ADMIN || user?.role === Role.COORDINATOR;
+  const subjectUserId = isCoordinatorOrAdmin && requestedUserId ? requestedUserId : undefined;
+  const { data: subjectUser } = useQuery({
+    queryKey: ["users", subjectUserId],
+    enabled: Boolean(subjectUserId),
+    queryFn: async () => {
+      const response = await api.get<{ user: User }>(`/users/${subjectUserId}`);
+      return response.data.user;
+    }
+  });
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultTaskStatusSelection);
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
+  const defaultStatuses = useMemo(() => defaultTaskStatusSelection(), []);
+  const statusQuery = useMemo(() => {
+    if (isAllSelected(new Set(statusFilter), defaultStatuses)) {
+      return undefined;
+    }
+
+    return statusFilter as TaskStatus[];
+  }, [defaultStatuses, statusFilter]);
+  const {
+    data: rawTasks = [],
+    isLoading,
+    isError,
+    refetch
+  } = useMyTasks({
+    completion: completionFilter,
+    status: statusQuery,
+    search: search.trim() || undefined,
+    userId: subjectUserId
+  });
+  const { data: projectOptions = [] } = useProjectOptions();
+  const { data: linkedTask } = useTaskById(taskIdFromUrl);
   const [view, setView] = useState<MyTasksView>("list");
   const [month, setMonth] = useState(() => new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<string[]>(defaultTaskStatusSelection);
-  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("open");
   const [showUndatedOnly, setShowUndatedOnly] = useState(false);
   const [sortMode, setSortMode] = useState<"dueDate" | "title" | "project">("dueDate");
   const [showCreate, setShowCreate] = useState(false);
@@ -102,7 +137,7 @@ export function MyTasksPage() {
   const updateTaskCompletion = useUpdateTaskCompletion("");
   const disciplineOptions = useMemo(
     () =>
-      projects.flatMap((project) =>
+      projectOptions.flatMap((project) =>
         (project.sections ?? project.disciplines)?.map((discipline) => ({
           key: `${project.id}:${discipline.id}`,
           projectId: project.id,
@@ -110,11 +145,10 @@ export function MyTasksPage() {
           label: `${project.name} / ${discipline.name}`
         })) ?? []
       ),
-    [projects]
+    [projectOptions]
   );
   const createTarget = disciplineOptions.find((option) => option.key === selectedCreateTarget) ?? disciplineOptions[0];
   const createTask = useCreateTask(createTarget?.projectId ?? "", createTarget?.disciplineId ?? "");
-  const search = searchParams.get("search") ?? "";
   const statusOptions = Object.values(TaskStatus).map((status) => ({
     value: status,
     label: statusLabel(status),
@@ -132,49 +166,13 @@ export function MyTasksPage() {
     { value: "project", label: "Projeto" }
   ];
 
-  const myTasks = useMemo(
-    () =>
-      projects.flatMap((project) =>
-        (project.sections ?? project.disciplines)?.flatMap((discipline) =>
-          (discipline.tasks ?? [])
-            .filter((task) => task.assigneeId === user?.id)
-            .map((task) => ({
-              ...task,
-              discipline: {
-                id: discipline.id,
-                name: discipline.name,
-                projectId: project.id,
-                projectName: project.name
-              }
-            }))
-        ) ?? []
-      ),
-    [projects, user?.id]
-  );
+  const myTasks = useMemo(() => rawTasks.map(toTaskWithProject), [rawTasks]);
 
   const visibleTasks = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
     const statusSet = new Set(statusFilter);
     const filteredTasks = myTasks
       .filter((task) => matchesMultiSelect(task.status, statusSet))
-      .filter((task) => {
-        if (completionFilter === "all") {
-          return true;
-        }
-
-        return completionFilter === "completed" ? task.completed : !task.completed;
-      })
-      .filter((task) => !showUndatedOnly || !task.dueDate)
-      .filter((task) => {
-        if (!normalizedSearch) {
-          return true;
-        }
-
-        return [task.title, task.discipline.name, task.discipline.projectName, task.description ?? ""]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
-      });
+      .filter((task) => !showUndatedOnly || !task.dueDate);
 
     return [...filteredTasks].sort((a, b) => {
       if (sortMode === "title") {
@@ -187,11 +185,16 @@ export function MyTasksPage() {
 
       return String(a.dueDate ?? "9999").localeCompare(String(b.dueDate ?? "9999"));
     });
-  }, [completionFilter, myTasks, search, showUndatedOnly, sortMode, statusFilter]);
+  }, [myTasks, showUndatedOnly, sortMode, statusFilter]);
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  useEffect(() => {
+    if (!linkedTask) {
+      return;
+    }
+
+    setTaskDetailOpenVersion((version) => version + 1);
+    setSelectedTask(linkedTask);
+  }, [linkedTask?.id]);
 
   function handleDragEnd(result: DropResult) {
     if (!canManage) {
@@ -248,11 +251,33 @@ export function MyTasksPage() {
 
   return (
     <div className="grid gap-0">
+      {isError ? (
+        <section className="mb-4 rounded-md border border-[--color-border] bg-[--bg-2] p-4">
+          <h2 className="text-sm font-semibold text-[--color-text-primary]">Não foi possível carregar suas tarefas</h2>
+          <p className="mt-1 text-[13px] text-[--color-text-secondary]">Verifique a conexão e tente novamente.</p>
+          <Button variant="secondary" className="mt-3 h-8" onClick={() => void refetch()}>
+            Tentar novamente
+          </Button>
+        </section>
+      ) : null}
       <section className="border-b border-border pb-0">
         <div className="mb-3 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
           <div className="flex items-center gap-3">
-            {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="h-8 w-8" /> : null}
-            <h1 className="text-2xl font-bold text-text-primary">Minhas tarefas</h1>
+            {subjectUser ? (
+              <Avatar name={subjectUser.name} imageUrl={subjectUser.avatarUrl} className="h-8 w-8" />
+            ) : user ? (
+              <Avatar name={user.name} imageUrl={user.avatarUrl} className="h-8 w-8" />
+            ) : null}
+            <div>
+              <h1 className="text-2xl font-bold text-text-primary">
+                {subjectUser ? `Tarefas de ${subjectUser.name}` : "Minhas tarefas"}
+              </h1>
+              {subjectUser ? (
+                <Link to={`/users/${subjectUser.id}`} className="text-[13px] font-medium text-brand-orange hover:text-orange-600">
+                  Voltar ao perfil
+                </Link>
+              ) : null}
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-md border border-border px-3 py-1 text-sm font-semibold text-text-secondary">
@@ -378,9 +403,12 @@ export function MyTasksPage() {
         </div>
       ) : null}
 
-      {myTasks.length === 0 ? <EmptyState title="Você não possui tarefas atribuídas" /> : null}
-      {myTasks.length > 0 && visibleTasks.length === 0 ? <EmptyState title="Nenhuma tarefa corresponde aos filtros" /> : null}
-      {view === "list" ? (
+      {isLoading ? <MyTasksContentSkeleton view={view} /> : null}
+      {!isLoading && !isError && myTasks.length === 0 ? <EmptyState title="Você não possui tarefas atribuídas" /> : null}
+      {!isLoading && !isError && myTasks.length > 0 && visibleTasks.length === 0 ? (
+        <EmptyState title="Nenhuma tarefa corresponde aos filtros" />
+      ) : null}
+      {!isLoading && !isError && view === "list" ? (
         <ListView
           tasks={visibleTasks}
           canManage={canManage}
@@ -390,7 +418,7 @@ export function MyTasksPage() {
           onPatchCompletion={patchTaskCompletion}
         />
       ) : null}
-      {view === "kanban" ? (
+      {!isLoading && !isError && view === "kanban" ? (
         <KanbanView
           tasks={visibleTasks}
           onDragEnd={handleDragEnd}
@@ -398,7 +426,7 @@ export function MyTasksPage() {
           canManage={canManage}
         />
       ) : null}
-      {view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
+      {!isLoading && !isError && view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
       <TaskDetail
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
@@ -610,6 +638,44 @@ function ListView({
         </tbody>
       </DataTable>
     </DataTableContainer>
+  );
+}
+
+function toTaskWithProject(task: Task): TaskWithProject {
+  return {
+    ...task,
+    discipline: {
+      id: task.discipline?.id ?? task.disciplineId ?? "",
+      name: task.discipline?.name ?? "",
+      projectId: task.discipline?.projectId ?? task.projects?.[0]?.id ?? "",
+      projectName: task.discipline?.projectName ?? task.projects?.[0]?.name ?? ""
+    }
+  };
+}
+
+function MyTasksContentSkeleton({ view }: { view: MyTasksView }) {
+  if (view === "kanban") {
+    return (
+      <div className="overflow-x-auto py-4">
+        <div className="flex min-w-max gap-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-[560px] w-72 animate-pulse rounded-md border border-border bg-surface" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "calendar") {
+    return <div className="my-4 h-[520px] animate-pulse rounded-md border border-border bg-surface" />;
+  }
+
+  return (
+    <div className="my-4 grid gap-2">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div key={index} className="h-10 animate-pulse rounded-md border border-border bg-surface" />
+      ))}
+    </div>
   );
 }
 

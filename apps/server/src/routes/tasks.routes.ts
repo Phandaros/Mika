@@ -5,6 +5,7 @@ import {
   deleteTask,
   getTaskById,
   listTaskHistory,
+  listMyTasks,
   sendTaskToReview,
   listTasks,
   updateTask,
@@ -74,6 +75,7 @@ const sendTaskToReviewSchema = z.object({
 
 router.get("/sections/:sectionId/tasks", auth, listTasks);
 router.get("/disciplines/:disciplineId/tasks", auth, listTasks);
+router.get("/tasks/mine", auth, listMyTasks);
 router.get("/tasks/:id", auth, getTaskById);
 router.get("/tasks/:id/history", auth, requireRole(Role.COORDINATOR), listTaskHistory);
 router.post("/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);

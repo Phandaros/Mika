@@ -13,3 +13,5 @@ export * from "./types/review.js";
 export * from "./types/weeklyReport.js";
 export * from "./types/teamBoard.js";
 export * from "./types/homeDashboard.js";
+export * from "./types/myTasks.js";
+export * from "./types/search.js";

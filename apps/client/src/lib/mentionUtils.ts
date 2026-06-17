@@ -1,5 +1,10 @@
 import type { Project, User } from "shared";
 
+export type MentionProject = Pick<Project, "id" | "name"> & {
+  sections?: Array<{ name: string; tasks?: Array<{ id: string; title: string }> }>;
+  disciplines?: Array<{ name: string; tasks?: Array<{ id: string; title: string }> }>;
+};
+
 export type MentionEntityType = "user" | "task" | "project";
 
 export interface MentionSuggestionItem {
@@ -15,7 +20,7 @@ export interface MentionContext {
   taskId: string;
 }
 
-function sectionsOf(project: Project) {
+function sectionsOf(project: MentionProject) {
   return project.sections ?? project.disciplines ?? [];
 }
 
@@ -74,7 +79,7 @@ export function buildMentionSuggestions(
   query: string,
   context: MentionContext,
   users: User[],
-  projects: Project[]
+  projects: MentionProject[]
 ): MentionSuggestionItem[] {
   const normalizedQuery = query.trim();
   const items: MentionSuggestionItem[] = [];

@@ -4,6 +4,7 @@ import type { RequestHandler } from "express";
 import { prisma } from "../lib/prisma.js";
 import { Role, type Role as RoleValue } from "../lib/enums.js";
 import { toPublicUser, userSelect } from "../lib/asanaDto.js";
+import { buildUserHomeDashboard } from "../lib/homeDashboard.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 interface CreateUserBody {
@@ -48,6 +49,20 @@ export const getUserById: RequestHandler = async (req, res, next) => {
     }
 
     res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserHome: RequestHandler = async (req, res, next) => {
+  try {
+    const dashboard = await buildUserHomeDashboard(req.params.id, { includeGlobalSections: false });
+
+    if (!dashboard) {
+      throw new AppError(404, "User not found");
+    }
+
+    res.json(dashboard);
   } catch (error) {
     next(error);
   }

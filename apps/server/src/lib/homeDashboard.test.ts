@@ -20,6 +20,14 @@ describe("homeDashboardCapabilities", () => {
       canSeeWeeklyReportsSummary: true
     });
   });
+
+  it("enables weekly report panel for interns", () => {
+    expect(homeDashboardCapabilities(Role.INTERN)).toEqual({
+      canSeeReviews: false,
+      canSeeMyWeeklyReport: true,
+      canSeeWeeklyReportsSummary: false
+    });
+  });
 });
 
 describe("sortHomeTasks", () => {

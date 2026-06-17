@@ -18,12 +18,12 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, TaskStatus, type Project, type Task, type UpdateTaskRequest } from "shared";
+import { Priority, TaskStatus, type Project, type ProjectOption, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { classifyFile, getFileRejectionMessage } from "../../lib/attachmentUtils";
-import { useProjects } from "../../hooks/useProjects";
+import { useProjectOptions } from "../../hooks/useProjects";
 import { useTaskHistory } from "../../hooks/useTaskHistory";
 import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
@@ -46,6 +46,7 @@ import {
 } from "./TaskInlineFields";
 import { TaskCompletionButton } from "./TaskCompletionButton";
 import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
+import { TaskActionsMenu } from "./TaskActionsMenu";
 import { TaskCommentEditor, type CommentEditorHandle, type PendingCommentFile } from "./TaskCommentEditor";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
@@ -117,7 +118,11 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   onOpenTaskRef.current = onOpenTask;
   const navigate = useNavigate();
   const projectId = visibleTask?.discipline?.projectId ?? "";
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjectOptions();
+  const selectedProjectMemberships = useMemo(
+    () => (visibleTask ? resolveTaskProjectMemberships(visibleTask, projects) : []),
+    [visibleTask, projects]
+  );
   const mentionContext = useMemo(
     () => (projectId && visibleTask?.id ? { projectId, taskId: visibleTask.id } : null),
     [projectId, visibleTask?.id]
@@ -458,6 +463,9 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
       isOpen={isOpen}
       asideRef={asideRef}
       onClose={requestClose}
+      headerActions={
+        <TaskActionsMenu task={visibleTask} projectId={projectId || undefined} onDeleted={requestClose} />
+      }
       headerContent={
         <div className="flex min-w-0 items-center gap-2">
           <TaskCompletionButton
@@ -538,9 +546,10 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
                   canManageTaskFields ? (
                     <EditableProjectsField
                       projects={projects}
-                      selectedMemberships={visibleTask.projects?.flatMap((project) =>
-                        project.sectionId ? [{ projectId: project.id, sectionId: project.sectionId }] : []
-                      ) ?? []}
+                      selectedMemberships={selectedProjectMemberships}
+                      fallbackTriggerLabel={taskProjectLabels(visibleTask)}
+                      isLoading={projectsLoading}
+                      isError={projectsError}
                       onSave={(projectMemberships) => void patchTask({ projectMemberships })}
                     />
                   ) : (
@@ -825,10 +834,16 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 function EditableProjectsField({
   projects,
   selectedMemberships,
+  fallbackTriggerLabel,
+  isLoading = false,
+  isError = false,
   onSave
 }: {
-  projects: Project[];
+  projects: ProjectOption[];
   selectedMemberships: NonNullable<UpdateTaskRequest["projectMemberships"]>;
+  fallbackTriggerLabel?: string;
+  isLoading?: boolean;
+  isError?: boolean;
   onSave: (value: NonNullable<UpdateTaskRequest["projectMemberships"]>) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -838,9 +853,22 @@ function EditableProjectsField({
     [selectedMemberships]
   );
   const selectedIds = useMemo(() => new Set(selectedByProjectId.keys()), [selectedByProjectId]);
-  const selectedNames = projects
-    .filter((project) => selectedIds.has(project.id))
-    .map((project) => projectMembershipLabel(project, selectedByProjectId.get(project.id)?.sectionId));
+  const selectedNames = useMemo(
+    () =>
+      selectedMemberships
+        .map((membership) => {
+          const project = projects.find((item) => item.id === membership.projectId);
+          return project ? projectMembershipLabel(project, membership.sectionId) : null;
+        })
+        .filter((label): label is string => Boolean(label)),
+    [projects, selectedMemberships]
+  );
+  const triggerLabel =
+    selectedNames.length > 0
+      ? selectedNames.join(", ")
+      : fallbackTriggerLabel && fallbackTriggerLabel !== "—"
+        ? fallbackTriggerLabel
+        : "Selecionar";
   const filteredProjects = useMemo(() => {
     const normalizedQuery = normalizeFieldName(query);
 
@@ -894,9 +922,7 @@ function EditableProjectsField({
     >
       <PopoverTrigger asChild>
         <Button variant="secondary" className={cn(compactSelectTriggerClassName, "max-w-full")}>
-          <span className="min-w-0 truncate text-text-primary">
-            {selectedNames.length > 0 ? selectedNames.join(", ") : "Selecionar"}
-          </span>
+          <span className="min-w-0 truncate text-text-primary">{triggerLabel}</span>
           {selectedNames.length > 1 ? (
             <span className="ml-2 shrink-0 rounded bg-bg-3 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
               {selectedNames.length}
@@ -913,7 +939,11 @@ function EditableProjectsField({
           autoFocus
         />
         <div className="mt-2 max-h-72 overflow-y-auto overscroll-contain">
-          {filteredProjects.length > 0 ? (
+          {isLoading ? (
+            <div className="px-3 py-6 text-center text-sm text-text-muted">Carregando projetos...</div>
+          ) : isError ? (
+            <div className="px-3 py-6 text-center text-sm text-text-muted">Não foi possível carregar projetos</div>
+          ) : filteredProjects.length > 0 ? (
             <div className="grid gap-1">
               {filteredProjects.map((project) => {
                 const selected = selectedIds.has(project.id);
@@ -1195,18 +1225,57 @@ function fieldIdentityMatches(
   return [mikaKey, mikaLabel, name].some((value) => Boolean(value && normalizedMatches.includes(normalizeFieldName(value))));
 }
 
+function resolveTaskProjectMemberships(
+  task: Task,
+  projects: ProjectOption[]
+): NonNullable<UpdateTaskRequest["projectMemberships"]> {
+  const memberships = task.projects ?? [];
+
+  if (memberships.length === 0 && task.discipline?.projectId) {
+    const discipline = task.discipline;
+    const project = projects.find((item) => item.id === discipline.projectId);
+    const sectionId =
+      discipline.id || (project ? defaultSectionId(project.sections ?? project.disciplines ?? []) : "");
+
+    if (sectionId) {
+      return [{ projectId: discipline.projectId, sectionId }];
+    }
+  }
+
+  return memberships.flatMap((project) => {
+    const option = projects.find((item) => item.id === project.id || item.asanaGid === project.asanaGid);
+    const sections = option?.sections ?? option?.disciplines ?? [];
+    const discipline = task.discipline;
+    const sectionId =
+      project.sectionId ??
+      (discipline && (discipline.projectId === project.id || discipline.projectId === option?.id)
+        ? discipline.id
+        : undefined) ??
+      (project.sectionName
+        ? sections.find((section) => normalizeFieldName(section.name) === normalizeFieldName(project.sectionName!))?.id
+        : undefined) ??
+      (sections.length > 0 ? defaultSectionId(sections) : "");
+
+    if (!sectionId) {
+      return [];
+    }
+
+    return [{ projectId: option?.id ?? project.id, sectionId }];
+  });
+}
+
 function defaultSectionId(sections: Array<{ id: string; name: string }>): string {
   return sections.find((section) => normalizeFieldName(section.name) === "civil")?.id ?? sections[0]?.id ?? "";
 }
 
-function projectMembershipLabel(project: Project, sectionId: string | null | undefined): string {
+function projectMembershipLabel(project: Pick<Project, "name" | "sections" | "disciplines">, sectionId: string | null | undefined): string {
   const sections = project.sections ?? project.disciplines ?? [];
   const section = sections.find((item) => item.id === sectionId);
   const suffix = section ? sectionAbbreviation(section.name) : null;
   return suffix ? `${project.name} / ${suffix}` : project.name;
 }
 
-function projectSearchLabel(project: Project): string {
+function projectSearchLabel(project: Pick<Project, "name" | "sections" | "disciplines">): string {
   const sections = project.sections ?? project.disciplines ?? [];
   return [project.name, ...sections.map((section) => section.name), ...sections.map((section) => sectionAbbreviation(section.name))].join(" ");
 }
@@ -1230,7 +1299,13 @@ function sectionAbbreviation(name: string): string {
     .toUpperCase();
 }
 
-function ProjectSectionLabel({ project, sectionId }: { project: Project; sectionId: string | null | undefined }) {
+function ProjectSectionLabel({
+  project,
+  sectionId
+}: {
+  project: Pick<Project, "name" | "sections" | "disciplines">;
+  sectionId: string | null | undefined;
+}) {
   const sections = project.sections ?? project.disciplines ?? [];
   const section = sections.find((item) => item.id === sectionId);
   const suffix = section ? sectionAbbreviation(section.name) : null;

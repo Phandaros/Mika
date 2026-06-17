@@ -11,6 +11,7 @@ import { createAndEmitNotification } from "../lib/notify.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { applyTaskRules, ensurePendingTaskReview } from "../lib/taskRules.js";
 import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
+import { loadMyTasks, resolveMyTasksTargetUserId } from "../lib/myTasks.js";
 
 function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
   return req.params.sectionId ?? req.params.disciplineId ?? "";
@@ -546,6 +547,58 @@ export const listTasks: RequestHandler = async (req, res, next) => {
       );
 
     res.json({ tasks });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listMyTasks: RequestHandler = async (req, res, next) => {
+  try {
+    const authUser = getAuthUser(req);
+    const requestedUserId = typeof req.query.userId === "string" ? req.query.userId : undefined;
+    const targetUserId = resolveMyTasksTargetUserId(authUser, requestedUserId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { asanaGid: true }
+    });
+
+    if (!user?.asanaGid) {
+      res.json({ tasks: [] });
+      return;
+    }
+
+    const completion = req.query.completion;
+    const statusRaw = req.query.status;
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+
+    const completionFilter =
+      completion === "completed" || completion === "all" || completion === "open"
+        ? completion
+        : "open";
+
+    const statusFilter = Array.isArray(statusRaw)
+      ? statusRaw.filter((value): value is TaskStatusValue =>
+          Object.values(TaskStatus).includes(value as TaskStatusValue)
+        )
+      : typeof statusRaw === "string" &&
+          Object.values(TaskStatus).includes(statusRaw as TaskStatusValue)
+        ? [statusRaw as TaskStatusValue]
+        : undefined;
+
+    const [rows, catalog] = await Promise.all([
+      loadMyTasks({
+        asanaGid: user.asanaGid,
+        completion: completionFilter,
+        status: statusFilter,
+        search
+      }),
+      taskFieldCatalog()
+    ]);
+
+    res.json({
+      tasks: rows.map((task) => toTaskDto(task, undefined, catalog))
+    });
   } catch (error) {
     next(error);
   }

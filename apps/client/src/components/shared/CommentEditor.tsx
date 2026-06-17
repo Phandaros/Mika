@@ -9,7 +9,8 @@ import {
   type DragEvent,
   type ReactNode
 } from "react";
-import type { Project, User } from "shared";
+import type { MentionProject } from "../../lib/mentionUtils";
+import type { User } from "shared";
 import Image from "@tiptap/extension-image";
 import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -35,13 +36,14 @@ import {
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { useUploadInlineImage } from "../../hooks/useCommentAttachments";
-import { useProjects } from "../../hooks/useProjects";
+import { useProjectOptions } from "../../hooks/useProjects";
 import { useUsers } from "../../hooks/useUsers";
 import { createMentionSuggestionExtension } from "../../lib/mentionSuggestion";
 import type { MentionContext } from "../../lib/mentionUtils";
 import {
   classifyFile,
   DOCUMENT_ACCEPT,
+  extractDocumentsFromClipboard,
   extractImageFromClipboard,
   formatFileSize,
   getFileRejectionMessage,
@@ -123,9 +125,9 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
   ref
 ) {
   const { data: users = [] } = useUsers();
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useProjectOptions();
   const usersRef = useRef<User[]>(users);
-  const projectsRef = useRef<Project[]>(projects);
+  const projectsRef = useRef<MentionProject[]>(projects);
   const mentionContextRef = useRef<MentionContext | null>(mentionContext);
   usersRef.current = users;
   projectsRef.current = projects;
@@ -265,7 +267,7 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
     }
   }, []);
 
-  const addPendingDocument = useCallback((file: File) => {
+  const addPendingDocuments = useCallback((files: File[]) => {
     const onChangePending = onPendingFilesChangeRef.current;
 
     if (!onChangePending) {
@@ -279,7 +281,28 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
       return;
     }
 
-    onChangePending([...nextFiles, createPendingFile(file)]);
+    for (const file of files) {
+      const kind = classifyFile(file);
+
+      if (kind === "rejected") {
+        toast.error(getFileRejectionMessage(file));
+        continue;
+      }
+
+      if (kind === "image") {
+        toast.error(getFileRejectionMessage(file));
+        continue;
+      }
+
+      if (nextFiles.length >= MAX_PENDING_FILES) {
+        toast.error("Número máximo de arquivos por envio excedido (máximo 5)");
+        break;
+      }
+
+      nextFiles.push(createPendingFile(file));
+    }
+
+    onChangePending(nextFiles);
   }, []);
 
   const handleImageFileRef = useRef<(file: File) => void>(() => undefined);
@@ -331,6 +354,7 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
   const processDroppedFiles = useCallback(
     (files: FileList) => {
       setDragActive(false);
+      const documentFiles: File[] = [];
 
       for (const file of Array.from(files)) {
         const kind = classifyFile(file);
@@ -341,14 +365,18 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
         }
 
         if (kind === "document") {
-          addPendingDocument(file);
+          documentFiles.push(file);
           continue;
         }
 
         toast.error(getFileRejectionMessage(file));
       }
+
+      if (documentFiles.length > 0) {
+        addPendingDocuments(documentFiles);
+      }
     },
-    [addPendingDocument, handleImageFile]
+    [addPendingDocuments, handleImageFile]
   );
 
   handleImageFileRef.current = (file: File) => {
@@ -382,13 +410,25 @@ export const CommentEditor = forwardRef<CommentEditorHandle, CommentEditorProps>
 
         const imageFile = extractImageFromClipboard(event.clipboardData);
 
-        if (!imageFile) {
+        if (imageFile) {
+          logCommentImageDebug("handlePaste:image", { name: imageFile.name, type: imageFile.type });
+          event.preventDefault();
+          handleImageFileRef.current(imageFile);
+          return true;
+        }
+
+        const documentFiles = extractDocumentsFromClipboard(event.clipboardData);
+
+        if (documentFiles.length === 0) {
           return false;
         }
 
-        logCommentImageDebug("handlePaste:image", { name: imageFile.name, type: imageFile.type });
+        if (!onPendingFilesChangeRef.current) {
+          return false;
+        }
+
         event.preventDefault();
-        handleImageFileRef.current(imageFile);
+        addPendingDocuments(documentFiles);
         return true;
       },
       handleDrop: (_view, event) => {

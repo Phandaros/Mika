@@ -169,3 +169,43 @@ export function extractImageFromClipboard(clipboardData: DataTransfer): File | n
 
   return null;
 }
+
+function clipboardFileKey(file: File): string {
+  return [file.name, file.type, file.size, file.lastModified].join(":");
+}
+
+export function extractDocumentsFromClipboard(clipboardData: DataTransfer): File[] {
+  const files: File[] = [];
+  const seen = new Set<string>();
+
+  function addFile(file: File) {
+    const key = clipboardFileKey(file);
+
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    files.push(file);
+  }
+
+  for (const item of Array.from(clipboardData.items)) {
+    if (item.kind !== "file" || item.type.startsWith("image/")) {
+      continue;
+    }
+
+    const file = item.getAsFile();
+
+    if (file) {
+      addFile(file);
+    }
+  }
+
+  for (const file of Array.from(clipboardData.files)) {
+    if (classifyFile(file) !== "image") {
+      addFile(file);
+    }
+  }
+
+  return files;
+}

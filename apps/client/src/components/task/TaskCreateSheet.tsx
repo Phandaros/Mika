@@ -17,8 +17,8 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectCustomField, type User } from "shared";
-import { useProjects } from "../../hooks/useProjects";
+import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectOption, type ProjectCustomField, type User } from "shared";
+import { useProject, useProjectOptions } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { isTargetInsidePanelPortal } from "../../lib/panelOutsideClick";
@@ -99,7 +99,7 @@ export function TaskCreateSheet() {
   const open = useUiStore((state) => state.taskCreateOpen);
   const setOpen = useUiStore((state) => state.setTaskCreateOpen);
   const defaults = useUiStore((state) => state.taskCreateDefaults);
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useProjectOptions();
   const { data: users = [] } = useUsers();
   const [projectId, setProjectId] = useState("");
   const [sectionId, setSectionId] = useState("");
@@ -120,8 +120,9 @@ export function TaskCreateSheet() {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const asideRef = useRef<HTMLElement>(null);
 
+  const { data: projectDetail } = useProject(projectId || undefined);
   const selectedProject = projects.find((project) => project.id === projectId) ?? null;
-  const globalTaskFields = selectedProject?.taskCustomFields?.filter((field) => field.mikaDetailVisible !== false) ?? [];
+  const globalTaskFields = projectDetail?.taskCustomFields?.filter((field) => field.mikaDetailVisible !== false) ?? [];
   const stageField = globalTaskFields.find((field) => fieldIdentityMatches(field, ["etapa", "stage"])) ?? null;
   const lowerCustomFields = globalTaskFields.filter((field) => !isPromotedTaskField(field));
   const createTask = useCreateTask(projectId, sectionId);
@@ -494,7 +495,7 @@ function CreateProjectsField({
   sectionScope,
   onChange
 }: {
-  projects: Project[];
+  projects: ProjectOption[];
   projectId: string;
   sectionId: string;
   sectionScope?: "civil" | "electrical" | "general";
@@ -929,7 +930,7 @@ function isPromotedTaskField(field: Pick<ProjectCustomField, "mikaKey" | "mikaLa
   ]);
 }
 
-function sectionsOf(project: Project | null | undefined) {
+function sectionsOf(project: Pick<Project, "sections" | "disciplines"> | null | undefined) {
   return project?.sections ?? project?.disciplines ?? [];
 }
 
@@ -981,14 +982,14 @@ function statusFromDateRange(startDate: string, dueDate: string): TaskStatus {
   return TaskStatus.ON_SCHEDULE;
 }
 
-function projectMembershipLabel(project: Project, sectionId: string | null | undefined): string {
+function projectMembershipLabel(project: Pick<Project, "name" | "sections" | "disciplines">, sectionId: string | null | undefined): string {
   const sections = sectionsOf(project);
   const section = sections.find((item) => item.id === sectionId);
   const suffix = section ? sectionAbbreviation(section.name) : null;
   return suffix ? `${project.name} / ${suffix}` : project.name;
 }
 
-function projectSearchLabel(project: Project): string {
+function projectSearchLabel(project: Pick<Project, "name" | "sections" | "disciplines">): string {
   const sections = sectionsOf(project);
   return [project.name, ...sections.map((section) => section.name), ...sections.map((section) => sectionAbbreviation(section.name))].join(" ");
 }
@@ -1012,7 +1013,13 @@ function sectionAbbreviation(name: string): string {
     .toUpperCase();
 }
 
-function ProjectSectionLabel({ project, sectionId }: { project: Project; sectionId: string | null | undefined }) {
+function ProjectSectionLabel({
+  project,
+  sectionId
+}: {
+  project: Pick<Project, "name" | "sections" | "disciplines">;
+  sectionId: string | null | undefined;
+}) {
   const section = sectionsOf(project).find((item) => item.id === sectionId);
   const suffix = section ? sectionAbbreviation(section.name) : null;
 

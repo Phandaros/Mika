@@ -188,6 +188,10 @@ function invalidateHomeDashboardQuery() {
   void queryClient.invalidateQueries({ queryKey: ["activity", "home"] });
 }
 
+function invalidateMyTasksQuery() {
+  void queryClient.invalidateQueries({ queryKey: ["tasks", "mine"] });
+}
+
 function updateSprintBoardTaskCaches(updatedTask: Task): Set<string> {
   const sprintBoardQueries = queryClient.getQueriesData<InfiniteData<SprintTasksResponse>>({
     predicate: sprintBoardTasksQueryPredicate
@@ -612,6 +616,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
       invalidateWorkloadTaskQueries(projectId);
       invalidateSprintBoardTaskQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
     }
   });
 }
@@ -634,6 +639,7 @@ export function useCreateTaskInSection() {
       invalidateWorkloadTaskQueries(variables.projectId);
       invalidateSprintBoardTaskQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
       updateTaskInProjectCache(variables.projectId, createdTask);
       updateSprintBoardTaskCaches(createdTask);
     }
@@ -715,6 +721,7 @@ export function useUpdateTask(projectId: string) {
       invalidateSprintBoardTaskQueries("inactive");
       invalidateTeamBoardQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     },
     onSettled: async (_data, _error, variables) => {
@@ -800,6 +807,7 @@ export function useUpdateTaskStatus(projectId: string) {
       invalidateSprintBoardTaskQueries("inactive");
       invalidateTeamBoardQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     }
   });
@@ -817,6 +825,7 @@ export function useUpdateTaskCompletion(projectId: string) {
       invalidateSprintBoardTaskQueries();
       invalidateTeamBoardQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
       void queryClient.invalidateQueries({ queryKey: ["tasks", updatedTask.id, "history"] });
     }
   });
@@ -835,6 +844,7 @@ export function useSendTaskToReview(projectId: string) {
       invalidateSprintBoardTaskQueries();
       invalidateTeamBoardQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
       void queryClient.invalidateQueries({ queryKey: ["reviews"] });
       void queryClient.invalidateQueries({ queryKey: ["tasks", task.id, "history"] });
     }
@@ -981,6 +991,7 @@ export function useDeleteTask(projectId?: string) {
       invalidateSprintBoardTaskQueries();
       invalidateTeamBoardQueries();
       invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
     }
   });
 }

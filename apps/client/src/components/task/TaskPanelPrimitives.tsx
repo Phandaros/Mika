@@ -17,9 +17,18 @@ interface TaskPanelShellProps {
   children: ReactNode;
   footer?: ReactNode;
   headerContent?: ReactNode;
+  headerActions?: ReactNode;
 }
 
-export function TaskPanelShell({ isOpen, asideRef, onClose, children, footer, headerContent }: TaskPanelShellProps) {
+export function TaskPanelShell({
+  isOpen,
+  asideRef,
+  onClose,
+  children,
+  footer,
+  headerContent,
+  headerActions
+}: TaskPanelShellProps) {
   return (
     <div
       className={cn(
@@ -44,9 +53,12 @@ export function TaskPanelShell({ isOpen, asideRef, onClose, children, footer, he
               </div>
             )}
           </div>
-          <Button variant="ghost" className="h-9 w-9 px-0" onClick={onClose} title="Fechar" aria-label="Fechar">
-            <X size={18} />
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            {headerActions}
+            <Button variant="ghost" className="h-9 w-9 px-0" onClick={onClose} title="Fechar" aria-label="Fechar">
+              <X size={18} />
+            </Button>
+          </div>
         </div>
 
         {children}

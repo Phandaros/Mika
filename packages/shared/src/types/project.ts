@@ -128,3 +128,17 @@ export interface PortfolioProjectsResponse {
 export interface PortfolioFacetsResponse {
   builders: string[];
 }
+
+/** Projeto leve para seletores (sem tarefas nem custom fields). */
+export interface ProjectOption {
+  id: string;
+  asanaGid?: string;
+  name: string;
+  builder: string | null;
+  sections?: Discipline[];
+  disciplines?: Discipline[];
+}
+
+export interface ProjectOptionsResponse {
+  projects: ProjectOption[];
+}

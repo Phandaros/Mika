@@ -1,6 +1,15 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import { TaskStatus, type TaskStatus as TaskStatusValue } from "./enums.js";
 
+const legacyAwaitingDefinitionStatuses = [
+  "aguardando definicao",
+  "Aguardando Definicao",
+  "Aguardando Definição",
+  // Legacy mojibake value already persisted by older imports/patches.
+  "Aguardando DefiniÃ§Ã£o",
+  "aguardando aprovacao"
+];
+
 export function todayDateOnly(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -14,11 +23,7 @@ function awaitingDefinitionStatusWhere(): Prisma.TaskWhereInput {
     OR: [
       { mikaStatus: TaskStatus.AWAITING_DEFINITION },
       { mikaStatus: "AWAITING_DEFINITION" },
-      { mikaStatus: "aguardando definicao" },
-      { mikaStatus: "Aguardando Definicao" },
-      { mikaStatus: "Aguardando Definição" },
-      { mikaStatus: "Aguardando DefiniÃ§Ã£o" },
-      { mikaStatus: "aguardando aprovacao" }
+      ...legacyAwaitingDefinitionStatuses.map((mikaStatus) => ({ mikaStatus }))
     ]
   };
 }
@@ -128,10 +133,7 @@ export function normalizedStatusWhere(status: TaskStatusValue): Prisma.TaskWhere
     [TaskStatus.IN_ANALYSIS]: ["IN_ANALYSIS", "em analise", "Em Analise", "Em Análise"],
     [TaskStatus.AWAITING_DEFINITION]: [
       "AWAITING_DEFINITION",
-      "aguardando definicao",
-      "Aguardando Definicao",
-      "Aguardando Definição",
-      "aguardando aprovacao"
+      ...legacyAwaitingDefinitionStatuses
     ]
   };
 
