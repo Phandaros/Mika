@@ -1,20 +1,8 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isAfter,
-  isBefore,
-  isSameMonth,
-  max,
-  min,
-  startOfMonth,
-  startOfWeek
-} from "date-fns";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Role, TaskStatus, type Task, type UpdateTaskRequest, type User } from "shared";
@@ -32,11 +20,12 @@ import {
 import { EmptyState } from "../components/shared/EmptyState";
 import { ViewTab } from "../components/shared/ViewTab";
 import { Avatar } from "../components/shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusTokens } from "../components/shared/Chip";
+import { CompletionStatusChip, DisciplineChip, PlatformChip } from "../components/shared/Chip";
 import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { TaskCard } from "../components/task/TaskCard";
 import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
+import { MyTasksCalendarView, type MyTasksCalendarViewHandle } from "../components/task/MyTasksCalendarView";
 import {
   EditableCompletionField,
   EditableDecimalField,
@@ -58,7 +47,7 @@ import { useCreateTask, useTaskById, useUpdateTask, useUpdateTaskCompletion } fr
 import { api } from "../lib/api";
 import { defaultTaskStatusSelection, isAllSelected, matchesMultiSelect } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
-import { cn, dateOnlyToLocalDate, formatDateOnly } from "../lib/utils";
+import { cn, formatDateOnly } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
 type CompletionFilter = "open" | "completed" | "all";
@@ -125,7 +114,8 @@ export function MyTasksPage() {
   const { data: projectOptions = [] } = useProjectOptions();
   const { data: linkedTask } = useTaskById(taskIdFromUrl);
   const [view, setView] = useState<MyTasksView>("list");
-  const [month, setMonth] = useState(() => new Date());
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
+  const calendarRef = useRef<MyTasksCalendarViewHandle>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showUndatedOnly, setShowUndatedOnly] = useState(false);
@@ -309,16 +299,28 @@ export function MyTasksPage() {
           ) : null}
           {view === "calendar" ? (
             <>
-              <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
+              <Button
+                variant="ghost"
+                className="h-8 w-8 px-0"
+                onClick={() => calendarRef.current?.scrollByMonths(-1)}
+                title="Mês anterior"
+              >
                 <ChevronLeft size={16} />
               </Button>
-              <Button variant="secondary" className="h-8" onClick={() => setMonth(new Date())}>
+              <Button variant="secondary" className="h-8" onClick={() => calendarRef.current?.scrollToToday()}>
                 Hoje
               </Button>
-              <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
+              <Button
+                variant="ghost"
+                className="h-8 w-8 px-0"
+                onClick={() => calendarRef.current?.scrollByMonths(1)}
+                title="Próximo mês"
+              >
                 <ChevronRight size={16} />
               </Button>
-              <span className="ml-2 text-sm text-text-primary">{format(month, "MMMM yyyy")}</span>
+              <span className="ml-2 text-sm capitalize text-text-primary">
+                {format(visibleMonth, "MMMM yyyy", { locale: ptBR })}
+              </span>
             </>
           ) : null}
         </div>
@@ -426,7 +428,14 @@ export function MyTasksPage() {
           canManage={canManage}
         />
       ) : null}
-      {!isLoading && !isError && view === "calendar" ? <CalendarView month={month} tasks={visibleTasks} onOpenTask={openTaskDetail} /> : null}
+      {!isLoading && !isError && view === "calendar" ? (
+        <MyTasksCalendarView
+          ref={calendarRef}
+          tasks={visibleTasks}
+          onOpenTask={openTaskDetail}
+          onVisibleMonthChange={setVisibleMonth}
+        />
+      ) : null}
       <TaskDetail
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
@@ -667,7 +676,7 @@ function MyTasksContentSkeleton({ view }: { view: MyTasksView }) {
   }
 
   if (view === "calendar") {
-    return <div className="my-4 h-[520px] animate-pulse rounded-md border border-border bg-surface" />;
+    return <div className="my-4 h-[calc(100dvh-280px)] animate-pulse rounded-md border border-border bg-surface" />;
   }
 
   return (
@@ -742,134 +751,7 @@ function KanbanView({
   );
 }
 
-const calendarWeekOptions = { weekStartsOn: 1 as const };
-
-function CalendarView({ month, tasks, onOpenTask }: { month: Date; tasks: TaskWithProject[]; onOpenTask: (task: TaskWithProject) => void }) {
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month), calendarWeekOptions),
-    end: endOfWeek(endOfMonth(month), calendarWeekOptions)
-  });
-  const weeks = chunkDays(days);
-  const rangedTasks = tasks.flatMap((task) => {
-    const range = taskDateRange(task);
-    return range ? [{ task, ...range }] : [];
-  });
-
-  return (
-    <div className="overflow-hidden rounded-md border border-[--color-border] bg-[--bg-2] text-sm">
-      <div className="grid grid-cols-7 border-b border-[--color-border] bg-[--bg-1]">
-        {["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"].map((day) => (
-          <div key={day} className="border-r border-[--color-border-subtle] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted] last:border-r-0">
-            {day}
-          </div>
-        ))}
-      </div>
-      <div>
-        {weeks.map((week) => {
-          const weekStart = week[0]!;
-          const weekEnd = week[week.length - 1]!;
-          const visibleBars = rangedTasks
-            .filter((item) => rangesOverlap(item.start, item.end, weekStart, weekEnd))
-            .sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime())
-            .slice(0, 4);
-          const hiddenCount = Math.max(0, rangedTasks.filter((item) => rangesOverlap(item.start, item.end, weekStart, weekEnd)).length - visibleBars.length);
-
-          return (
-            <div key={weekStart.toISOString()} className="relative min-h-[148px] border-b border-[--color-border-subtle] last:border-b-0">
-              <div className="grid h-full min-h-[148px] grid-cols-7">
-                {week.map((day) => (
-                  <div key={day.toISOString()} className="border-r border-[--color-border-subtle] px-2 py-2 last:border-r-0">
-                    <span className={cn("text-[13px] font-semibold", isSameMonth(day, month) ? "text-[--color-text-primary]" : "text-[--color-text-muted]")}>
-                      {format(day, "d")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="pointer-events-none absolute inset-x-0 top-9 grid grid-cols-7 gap-y-1 px-2">
-                {visibleBars.map((item, index) => {
-                  const clippedStart = max([item.start, weekStart]);
-                  const clippedEnd = min([item.end, weekEnd]);
-                  const startsBeforeWeek = isBefore(item.start, weekStart);
-                  const endsAfterWeek = isAfter(item.end, weekEnd);
-                  const columnStart = weekColumn(clippedStart);
-                  const columnEnd = weekColumn(clippedEnd) + 1;
-                  const tokens = taskStatusTokens[item.task.status];
-
-                  return (
-                    <TaskContextMenu
-                      key={`${item.task.id}:${item.task.discipline.projectId}:${item.task.discipline.id}:${index}`}
-                      task={item.task}
-                      projectId={item.task.discipline.projectId}
-                      onOpen={onOpenTask}
-                      fallbackLinkPath="/my-tasks"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onOpenTask(item.task)}
-                        className={cn(
-                          "pointer-events-auto min-w-0 truncate px-2 py-1 text-left text-[11px] font-medium transition-colors hover:brightness-125",
-                          startsBeforeWeek ? "rounded-l-none" : "rounded-l",
-                          endsAfterWeek ? "rounded-r-none" : "rounded-r"
-                        )}
-                        style={{
-                          gridColumn: `${columnStart} / ${columnEnd}`,
-                          gridRow: index + 1,
-                          backgroundColor: `var(${tokens.bg})`,
-                          color: `var(${tokens.text})`
-                        }}
-                        title={`${item.task.title} · ${item.task.discipline.projectName} / ${item.task.discipline.name}`}
-                      >
-                        <span className="truncate">{item.task.title}</span>
-                      </button>
-                    </TaskContextMenu>
-                  );
-                })}
-                {hiddenCount > 0 ? (
-                  <span
-                    className="rounded bg-[--bg-4] px-2 py-1 text-[11px] font-medium text-[--color-text-secondary]"
-                    style={{ gridColumn: "1 / 8", gridRow: visibleBars.length + 1 }}
-                  >
-                    +{hiddenCount} tarefas no período
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function statusLabel(status: TaskStatus): string {
   return columns.find((column) => column.status === status)?.label ?? status;
 }
 
-function chunkDays(days: Date[]): Date[][] {
-  const weeks: Date[][] = [];
-  for (let index = 0; index < days.length; index += 7) {
-    weeks.push(days.slice(index, index + 7));
-  }
-  return weeks;
-}
-
-function taskDateRange(task: TaskWithProject): { start: Date; end: Date } | null {
-  const startDate = dateOnlyToLocalDate(task.startDate);
-  const dueDate = dateOnlyToLocalDate(task.dueDate);
-  const start = startDate ?? dueDate;
-  const end = dueDate ?? startDate;
-
-  if (!start || !end) {
-    return null;
-  }
-
-  return isAfter(start, end) ? { start: end, end: start } : { start, end };
-}
-
-function rangesOverlap(start: Date, end: Date, rangeStart: Date, rangeEnd: Date): boolean {
-  return !isBefore(end, rangeStart) && !isAfter(start, rangeEnd);
-}
-
-function weekColumn(day: Date): number {
-  return day.getDay() === 0 ? 7 : day.getDay();
-}

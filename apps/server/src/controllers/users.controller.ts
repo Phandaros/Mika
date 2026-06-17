@@ -56,7 +56,12 @@ export const getUserById: RequestHandler = async (req, res, next) => {
 
 export const getUserHome: RequestHandler = async (req, res, next) => {
   try {
-    const dashboard = await buildUserHomeDashboard(req.params.id, { includeGlobalSections: false });
+    const userId = req.params.id;
+    if (!userId) {
+      throw new AppError(400, "User id is required");
+    }
+
+    const dashboard = await buildUserHomeDashboard(userId, { includeGlobalSections: false });
 
     if (!dashboard) {
       throw new AppError(404, "User not found");

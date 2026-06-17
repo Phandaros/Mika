@@ -443,6 +443,15 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 - Estado dragging: `opacity-70 shadow-2xl scale-[1.02]`
 - Todo card/linha clicável que representa uma tarefa deve suportar o menu de contexto da tarefa no clique direito, usando `TaskContextMenu` ou o equivalente compartilhado. O menu deve preservar ações esperadas como abrir detalhes, copiar link, abrir projeto, alterar status, duplicar, recalcular datas e excluir quando a permissão permitir.
 
+### Vista Calendário (Minhas Tarefas)
+
+- Barras de tarefa seguem o mesmo contrato visual da Carga de Trabalho: fundo translúcido por status (`statusTimelineStyle`), borda na mesma tonalidade, `rounded-md`, `shadow-sm`.
+- Tarefa concluída (`completed`): `opacity: 0.45` sobre a barra; cores de status permanecem.
+- Rótulo em duas linhas via `workloadTaskDisplayLabel(task, "global")`: título `text-[11px] font-semibold` + nome do projeto `text-[9px] text-text-secondary/80`.
+- Sem truncamento opaco (`+N tarefas`); tarefas sobrepostas empilham em faixas (`assignLanes`) e a semana expande em altura.
+- Posicionamento por coluna com inset lateral (`calc(col * 100%/7 + 2px)`); barras não invadem a coluna vizinha.
+- Scroll vertical contínuo entre meses; cabeçalho de mês sticky; toolbar (`‹` / `Hoje` / `›`) controla scroll e o rótulo do mês acompanha o viewport.
+
 ---
 
 ## 11. Tipografia

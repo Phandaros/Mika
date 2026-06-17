@@ -10,6 +10,7 @@ import { Priority as SharedPriority, TaskStatus as SharedTaskStatus } from "shar
 import { Priority, Role, TaskStatus, type Priority as PriorityValue, type Role as RoleValue } from "./enums.js";
 import { publicTaskStatus } from "./taskStatus.js";
 import { excludeBacklogWhere, isBacklogTask } from "./taskStatusWhere.js";
+import { normalizeRole } from "./asanaDto.js";
 import { getCurrentWeekEnd, getCurrentWeekStart } from "./weekUtils.js";
 import { prisma } from "./prisma.js";
 import type { JwtUser } from "../middleware/auth.js";
@@ -106,7 +107,7 @@ export async function buildUserHomeDashboard(
     return null;
   }
 
-  const capabilities = homeDashboardCapabilities(user.role);
+  const capabilities = homeDashboardCapabilities(normalizeRole(user.role) as RoleValue);
   const today = todayDateOnly();
   const weekStart = getCurrentWeekStart();
   const weekEnd = getCurrentWeekEnd();
