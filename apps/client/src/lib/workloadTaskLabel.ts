@@ -1,8 +1,10 @@
-import type { Task } from "shared";
+import type { HomeDashboardTask, Task } from "shared";
 
 const ignoredProjectNames = new Set(["civil - sprint board", "eletrico - sprint board"]);
 
-type WorkloadLabelTask = Pick<Task, "title" | "projects" | "discipline">;
+type WorkloadLabelTask =
+  | Pick<Task, "title" | "projects" | "discipline">
+  | Pick<HomeDashboardTask, "title" | "projectName">;
 
 export type WorkloadTaskDisplayLabel = {
   taskTitle: string;
@@ -42,21 +44,29 @@ export function workloadTaskDisplayLabel(task: WorkloadLabelTask, mode: "project
 
 function prefixedProjectName(task: WorkloadLabelTask): string | null {
   const linkedNames = [
-    ...(task.projects?.map((project) => project.name) ?? []),
-    task.discipline?.projectName ?? null
+    ...("projects" in task ? task.projects?.map((project) => project.name) ?? [] : []),
+    "discipline" in task ? task.discipline?.projectName ?? null : null,
+    "projectName" in task ? task.projectName : null
   ];
 
   return linkedNames.find((name) => name && !isIgnoredProjectName(name) && titleAlreadyHasProjectPrefix(task.title, name)) ?? null;
 }
 
 function displayProjectName(task: WorkloadLabelTask): string | null {
-  const projectFromMemberships = task.projects?.find((project) => !isIgnoredProjectName(project.name));
+  const projectFromMemberships = "projects" in task
+    ? task.projects?.find((project) => !isIgnoredProjectName(project.name))
+    : null;
   if (projectFromMemberships) {
     return projectFromMemberships.name;
   }
 
-  const projectFromDiscipline = task.discipline?.projectName;
-  return projectFromDiscipline && !isIgnoredProjectName(projectFromDiscipline) ? projectFromDiscipline : null;
+  const projectFromDiscipline = "discipline" in task ? task.discipline?.projectName : null;
+  if (projectFromDiscipline && !isIgnoredProjectName(projectFromDiscipline)) {
+    return projectFromDiscipline;
+  }
+
+  const directProjectName = "projectName" in task ? task.projectName : null;
+  return directProjectName && !isIgnoredProjectName(directProjectName) ? directProjectName : null;
 }
 
 function titleAlreadyHasProjectPrefix(title: string, projectName: string): boolean {

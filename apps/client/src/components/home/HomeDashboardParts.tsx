@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { format, isToday } from "date-fns";
+import { differenceInCalendarDays, format, isToday } from "date-fns";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { HomeDashboardProject, HomeDashboardTask, Task } from "shared";
@@ -9,6 +9,7 @@ import { EmptyState } from "../shared/EmptyState";
 import { TaskContextMenu } from "../task/TaskContextMenu";
 import { TaskStatusBadge } from "../task/TaskStatusBadge";
 import { cn, dateOnlyToLocalDate, formatDateOnly } from "../../lib/utils";
+import { workloadTaskDisplayLabel } from "../../lib/workloadTaskLabel";
 
 export function Panel({
   title,
@@ -93,42 +94,65 @@ export function TaskPriorityList({
 
   return (
     <div className="overflow-hidden rounded-md border border-[--color-border-subtle]">
-      <div className="grid grid-cols-[minmax(220px,1fr)_120px_130px_110px] border-b border-[--color-border] bg-[--bg-1] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted] max-lg:hidden">
+      <div className="grid grid-cols-[minmax(260px,1fr)_160px_180px] gap-3 border-b border-[--color-border] bg-[--bg-1] px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted] max-2xl:hidden">
         <span>Tarefa</span>
         <span>Status</span>
-        <span>Projeto</span>
-        <span>Entrega</span>
+        <span>Prazo</span>
       </div>
       <ul>
-        {tasks.map((task) => (
-          <li key={task.id} className="border-b border-[--color-border-subtle] last:border-b-0">
-            <TaskContextMenu
-              task={toTaskContextMenuTask(task)}
-              projectId={task.projectId ?? undefined}
-              fallbackLinkPath="/"
-              onOpen={(contextTask) => onOpenTask(contextTask.id)}
-            >
-              <button
-                type="button"
-                onClick={() => onOpenTask(task.id)}
-                className="grid w-full grid-cols-[minmax(220px,1fr)_120px_130px_110px] items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[--bg-3] max-lg:grid-cols-1 max-lg:gap-2"
+        {tasks.map((task) => {
+          const displayLabel = workloadTaskDisplayLabel(task, "global");
+
+          return (
+            <li key={task.id} className="border-b border-[--color-border-subtle] last:border-b-0">
+              <TaskContextMenu
+                task={toTaskContextMenuTask(task)}
+                projectId={task.projectId ?? undefined}
+                fallbackLinkPath="/"
+                onOpen={(contextTask) => onOpenTask(contextTask.id)}
               >
-                <span className="min-w-0">
-                  <span className="block truncate text-[13px] font-medium text-[--color-text-primary]">{task.title}</span>
-                  <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
-                    <PriorityChip priority={task.priority} />
-                    <span className="truncate text-[11px] text-[--color-text-muted]">{task.sectionName ?? "Sem seção"}</span>
+                <button
+                  type="button"
+                  onClick={() => onOpenTask(task.id)}
+                  className="grid w-full grid-cols-[minmax(260px,1fr)_160px_180px] items-center gap-3 px-3 py-2 text-left transition-colors duration-100 hover:bg-[--bg-3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[--color-brand-orange] max-2xl:grid-cols-1 max-2xl:gap-2.5 max-2xl:py-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-medium text-[--color-text-primary]">
+                      {displayLabel.taskTitle}
+                    </span>
+                    <span className="mt-1 flex min-w-0 items-center gap-1.5">
+                      <span className="min-w-0 max-w-[42%] truncate text-[11px] font-medium text-[--status-inprogress-text]">
+                        {displayLabel.projectName ?? "Sem projeto"}
+                      </span>
+                      <span className="shrink-0 text-[--color-border-focus]" aria-hidden="true">·</span>
+                      <span className="shrink-0">
+                        <PriorityChip priority={task.priority} />
+                      </span>
+                      <span className="shrink-0 text-[--color-border-focus]" aria-hidden="true">·</span>
+                      <span className="min-w-0 truncate text-[11px] text-[--color-text-muted]">
+                        {task.sectionName ?? "Sem seção"}
+                      </span>
+                    </span>
                   </span>
-                </span>
-                <span>
-                  <TaskStatusBadge status={task.status} />
-                </span>
-                <span className="truncate text-[12px] text-[--color-text-secondary]">{task.projectName ?? "Sem projeto"}</span>
-                <DueDateLabel dueDate={task.dueDate} />
-              </button>
-            </TaskContextMenu>
-          </li>
-        ))}
+                  <span className="flex min-w-0 items-center gap-2 max-2xl:grid max-2xl:grid-cols-[72px_minmax(0,1fr)]">
+                    <span className="hidden text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted] max-2xl:inline">
+                      Status
+                    </span>
+                    <span className="min-w-0">
+                      <TaskStatusBadge status={task.status} />
+                    </span>
+                  </span>
+                  <span className="flex min-w-0 items-center gap-2 max-2xl:grid max-2xl:grid-cols-[72px_minmax(0,1fr)]">
+                    <span className="hidden text-[11px] font-medium uppercase tracking-widest text-[--color-text-muted] max-2xl:inline">
+                      Prazo
+                    </span>
+                    <DueDateLabel dueDate={task.dueDate} relative />
+                  </span>
+                </button>
+              </TaskContextMenu>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -180,19 +204,59 @@ function PriorityChip({ priority }: { priority: Priority }) {
   );
 }
 
-function DueDateLabel({ dueDate }: { dueDate: string | null }) {
+function DueDateLabel({ dueDate, relative = false }: { dueDate: string | null; relative?: boolean }) {
   if (!dueDate) {
-    return <span className="text-[12px] text-[--color-text-muted]">Sem data</span>;
+    return <span className="truncate text-[12px] text-[--color-text-muted]">{relative ? "Sem prazo" : "Sem data"}</span>;
   }
 
   const parsed = dateOnlyToLocalDate(dueDate);
-  const overdue = Boolean(parsed && parsed < new Date() && !isToday(parsed));
+  if (!parsed) {
+    return <span className="truncate text-[12px] text-[--color-text-muted]">{relative ? "Sem prazo" : "Sem data"}</span>;
+  }
+
+  if (!relative) {
+    const overdue = parsed < new Date() && !isToday(parsed);
+
+    return (
+      <span className={cn("text-[12px] font-medium", overdue ? "text-[--status-late-text]" : "text-[--color-text-secondary]")}>
+        {isToday(parsed) ? "Hoje" : formatDateOnly(dueDate, "dd/MM")}
+      </span>
+    );
+  }
+
+  const daysUntilDue = differenceInCalendarDays(parsed, new Date());
+  const relativeLabel = dueDateRelativeLabel(daysUntilDue);
 
   return (
-    <span className={cn("text-[12px] font-medium", overdue ? "text-[--status-late-text]" : "text-[--color-text-secondary]")}>
-      {isToday(parsed ?? new Date(0)) ? "Hoje" : formatDateOnly(dueDate, "dd/MM")}
+    <span
+      className={cn(
+        "truncate text-[12px] font-medium",
+        daysUntilDue < 0 && "text-[--status-late-text]",
+        daysUntilDue === 0 && "text-[--status-review-text]",
+        daysUntilDue > 0 && "text-[--color-text-secondary]"
+      )}
+      title={`${relativeLabel} · ${formatDateOnly(dueDate, "dd/MM/yyyy")}`}
+    >
+      {relativeLabel} · {formatDateOnly(dueDate, "dd/MM")}
     </span>
   );
+}
+
+function dueDateRelativeLabel(daysUntilDue: number): string {
+  if (daysUntilDue === 0) {
+    return "Hoje";
+  }
+
+  if (daysUntilDue === 1) {
+    return "Amanhã";
+  }
+
+  if (daysUntilDue > 1) {
+    return `Em ${daysUntilDue} dias`;
+  }
+
+  const overdueDays = Math.abs(daysUntilDue);
+  return `Atrasada há ${overdueDays} ${overdueDays === 1 ? "dia" : "dias"}`;
 }
 
 export function ReviewList({
