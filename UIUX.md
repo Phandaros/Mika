@@ -595,4 +595,23 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 
 ---
 
+## 19. Área de Anotações e Reuniões
+
+- A página de projeto usa uma única navegação principal: `Tarefas | Anotações | Atas de reunião`.
+- Apenas `Tarefas` possui navegação secundária `Lista | Quadro`; documentos não usam subabas internas.
+- A ação contextual fica à direita da navegação principal: `Criar tarefa`, `Nova anotação` ou `Nova ata`.
+- Em desktop, usar lista de 320px à esquerda e painel de leitura/edição flexível à direita.
+- Em viewport estreito, exibir lista ou painel por vez, com ação explícita de voltar.
+- Lista deve ter busca com debounce, paginação de 25 itens, título truncado e metadados secundários.
+- O painel de leitura tem um único cabeçalho com título, autoria, datas e ações; nunca repetir o título no corpo.
+- A leitura usa uma superfície contínua com seções separadas por bordas: `Conteúdo | Anexos` para anotações e `Participantes | Registro da reunião | Anexos` para atas.
+- Participantes internos usam chips com avatar e nome; participantes externos usam chips identificados por `Externo`.
+- O conteúdo usa largura máxima de 5xl e não deve criar cards internos ao redor de cada seção.
+- Edição usa título, editor markdown compartilhado e documentos anexos; atas adicionam datepicker, horário dark, usuários pesquisáveis e participantes externos.
+- Exclusão de documento exige Dialog com título acessível e confirmação explícita.
+- Conflito HTTP 409 preserva o conteúdo local e oferece ação para carregar a versão atual.
+- Não usar cards decorativos, feed misto ou scroll horizontal nessa área.
+
+---
+
 *Última atualização: 2026 · MK Engenharia · Balneário Camboriú/SC*

@@ -352,7 +352,7 @@ export const listPortfolioProjects: RequestHandler = async (req, res, next) => {
       loadTaskFieldCatalog()
     ]);
 
-    let pageProjects = projects.slice(0, parsed.data.limit);
+    const pageProjects = projects.slice(0, parsed.data.limit);
 
     const lastVisibleProject = pageProjects[pageProjects.length - 1];
     const nextCursor =

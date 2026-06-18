@@ -279,6 +279,9 @@ export type UserWhereInput = {
   requestedReviews?: Prisma.TaskReviewListRelationFilter
   assignedReviews?: Prisma.TaskReviewListRelationFilter
   uploadedAttachments?: Prisma.AttachmentListRelationFilter
+  projectNotes?: Prisma.ProjectNoteListRelationFilter
+  meetingMinutes?: Prisma.MeetingMinuteListRelationFilter
+  meetingParticipations?: Prisma.MeetingMinuteParticipantListRelationFilter
   weeklyReports?: Prisma.WeeklyReportListRelationFilter
 }
 
@@ -314,6 +317,9 @@ export type UserOrderByWithRelationInput = {
   requestedReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
   assignedReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
   uploadedAttachments?: Prisma.AttachmentOrderByRelationAggregateInput
+  projectNotes?: Prisma.ProjectNoteOrderByRelationAggregateInput
+  meetingMinutes?: Prisma.MeetingMinuteOrderByRelationAggregateInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantOrderByRelationAggregateInput
   weeklyReports?: Prisma.WeeklyReportOrderByRelationAggregateInput
 }
 
@@ -352,6 +358,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   requestedReviews?: Prisma.TaskReviewListRelationFilter
   assignedReviews?: Prisma.TaskReviewListRelationFilter
   uploadedAttachments?: Prisma.AttachmentListRelationFilter
+  projectNotes?: Prisma.ProjectNoteListRelationFilter
+  meetingMinutes?: Prisma.MeetingMinuteListRelationFilter
+  meetingParticipations?: Prisma.MeetingMinuteParticipantListRelationFilter
   weeklyReports?: Prisma.WeeklyReportListRelationFilter
 }, "id" | "asanaGid" | "email">
 
@@ -429,6 +438,9 @@ export type UserCreateInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -464,6 +476,9 @@ export type UserUncheckedCreateInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -499,6 +514,9 @@ export type UserUpdateInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -534,6 +552,9 @@ export type UserUncheckedUpdateInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -853,6 +874,48 @@ export type UserUpdateOneRequiredWithoutUploadedAttachmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUploadedAttachmentsInput, Prisma.UserUpdateWithoutUploadedAttachmentsInput>, Prisma.UserUncheckedUpdateWithoutUploadedAttachmentsInput>
 }
 
+export type UserCreateNestedOneWithoutProjectNotesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProjectNotesInput, Prisma.UserUncheckedCreateWithoutProjectNotesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProjectNotesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutProjectNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProjectNotesInput, Prisma.UserUncheckedCreateWithoutProjectNotesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProjectNotesInput
+  upsert?: Prisma.UserUpsertWithoutProjectNotesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProjectNotesInput, Prisma.UserUpdateWithoutProjectNotesInput>, Prisma.UserUncheckedUpdateWithoutProjectNotesInput>
+}
+
+export type UserCreateNestedOneWithoutMeetingMinutesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMeetingMinutesInput, Prisma.UserUncheckedCreateWithoutMeetingMinutesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMeetingMinutesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutMeetingMinutesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMeetingMinutesInput, Prisma.UserUncheckedCreateWithoutMeetingMinutesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMeetingMinutesInput
+  upsert?: Prisma.UserUpsertWithoutMeetingMinutesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMeetingMinutesInput, Prisma.UserUpdateWithoutMeetingMinutesInput>, Prisma.UserUncheckedUpdateWithoutMeetingMinutesInput>
+}
+
+export type UserCreateNestedOneWithoutMeetingParticipationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMeetingParticipationsInput, Prisma.UserUncheckedCreateWithoutMeetingParticipationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMeetingParticipationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutMeetingParticipationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMeetingParticipationsInput, Prisma.UserUncheckedCreateWithoutMeetingParticipationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMeetingParticipationsInput
+  upsert?: Prisma.UserUpsertWithoutMeetingParticipationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMeetingParticipationsInput, Prisma.UserUpdateWithoutMeetingParticipationsInput>, Prisma.UserUncheckedUpdateWithoutMeetingParticipationsInput>
+}
+
 export type UserCreateNestedOneWithoutTaskActivitiesInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutTaskActivitiesInput, Prisma.UserUncheckedCreateWithoutTaskActivitiesInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutTaskActivitiesInput
@@ -958,6 +1021,9 @@ export type UserCreateWithoutCreatedHolidaysInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -992,6 +1058,9 @@ export type UserUncheckedCreateWithoutCreatedHolidaysInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1042,6 +1111,9 @@ export type UserUpdateWithoutCreatedHolidaysInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -1076,6 +1148,9 @@ export type UserUncheckedUpdateWithoutCreatedHolidaysInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1110,6 +1185,9 @@ export type UserCreateWithoutNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1144,6 +1222,9 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1183,6 +1264,9 @@ export type UserCreateWithoutAuthoredNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1217,6 +1301,9 @@ export type UserUncheckedCreateWithoutAuthoredNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1267,6 +1354,9 @@ export type UserUpdateWithoutNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -1301,6 +1391,9 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1346,6 +1439,9 @@ export type UserUpdateWithoutAuthoredNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -1380,6 +1476,9 @@ export type UserUncheckedUpdateWithoutAuthoredNotificationsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1414,6 +1513,9 @@ export type UserCreateWithoutOwnedProjectsInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1448,6 +1550,9 @@ export type UserUncheckedCreateWithoutOwnedProjectsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1498,6 +1603,9 @@ export type UserUpdateWithoutOwnedProjectsInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -1532,6 +1640,9 @@ export type UserUncheckedUpdateWithoutOwnedProjectsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1566,6 +1677,9 @@ export type UserCreateWithoutProjectFollowersInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1600,6 +1714,9 @@ export type UserUncheckedCreateWithoutProjectFollowersInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1650,6 +1767,9 @@ export type UserUpdateWithoutProjectFollowersInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -1684,6 +1804,9 @@ export type UserUncheckedUpdateWithoutProjectFollowersInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1718,6 +1841,9 @@ export type UserCreateWithoutProjectMembersInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1752,6 +1878,9 @@ export type UserUncheckedCreateWithoutProjectMembersInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1802,6 +1931,9 @@ export type UserUpdateWithoutProjectMembersInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -1836,6 +1968,9 @@ export type UserUncheckedUpdateWithoutProjectMembersInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1870,6 +2005,9 @@ export type UserCreateWithoutAssignedTasksInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1904,6 +2042,9 @@ export type UserUncheckedCreateWithoutAssignedTasksInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1943,6 +2084,9 @@ export type UserCreateWithoutCreatedTasksInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -1977,6 +2121,9 @@ export type UserUncheckedCreateWithoutCreatedTasksInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -2027,6 +2174,9 @@ export type UserUpdateWithoutAssignedTasksInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2061,6 +2211,9 @@ export type UserUncheckedUpdateWithoutAssignedTasksInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2106,6 +2259,9 @@ export type UserUpdateWithoutCreatedTasksInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2140,6 +2296,9 @@ export type UserUncheckedUpdateWithoutCreatedTasksInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2174,6 +2333,9 @@ export type UserCreateWithoutAssignedReviewsInput = {
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -2208,6 +2370,9 @@ export type UserUncheckedCreateWithoutAssignedReviewsInput = {
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -2247,6 +2412,9 @@ export type UserCreateWithoutRequestedReviewsInput = {
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -2281,6 +2449,9 @@ export type UserUncheckedCreateWithoutRequestedReviewsInput = {
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -2331,6 +2502,9 @@ export type UserUpdateWithoutAssignedReviewsInput = {
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2365,6 +2539,9 @@ export type UserUncheckedUpdateWithoutAssignedReviewsInput = {
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2410,6 +2587,9 @@ export type UserUpdateWithoutRequestedReviewsInput = {
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2444,6 +2624,9 @@ export type UserUncheckedUpdateWithoutRequestedReviewsInput = {
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2478,6 +2661,9 @@ export type UserCreateWithoutCommentsInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -2512,6 +2698,9 @@ export type UserUncheckedCreateWithoutCommentsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -2562,6 +2751,9 @@ export type UserUpdateWithoutCommentsInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2596,6 +2788,9 @@ export type UserUncheckedUpdateWithoutCommentsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2630,6 +2825,9 @@ export type UserCreateWithoutUploadedAttachmentsInput = {
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -2664,6 +2862,9 @@ export type UserUncheckedCreateWithoutUploadedAttachmentsInput = {
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -2714,6 +2915,9 @@ export type UserUpdateWithoutUploadedAttachmentsInput = {
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2748,6 +2952,501 @@ export type UserUncheckedUpdateWithoutUploadedAttachmentsInput = {
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutProjectNotesInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
+  createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
+  weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutProjectNotesInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutProjectNotesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutProjectNotesInput, Prisma.UserUncheckedCreateWithoutProjectNotesInput>
+}
+
+export type UserUpsertWithoutProjectNotesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutProjectNotesInput, Prisma.UserUncheckedUpdateWithoutProjectNotesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutProjectNotesInput, Prisma.UserUncheckedCreateWithoutProjectNotesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutProjectNotesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutProjectNotesInput, Prisma.UserUncheckedUpdateWithoutProjectNotesInput>
+}
+
+export type UserUpdateWithoutProjectNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
+  weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutProjectNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUncheckedUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUncheckedUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutMeetingMinutesInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
+  createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
+  weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutMeetingMinutesInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutMeetingMinutesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMeetingMinutesInput, Prisma.UserUncheckedCreateWithoutMeetingMinutesInput>
+}
+
+export type UserUpsertWithoutMeetingMinutesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMeetingMinutesInput, Prisma.UserUncheckedUpdateWithoutMeetingMinutesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMeetingMinutesInput, Prisma.UserUncheckedCreateWithoutMeetingMinutesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutMeetingMinutesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMeetingMinutesInput, Prisma.UserUncheckedUpdateWithoutMeetingMinutesInput>
+}
+
+export type UserUpdateWithoutMeetingMinutesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
+  weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMeetingMinutesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUncheckedUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUncheckedUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutMeetingParticipationsInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
+  createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutMeetingParticipationsInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutMeetingParticipationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMeetingParticipationsInput, Prisma.UserUncheckedCreateWithoutMeetingParticipationsInput>
+}
+
+export type UserUpsertWithoutMeetingParticipationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMeetingParticipationsInput, Prisma.UserUncheckedUpdateWithoutMeetingParticipationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMeetingParticipationsInput, Prisma.UserUncheckedCreateWithoutMeetingParticipationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutMeetingParticipationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMeetingParticipationsInput, Prisma.UserUncheckedUpdateWithoutMeetingParticipationsInput>
+}
+
+export type UserUpdateWithoutMeetingParticipationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMeetingParticipationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUncheckedUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUncheckedUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2782,6 +3481,9 @@ export type UserCreateWithoutTaskActivitiesInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -2816,6 +3518,9 @@ export type UserUncheckedCreateWithoutTaskActivitiesInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -2866,6 +3571,9 @@ export type UserUpdateWithoutTaskActivitiesInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -2900,6 +3608,9 @@ export type UserUncheckedUpdateWithoutTaskActivitiesInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -2934,6 +3645,9 @@ export type UserCreateWithoutTaskFollowersInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -2968,6 +3682,9 @@ export type UserUncheckedCreateWithoutTaskFollowersInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -3018,6 +3735,9 @@ export type UserUpdateWithoutTaskFollowersInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -3052,6 +3772,9 @@ export type UserUncheckedUpdateWithoutTaskFollowersInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -3086,6 +3809,9 @@ export type UserCreateWithoutTaskLikesInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -3120,6 +3846,9 @@ export type UserUncheckedCreateWithoutTaskLikesInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -3170,6 +3899,9 @@ export type UserUpdateWithoutTaskLikesInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -3204,6 +3936,9 @@ export type UserUncheckedUpdateWithoutTaskLikesInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -3238,6 +3973,9 @@ export type UserCreateWithoutCreatedCustomFieldsInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
 }
 
@@ -3272,6 +4010,9 @@ export type UserUncheckedCreateWithoutCreatedCustomFieldsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
   weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -3322,6 +4063,9 @@ export type UserUpdateWithoutCreatedCustomFieldsInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
 }
 
@@ -3356,6 +4100,9 @@ export type UserUncheckedUpdateWithoutCreatedCustomFieldsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
   weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -3391,6 +4138,9 @@ export type UserCreateWithoutWeeklyReportsInput = {
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWeeklyReportsInput = {
@@ -3425,6 +4175,9 @@ export type UserUncheckedCreateWithoutWeeklyReportsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
   uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutAuthorInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWeeklyReportsInput = {
@@ -3475,6 +4228,9 @@ export type UserUpdateWithoutWeeklyReportsInput = {
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWeeklyReportsInput = {
@@ -3509,6 +4265,9 @@ export type UserUncheckedUpdateWithoutWeeklyReportsInput = {
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
   uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutAuthorNestedInput
+  meetingParticipations?: Prisma.MeetingMinuteParticipantUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -3533,6 +4292,9 @@ export type UserCountOutputType = {
   requestedReviews: number
   assignedReviews: number
   uploadedAttachments: number
+  projectNotes: number
+  meetingMinutes: number
+  meetingParticipations: number
   weeklyReports: number
 }
 
@@ -3553,6 +4315,9 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   requestedReviews?: boolean | UserCountOutputTypeCountRequestedReviewsArgs
   assignedReviews?: boolean | UserCountOutputTypeCountAssignedReviewsArgs
   uploadedAttachments?: boolean | UserCountOutputTypeCountUploadedAttachmentsArgs
+  projectNotes?: boolean | UserCountOutputTypeCountProjectNotesArgs
+  meetingMinutes?: boolean | UserCountOutputTypeCountMeetingMinutesArgs
+  meetingParticipations?: boolean | UserCountOutputTypeCountMeetingParticipationsArgs
   weeklyReports?: boolean | UserCountOutputTypeCountWeeklyReportsArgs
 }
 
@@ -3681,6 +4446,27 @@ export type UserCountOutputTypeCountUploadedAttachmentsArgs<ExtArgs extends runt
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountProjectNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProjectNoteWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountMeetingMinutesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MeetingMinuteWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountMeetingParticipationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MeetingMinuteParticipantWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountWeeklyReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.WeeklyReportWhereInput
 }
@@ -3718,6 +4504,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   requestedReviews?: boolean | Prisma.User$requestedReviewsArgs<ExtArgs>
   assignedReviews?: boolean | Prisma.User$assignedReviewsArgs<ExtArgs>
   uploadedAttachments?: boolean | Prisma.User$uploadedAttachmentsArgs<ExtArgs>
+  projectNotes?: boolean | Prisma.User$projectNotesArgs<ExtArgs>
+  meetingMinutes?: boolean | Prisma.User$meetingMinutesArgs<ExtArgs>
+  meetingParticipations?: boolean | Prisma.User$meetingParticipationsArgs<ExtArgs>
   weeklyReports?: boolean | Prisma.User$weeklyReportsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
@@ -3794,6 +4583,9 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   requestedReviews?: boolean | Prisma.User$requestedReviewsArgs<ExtArgs>
   assignedReviews?: boolean | Prisma.User$assignedReviewsArgs<ExtArgs>
   uploadedAttachments?: boolean | Prisma.User$uploadedAttachmentsArgs<ExtArgs>
+  projectNotes?: boolean | Prisma.User$projectNotesArgs<ExtArgs>
+  meetingMinutes?: boolean | Prisma.User$meetingMinutesArgs<ExtArgs>
+  meetingParticipations?: boolean | Prisma.User$meetingParticipationsArgs<ExtArgs>
   weeklyReports?: boolean | Prisma.User$weeklyReportsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -3819,6 +4611,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     requestedReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
     assignedReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
     uploadedAttachments: Prisma.$AttachmentPayload<ExtArgs>[]
+    projectNotes: Prisma.$ProjectNotePayload<ExtArgs>[]
+    meetingMinutes: Prisma.$MeetingMinutePayload<ExtArgs>[]
+    meetingParticipations: Prisma.$MeetingMinuteParticipantPayload<ExtArgs>[]
     weeklyReports: Prisma.$WeeklyReportPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -4247,6 +5042,9 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   requestedReviews<T extends Prisma.User$requestedReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$requestedReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   assignedReviews<T extends Prisma.User$assignedReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$assignedReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   uploadedAttachments<T extends Prisma.User$uploadedAttachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$uploadedAttachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  projectNotes<T extends Prisma.User$projectNotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$projectNotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  meetingMinutes<T extends Prisma.User$meetingMinutesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$meetingMinutesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MeetingMinutePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  meetingParticipations<T extends Prisma.User$meetingParticipationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$meetingParticipationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MeetingMinuteParticipantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   weeklyReports<T extends Prisma.User$weeklyReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$weeklyReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WeeklyReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -5064,6 +5862,78 @@ export type User$uploadedAttachmentsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.AttachmentScalarFieldEnum | Prisma.AttachmentScalarFieldEnum[]
+}
+
+/**
+ * User.projectNotes
+ */
+export type User$projectNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProjectNote
+   */
+  select?: Prisma.ProjectNoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProjectNote
+   */
+  omit?: Prisma.ProjectNoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectNoteInclude<ExtArgs> | null
+  where?: Prisma.ProjectNoteWhereInput
+  orderBy?: Prisma.ProjectNoteOrderByWithRelationInput | Prisma.ProjectNoteOrderByWithRelationInput[]
+  cursor?: Prisma.ProjectNoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProjectNoteScalarFieldEnum | Prisma.ProjectNoteScalarFieldEnum[]
+}
+
+/**
+ * User.meetingMinutes
+ */
+export type User$meetingMinutesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MeetingMinute
+   */
+  select?: Prisma.MeetingMinuteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MeetingMinute
+   */
+  omit?: Prisma.MeetingMinuteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MeetingMinuteInclude<ExtArgs> | null
+  where?: Prisma.MeetingMinuteWhereInput
+  orderBy?: Prisma.MeetingMinuteOrderByWithRelationInput | Prisma.MeetingMinuteOrderByWithRelationInput[]
+  cursor?: Prisma.MeetingMinuteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MeetingMinuteScalarFieldEnum | Prisma.MeetingMinuteScalarFieldEnum[]
+}
+
+/**
+ * User.meetingParticipations
+ */
+export type User$meetingParticipationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MeetingMinuteParticipant
+   */
+  select?: Prisma.MeetingMinuteParticipantSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MeetingMinuteParticipant
+   */
+  omit?: Prisma.MeetingMinuteParticipantOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MeetingMinuteParticipantInclude<ExtArgs> | null
+  where?: Prisma.MeetingMinuteParticipantWhereInput
+  orderBy?: Prisma.MeetingMinuteParticipantOrderByWithRelationInput | Prisma.MeetingMinuteParticipantOrderByWithRelationInput[]
+  cursor?: Prisma.MeetingMinuteParticipantWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MeetingMinuteParticipantScalarFieldEnum | Prisma.MeetingMinuteParticipantScalarFieldEnum[]
 }
 
 /**

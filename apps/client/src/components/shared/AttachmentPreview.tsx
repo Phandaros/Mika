@@ -8,10 +8,12 @@ import { cn } from "../../lib/utils";
 
 interface AttachmentPreviewProps {
   attachment: AttachmentDto;
-  taskId: string;
+  taskId?: string;
   currentUserId?: string;
   currentUserRole?: string;
   className?: string;
+  canDeleteOverride?: boolean;
+  onDeleted?: () => void | Promise<void>;
 }
 
 function attachmentIcon(mimeType: string) {
@@ -31,13 +33,16 @@ export function AttachmentPreview({
   taskId,
   currentUserId,
   currentUserRole,
-  className
+  className,
+  canDeleteOverride,
+  onDeleted
 }: AttachmentPreviewProps) {
   const deleteAttachment = useDeleteAttachment(taskId);
   const canDelete =
-    attachment.uploadedById === currentUserId ||
-    currentUserRole === Role.ADMIN ||
-    currentUserRole === Role.COORDINATOR;
+    canDeleteOverride ??
+    (attachment.uploadedById === currentUserId ||
+      currentUserRole === Role.ADMIN ||
+      currentUserRole === Role.COORDINATOR);
 
   async function handleOpen() {
     await openAuthenticatedAsset(attachmentFileUrl(attachment.id));
@@ -53,6 +58,7 @@ export function AttachmentPreview({
     }
 
     await deleteAttachment.mutateAsync(attachment.id);
+    await onDeleted?.();
   }
 
   return (

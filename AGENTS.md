@@ -274,6 +274,8 @@ Resumo das entidades principais:
 - **Comment**: comentarios com campos opcionais de import (`asanaGid`, `authorAsanaGid`, `asanaCreatedAt`).
 - **Notification**: notificacoes in-app persistidas, com `actorId` opcional para identificar quem originou o evento; emissao em tempo real via Socket.io (`lib/notify.ts`). Tipo `WEEKLY_REPORT_DUE` dispara na sexta-feira via `weeklyReportJob`.
 - **WeeklyReport** + **WeeklyReportItem**: relatorio semanal por usuario (`@@unique([userId, weekStart])`). Status `PENDING | SUBMITTED | LATE`. Items pre-populados com tarefas da semana; `taskSnapshot` (JSON) gravado no envio.
+- **ProjectNote**: anotacao colaborativa vinculada ao projeto, com titulo, markdown opcional, autor e anexos.
+- **MeetingMinute** + **MeetingMinuteParticipant**: ata de reuniao vinculada ao projeto, com data, horario opcional, participantes internos/externos, markdown e anexos.
 
 Enums e tipos de API expostos ao client permanecem em `packages/shared` (`TaskStatus`, `Priority`, `DisciplineType`, `WeeklyReportDto`, alias `Section` = `Discipline`, etc.).
 
@@ -338,6 +340,20 @@ ATTACHMENTS
   POST   /tasks/:taskId/attachments       (Fase 2; pode responder 501)
   GET    /attachments/:id/download
   DELETE /attachments/:id
+
+PROJECT NOTES
+  GET    /projects/:projectId/notes
+  POST   /projects/:projectId/notes
+  GET    /project-notes/:id
+  PATCH  /project-notes/:id
+  DELETE /project-notes/:id
+
+MEETING MINUTES
+  GET    /projects/:projectId/meeting-minutes
+  POST   /projects/:projectId/meeting-minutes
+  GET    /meeting-minutes/:id
+  PATCH  /meeting-minutes/:id
+  DELETE /meeting-minutes/:id
 
 NOTIFICATIONS
   GET    /notifications                    (filtros: page, limit, read, type)
@@ -554,7 +570,7 @@ O `prisma/seed.ts` cria **workspace** local, usuario administrador com senha con
 
 ## 14. Views da Página de Projeto (`ProjectDetailPage`)
 
-A página de detalhe de projeto tem 3 abas:
+A página de detalhe de projeto separa duas áreas principais: **Tarefas** e **Anotações e Reuniões**.
 
 ### Kanban
 - Colunas: `BACKLOG | A FAZER | EM ANDAMENTO | EM REVISÃO | CONCLUÍDO`
@@ -573,6 +589,14 @@ A página de detalhe de projeto tem 3 abas:
 - Mostra contagem: total | em andamento | atrasadas
 - Barra de progresso visual por usuário
 - Clique no usuário abre suas tarefas filtradas
+
+### Anotações e Reuniões
+- Subabas independentes: `Anotações | Atas de reunião`.
+- Anotações têm título obrigatório e conteúdo markdown ou anexos.
+- Atas têm título, data obrigatória, horário opcional, participantes internos/externos e conteúdo markdown ou anexos.
+- Todos os usuários autenticados podem criar, editar e excluir os registros.
+- Edições usam `expectedUpdatedAt`; conflitos retornam HTTP 409.
+- Listagens usam busca textual e paginação padrão de 25 itens.
 
 ---
 

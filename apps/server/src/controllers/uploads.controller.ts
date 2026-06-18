@@ -186,7 +186,21 @@ export const deleteAttachment: RequestHandler = async (req, res, next) => {
     }
 
     const attachment = await prisma.attachment.findUnique({
-      where: { id: attachmentId }
+      where: { id: attachmentId },
+      include: {
+        projectNote: {
+          select: {
+            content: true,
+            _count: { select: { attachments: true } }
+          }
+        },
+        meetingMinute: {
+          select: {
+            content: true,
+            _count: { select: { attachments: true } }
+          }
+        }
+      }
     });
 
     if (!attachment) {
@@ -196,8 +210,26 @@ export const deleteAttachment: RequestHandler = async (req, res, next) => {
     const isOwner = attachment.uploadedById === authUser.id;
     const isPrivileged = authUser.role === Role.ADMIN || authUser.role === Role.COORDINATOR;
 
-    if (!isOwner && !isPrivileged) {
+    const isCollaborativeDocument = Boolean(attachment.projectNote || attachment.meetingMinute);
+
+    if (!isCollaborativeDocument && !isOwner && !isPrivileged) {
       throw new AppError(403, "Você não tem permissão para remover este anexo");
+    }
+
+    if (
+      attachment.projectNote &&
+      !attachment.projectNote.content?.trim() &&
+      attachment.projectNote._count.attachments <= 1
+    ) {
+      throw new AppError(400, "A anotação precisa manter conteúdo markdown ou pelo menos um anexo");
+    }
+
+    if (
+      attachment.meetingMinute &&
+      !attachment.meetingMinute.content?.trim() &&
+      attachment.meetingMinute._count.attachments <= 1
+    ) {
+      throw new AppError(400, "A ata precisa manter conteúdo markdown ou pelo menos um anexo");
     }
 
     const absolutePath = path.resolve(env.UPLOAD_DIR, attachment.storedAs);

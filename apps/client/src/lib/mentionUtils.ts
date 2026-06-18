@@ -30,10 +30,12 @@ const TYPE_ORDER: Record<MentionEntityType, number> = {
   task: 2
 };
 
+const LEGACY_MENTION_PATTERN = new RegExp(String.raw`@\[(.+?)\]\(mk://`, "g");
+
 function normalizeSearchText(value: string): string {
   return value
     .toLowerCase()
-    .replace(/[\[\]]/g, "")
+    .replace(/[[\]]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -47,13 +49,13 @@ function matchesQuery(value: string, query: string): boolean {
 }
 
 export function buildMentionMarkdown(item: Pick<MentionSuggestionItem, "id" | "label" | "type">): string {
-  const safeLabel = item.label.replace(/[\[\]]/g, "");
+  const safeLabel = item.label.replace(/[[\]]/g, "");
   return `[${safeLabel}](mk://${item.type}/${item.id})`;
 }
 
 /** Removes legacy leading @ before mk mention links so render shows a single @ prefix. */
 export function normalizeMentionContentForRender(content: string): string {
-  return content.replace(/@\[([^\]]+)\]\(mk:\/\//g, "[$1](mk://");
+  return content.replace(LEGACY_MENTION_PATTERN, "[$1](mk://");
 }
 
 export function parseMentionHref(href: string): { type: MentionEntityType; id: string } | null {

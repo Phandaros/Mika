@@ -64,6 +64,9 @@ export const ModelName = {
   TaskReview: 'TaskReview',
   Comment: 'Comment',
   Attachment: 'Attachment',
+  ProjectNote: 'ProjectNote',
+  MeetingMinute: 'MeetingMinute',
+  MeetingMinuteParticipant: 'MeetingMinuteParticipant',
   TaskActivity: 'TaskActivity',
   TaskMembership: 'TaskMembership',
   TaskFollower: 'TaskFollower',
@@ -305,6 +308,8 @@ export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeo
 export const AttachmentScalarFieldEnum = {
   id: 'id',
   commentId: 'commentId',
+  projectNoteId: 'projectNoteId',
+  meetingMinuteId: 'meetingMinuteId',
   filename: 'filename',
   storedAs: 'storedAs',
   mimeType: 'mimeType',
@@ -314,6 +319,44 @@ export const AttachmentScalarFieldEnum = {
 } as const
 
 export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]
+
+
+export const ProjectNoteScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  title: 'title',
+  content: 'content',
+  authorId: 'authorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProjectNoteScalarFieldEnum = (typeof ProjectNoteScalarFieldEnum)[keyof typeof ProjectNoteScalarFieldEnum]
+
+
+export const MeetingMinuteScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  title: 'title',
+  meetingDate: 'meetingDate',
+  meetingTime: 'meetingTime',
+  content: 'content',
+  externalParticipants: 'externalParticipants',
+  authorId: 'authorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MeetingMinuteScalarFieldEnum = (typeof MeetingMinuteScalarFieldEnum)[keyof typeof MeetingMinuteScalarFieldEnum]
+
+
+export const MeetingMinuteParticipantScalarFieldEnum = {
+  id: 'id',
+  meetingMinuteId: 'meetingMinuteId',
+  userId: 'userId'
+} as const
+
+export type MeetingMinuteParticipantScalarFieldEnum = (typeof MeetingMinuteParticipantScalarFieldEnum)[keyof typeof MeetingMinuteParticipantScalarFieldEnum]
 
 
 export const TaskActivityScalarFieldEnum = {

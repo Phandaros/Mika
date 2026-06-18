@@ -9,6 +9,12 @@ export async function findAttachmentWithComment(attachmentId: string) {
           id: true,
           taskId: true
         }
+      },
+      projectNote: {
+        select: { id: true, projectId: true }
+      },
+      meetingMinute: {
+        select: { id: true, projectId: true }
       }
     }
   });
@@ -40,5 +46,10 @@ export async function canAccessAttachment(attachmentId: string): Promise<boolean
     return Boolean(task);
   }
 
+  if (attachment.projectNote || attachment.meetingMinute) {
+    return true;
+  }
+
+  // Imagens inline ainda não pertencem a um documento durante o upload.
   return true;
 }

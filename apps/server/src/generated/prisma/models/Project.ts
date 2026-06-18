@@ -400,6 +400,8 @@ export type ProjectWhereInput = {
   followers?: Prisma.ProjectFollowerListRelationFilter
   members?: Prisma.ProjectMemberListRelationFilter
   customFieldValues?: Prisma.ProjectCustomFieldValueListRelationFilter
+  projectNotes?: Prisma.ProjectNoteListRelationFilter
+  meetingMinutes?: Prisma.MeetingMinuteListRelationFilter
 }
 
 export type ProjectOrderByWithRelationInput = {
@@ -438,6 +440,8 @@ export type ProjectOrderByWithRelationInput = {
   followers?: Prisma.ProjectFollowerOrderByRelationAggregateInput
   members?: Prisma.ProjectMemberOrderByRelationAggregateInput
   customFieldValues?: Prisma.ProjectCustomFieldValueOrderByRelationAggregateInput
+  projectNotes?: Prisma.ProjectNoteOrderByRelationAggregateInput
+  meetingMinutes?: Prisma.MeetingMinuteOrderByRelationAggregateInput
 }
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -479,6 +483,8 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   followers?: Prisma.ProjectFollowerListRelationFilter
   members?: Prisma.ProjectMemberListRelationFilter
   customFieldValues?: Prisma.ProjectCustomFieldValueListRelationFilter
+  projectNotes?: Prisma.ProjectNoteListRelationFilter
+  meetingMinutes?: Prisma.MeetingMinuteListRelationFilter
 }, "id" | "asanaGid">
 
 export type ProjectOrderByWithAggregationInput = {
@@ -582,6 +588,8 @@ export type ProjectCreateInput = {
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateInput = {
@@ -617,6 +625,8 @@ export type ProjectUncheckedCreateInput = {
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUpdateInput = {
@@ -652,6 +662,8 @@ export type ProjectUpdateInput = {
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateInput = {
@@ -687,6 +699,8 @@ export type ProjectUncheckedUpdateInput = {
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateManyInput = {
@@ -1074,6 +1088,34 @@ export type ProjectUpdateOneRequiredWithoutSectionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutSectionsInput, Prisma.ProjectUpdateWithoutSectionsInput>, Prisma.ProjectUncheckedUpdateWithoutSectionsInput>
 }
 
+export type ProjectCreateNestedOneWithoutProjectNotesInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutProjectNotesInput, Prisma.ProjectUncheckedCreateWithoutProjectNotesInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutProjectNotesInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneRequiredWithoutProjectNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutProjectNotesInput, Prisma.ProjectUncheckedCreateWithoutProjectNotesInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutProjectNotesInput
+  upsert?: Prisma.ProjectUpsertWithoutProjectNotesInput
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutProjectNotesInput, Prisma.ProjectUpdateWithoutProjectNotesInput>, Prisma.ProjectUncheckedUpdateWithoutProjectNotesInput>
+}
+
+export type ProjectCreateNestedOneWithoutMeetingMinutesInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutMeetingMinutesInput, Prisma.ProjectUncheckedCreateWithoutMeetingMinutesInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutMeetingMinutesInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneRequiredWithoutMeetingMinutesNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutMeetingMinutesInput, Prisma.ProjectUncheckedCreateWithoutMeetingMinutesInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutMeetingMinutesInput
+  upsert?: Prisma.ProjectUpsertWithoutMeetingMinutesInput
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutMeetingMinutesInput, Prisma.ProjectUpdateWithoutMeetingMinutesInput>, Prisma.ProjectUncheckedUpdateWithoutMeetingMinutesInput>
+}
+
 export type ProjectCreateNestedOneWithoutMembershipsInput = {
   create?: Prisma.XOR<Prisma.ProjectCreateWithoutMembershipsInput, Prisma.ProjectUncheckedCreateWithoutMembershipsInput>
   connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutMembershipsInput
@@ -1136,6 +1178,8 @@ export type ProjectCreateWithoutOwnerInput = {
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutOwnerInput = {
@@ -1170,6 +1214,8 @@ export type ProjectUncheckedCreateWithoutOwnerInput = {
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutOwnerInput = {
@@ -1262,6 +1308,8 @@ export type ProjectCreateWithoutWorkspaceInput = {
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutWorkspaceInput = {
@@ -1296,6 +1344,8 @@ export type ProjectUncheckedCreateWithoutWorkspaceInput = {
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutWorkspaceInput = {
@@ -1355,6 +1405,8 @@ export type ProjectCreateWithoutTeamInput = {
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutTeamInput = {
@@ -1389,6 +1441,8 @@ export type ProjectUncheckedCreateWithoutTeamInput = {
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutTeamInput = {
@@ -1448,6 +1502,8 @@ export type ProjectCreateWithoutFollowersInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutFollowersInput = {
@@ -1482,6 +1538,8 @@ export type ProjectUncheckedCreateWithoutFollowersInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutFollowersInput = {
@@ -1532,6 +1590,8 @@ export type ProjectUpdateWithoutFollowersInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutFollowersInput = {
@@ -1566,6 +1626,8 @@ export type ProjectUncheckedUpdateWithoutFollowersInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateWithoutMembersInput = {
@@ -1600,6 +1662,8 @@ export type ProjectCreateWithoutMembersInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutMembersInput = {
@@ -1634,6 +1698,8 @@ export type ProjectUncheckedCreateWithoutMembersInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutMembersInput = {
@@ -1684,6 +1750,8 @@ export type ProjectUpdateWithoutMembersInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutMembersInput = {
@@ -1718,6 +1786,8 @@ export type ProjectUncheckedUpdateWithoutMembersInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateWithoutSectionsInput = {
@@ -1752,6 +1822,8 @@ export type ProjectCreateWithoutSectionsInput = {
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutSectionsInput = {
@@ -1786,6 +1858,8 @@ export type ProjectUncheckedCreateWithoutSectionsInput = {
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutSectionsInput = {
@@ -1836,6 +1910,8 @@ export type ProjectUpdateWithoutSectionsInput = {
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutSectionsInput = {
@@ -1870,6 +1946,328 @@ export type ProjectUncheckedUpdateWithoutSectionsInput = {
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectCreateWithoutProjectNotesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
+  archived?: boolean
+  color?: string | null
+  public?: boolean
+  defaultView?: string | null
+  currentStatusGid?: string | null
+  currentStatusColor?: string | null
+  currentStatusText?: string | null
+  statusUpdateGid?: string | null
+  startOn?: string | null
+  dueOn?: string | null
+  dueDate?: string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner?: Prisma.UserCreateNestedOneWithoutOwnedProjectsInput
+  team?: Prisma.TeamCreateNestedOneWithoutProjectsInput
+  workspace: Prisma.AsanaWorkspaceCreateNestedOneWithoutProjectsInput
+  sections?: Prisma.SectionCreateNestedManyWithoutProjectInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
+  followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
+  members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutProjectNotesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
+  archived?: boolean
+  color?: string | null
+  public?: boolean
+  defaultView?: string | null
+  currentStatusGid?: string | null
+  currentStatusColor?: string | null
+  currentStatusText?: string | null
+  statusUpdateGid?: string | null
+  startOn?: string | null
+  dueOn?: string | null
+  dueDate?: string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  ownerGid?: string | null
+  teamGid?: string | null
+  workspaceGid: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sections?: Prisma.SectionUncheckedCreateNestedManyWithoutProjectInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
+  followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
+  members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutProjectNotesInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutProjectNotesInput, Prisma.ProjectUncheckedCreateWithoutProjectNotesInput>
+}
+
+export type ProjectUpsertWithoutProjectNotesInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutProjectNotesInput, Prisma.ProjectUncheckedUpdateWithoutProjectNotesInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutProjectNotesInput, Prisma.ProjectUncheckedCreateWithoutProjectNotesInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutProjectNotesInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutProjectNotesInput, Prisma.ProjectUncheckedUpdateWithoutProjectNotesInput>
+}
+
+export type ProjectUpdateWithoutProjectNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  public?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultView?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusUpdateGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneWithoutOwnedProjectsNestedInput
+  team?: Prisma.TeamUpdateOneWithoutProjectsNestedInput
+  workspace?: Prisma.AsanaWorkspaceUpdateOneRequiredWithoutProjectsNestedInput
+  sections?: Prisma.SectionUpdateManyWithoutProjectNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
+  followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
+  members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutProjectNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  public?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultView?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusUpdateGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  teamGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workspaceGid?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sections?: Prisma.SectionUncheckedUpdateManyWithoutProjectNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
+  followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
+  members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectCreateWithoutMeetingMinutesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
+  archived?: boolean
+  color?: string | null
+  public?: boolean
+  defaultView?: string | null
+  currentStatusGid?: string | null
+  currentStatusColor?: string | null
+  currentStatusText?: string | null
+  statusUpdateGid?: string | null
+  startOn?: string | null
+  dueOn?: string | null
+  dueDate?: string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner?: Prisma.UserCreateNestedOneWithoutOwnedProjectsInput
+  team?: Prisma.TeamCreateNestedOneWithoutProjectsInput
+  workspace: Prisma.AsanaWorkspaceCreateNestedOneWithoutProjectsInput
+  sections?: Prisma.SectionCreateNestedManyWithoutProjectInput
+  memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
+  followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
+  members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutMeetingMinutesInput = {
+  id?: string
+  asanaGid: string
+  name: string
+  notes?: string | null
+  htmlNotes?: string | null
+  permalinkUrl?: string | null
+  platform?: string | null
+  builder?: string | null
+  areaM2?: number | null
+  archived?: boolean
+  color?: string | null
+  public?: boolean
+  defaultView?: string | null
+  currentStatusGid?: string | null
+  currentStatusColor?: string | null
+  currentStatusText?: string | null
+  statusUpdateGid?: string | null
+  startOn?: string | null
+  dueOn?: string | null
+  dueDate?: string | null
+  asanaCreatedAt?: Date | string | null
+  asanaModifiedAt?: Date | string | null
+  ownerGid?: string | null
+  teamGid?: string | null
+  workspaceGid: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sections?: Prisma.SectionUncheckedCreateNestedManyWithoutProjectInput
+  memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
+  followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
+  members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutMeetingMinutesInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutMeetingMinutesInput, Prisma.ProjectUncheckedCreateWithoutMeetingMinutesInput>
+}
+
+export type ProjectUpsertWithoutMeetingMinutesInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutMeetingMinutesInput, Prisma.ProjectUncheckedUpdateWithoutMeetingMinutesInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutMeetingMinutesInput, Prisma.ProjectUncheckedCreateWithoutMeetingMinutesInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutMeetingMinutesInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutMeetingMinutesInput, Prisma.ProjectUncheckedUpdateWithoutMeetingMinutesInput>
+}
+
+export type ProjectUpdateWithoutMeetingMinutesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  public?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultView?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusUpdateGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneWithoutOwnedProjectsNestedInput
+  team?: Prisma.TeamUpdateOneWithoutProjectsNestedInput
+  workspace?: Prisma.AsanaWorkspaceUpdateOneRequiredWithoutProjectsNestedInput
+  sections?: Prisma.SectionUpdateManyWithoutProjectNestedInput
+  memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
+  followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
+  members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutMeetingMinutesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  htmlNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  permalinkUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  builder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaM2?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  public?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultView?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatusText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusUpdateGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueOn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  asanaModifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  teamGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  workspaceGid?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sections?: Prisma.SectionUncheckedUpdateManyWithoutProjectNestedInput
+  memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
+  followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
+  members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
+  customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateWithoutMembershipsInput = {
@@ -1904,6 +2302,8 @@ export type ProjectCreateWithoutMembershipsInput = {
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutMembershipsInput = {
@@ -1938,6 +2338,8 @@ export type ProjectUncheckedCreateWithoutMembershipsInput = {
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutMembershipsInput = {
@@ -1988,6 +2390,8 @@ export type ProjectUpdateWithoutMembershipsInput = {
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutMembershipsInput = {
@@ -2022,6 +2426,8 @@ export type ProjectUncheckedUpdateWithoutMembershipsInput = {
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateWithoutCustomFieldValuesInput = {
@@ -2056,6 +2462,8 @@ export type ProjectCreateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutCustomFieldValuesInput = {
@@ -2090,6 +2498,8 @@ export type ProjectUncheckedCreateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipUncheckedCreateNestedManyWithoutProjectInput
   followers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutProjectInput
   members?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
+  projectNotes?: Prisma.ProjectNoteUncheckedCreateNestedManyWithoutProjectInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutCustomFieldValuesInput = {
@@ -2140,6 +2550,8 @@ export type ProjectUpdateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutCustomFieldValuesInput = {
@@ -2174,6 +2586,8 @@ export type ProjectUncheckedUpdateWithoutCustomFieldValuesInput = {
   memberships?: Prisma.TaskMembershipUncheckedUpdateManyWithoutProjectNestedInput
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateManyOwnerInput = {
@@ -2237,6 +2651,8 @@ export type ProjectUpdateWithoutOwnerInput = {
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutOwnerInput = {
@@ -2271,6 +2687,8 @@ export type ProjectUncheckedUpdateWithoutOwnerInput = {
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
@@ -2363,6 +2781,8 @@ export type ProjectUpdateWithoutWorkspaceInput = {
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutWorkspaceInput = {
@@ -2397,6 +2817,8 @@ export type ProjectUncheckedUpdateWithoutWorkspaceInput = {
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateManyWithoutWorkspaceInput = {
@@ -2489,6 +2911,8 @@ export type ProjectUpdateWithoutTeamInput = {
   followers?: Prisma.ProjectFollowerUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutTeamInput = {
@@ -2523,6 +2947,8 @@ export type ProjectUncheckedUpdateWithoutTeamInput = {
   followers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutProjectNestedInput
   members?: Prisma.ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
   customFieldValues?: Prisma.ProjectCustomFieldValueUncheckedUpdateManyWithoutProjectNestedInput
+  projectNotes?: Prisma.ProjectNoteUncheckedUpdateManyWithoutProjectNestedInput
+  meetingMinutes?: Prisma.MeetingMinuteUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateManyWithoutTeamInput = {
@@ -2565,6 +2991,8 @@ export type ProjectCountOutputType = {
   followers: number
   members: number
   customFieldValues: number
+  projectNotes: number
+  meetingMinutes: number
 }
 
 export type ProjectCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2573,6 +3001,8 @@ export type ProjectCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   followers?: boolean | ProjectCountOutputTypeCountFollowersArgs
   members?: boolean | ProjectCountOutputTypeCountMembersArgs
   customFieldValues?: boolean | ProjectCountOutputTypeCountCustomFieldValuesArgs
+  projectNotes?: boolean | ProjectCountOutputTypeCountProjectNotesArgs
+  meetingMinutes?: boolean | ProjectCountOutputTypeCountMeetingMinutesArgs
 }
 
 /**
@@ -2620,6 +3050,20 @@ export type ProjectCountOutputTypeCountCustomFieldValuesArgs<ExtArgs extends run
   where?: Prisma.ProjectCustomFieldValueWhereInput
 }
 
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountProjectNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProjectNoteWhereInput
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountMeetingMinutesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MeetingMinuteWhereInput
+}
+
 
 export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2657,6 +3101,8 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   followers?: boolean | Prisma.Project$followersArgs<ExtArgs>
   members?: boolean | Prisma.Project$membersArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Project$customFieldValuesArgs<ExtArgs>
+  projectNotes?: boolean | Prisma.Project$projectNotesArgs<ExtArgs>
+  meetingMinutes?: boolean | Prisma.Project$meetingMinutesArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["project"]>
 
@@ -2766,6 +3212,8 @@ export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   followers?: boolean | Prisma.Project$followersArgs<ExtArgs>
   members?: boolean | Prisma.Project$membersArgs<ExtArgs>
   customFieldValues?: boolean | Prisma.Project$customFieldValuesArgs<ExtArgs>
+  projectNotes?: boolean | Prisma.Project$projectNotesArgs<ExtArgs>
+  meetingMinutes?: boolean | Prisma.Project$meetingMinutesArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProjectIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2790,6 +3238,8 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     followers: Prisma.$ProjectFollowerPayload<ExtArgs>[]
     members: Prisma.$ProjectMemberPayload<ExtArgs>[]
     customFieldValues: Prisma.$ProjectCustomFieldValuePayload<ExtArgs>[]
+    projectNotes: Prisma.$ProjectNotePayload<ExtArgs>[]
+    meetingMinutes: Prisma.$MeetingMinutePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3227,6 +3677,8 @@ export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.
   followers<T extends Prisma.Project$followersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$followersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectFollowerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   members<T extends Prisma.Project$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customFieldValues<T extends Prisma.Project$customFieldValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$customFieldValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectCustomFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  projectNotes<T extends Prisma.Project$projectNotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$projectNotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  meetingMinutes<T extends Prisma.Project$meetingMinutesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$meetingMinutesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MeetingMinutePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3837,6 +4289,54 @@ export type Project$customFieldValuesArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.ProjectCustomFieldValueScalarFieldEnum | Prisma.ProjectCustomFieldValueScalarFieldEnum[]
+}
+
+/**
+ * Project.projectNotes
+ */
+export type Project$projectNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProjectNote
+   */
+  select?: Prisma.ProjectNoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProjectNote
+   */
+  omit?: Prisma.ProjectNoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectNoteInclude<ExtArgs> | null
+  where?: Prisma.ProjectNoteWhereInput
+  orderBy?: Prisma.ProjectNoteOrderByWithRelationInput | Prisma.ProjectNoteOrderByWithRelationInput[]
+  cursor?: Prisma.ProjectNoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProjectNoteScalarFieldEnum | Prisma.ProjectNoteScalarFieldEnum[]
+}
+
+/**
+ * Project.meetingMinutes
+ */
+export type Project$meetingMinutesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MeetingMinute
+   */
+  select?: Prisma.MeetingMinuteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MeetingMinute
+   */
+  omit?: Prisma.MeetingMinuteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MeetingMinuteInclude<ExtArgs> | null
+  where?: Prisma.MeetingMinuteWhereInput
+  orderBy?: Prisma.MeetingMinuteOrderByWithRelationInput | Prisma.MeetingMinuteOrderByWithRelationInput[]
+  cursor?: Prisma.MeetingMinuteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MeetingMinuteScalarFieldEnum | Prisma.MeetingMinuteScalarFieldEnum[]
 }
 
 /**

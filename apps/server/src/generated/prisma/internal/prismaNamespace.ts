@@ -397,6 +397,9 @@ export const ModelName = {
   TaskReview: 'TaskReview',
   Comment: 'Comment',
   Attachment: 'Attachment',
+  ProjectNote: 'ProjectNote',
+  MeetingMinute: 'MeetingMinute',
+  MeetingMinuteParticipant: 'MeetingMinuteParticipant',
   TaskActivity: 'TaskActivity',
   TaskMembership: 'TaskMembership',
   TaskFollower: 'TaskFollower',
@@ -424,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
+    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "projectNote" | "meetingMinute" | "meetingMinuteParticipant" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1387,6 +1390,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AttachmentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AttachmentCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProjectNote: {
+      payload: Prisma.$ProjectNotePayload<ExtArgs>
+      fields: Prisma.ProjectNoteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProjectNoteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProjectNoteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>
+        }
+        findFirst: {
+          args: Prisma.ProjectNoteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProjectNoteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>
+        }
+        findMany: {
+          args: Prisma.ProjectNoteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>[]
+        }
+        create: {
+          args: Prisma.ProjectNoteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>
+        }
+        createMany: {
+          args: Prisma.ProjectNoteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProjectNoteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>[]
+        }
+        delete: {
+          args: Prisma.ProjectNoteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>
+        }
+        update: {
+          args: Prisma.ProjectNoteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>
+        }
+        deleteMany: {
+          args: Prisma.ProjectNoteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProjectNoteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProjectNoteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>[]
+        }
+        upsert: {
+          args: Prisma.ProjectNoteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProjectNotePayload>
+        }
+        aggregate: {
+          args: Prisma.ProjectNoteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProjectNote>
+        }
+        groupBy: {
+          args: Prisma.ProjectNoteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProjectNoteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProjectNoteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProjectNoteCountAggregateOutputType> | number
+        }
+      }
+    }
+    MeetingMinute: {
+      payload: Prisma.$MeetingMinutePayload<ExtArgs>
+      fields: Prisma.MeetingMinuteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MeetingMinuteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MeetingMinuteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>
+        }
+        findFirst: {
+          args: Prisma.MeetingMinuteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MeetingMinuteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>
+        }
+        findMany: {
+          args: Prisma.MeetingMinuteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>[]
+        }
+        create: {
+          args: Prisma.MeetingMinuteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>
+        }
+        createMany: {
+          args: Prisma.MeetingMinuteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MeetingMinuteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>[]
+        }
+        delete: {
+          args: Prisma.MeetingMinuteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>
+        }
+        update: {
+          args: Prisma.MeetingMinuteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>
+        }
+        deleteMany: {
+          args: Prisma.MeetingMinuteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MeetingMinuteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MeetingMinuteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>[]
+        }
+        upsert: {
+          args: Prisma.MeetingMinuteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinutePayload>
+        }
+        aggregate: {
+          args: Prisma.MeetingMinuteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMeetingMinute>
+        }
+        groupBy: {
+          args: Prisma.MeetingMinuteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MeetingMinuteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MeetingMinuteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MeetingMinuteCountAggregateOutputType> | number
+        }
+      }
+    }
+    MeetingMinuteParticipant: {
+      payload: Prisma.$MeetingMinuteParticipantPayload<ExtArgs>
+      fields: Prisma.MeetingMinuteParticipantFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MeetingMinuteParticipantFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MeetingMinuteParticipantFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>
+        }
+        findFirst: {
+          args: Prisma.MeetingMinuteParticipantFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MeetingMinuteParticipantFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>
+        }
+        findMany: {
+          args: Prisma.MeetingMinuteParticipantFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>[]
+        }
+        create: {
+          args: Prisma.MeetingMinuteParticipantCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>
+        }
+        createMany: {
+          args: Prisma.MeetingMinuteParticipantCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MeetingMinuteParticipantCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>[]
+        }
+        delete: {
+          args: Prisma.MeetingMinuteParticipantDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>
+        }
+        update: {
+          args: Prisma.MeetingMinuteParticipantUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>
+        }
+        deleteMany: {
+          args: Prisma.MeetingMinuteParticipantDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MeetingMinuteParticipantUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MeetingMinuteParticipantUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>[]
+        }
+        upsert: {
+          args: Prisma.MeetingMinuteParticipantUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MeetingMinuteParticipantPayload>
+        }
+        aggregate: {
+          args: Prisma.MeetingMinuteParticipantAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMeetingMinuteParticipant>
+        }
+        groupBy: {
+          args: Prisma.MeetingMinuteParticipantGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MeetingMinuteParticipantGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MeetingMinuteParticipantCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MeetingMinuteParticipantCountAggregateOutputType> | number
         }
       }
     }
@@ -2528,6 +2753,8 @@ export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeo
 export const AttachmentScalarFieldEnum = {
   id: 'id',
   commentId: 'commentId',
+  projectNoteId: 'projectNoteId',
+  meetingMinuteId: 'meetingMinuteId',
   filename: 'filename',
   storedAs: 'storedAs',
   mimeType: 'mimeType',
@@ -2537,6 +2764,44 @@ export const AttachmentScalarFieldEnum = {
 } as const
 
 export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]
+
+
+export const ProjectNoteScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  title: 'title',
+  content: 'content',
+  authorId: 'authorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProjectNoteScalarFieldEnum = (typeof ProjectNoteScalarFieldEnum)[keyof typeof ProjectNoteScalarFieldEnum]
+
+
+export const MeetingMinuteScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  title: 'title',
+  meetingDate: 'meetingDate',
+  meetingTime: 'meetingTime',
+  content: 'content',
+  externalParticipants: 'externalParticipants',
+  authorId: 'authorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MeetingMinuteScalarFieldEnum = (typeof MeetingMinuteScalarFieldEnum)[keyof typeof MeetingMinuteScalarFieldEnum]
+
+
+export const MeetingMinuteParticipantScalarFieldEnum = {
+  id: 'id',
+  meetingMinuteId: 'meetingMinuteId',
+  userId: 'userId'
+} as const
+
+export type MeetingMinuteParticipantScalarFieldEnum = (typeof MeetingMinuteParticipantScalarFieldEnum)[keyof typeof MeetingMinuteParticipantScalarFieldEnum]
 
 
 export const TaskActivityScalarFieldEnum = {
@@ -2935,6 +3200,9 @@ export type GlobalOmitConfig = {
   taskReview?: Prisma.TaskReviewOmit
   comment?: Prisma.CommentOmit
   attachment?: Prisma.AttachmentOmit
+  projectNote?: Prisma.ProjectNoteOmit
+  meetingMinute?: Prisma.MeetingMinuteOmit
+  meetingMinuteParticipant?: Prisma.MeetingMinuteParticipantOmit
   taskActivity?: Prisma.TaskActivityOmit
   taskMembership?: Prisma.TaskMembershipOmit
   taskFollower?: Prisma.TaskFollowerOmit

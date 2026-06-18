@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, Plus, Search, X } from "lucide-react";
+import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Priority, TaskStatus, type DisciplineType, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
+import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
 import {
   DataTable,
   DataTableCell,
@@ -55,6 +56,8 @@ import { cn, formatDateOnly } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
 type ProjectTab = "list" | "kanban";
+type ProjectArea = "tasks" | "documents";
+type ProjectDocumentKind = "notes" | "meeting-minutes";
 type SortKey = "title" | "section" | "assignee" | "status" | "stage";
 type CompletionFilter = "open" | "completed" | "all";
 type TaskScope = "general" | "civil" | "electrical";
@@ -120,7 +123,12 @@ export function ProjectDetailPage() {
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
   const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
-  const [activeTab, setActiveTab] = useState<ProjectTab>("list");
+  const activeArea: ProjectArea = searchParams.get("area") === "documents" ? "documents" : "tasks";
+  const activeTab: ProjectTab = searchParams.get("view") === "kanban" ? "kanban" : "list";
+  const documentKind: ProjectDocumentKind =
+    searchParams.get("docs") === "meeting-minutes" ? "meeting-minutes" : "notes";
+  const selectedDocumentId =
+    documentKind === "notes" ? searchParams.get("note") : searchParams.get("meeting");
   const [taskScope, setTaskScope] = useState<TaskScope>("general");
   const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectTaskStatusSelection);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
@@ -131,6 +139,7 @@ export function ProjectDetailPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [documentCreateVersion, setDocumentCreateVersion] = useState(0);
   const openTaskCreate = useUiStore((state) => state.openTaskCreate);
   const { user } = useAuth();
   const canManage = canManageTasks(user);
@@ -195,6 +204,53 @@ export function ProjectDetailPage() {
     const next = new URLSearchParams(searchParams);
     next.set("task", task.id);
     setSearchParams(next, { replace: true });
+  }
+
+  function updatePageParams(mutator: (params: URLSearchParams) => void) {
+    const next = new URLSearchParams(searchParams);
+    mutator(next);
+    setSearchParams(next, { replace: true });
+  }
+
+  function setProjectArea(area: ProjectArea, kind?: ProjectDocumentKind) {
+    updatePageParams((params) => {
+      params.delete("task");
+      params.delete("note");
+      params.delete("meeting");
+
+      if (area === "tasks") {
+        params.delete("area");
+        params.delete("docs");
+        return;
+      }
+
+      params.set("area", "documents");
+      if (kind === "meeting-minutes") {
+        params.set("docs", "meeting-minutes");
+      } else {
+        params.delete("docs");
+      }
+    });
+  }
+
+  function setTaskView(view: ProjectTab) {
+    updatePageParams((params) => {
+      if (view === "list") {
+        params.delete("view");
+      } else {
+        params.set("view", view);
+      }
+    });
+  }
+
+  function setSelectedDocumentId(id: string | null) {
+    updatePageParams((params) => {
+      params.delete("note");
+      params.delete("meeting");
+      if (id) {
+        params.set(documentKind === "notes" ? "note" : "meeting", id);
+      }
+    });
   }
 
   function patchTask(task: TaskWithDiscipline, payload: UpdateTaskRequest) {
@@ -349,10 +405,52 @@ export function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="mt-6 border-b border-border pb-0">
-        <div className="mb-3 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-text-primary">Tarefas</h2>
+      <section className="mt-6 flex flex-wrap items-end justify-between gap-3 border-b border-border">
+        <div className="flex items-center gap-5 text-sm font-bold text-text-secondary">
+          <ViewTab
+            active={activeArea === "tasks"}
+            icon={<ListTodo size={15} />}
+            label="Tarefas"
+            onClick={() => setProjectArea("tasks")}
+          />
+          <ViewTab
+            active={activeArea === "documents" && documentKind === "notes"}
+            icon={<NotebookPen size={15} />}
+            label="Anotações"
+            onClick={() => setProjectArea("documents", "notes")}
+          />
+          <ViewTab
+            active={activeArea === "documents" && documentKind === "meeting-minutes"}
+            icon={<UsersRound size={15} />}
+            label="Atas de reunião"
+            onClick={() => setProjectArea("documents", "meeting-minutes")}
+          />
+        </div>
+        {activeArea === "tasks" ? (
+          canManage ? (
+            <Button
+              className="mb-2 h-8 bg-brand-orange px-3 hover:bg-orange-600"
+              onClick={() => openTaskCreate({ projectId, sectionScope: taskScope })}
+            >
+              <Plus size={15} />
+              Criar tarefa
+            </Button>
+          ) : null
+        ) : (
+          <Button className="mb-2 h-8 px-3" onClick={() => setDocumentCreateVersion((version) => version + 1)}>
+            <Plus size={15} />
+            {documentKind === "notes" ? "Nova anotação" : "Nova ata"}
+          </Button>
+        )}
+      </section>
+
+      {activeArea === "tasks" ? (
+        <>
+      <section className="mt-3 border-b border-border pb-0">
+        <div className="mb-2 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-5 text-sm font-bold text-text-secondary">
+            <ViewTab active={activeTab === "list"} icon={<List size={15} />} label="Lista" onClick={() => setTaskView("list")} />
+            <ViewTab active={activeTab === "kanban"} icon={<KanbanSquare size={15} />} label="Quadro" onClick={() => setTaskView("kanban")} />
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-md border border-border px-3 py-1 text-sm font-semibold text-text-secondary">
@@ -360,28 +458,15 @@ export function ProjectDetailPage() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-5 text-sm font-bold text-text-secondary">
-          <ViewTab active={activeTab === "list"} icon={<List size={15} />} label="Lista" onClick={() => setActiveTab("list")} />
-          <ViewTab active={activeTab === "kanban"} icon={<KanbanSquare size={15} />} label="Quadro" onClick={() => setActiveTab("kanban")} />
-        </div>
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-3">
         <div className="flex flex-wrap items-center gap-2">
           {canManage ? (
-            <>
-              <Button
-                className="h-8 bg-brand-orange hover:bg-orange-600"
-                onClick={() => openTaskCreate({ projectId, sectionScope: taskScope })}
-              >
-                <Plus size={15} />
-                Criar tarefa
-              </Button>
-              <Button variant="secondary" className="h-8" onClick={() => setShowProjectForm((current) => !current)}>
-                <Edit3 size={15} />
-                Editar projeto
-              </Button>
-            </>
+            <Button variant="secondary" className="h-8" onClick={() => setShowProjectForm((current) => !current)}>
+              <Edit3 size={15} />
+              Editar projeto
+            </Button>
           ) : null}
           <ScopePill active={taskScope === "general"} label="Geral" onClick={() => setTaskScope("general")} />
           <ScopePill active={taskScope === "civil"} label="Civil" onClick={() => setTaskScope("civil")} />
@@ -493,6 +578,18 @@ export function ProjectDetailPage() {
         onOpenTask={openTaskDetail}
         openVersion={taskDetailOpenVersion}
       />
+        </>
+      ) : (
+        <div className="pt-3">
+          <ProjectDocumentsPanel
+            projectId={projectId}
+            kind={documentKind}
+            selectedId={selectedDocumentId}
+            onSelectedIdChange={setSelectedDocumentId}
+            createRequestVersion={documentCreateVersion}
+          />
+        </div>
+      )}
     </div>
   );
 }

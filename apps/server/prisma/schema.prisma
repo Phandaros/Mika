@@ -28,23 +28,26 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownedProjects       Project[]          @relation("ProjectOwner")
-  assignedTasks       Task[]             @relation("TaskAssignee")
-  createdCustomFields AsanaCustomField[] @relation("CustomFieldCreatedBy")
-  projectFollowers    ProjectFollower[]
-  projectMembers      ProjectMember[]
-  taskFollowers       TaskFollower[]
-  taskLikes           TaskLike[]
-  comments            Comment[]
-  taskActivities      TaskActivity[]
-  notifications       Notification[]
-  authoredNotifications Notification[]       @relation("NotificationActor")
-  createdHolidays     CompanyHoliday[]   @relation("HolidayCreator")
-  createdTasks        Task[]             @relation("TaskCreator")
-  requestedReviews    TaskReview[]       @relation("TaskReviewRequester")
-  assignedReviews     TaskReview[]       @relation("TaskReviewReviewer")
-  uploadedAttachments Attachment[]       @relation("AttachmentUploader")
-  weeklyReports       WeeklyReport[]
+  ownedProjects         Project[]                  @relation("ProjectOwner")
+  assignedTasks         Task[]                     @relation("TaskAssignee")
+  createdCustomFields   AsanaCustomField[]         @relation("CustomFieldCreatedBy")
+  projectFollowers      ProjectFollower[]
+  projectMembers        ProjectMember[]
+  taskFollowers         TaskFollower[]
+  taskLikes             TaskLike[]
+  comments              Comment[]
+  taskActivities        TaskActivity[]
+  notifications         Notification[]
+  authoredNotifications Notification[]             @relation("NotificationActor")
+  createdHolidays       CompanyHoliday[]           @relation("HolidayCreator")
+  createdTasks          Task[]                     @relation("TaskCreator")
+  requestedReviews      TaskReview[]               @relation("TaskReviewRequester")
+  assignedReviews       TaskReview[]               @relation("TaskReviewReviewer")
+  uploadedAttachments   Attachment[]               @relation("AttachmentUploader")
+  projectNotes          ProjectNote[]
+  meetingMinutes        MeetingMinute[]
+  meetingParticipations MeetingMinuteParticipant[]
+  weeklyReports         WeeklyReport[]
 
   @@index([asanaGid])
   @@index([email])
@@ -155,11 +158,13 @@ model Project {
   team      Team?          @relation(fields: [teamGid], references: [asanaGid])
   workspace AsanaWorkspace @relation(fields: [workspaceGid], references: [asanaGid])
 
-  sections            Section[]
-  memberships         TaskMembership[]
-  followers           ProjectFollower[]
-  members             ProjectMember[]
-  customFieldValues   ProjectCustomFieldValue[]
+  sections          Section[]
+  memberships       TaskMembership[]
+  followers         ProjectFollower[]
+  members           ProjectMember[]
+  customFieldValues ProjectCustomFieldValue[]
+  projectNotes      ProjectNote[]
+  meetingMinutes    MeetingMinute[]
 
   @@index([name])
   @@index([ownerGid])
@@ -341,19 +346,75 @@ model Comment {
 }
 
 model Attachment {
-  id           String   @id @default(cuid())
-  commentId    String?
-  comment      Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
-  filename     String
-  storedAs     String
-  mimeType     String
-  sizeBytes    Int
-  uploadedById String
-  uploadedBy   User     @relation("AttachmentUploader", fields: [uploadedById], references: [id])
-  createdAt    DateTime @default(now())
+  id              String         @id @default(cuid())
+  commentId       String?
+  comment         Comment?       @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  projectNoteId   String?
+  projectNote     ProjectNote?   @relation(fields: [projectNoteId], references: [id], onDelete: SetNull)
+  meetingMinuteId String?
+  meetingMinute   MeetingMinute? @relation(fields: [meetingMinuteId], references: [id], onDelete: SetNull)
+  filename        String
+  storedAs        String
+  mimeType        String
+  sizeBytes       Int
+  uploadedById    String
+  uploadedBy      User           @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+  createdAt       DateTime       @default(now())
 
   @@index([commentId])
+  @@index([projectNoteId])
+  @@index([meetingMinuteId])
   @@index([uploadedById])
+}
+
+model ProjectNote {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  content   String?
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  attachments Attachment[]
+
+  @@index([projectId, updatedAt])
+  @@index([authorId])
+}
+
+model MeetingMinute {
+  id                   String   @id @default(cuid())
+  projectId            String
+  title                String
+  meetingDate          String
+  meetingTime          String?
+  content              String?
+  externalParticipants Json?
+  authorId             String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project      Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author       User                       @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  participants MeetingMinuteParticipant[]
+  attachments  Attachment[]
+
+  @@index([projectId, meetingDate, meetingTime])
+  @@index([authorId])
+}
+
+model MeetingMinuteParticipant {
+  id              String @id @default(cuid())
+  meetingMinuteId String
+  userId          String
+
+  meetingMinute MeetingMinute @relation(fields: [meetingMinuteId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingMinuteId, userId])
+  @@index([userId])
 }
 
 model TaskActivity {
@@ -466,10 +527,10 @@ model AsanaCustomField {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  createdBy       User?                        @relation("CustomFieldCreatedBy", fields: [createdByGid], references: [asanaGid])
-  enumOptions     AsanaCustomFieldEnumOption[]
-  projectValues   ProjectCustomFieldValue[]
-  taskValues      TaskCustomFieldValue[]
+  createdBy     User?                        @relation("CustomFieldCreatedBy", fields: [createdByGid], references: [asanaGid])
+  enumOptions   AsanaCustomFieldEnumOption[]
+  projectValues ProjectCustomFieldValue[]
+  taskValues    TaskCustomFieldValue[]
 
   @@index([name])
   @@index([type])

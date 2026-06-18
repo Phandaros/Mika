@@ -28,5 +28,13 @@ Atributos próprios da model Project, **não** são campos de portfólio: **Nome
 ### Campos fixos de tarefa
 Conceito análogo, porém a nível de **Tarefa** (ver `UIUX.md` §4). Distinto dos campos de portfólio do projeto.
 
+### Anotação
+Documento colaborativo vinculado a um **Projeto**, identificado por título e composto por conteúdo textual ou anexos. É diferente da descrição do projeto e dos comentários de tarefas.
+_Evitar_: nota do projeto, comentário do projeto
+
+### Ata de Reunião
+Registro colaborativo de uma reunião vinculada a um **Projeto**, com data, participantes e conteúdo textual ou anexos. Participantes podem ser usuários do Mika ou pessoas externas.
+_Evitar_: anotação de reunião, comentário de reunião
+
 ---
 *MK Engenharia · Balneário Camboriú/SC*
