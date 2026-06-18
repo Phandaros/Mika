@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { NotificationType } from "shared";
 import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
 import { z } from "zod";
@@ -8,7 +9,7 @@ import { TaskStatus } from "../lib/enums.js";
 import { createAdjustmentTask } from "../lib/taskRules.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getAuthUser } from "../middleware/auth.js";
-import { createAndEmitNotification } from "../lib/notify.js";
+import { commentNotificationMessage, createAndEmitNotification } from "../lib/notify.js";
 import { extractUserMentionIds } from "../lib/commentMentions.js";
 import { taskActivityTypes } from "../lib/taskActivity.js";
 
@@ -166,9 +167,9 @@ async function notifyReviewComment(options: {
   for (const userId of recipients) {
     await createAndEmitNotification({
       userId,
-      type: "COMMENT_ADDED",
-      title: "Novo comentário",
-      message: `${options.taskName}: ${options.content.slice(0, 120)}${options.content.length > 120 ? "..." : ""}`,
+      type: NotificationType.COMMENT_ADDED,
+      actorId: options.authorId,
+      message: commentNotificationMessage(options.taskName, options.content),
       taskId: options.taskId
     });
   }
@@ -180,9 +181,9 @@ async function notifyReviewComment(options: {
 
     await createAndEmitNotification({
       userId,
-      type: "MENTIONED",
-      title: "Você foi mencionado",
-      message: `${options.taskName}: ${options.content.slice(0, 120)}${options.content.length > 120 ? "..." : ""}`,
+      type: NotificationType.MENTIONED,
+      actorId: options.authorId,
+      message: commentNotificationMessage(options.taskName, options.content),
       taskId: options.taskId
     });
   }

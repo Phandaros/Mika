@@ -38,6 +38,7 @@ model User {
   comments            Comment[]
   taskActivities      TaskActivity[]
   notifications       Notification[]
+  authoredNotifications Notification[]       @relation("NotificationActor")
   createdHolidays     CompanyHoliday[]   @relation("HolidayCreator")
   createdTasks        Task[]             @relation("TaskCreator")
   requestedReviews    TaskReview[]       @relation("TaskReviewRequester")
@@ -66,6 +67,7 @@ model CompanyHoliday {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
+  actorId   String?
   type      String
   title     String
   message   String
@@ -73,9 +75,11 @@ model Notification {
   taskId    String?
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([actorId])
   @@index([read])
   @@index([createdAt])
 }

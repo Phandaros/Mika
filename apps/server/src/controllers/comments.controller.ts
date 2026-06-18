@@ -1,11 +1,11 @@
 import type { RequestHandler } from "express";
-import type { AttachmentDto } from "shared";
+import { NotificationType, type AttachmentDto } from "shared";
 import { prisma } from "../lib/prisma.js";
 import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { deleteCommentAttachments } from "../lib/attachmentCleanup.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
-import { createAndEmitNotification } from "../lib/notify.js";
+import { commentNotificationMessage, createAndEmitNotification } from "../lib/notify.js";
 import { extractUserMentionIds } from "../lib/commentMentions.js";
 import { taskActivityTypes } from "../lib/taskActivity.js";
 import { Role } from "../lib/enums.js";
@@ -92,9 +92,9 @@ async function notifyMentionedUsers(options: {
 
     await createAndEmitNotification({
       userId,
-      type: "MENTIONED",
-      title: "Você foi mencionado",
-      message: `${options.taskName}: ${options.content.slice(0, 120)}${options.content.length > 120 ? "…" : ""}`,
+      type: NotificationType.MENTIONED,
+      actorId: options.authorId,
+      message: commentNotificationMessage(options.taskName, options.content),
       taskId: options.taskId
     });
   }
@@ -189,9 +189,9 @@ export const createComment: RequestHandler = async (req, res, next) => {
       for (const userId of recipients) {
         await createAndEmitNotification({
           userId,
-          type: "COMMENT_ADDED",
-          title: "Novo comentário",
-          message: `${fullTask.name}: ${body.content.slice(0, 120)}${body.content.length > 120 ? "…" : ""}`,
+          type: NotificationType.COMMENT_ADDED,
+          actorId: authUser.id,
+          message: commentNotificationMessage(fullTask.name, body.content),
           taskId: fullTask.id
         });
       }

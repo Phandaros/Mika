@@ -74,7 +74,7 @@ function titleAlreadyHasProjectPrefix(title: string, projectName: string): boole
   return prefix ? prefixLooksLikeProject(prefix, projectName) : false;
 }
 
-function stripProjectPrefix(title: string, projectName: string): string {
+export function stripProjectPrefix(title: string, projectName: string): string {
   const prefixMatch = title.match(/^\s*\[([^\]]+)\]\s*/);
   if (!prefixMatch || !prefixLooksLikeProject(prefixMatch[1] ?? "", projectName)) {
     return title;

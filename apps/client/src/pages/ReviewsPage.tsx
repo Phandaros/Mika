@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Role, TaskReviewStatus, type Task, type TaskReview } from "shared";
 import { Avatar } from "../components/shared/Avatar";
 import { Chip, DisciplineChip } from "../components/shared/Chip";
-import { EmptyCell } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
 import { Button } from "../components/ui/button";
@@ -23,6 +22,8 @@ import { useTaskById } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import { classifyFile, getFileRejectionMessage } from "../lib/attachmentUtils";
 import { isPointInsidePanelPortal, isTargetInsidePanelPortal } from "../lib/panelOutsideClick";
+import { relativeDueDateDisplay } from "../lib/relativeDueDate";
+import { reviewTaskDisplayTitle } from "../lib/reviewTaskLabel";
 import { cn, formatDateOnly } from "../lib/utils";
 
 const reviewStatusLabels: Record<TaskReviewStatus, string> = {
@@ -157,15 +158,14 @@ export function ReviewsPage() {
 
       <section className="overflow-hidden rounded-md border border-border bg-surface">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1120px] table-fixed border-collapse bg-[--bg-2] text-sm">
+          <table className="w-full min-w-[980px] table-fixed border-collapse bg-[--bg-2] text-sm">
             <thead className="sticky top-0 z-10 bg-[--bg-1]">
               <tr className="border-b border-[--color-border]">
-                <HeaderCell className="w-[240px]">Origem</HeaderCell>
-                <HeaderCell className="w-[320px]">Tarefa original</HeaderCell>
-                <HeaderCell className="w-[170px]">Projetista</HeaderCell>
-                <HeaderCell className="w-[170px]">Revisor</HeaderCell>
-                <HeaderCell className="w-[120px]">Entrega da revisão</HeaderCell>
-                <HeaderCell className="w-[120px]">Status</HeaderCell>
+                <HeaderCell className="w-[360px]">Tarefa original</HeaderCell>
+                <HeaderCell className="w-[180px]">Projetista</HeaderCell>
+                <HeaderCell className="w-[180px]">Revisor</HeaderCell>
+                <HeaderCell className="w-[160px]">Entrega da revisão</HeaderCell>
+                <HeaderCell className="w-[100px]">Status</HeaderCell>
               </tr>
             </thead>
             <tbody>
@@ -174,14 +174,11 @@ export function ReviewsPage() {
                 ? reviews.map((review) => (
                     <tr
                       key={review.id}
-                      className="h-10 cursor-pointer border-b border-[--color-border-subtle] transition-colors hover:bg-[--bg-3]"
+                      className="h-14 cursor-pointer border-b border-[--color-border-subtle] transition-colors duration-100 hover:bg-[--bg-3]"
                       onClick={() => setSelectedReview(review)}
                     >
                       <BodyCell>
-                        <OriginCell review={review} />
-                      </BodyCell>
-                      <BodyCell>
-                        <span className="block truncate font-semibold text-text-primary">{reviewTitle(review)}</span>
+                        <ReviewTaskCell review={review} />
                       </BodyCell>
                       <BodyCell>
                         <UserCell user={review.sourceTask?.assignee ?? null} fallback="Sem responsável" />
@@ -196,7 +193,9 @@ export function ReviewsPage() {
                           />
                         </div>
                       </BodyCell>
-                      <BodyCell>{review.dueDate ? formatDateOnly(review.dueDate, "dd/MM/yyyy") : <EmptyCell />}</BodyCell>
+                      <BodyCell>
+                        <ReviewDueDate dueDate={review.dueDate} />
+                      </BodyCell>
                       <BodyCell>
                         <ReviewStatusChip status={review.status} />
                       </BodyCell>
@@ -662,8 +661,8 @@ function ReviewTableSkeleton() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, index) => (
-        <tr key={index} className="h-10 border-b border-[--color-border-subtle]">
-          {Array.from({ length: 6 }).map((__, cellIndex) => (
+        <tr key={index} className="h-14 border-b border-[--color-border-subtle]">
+          {Array.from({ length: 5 }).map((__, cellIndex) => (
             <td key={cellIndex} className="px-3 py-2">
               <Skeleton className="h-4 w-full" />
             </td>
@@ -706,13 +705,38 @@ function reviewScopeButtonClass(active: boolean): string {
   );
 }
 
-function OriginCell({ review }: { review: TaskReview }) {
+function ReviewTaskCell({ review }: { review: TaskReview }) {
   const origin = taskOrigin(review.sourceTask ?? null);
 
   return (
     <span className="block min-w-0">
-      <span className="block truncate font-medium text-text-primary">{origin.project}</span>
-      <span className="block truncate text-[12px] text-text-muted">{origin.section || "Sem seção"}</span>
+      <span className="block truncate font-semibold text-text-primary">{reviewTitle(review)}</span>
+      <span className="mt-1 flex min-w-0 items-center gap-1.5">
+        <span className="min-w-0 max-w-[58%] truncate text-[11px] font-medium text-[--status-inprogress-text]">
+          {origin.project}
+        </span>
+        <span className="shrink-0 text-[--color-border-focus]" aria-hidden="true">·</span>
+        <span className="min-w-0 truncate text-[11px] text-text-muted">{origin.section || "Sem seção"}</span>
+      </span>
+    </span>
+  );
+}
+
+function ReviewDueDate({ dueDate }: { dueDate: string | null }) {
+  const display = relativeDueDateDisplay(dueDate);
+
+  return (
+    <span
+      className={cn(
+        "block truncate text-[12px] font-medium",
+        display.tone === "empty" && "text-[--color-text-muted]",
+        display.tone === "overdue" && "text-[--status-late-text]",
+        display.tone === "today" && "text-[--status-review-text]",
+        display.tone === "future" && "text-[--color-text-secondary]"
+      )}
+      title={display.title}
+    >
+      {display.label}
     </span>
   );
 }
@@ -773,11 +797,10 @@ function ReadOnlyValue({ value }: { value: string | null | undefined }) {
 }
 
 function reviewTitle(review: TaskReview): string {
-  return stripReviewPrefix(review.sourceTask?.title ?? review.title);
-}
-
-function stripReviewPrefix(title: string): string {
-  return title.replace(/^\s*\[REV\]\s*/i, "");
+  return reviewTaskDisplayTitle(
+    review.sourceTask?.title ?? review.title,
+    taskOrigin(review.sourceTask ?? null).project
+  );
 }
 
 function taskOrigin(task: Task | null): { project: string; section: string | null; label: string } {

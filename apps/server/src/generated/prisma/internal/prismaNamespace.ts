@@ -2350,6 +2350,7 @@ export type CompanyHolidayScalarFieldEnum = (typeof CompanyHolidayScalarFieldEnu
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  actorId: 'actorId',
   type: 'type',
   title: 'title',
   message: 'message',

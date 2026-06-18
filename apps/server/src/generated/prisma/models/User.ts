@@ -273,6 +273,7 @@ export type UserWhereInput = {
   comments?: Prisma.CommentListRelationFilter
   taskActivities?: Prisma.TaskActivityListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  authoredNotifications?: Prisma.NotificationListRelationFilter
   createdHolidays?: Prisma.CompanyHolidayListRelationFilter
   createdTasks?: Prisma.TaskListRelationFilter
   requestedReviews?: Prisma.TaskReviewListRelationFilter
@@ -307,6 +308,7 @@ export type UserOrderByWithRelationInput = {
   comments?: Prisma.CommentOrderByRelationAggregateInput
   taskActivities?: Prisma.TaskActivityOrderByRelationAggregateInput
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
+  authoredNotifications?: Prisma.NotificationOrderByRelationAggregateInput
   createdHolidays?: Prisma.CompanyHolidayOrderByRelationAggregateInput
   createdTasks?: Prisma.TaskOrderByRelationAggregateInput
   requestedReviews?: Prisma.TaskReviewOrderByRelationAggregateInput
@@ -344,6 +346,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   comments?: Prisma.CommentListRelationFilter
   taskActivities?: Prisma.TaskActivityListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  authoredNotifications?: Prisma.NotificationListRelationFilter
   createdHolidays?: Prisma.CompanyHolidayListRelationFilter
   createdTasks?: Prisma.TaskListRelationFilter
   requestedReviews?: Prisma.TaskReviewListRelationFilter
@@ -420,6 +423,7 @@ export type UserCreateInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -454,6 +458,7 @@ export type UserUncheckedCreateInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -488,6 +493,7 @@ export type UserUpdateInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -522,6 +528,7 @@ export type UserUncheckedUpdateInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -686,12 +693,28 @@ export type UserCreateNestedOneWithoutNotificationsInput = {
   connect?: Prisma.UserWhereUniqueInput
 }
 
+export type UserCreateNestedOneWithoutAuthoredNotificationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuthoredNotificationsInput, Prisma.UserUncheckedCreateWithoutAuthoredNotificationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuthoredNotificationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
 export type UserUpdateOneRequiredWithoutNotificationsNestedInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationsInput
   upsert?: Prisma.UserUpsertWithoutNotificationsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutNotificationsInput, Prisma.UserUpdateWithoutNotificationsInput>, Prisma.UserUncheckedUpdateWithoutNotificationsInput>
+}
+
+export type UserUpdateOneWithoutAuthoredNotificationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuthoredNotificationsInput, Prisma.UserUncheckedCreateWithoutAuthoredNotificationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuthoredNotificationsInput
+  upsert?: Prisma.UserUpsertWithoutAuthoredNotificationsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuthoredNotificationsInput, Prisma.UserUpdateWithoutAuthoredNotificationsInput>, Prisma.UserUncheckedUpdateWithoutAuthoredNotificationsInput>
 }
 
 export type UserCreateNestedOneWithoutOwnedProjectsInput = {
@@ -930,6 +953,7 @@ export type UserCreateWithoutCreatedHolidaysInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
@@ -963,6 +987,7 @@ export type UserUncheckedCreateWithoutCreatedHolidaysInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
@@ -1012,6 +1037,7 @@ export type UserUpdateWithoutCreatedHolidaysInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
@@ -1045,6 +1071,7 @@ export type UserUncheckedUpdateWithoutCreatedHolidaysInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
@@ -1077,6 +1104,7 @@ export type UserCreateWithoutNotificationsInput = {
   taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -1110,6 +1138,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -1121,6 +1150,79 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
 export type UserCreateOrConnectWithoutNotificationsInput = {
   where: Prisma.UserWhereUniqueInput
   create: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
+}
+
+export type UserCreateWithoutAuthoredNotificationsInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentCreateNestedManyWithoutUploadedByInput
+  weeklyReports?: Prisma.WeeklyReportCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAuthoredNotificationsInput = {
+  id?: string
+  asanaGid?: string | null
+  email: string
+  name: string
+  passwordHash?: string | null
+  role?: string
+  isActive?: boolean
+  photo21x21?: string | null
+  photo27x27?: string | null
+  photo36x36?: string | null
+  photo60x60?: string | null
+  photo128x128?: string | null
+  photoOriginal?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  ownedProjects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
+  assignedTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutAssigneeInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedCreateNestedManyWithoutCreatedByInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedCreateNestedManyWithoutUserInput
+  projectMembers?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutUserInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedCreateNestedManyWithoutUserInput
+  taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
+  taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
+  createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
+  requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
+  assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUploadedByInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAuthoredNotificationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuthoredNotificationsInput, Prisma.UserUncheckedCreateWithoutAuthoredNotificationsInput>
 }
 
 export type UserUpsertWithoutNotificationsInput = {
@@ -1159,6 +1261,7 @@ export type UserUpdateWithoutNotificationsInput = {
   taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -1192,6 +1295,86 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUploadedByNestedInput
+  weeklyReports?: Prisma.WeeklyReportUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserUpsertWithoutAuthoredNotificationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAuthoredNotificationsInput, Prisma.UserUncheckedUpdateWithoutAuthoredNotificationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuthoredNotificationsInput, Prisma.UserUncheckedCreateWithoutAuthoredNotificationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAuthoredNotificationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAuthoredNotificationsInput, Prisma.UserUncheckedUpdateWithoutAuthoredNotificationsInput>
+}
+
+export type UserUpdateWithoutAuthoredNotificationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
+  createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
+  requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
+  assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
+  uploadedAttachments?: Prisma.AttachmentUpdateManyWithoutUploadedByNestedInput
+  weeklyReports?: Prisma.WeeklyReportUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAuthoredNotificationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photo21x21?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo27x27?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo36x36?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo60x60?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photo128x128?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photoOriginal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ownedProjects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+  assignedTasks?: Prisma.TaskUncheckedUpdateManyWithoutAssigneeNestedInput
+  createdCustomFields?: Prisma.AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByNestedInput
+  projectFollowers?: Prisma.ProjectFollowerUncheckedUpdateManyWithoutUserNestedInput
+  projectMembers?: Prisma.ProjectMemberUncheckedUpdateManyWithoutUserNestedInput
+  taskFollowers?: Prisma.TaskFollowerUncheckedUpdateManyWithoutUserNestedInput
+  taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
+  taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -1225,6 +1408,7 @@ export type UserCreateWithoutOwnedProjectsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -1258,6 +1442,7 @@ export type UserUncheckedCreateWithoutOwnedProjectsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -1307,6 +1492,7 @@ export type UserUpdateWithoutOwnedProjectsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -1340,6 +1526,7 @@ export type UserUncheckedUpdateWithoutOwnedProjectsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -1373,6 +1560,7 @@ export type UserCreateWithoutProjectFollowersInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -1406,6 +1594,7 @@ export type UserUncheckedCreateWithoutProjectFollowersInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -1455,6 +1644,7 @@ export type UserUpdateWithoutProjectFollowersInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -1488,6 +1678,7 @@ export type UserUncheckedUpdateWithoutProjectFollowersInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -1521,6 +1712,7 @@ export type UserCreateWithoutProjectMembersInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -1554,6 +1746,7 @@ export type UserUncheckedCreateWithoutProjectMembersInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -1603,6 +1796,7 @@ export type UserUpdateWithoutProjectMembersInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -1636,6 +1830,7 @@ export type UserUncheckedUpdateWithoutProjectMembersInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -1669,6 +1864,7 @@ export type UserCreateWithoutAssignedTasksInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -1702,6 +1898,7 @@ export type UserUncheckedCreateWithoutAssignedTasksInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -1741,6 +1938,7 @@ export type UserCreateWithoutCreatedTasksInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
@@ -1774,6 +1972,7 @@ export type UserUncheckedCreateWithoutCreatedTasksInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
@@ -1822,6 +2021,7 @@ export type UserUpdateWithoutAssignedTasksInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -1855,6 +2055,7 @@ export type UserUncheckedUpdateWithoutAssignedTasksInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -1900,6 +2101,7 @@ export type UserUpdateWithoutCreatedTasksInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
@@ -1933,6 +2135,7 @@ export type UserUncheckedUpdateWithoutCreatedTasksInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
@@ -1966,6 +2169,7 @@ export type UserCreateWithoutAssignedReviewsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -1999,6 +2203,7 @@ export type UserUncheckedCreateWithoutAssignedReviewsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -2037,6 +2242,7 @@ export type UserCreateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   assignedReviews?: Prisma.TaskReviewCreateNestedManyWithoutReviewerInput
@@ -2070,6 +2276,7 @@ export type UserUncheckedCreateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   assignedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutReviewerInput
@@ -2119,6 +2326,7 @@ export type UserUpdateWithoutAssignedReviewsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -2152,6 +2360,7 @@ export type UserUncheckedUpdateWithoutAssignedReviewsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -2196,6 +2405,7 @@ export type UserUpdateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   assignedReviews?: Prisma.TaskReviewUpdateManyWithoutReviewerNestedInput
@@ -2229,6 +2439,7 @@ export type UserUncheckedUpdateWithoutRequestedReviewsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   assignedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutReviewerNestedInput
@@ -2261,6 +2472,7 @@ export type UserCreateWithoutCommentsInput = {
   taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -2294,6 +2506,7 @@ export type UserUncheckedCreateWithoutCommentsInput = {
   taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -2343,6 +2556,7 @@ export type UserUpdateWithoutCommentsInput = {
   taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -2376,6 +2590,7 @@ export type UserUncheckedUpdateWithoutCommentsInput = {
   taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -2410,6 +2625,7 @@ export type UserCreateWithoutUploadedAttachmentsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -2443,6 +2659,7 @@ export type UserUncheckedCreateWithoutUploadedAttachmentsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -2492,6 +2709,7 @@ export type UserUpdateWithoutUploadedAttachmentsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -2525,6 +2743,7 @@ export type UserUncheckedUpdateWithoutUploadedAttachmentsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -2557,6 +2776,7 @@ export type UserCreateWithoutTaskActivitiesInput = {
   taskLikes?: Prisma.TaskLikeCreateNestedManyWithoutUserInput
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -2590,6 +2810,7 @@ export type UserUncheckedCreateWithoutTaskActivitiesInput = {
   taskLikes?: Prisma.TaskLikeUncheckedCreateNestedManyWithoutUserInput
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -2639,6 +2860,7 @@ export type UserUpdateWithoutTaskActivitiesInput = {
   taskLikes?: Prisma.TaskLikeUpdateManyWithoutUserNestedInput
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -2672,6 +2894,7 @@ export type UserUncheckedUpdateWithoutTaskActivitiesInput = {
   taskLikes?: Prisma.TaskLikeUncheckedUpdateManyWithoutUserNestedInput
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -2705,6 +2928,7 @@ export type UserCreateWithoutTaskFollowersInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -2738,6 +2962,7 @@ export type UserUncheckedCreateWithoutTaskFollowersInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -2787,6 +3012,7 @@ export type UserUpdateWithoutTaskFollowersInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -2820,6 +3046,7 @@ export type UserUncheckedUpdateWithoutTaskFollowersInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -2853,6 +3080,7 @@ export type UserCreateWithoutTaskLikesInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -2886,6 +3114,7 @@ export type UserUncheckedCreateWithoutTaskLikesInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -2935,6 +3164,7 @@ export type UserUpdateWithoutTaskLikesInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -2968,6 +3198,7 @@ export type UserUncheckedUpdateWithoutTaskLikesInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -3001,6 +3232,7 @@ export type UserCreateWithoutCreatedCustomFieldsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -3034,6 +3266,7 @@ export type UserUncheckedCreateWithoutCreatedCustomFieldsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -3083,6 +3316,7 @@ export type UserUpdateWithoutCreatedCustomFieldsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -3116,6 +3350,7 @@ export type UserUncheckedUpdateWithoutCreatedCustomFieldsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -3150,6 +3385,7 @@ export type UserCreateWithoutWeeklyReportsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewCreateNestedManyWithoutRequestedByInput
@@ -3183,6 +3419,7 @@ export type UserUncheckedCreateWithoutWeeklyReportsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   taskActivities?: Prisma.TaskActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  authoredNotifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutActorInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedCreateNestedManyWithoutCreatorInput
   createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
   requestedReviews?: Prisma.TaskReviewUncheckedCreateNestedManyWithoutRequestedByInput
@@ -3232,6 +3469,7 @@ export type UserUpdateWithoutWeeklyReportsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUpdateManyWithoutRequestedByNestedInput
@@ -3265,6 +3503,7 @@ export type UserUncheckedUpdateWithoutWeeklyReportsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   taskActivities?: Prisma.TaskActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  authoredNotifications?: Prisma.NotificationUncheckedUpdateManyWithoutActorNestedInput
   createdHolidays?: Prisma.CompanyHolidayUncheckedUpdateManyWithoutCreatorNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
   requestedReviews?: Prisma.TaskReviewUncheckedUpdateManyWithoutRequestedByNestedInput
@@ -3288,6 +3527,7 @@ export type UserCountOutputType = {
   comments: number
   taskActivities: number
   notifications: number
+  authoredNotifications: number
   createdHolidays: number
   createdTasks: number
   requestedReviews: number
@@ -3307,6 +3547,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   comments?: boolean | UserCountOutputTypeCountCommentsArgs
   taskActivities?: boolean | UserCountOutputTypeCountTaskActivitiesArgs
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
+  authoredNotifications?: boolean | UserCountOutputTypeCountAuthoredNotificationsArgs
   createdHolidays?: boolean | UserCountOutputTypeCountCreatedHolidaysArgs
   createdTasks?: boolean | UserCountOutputTypeCountCreatedTasksArgs
   requestedReviews?: boolean | UserCountOutputTypeCountRequestedReviewsArgs
@@ -3398,6 +3639,13 @@ export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Ty
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountAuthoredNotificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NotificationWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountCreatedHolidaysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CompanyHolidayWhereInput
 }
@@ -3464,6 +3712,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   comments?: boolean | Prisma.User$commentsArgs<ExtArgs>
   taskActivities?: boolean | Prisma.User$taskActivitiesArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  authoredNotifications?: boolean | Prisma.User$authoredNotificationsArgs<ExtArgs>
   createdHolidays?: boolean | Prisma.User$createdHolidaysArgs<ExtArgs>
   createdTasks?: boolean | Prisma.User$createdTasksArgs<ExtArgs>
   requestedReviews?: boolean | Prisma.User$requestedReviewsArgs<ExtArgs>
@@ -3539,6 +3788,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   comments?: boolean | Prisma.User$commentsArgs<ExtArgs>
   taskActivities?: boolean | Prisma.User$taskActivitiesArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  authoredNotifications?: boolean | Prisma.User$authoredNotificationsArgs<ExtArgs>
   createdHolidays?: boolean | Prisma.User$createdHolidaysArgs<ExtArgs>
   createdTasks?: boolean | Prisma.User$createdTasksArgs<ExtArgs>
   requestedReviews?: boolean | Prisma.User$requestedReviewsArgs<ExtArgs>
@@ -3563,6 +3813,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     comments: Prisma.$CommentPayload<ExtArgs>[]
     taskActivities: Prisma.$TaskActivityPayload<ExtArgs>[]
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
+    authoredNotifications: Prisma.$NotificationPayload<ExtArgs>[]
     createdHolidays: Prisma.$CompanyHolidayPayload<ExtArgs>[]
     createdTasks: Prisma.$TaskPayload<ExtArgs>[]
     requestedReviews: Prisma.$TaskReviewPayload<ExtArgs>[]
@@ -3990,6 +4241,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   comments<T extends Prisma.User$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   taskActivities<T extends Prisma.User$taskActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$taskActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  authoredNotifications<T extends Prisma.User$authoredNotificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$authoredNotificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   createdHolidays<T extends Prisma.User$createdHolidaysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdHolidaysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompanyHolidayPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   createdTasks<T extends Prisma.User$createdTasksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdTasksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   requestedReviews<T extends Prisma.User$requestedReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$requestedReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -4650,6 +4902,30 @@ export type User$taskActivitiesArgs<ExtArgs extends runtime.Types.Extensions.Int
  * User.notifications
  */
 export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Notification
+   */
+  select?: Prisma.NotificationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Notification
+   */
+  omit?: Prisma.NotificationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NotificationInclude<ExtArgs> | null
+  where?: Prisma.NotificationWhereInput
+  orderBy?: Prisma.NotificationOrderByWithRelationInput | Prisma.NotificationOrderByWithRelationInput[]
+  cursor?: Prisma.NotificationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
+}
+
+/**
+ * User.authoredNotifications
+ */
+export type User$authoredNotificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Notification
    */

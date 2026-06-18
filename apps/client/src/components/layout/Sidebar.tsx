@@ -51,6 +51,7 @@ const sidebarSections: SidebarNavSection[] = [
     items: [
       { to: "/", label: "Página inicial", icon: Home },
       { to: "/my-tasks", label: "Minhas tarefas", icon: CheckCircle2 },
+      { to: "/notifications", label: "Notificações", icon: Bell },
       { to: "/weekly-reports/mine", label: "Meu relatório", icon: ClipboardList }
     ]
   },

@@ -487,6 +487,19 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 
 ## 13. Estados de UI
 
+### 13.1 Caixa de notificações
+
+- O sino abre um `Popover` compacto com no máximo 8 itens recentes; o histórico completo fica em `/notifications`.
+- Cada item usa avatar do ator quando disponível, com ícone do tipo sobreposto. Eventos automáticos usam apenas o ícone do tipo.
+- O título é o nome do ator; a linha secundária descreve a ação (`comentou`, `mencionou`, `atribuiu`, `alterou`, `solicitou revisão`).
+- A mensagem é texto limpo em no máximo duas linhas. Nunca renderizar imagens, listas ou blocos Markdown dentro da caixa de notificações.
+- Itens não lidos usam fundo `--color-brand-orange-muted` sutil e marcador complementar; nunca depender apenas de uma bolinha lateral.
+- A data é relativa na interface e disponibiliza `dd/MM/yyyy às HH:mm` no atributo `title`.
+- A página agrupa os itens em `Hoje`, `Ontem` e `Anteriores`, com abas `Todas` / `Não lidas`, filtro por tipo e paginação.
+- Clicar no corpo abre o destino relacionado. A ação de marcar como lida/não lida deve ser independente e não pode disparar navegação.
+- Leitura individual e em massa usa atualização otimista com rollback e toast em erro.
+- Popover e página não podem ter scroll horizontal; nomes e mensagens longas usam truncamento limpo.
+
 ### Loading
 
 - Listas curtas (≤10 itens): `LoadingSpinner` centralizado

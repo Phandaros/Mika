@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { useAppHotkeys } from "../../hooks/useAppHotkeys";
 import { useUpdater } from "../../hooks/useUpdater";
 import { cn } from "../../lib/utils";
+import { NotificationRealtimeBridge } from "../notification/NotificationRealtimeBridge";
 import { TaskCreateSheet } from "../task/TaskCreateSheet";
 import { UpdateBanner } from "../updater/UpdateBanner";
 import { CommandPalette } from "./CommandPalette";
@@ -23,6 +24,7 @@ export function AppShell() {
         </main>
       </div>
       <TaskCreateSheet />
+      <NotificationRealtimeBridge />
       <CommandPalette />
       <ShortcutsDialog />
       <UpdateBanner updater={updater} />

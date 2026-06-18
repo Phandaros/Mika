@@ -8,6 +8,7 @@ import { GlobalWorkloadPage } from "./pages/GlobalWorkloadPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyTasksPage } from "./pages/MyTasksPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
@@ -132,6 +133,7 @@ export function App() {
             <Route path="/workloads/civil" element={<GlobalWorkloadPage scope="civil" />} />
             <Route path="/workloads/eletrico" element={<GlobalWorkloadPage scope="electrical" />} />
             <Route path="/my-tasks" element={<MyTasksPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/weekly-reports/mine" element={<WeeklyReportPage />} />
             <Route element={<CoordinatorRoute />}>
               <Route path="/weekly-reports" element={<WeeklyReportsAdminPage />} />

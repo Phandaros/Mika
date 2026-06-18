@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { differenceInCalendarDays, format, isToday } from "date-fns";
+import { format, isToday } from "date-fns";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { HomeDashboardProject, HomeDashboardTask, Task } from "shared";
@@ -9,6 +9,7 @@ import { EmptyState } from "../shared/EmptyState";
 import { TaskContextMenu } from "../task/TaskContextMenu";
 import { TaskStatusBadge } from "../task/TaskStatusBadge";
 import { cn, dateOnlyToLocalDate, formatDateOnly } from "../../lib/utils";
+import { relativeDueDateDisplay } from "../../lib/relativeDueDate";
 import { workloadTaskDisplayLabel } from "../../lib/workloadTaskLabel";
 
 export function Panel({
@@ -224,39 +225,21 @@ function DueDateLabel({ dueDate, relative = false }: { dueDate: string | null; r
     );
   }
 
-  const daysUntilDue = differenceInCalendarDays(parsed, new Date());
-  const relativeLabel = dueDateRelativeLabel(daysUntilDue);
+  const display = relativeDueDateDisplay(dueDate);
 
   return (
     <span
       className={cn(
         "truncate text-[12px] font-medium",
-        daysUntilDue < 0 && "text-[--status-late-text]",
-        daysUntilDue === 0 && "text-[--status-review-text]",
-        daysUntilDue > 0 && "text-[--color-text-secondary]"
+        display.tone === "overdue" && "text-[--status-late-text]",
+        display.tone === "today" && "text-[--status-review-text]",
+        display.tone === "future" && "text-[--color-text-secondary]"
       )}
-      title={`${relativeLabel} · ${formatDateOnly(dueDate, "dd/MM/yyyy")}`}
+      title={display.title}
     >
-      {relativeLabel} · {formatDateOnly(dueDate, "dd/MM")}
+      {display.label}
     </span>
   );
-}
-
-function dueDateRelativeLabel(daysUntilDue: number): string {
-  if (daysUntilDue === 0) {
-    return "Hoje";
-  }
-
-  if (daysUntilDue === 1) {
-    return "Amanhã";
-  }
-
-  if (daysUntilDue > 1) {
-    return `Em ${daysUntilDue} dias`;
-  }
-
-  const overdueDays = Math.abs(daysUntilDue);
-  return `Atrasada há ${overdueDays} ${overdueDays === 1 ? "dia" : "dias"}`;
 }
 
 export function ReviewList({

@@ -7,7 +7,7 @@ import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDt
 import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
-import { createAndEmitNotification } from "../lib/notify.js";
+import { createAndEmitNotification, notificationTaskStatusLabel } from "../lib/notify.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { applyTaskRules, ensurePendingTaskReview } from "../lib/taskRules.js";
 import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
@@ -732,8 +732,8 @@ export const createTask: RequestHandler = async (req, res, next) => {
     if (body.assigneeId) {
       await createAndEmitNotification({
         userId: body.assigneeId,
-        type: "TASK_ASSIGNED",
-        title: "Nova tarefa atribuída",
+        type: NotificationType.TASK_ASSIGNED,
+        actorId: authUser.id,
         message: task.name,
         taskId: task.id
       });
@@ -843,8 +843,8 @@ export const updateTask: RequestHandler = async (req, res, next) => {
     if (body.assigneeId !== undefined && existing?.assigneeGid !== newGid && task.assignee) {
       await createAndEmitNotification({
         userId: task.assignee.id,
-        type: "TASK_ASSIGNED",
-        title: "Tarefa atribuída a você",
+        type: NotificationType.TASK_ASSIGNED,
+        actorId: authUser.id,
         message: task.name,
         taskId: task.id
       });
@@ -914,9 +914,9 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
     if (task.assignee) {
       await createAndEmitNotification({
         userId: task.assignee.id,
-        type: "TASK_UPDATED",
-        title: "Status da tarefa",
-        message: `${task.name}: ${status}`,
+        type: NotificationType.TASK_UPDATED,
+        actorId: authUser.id,
+        message: `${task.name}: ${notificationTaskStatusLabel(status)}`,
         taskId: task.id
       });
     }
@@ -1086,7 +1086,7 @@ export const sendTaskToReview: RequestHandler = async (req, res, next) => {
       await createAndEmitNotification({
         userId: result.review.reviewerId,
         type: NotificationType.TASK_REVIEW_REQUESTED,
-        title: "Nova revisão",
+        actorId: authUser.id,
         message: result.task.name,
         taskId: result.task.id
       });

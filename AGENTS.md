@@ -221,6 +221,9 @@ mk-projetos/                        ← root do monorepo
             │   │   ├── CommandPalette.tsx
             │   │   ├── ShortcutsDialog.tsx
             │   │   └── NotificationBell.tsx
+            │   ├── notification/
+            │   │   ├── NotificationItem.tsx
+            │   │   └── NotificationRealtimeBridge.tsx
             │   ├── project/
             │   │   └── ProjectForm.tsx
             │   ├── section/
@@ -241,6 +244,7 @@ mk-projetos/                        ← root do monorepo
                 ├── ProjectsPage.tsx        ← lista de todos os projetos
                 ├── ProjectDetailPage.tsx   ← abas: Kanban | Lista | Carga de Trabalho
                 ├── MyTasksPage.tsx         ← página do usuário logado
+                ├── NotificationsPage.tsx   ← histórico paginado e filtros de notificações
                 ├── WeeklyReportPage.tsx    ← relatório semanal do projetista (/weekly-reports/mine)
                 ├── WeeklyReportsAdminPage.tsx ← gestão de relatórios (coordenador+)
                 ├── UserProfilePage.tsx     ← perfil público de outro usuário
@@ -268,7 +272,7 @@ Resumo das entidades principais:
 - **Task** + **TaskMembership**: tarefas Asana e colocacao em secao; campos locais (`localStatus`, etc.) para o Kanban.
 - **User**: usuarios do app e importados (`asanaGid`); `passwordHash` pode ser nulo para usuarios importados.
 - **Comment**: comentarios com campos opcionais de import (`asanaGid`, `authorAsanaGid`, `asanaCreatedAt`).
-- **Notification**: notificacoes in-app persistidas; emissao em tempo real via Socket.io (`lib/notify.ts`). Tipo `WEEKLY_REPORT_DUE` dispara na sexta-feira via `weeklyReportJob`.
+- **Notification**: notificacoes in-app persistidas, com `actorId` opcional para identificar quem originou o evento; emissao em tempo real via Socket.io (`lib/notify.ts`). Tipo `WEEKLY_REPORT_DUE` dispara na sexta-feira via `weeklyReportJob`.
 - **WeeklyReport** + **WeeklyReportItem**: relatorio semanal por usuario (`@@unique([userId, weekStart])`). Status `PENDING | SUBMITTED | LATE`. Items pre-populados com tarefas da semana; `taskSnapshot` (JSON) gravado no envio.
 
 Enums e tipos de API expostos ao client permanecem em `packages/shared` (`TaskStatus`, `Priority`, `DisciplineType`, `WeeklyReportDto`, alias `Section` = `Discipline`, etc.).
@@ -336,8 +340,9 @@ ATTACHMENTS
   DELETE /attachments/:id
 
 NOTIFICATIONS
-  GET    /notifications
-  PATCH  /notifications/:id/read
+  GET    /notifications                    (filtros: page, limit, read, type)
+         resposta: notifications, page, limit, total, totalPages, unreadCount
+  PATCH  /notifications/:id/read           (body opcional: { read: boolean }; default true)
   PATCH  /notifications/read-all
 
 WEEKLY REPORTS
@@ -397,6 +402,9 @@ Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globa
   - Status de tarefa atribuída é alterado → `notification:new`
   - Relatório semanal disponível (sexta-feira, job `weeklyReportJob`) → `notification:new` tipo `WEEKLY_REPORT_DUE`
 - Client ouve `notification:new` e exibe badge no sino + toast (Sonner). Clique em `WEEKLY_REPORT_DUE` navega para `/weekly-reports/mine`.
+- Eventos humanos incluem `actorId` e nunca geram notificacao para o proprio ator.
+- Eventos ligados a tarefa navegam para `/projects/:projectId?task=:taskId`; sem projeto associado, usam `/my-tasks?task=:taskId`.
+- A assinatura Socket.io de notificacoes fica centralizada em `NotificationRealtimeBridge`, nunca em hooks consumidos por varias telas.
 
 ---
 
