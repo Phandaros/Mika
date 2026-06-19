@@ -397,6 +397,15 @@ const inputBase = [
 - O chip dentro do dropdown tem a mesma aparência do chip na tarefa
 - ❌ NUNCA checkbox lateral em dropdown de status
 
+### 7.6 Filtro textual de listas
+
+- Filtros textuais refinam somente a lista ou tabela em que aparecem; não substituem nem abrem a busca global.
+- Devem ficar em uma toolbar ligada visualmente aos resultados, com rótulo persistente e escopo explícito.
+- O campo usa debounce de 250 ms e consulta o servidor quando a lista é paginada.
+- Durante a atualização, manter os resultados anteriores visíveis e exibir um indicador discreto.
+- Quando houver texto, oferecer ação explícita para limpar o filtro.
+- A vista de Projetos ativos usa o rótulo `Filtrar projetos`, o escopo `Somente nesta lista` e o placeholder `Nome ou construtora`.
+
 ---
 
 ## 8. Painel de Tarefa — Separação de Conceitos

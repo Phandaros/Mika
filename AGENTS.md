@@ -302,6 +302,7 @@ USERS (Admin only para criação/deleção)
   DELETE /users/:id
 
 PROJECTS
+  GET    /projects/portfolio  (filtros: q, status, platform, builder, sort, cursor, limit)
   GET    /projects
   GET    /projects/:id
   POST   /projects           (Admin, Coordinator)

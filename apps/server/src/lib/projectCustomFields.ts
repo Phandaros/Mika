@@ -1,8 +1,6 @@
 import { Prisma, type Prisma as PrismaTypes } from "../generated/prisma/client.js";
 import { AppError } from "../middleware/errorHandler.js";
 import {
-  computeDerivedPortfolioFields,
-  disciplineCountFromMultiEnum,
   findPortfolioCatalogField,
   isDisciplinasCatalogField,
   isPortfolioCatalogGid,
@@ -47,17 +45,6 @@ interface MultiEnumStoredValue {
   color: string | null;
 }
 
-function catalogEnumOptionsForApply(field: PortfolioCatalogField) {
-  return field.enumOptions.map((option, index) => ({
-    id: `catalog:${field.key}:${index}`,
-    asanaGid: `catalog:${field.key}:${normalizePortfolioFieldName(option.name)}`,
-    name: option.name,
-    color: option.color,
-    enabled: true,
-    sortOrder: index
-  }));
-}
-
 export function buildMultiEnumStoredValues(
   enumOptions: Array<{ asanaGid: string; name: string; color: string | null }>,
   selectedNames: string[]
@@ -92,10 +79,8 @@ export async function applyProjectCustomFieldValue(
   catalogField?: PortfolioCatalogField
 ): Promise<void> {
   const fieldType = catalogField?.type ?? row.customField?.type ?? row.type;
-  const enumOptions =
-    catalogField != null
-      ? catalogEnumOptionsForApply(catalogField)
-      : (row.customField?.enumOptions ?? []);
+  const persistedEnumOptions = row.customField?.enumOptions ?? [];
+  const catalogEnumOptions = catalogField?.enumOptions ?? [];
 
   if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
     await tx.projectCustomFieldValue.update({
@@ -106,7 +91,15 @@ export async function applyProjectCustomFieldValue(
   }
 
   if (Array.isArray(value)) {
-    const multiValues = buildMultiEnumStoredValues(enumOptions, value);
+    const multiEnumOptions =
+      catalogField != null
+        ? catalogEnumOptions.map((option) => ({
+            asanaGid: `catalog:${catalogField.key}:${normalizePortfolioFieldName(option.name)}`,
+            name: option.name,
+            color: option.color
+          }))
+        : persistedEnumOptions;
+    const multiValues = buildMultiEnumStoredValues(multiEnumOptions, value);
     await tx.projectCustomFieldValue.update({
       where: { id: row.id },
       data: {
@@ -131,18 +124,21 @@ export async function applyProjectCustomFieldValue(
   }
 
   const str = String(value).trim();
-  const enumMatch = enumOptions.find((option) => option.name === str || option.asanaGid === str);
+  const persistedEnumMatch = persistedEnumOptions.find(
+    (option) => option.name === str || option.asanaGid === str
+  );
+  const catalogEnumMatch = catalogEnumOptions.find((option) => option.name === str);
 
-  if (enumMatch || fieldType === "enum") {
+  if (persistedEnumMatch || catalogEnumMatch || fieldType === "enum") {
     await tx.projectCustomFieldValue.update({
       where: { id: row.id },
       data: {
         ...clearProjectCustomFieldData(),
-        displayValue: enumMatch?.name ?? str,
-        enumOptionName: enumMatch?.name ?? null,
-        enumOptionId: enumMatch?.id ?? null,
-        enumOptionGid: enumMatch?.asanaGid ?? null,
-        enumOptionColor: enumMatch?.color ?? null
+        displayValue: persistedEnumMatch?.name ?? catalogEnumMatch?.name ?? str,
+        enumOptionName: persistedEnumMatch?.name ?? catalogEnumMatch?.name ?? null,
+        enumOptionId: persistedEnumMatch?.id ?? null,
+        enumOptionGid: persistedEnumMatch?.asanaGid ?? null,
+        enumOptionColor: persistedEnumMatch?.color ?? catalogEnumMatch?.color ?? null
       }
     });
     return;

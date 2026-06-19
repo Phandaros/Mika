@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { FolderKanban, ListFilter, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
+import { FolderKanban, ListFilter, Loader2, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ProjectStatus,
@@ -23,6 +23,7 @@ import { ProjectPlatformChip } from "../components/shared/Chip";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { SearchableMultiSelect } from "../components/ui/searchable-multi-select";
 import { SearchableSelect } from "../components/ui/searchable-select";
@@ -55,6 +56,8 @@ export function ProjectsPage() {
   const [builderFilter, setBuilderFilter] = useState<string[]>([]);
   const builderFilterInitializedRef = useRef(false);
   const [sortMode, setSortMode] = useState<PortfolioProjectSort>("updatedAt-desc");
+  const [projectQuery, setProjectQuery] = useState("");
+  const debouncedProjectQuery = useDebouncedValue(projectQuery, 250);
   const canManage = canManageTasks(user);
 
   useEffect(() => {
@@ -104,15 +107,17 @@ export function ProjectsPage() {
         ? undefined
         : isAllSelected(new Set(builderFilter), allBuilders)
           ? undefined
-          : builderFilter
+          : builderFilter,
+      query: debouncedProjectQuery.trim() || undefined
     };
-  }, [builderFilter, builderSuggestions, platformFilter, sortMode, statusFilter]);
+  }, [builderFilter, builderSuggestions, debouncedProjectQuery, platformFilter, sortMode, statusFilter]);
 
   const portfolioQueryEnabled = builderFilterInitializedRef.current || facetsLoading === false;
   const {
     data: portfolioPages,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
     isLoading: portfolioLoading
   } = usePortfolioProjectsInfinite(portfolioFilters, portfolioQueryEnabled);
@@ -123,6 +128,10 @@ export function ProjectsPage() {
     statusFilter.length === 0 ||
     platformFilter.length === 0 ||
     (builderFilterInitializedRef.current && builderFilter.length === 0);
+  const normalizedProjectQuery = projectQuery.trim();
+  const isProjectQueryPending =
+    normalizedProjectQuery !== debouncedProjectQuery.trim() ||
+    (isFetching && !isFetchingNextPage);
 
   const activeFilterCount = countActiveFilterDimensions([
     { selected: statusFilter, all: statusOptions.map((option) => option.value) },
@@ -163,7 +172,7 @@ export function ProjectsPage() {
               <p className="text-sm font-semibold uppercase text-brand-orange">Portfólio</p>
               <h1 className="text-2xl font-bold text-text-primary">
                 Projetos ativos
-                {totalCount > 0 ? (
+                {totalCount > 0 || normalizedProjectQuery ? (
                   <span className="ml-2 text-base font-medium text-[--color-text-muted]">({totalCount})</span>
                 ) : null}
               </h1>
@@ -261,6 +270,46 @@ export function ProjectsPage() {
         </ProjectModal>
       ) : null}
 
+      <div className="flex flex-col gap-3 rounded-md border border-[--color-border] bg-[--bg-1] px-3 py-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <label htmlFor="project-list-filter" className="text-[13px] font-medium text-[--color-text-primary]">
+              Filtrar projetos
+            </label>
+            <span className="text-[11px] text-[--color-text-muted]">Somente nesta lista</span>
+          </div>
+          <div className="flex w-full max-w-xl items-center gap-2">
+            <Input
+              id="project-list-filter"
+              value={projectQuery}
+              className="h-9 bg-[--bg-3] text-[13px]"
+              placeholder="Nome ou construtora"
+              autoComplete="off"
+              onChange={(event) => setProjectQuery(event.target.value)}
+            />
+            {normalizedProjectQuery ? (
+              <Button variant="ghost" className="h-9 shrink-0 px-3" onClick={() => setProjectQuery("")}>
+                Limpar
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <div
+          className="flex min-h-5 items-center gap-1.5 text-[11px] text-[--color-text-muted]"
+          role="status"
+          aria-live="polite"
+        >
+          {isProjectQueryPending ? (
+            <>
+              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              Atualizando resultados...
+            </>
+          ) : normalizedProjectQuery ? (
+            `${totalCount} ${totalCount === 1 ? "projeto encontrado" : "projetos encontrados"}`
+          ) : null}
+        </div>
+      </div>
+
       <ProjectsPortfolioTable
         projects={visibleProjects}
         canManage={canManage}
@@ -273,7 +322,22 @@ export function ProjectsPage() {
         }}
         onPatchProject={patchProject}
       />
-      {visibleProjects.length === 0 ? <EmptyState title="Nenhum projeto encontrado" /> : null}
+      {!isProjectQueryPending && visibleProjects.length === 0 ? (
+        normalizedProjectQuery && !showEmptySelection ? (
+          <EmptyState
+            title="Nenhum projeto corresponde ao filtro"
+            action={
+              <Button variant="secondary" className="h-9" onClick={() => setProjectQuery("")}>
+                Limpar filtro
+              </Button>
+            }
+          >
+            Tente outro nome ou construtora.
+          </EmptyState>
+        ) : (
+          <EmptyState title="Nenhum projeto encontrado" />
+        )
+      ) : null}
     </div>
   );
 }
@@ -613,4 +677,15 @@ function closeCreateModal(
   nextParams.delete("new");
   setSearchParams(nextParams, { replace: true });
   setShowCreateModal(false);
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedValue(value), delayMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [delayMs, value]);
+
+  return debouncedValue;
 }

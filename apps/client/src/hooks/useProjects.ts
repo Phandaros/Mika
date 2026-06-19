@@ -1,16 +1,14 @@
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import type {
   CreateProjectRequest,
   PortfolioFacetsResponse,
   PortfolioProjectSort,
   PortfolioProjectsResponse,
   Project,
-  ProjectOption,
   ProjectOptionsResponse,
   UpdateProjectRequest
 } from "shared";
 import { api } from "../lib/api";
-import { isAllSelected } from "../lib/multiSelectFilter";
 import {
   restoreProjectCaches,
   runOptimisticProjectMutation,
@@ -31,16 +29,24 @@ export interface PortfolioProjectsFilters {
   status?: string[];
   platform?: string[];
   builder?: string[];
+  query?: string;
 }
 
-function buildPortfolioQueryParams(filters: PortfolioProjectsFilters, cursor?: string) {
+export function buildPortfolioQueryParams(filters: PortfolioProjectsFilters, cursor?: string) {
+  const query = filters.query?.trim();
+
   return {
     cursor,
     sort: filters.sort,
     ...(filters.status?.length ? { status: filters.status } : {}),
     ...(filters.platform?.length ? { platform: filters.platform } : {}),
-    ...(filters.builder !== undefined ? { builder: filters.builder } : {})
+    ...(filters.builder !== undefined ? { builder: filters.builder } : {}),
+    ...(query ? { q: query } : {})
   };
+}
+
+export function portfolioProjectsQueryKey(filters: PortfolioProjectsFilters) {
+  return ["projects", "portfolio", filters] as const;
 }
 
 export function useProjects() {
@@ -76,7 +82,7 @@ export function usePortfolioFacets() {
 
 export function usePortfolioProjectsInfinite(filters: PortfolioProjectsFilters, enabled = true) {
   return useInfiniteQuery({
-    queryKey: ["projects", "portfolio", filters],
+    queryKey: portfolioProjectsQueryKey(filters),
     enabled,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
@@ -88,7 +94,8 @@ export function usePortfolioProjectsInfinite(filters: PortfolioProjectsFilters, 
       });
       return response.data;
     },
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    placeholderData: keepPreviousData
   });
 }
 

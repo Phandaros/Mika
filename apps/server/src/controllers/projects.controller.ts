@@ -16,6 +16,7 @@ import {
   toTaskDto
 } from "../lib/asanaDto.js";
 import { ensureCanonicalSectionsForProject } from "../lib/canonicalSections.js";
+import { normalizeSearchTerm, searchTextMatches } from "../lib/globalSearch.js";
 import {
   applyProjectCustomFieldPatches,
   type ProjectCustomFieldPatch
@@ -111,7 +112,8 @@ const portfolioProjectsQuerySchema = z.object({
   sort: z.enum(PORTFOLIO_SORT_VALUES).optional().default("updatedAt-desc"),
   status: z.union([z.string(), z.array(z.string())]).optional(),
   platform: z.union([z.string(), z.array(z.string())]).optional(),
-  builder: z.union([z.string(), z.array(z.string())]).optional()
+  builder: z.union([z.string(), z.array(z.string())]).optional(),
+  q: z.string().trim().max(200).optional()
 });
 
 type PortfolioSort = (typeof PORTFOLIO_SORT_VALUES)[number];
@@ -251,6 +253,28 @@ function buildPortfolioWhere(query: {
   return clauses.length ? { AND: clauses } : {};
 }
 
+async function portfolioSearchProjectIds(
+  baseWhere: Prisma.ProjectWhereInput,
+  query: string
+): Promise<string[] | null> {
+  if (!query) {
+    return null;
+  }
+
+  const candidates = await prisma.project.findMany({
+    where: baseWhere,
+    select: {
+      id: true,
+      name: true,
+      builder: true
+    }
+  });
+
+  return candidates
+    .filter((project) => searchTextMatches(query, [project.name, project.builder]))
+    .map((project) => project.id);
+}
+
 function portfolioCursorWhere(cursor: PortfolioCursor | null, sort: PortfolioSort): Prisma.ProjectWhereInput {
   if (!cursor || cursor.sort !== sort) {
     return {};
@@ -337,12 +361,28 @@ export const listPortfolioProjects: RequestHandler = async (req, res, next) => {
       platform: queryStringArray(parsed.data.platform),
       builder: queryStringArray(parsed.data.builder)
     };
+    const query = normalizeSearchTerm(parsed.data.q);
+    const baseWhere = buildPortfolioWhere(filters);
+    const matchingProjectIds = await portfolioSearchProjectIds(baseWhere, query);
+    const filteredWhere =
+      matchingProjectIds === null
+        ? baseWhere
+        : {
+            AND: [
+              baseWhere,
+              {
+                id: { in: matchingProjectIds }
+              }
+            ]
+          };
     const where = {
-      AND: [buildPortfolioWhere(filters), portfolioCursorWhere(cursor, sort)]
+      AND: [filteredWhere, portfolioCursorWhere(cursor, sort)]
     };
 
     const [totalCount, projects, taskFieldCatalog] = await Promise.all([
-      prisma.project.count({ where: buildPortfolioWhere(filters) }),
+      matchingProjectIds === null
+        ? prisma.project.count({ where: baseWhere })
+        : Promise.resolve(matchingProjectIds.length),
       prisma.project.findMany({
         where,
         include: projectPortfolioInclude,

@@ -98,7 +98,7 @@ describe("portfolioCatalog", () => {
     ]);
   });
 
-  it("applies enum values to an existing project custom field row", async () => {
+  it("applies catalog enum values without persisting synthetic option ids", async () => {
     const tx = {
       projectCustomFieldValue: {
         update: vi.fn()
@@ -141,7 +141,91 @@ describe("portfolioCatalog", () => {
       where: { id: "value-1" },
       data: expect.objectContaining({
         displayValue: "Aprovado",
-        enumOptionName: "Aprovado"
+        enumOptionName: "Aprovado",
+        enumOptionId: null,
+        enumOptionGid: null,
+        enumOptionColor: "green"
+      })
+    });
+  });
+
+  it("preserves a real persisted enum option link when it matches the catalog value", async () => {
+    const tx = {
+      projectCustomFieldValue: {
+        update: vi.fn()
+      }
+    };
+
+    await applyProjectCustomFieldValue(
+      tx as unknown as Prisma.TransactionClient,
+      {
+        id: "value-1",
+        projectId: "project-1",
+        customFieldGid: portfolioCatalogGid("ppciGas"),
+        customFieldName: "PPCI / GÃS",
+        type: "enum",
+        displayValue: "To Do",
+        textValue: null,
+        numberValue: null,
+        precision: null,
+        enumOptionGid: "asana-option-approved",
+        enumOptionName: "To Do",
+        enumOptionColor: "cool-gray",
+        multiEnumValues: null,
+        customFieldId: "def-1",
+        enumOptionId: "option-approved",
+        customField: {
+          id: "def-1",
+          asanaGid: "asana-field-1",
+          name: "PPCI / GÃS",
+          description: null,
+          type: "enum",
+          format: null,
+          currencyCode: null,
+          precision: null,
+          isGlobalToWorkspace: false,
+          createdByGid: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          mikaKey: "ppciGas",
+          mikaLabel: "PPCI / GÃS",
+          mikaTaskField: false,
+          mikaSortOrder: 2,
+          mikaListVisible: true,
+          mikaDetailVisible: true,
+          enumOptions: [
+            {
+              id: "option-approved",
+              customFieldId: "def-1",
+              asanaGid: "asana-option-approved",
+              name: "Aprovado",
+              color: "green",
+              enabled: true,
+              sortOrder: 0
+            }
+          ]
+        }
+      },
+      "Aprovado",
+      {
+        key: "ppciGas",
+        label: "PPCI / GÃS",
+        type: "enum",
+        sortOrder: 2,
+        legacyLabels: [],
+        legacyMikaKeys: [],
+        enumOptions: [{ name: "Aprovado", color: "green" }]
+      }
+    );
+
+    expect(tx.projectCustomFieldValue.update).toHaveBeenCalledWith({
+      where: { id: "value-1" },
+      data: expect.objectContaining({
+        displayValue: "Aprovado",
+        enumOptionName: "Aprovado",
+        enumOptionId: "option-approved",
+        enumOptionGid: "asana-option-approved",
+        enumOptionColor: "green"
       })
     });
   });
