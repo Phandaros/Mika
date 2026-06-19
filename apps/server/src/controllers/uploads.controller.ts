@@ -4,15 +4,15 @@ import type { RequestHandler } from "express";
 import type { AttachmentDto } from "shared";
 import { env } from "../config/env.js";
 import { Role } from "../lib/enums.js";
+import {
+  attachmentContentDisposition,
+  normalizeAttachmentFilename
+} from "../lib/attachmentFilename.js";
 import { canAccessAttachment, findAttachmentWithComment, findCommentWithTask } from "../lib/attachmentAccess.js";
 import { prisma } from "../lib/prisma.js";
 import { IMAGE_MIME_TYPES } from "../lib/upload.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
-
-function sanitizeFilename(filename: string): string {
-  return filename.replace(/[^\w.\- ()áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/g, "_");
-}
 
 function toAttachmentDto(
   attachment: {
@@ -29,7 +29,7 @@ function toAttachmentDto(
   return {
     id: attachment.id,
     commentId: attachment.commentId,
-    filename: attachment.filename,
+    filename: normalizeAttachmentFilename(attachment.filename),
     mimeType: attachment.mimeType,
     sizeBytes: attachment.sizeBytes,
     uploadedById: attachment.uploadedById,
@@ -138,7 +138,12 @@ export const uploadAttachments: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const serveAttachment: RequestHandler = async (req, res, next) => {
+async function sendAttachment(
+  req: Parameters<RequestHandler>[0],
+  res: Parameters<RequestHandler>[1],
+  next: Parameters<RequestHandler>[2],
+  disposition: "inline" | "attachment"
+): Promise<void> {
   try {
     getAuthUser(req);
 
@@ -169,11 +174,22 @@ export const serveAttachment: RequestHandler = async (req, res, next) => {
     }
 
     res.setHeader("Content-Type", attachment.mimeType);
-    res.setHeader("Content-Disposition", `inline; filename="${sanitizeFilename(attachment.filename)}"`);
+    res.setHeader(
+      "Content-Disposition",
+      attachmentContentDisposition(disposition, attachment.filename)
+    );
     res.sendFile(absolutePath);
   } catch (error) {
     next(error);
   }
+}
+
+export const serveAttachment: RequestHandler = async (req, res, next) => {
+  await sendAttachment(req, res, next, "inline");
+};
+
+export const downloadAttachment: RequestHandler = async (req, res, next) => {
+  await sendAttachment(req, res, next, "attachment");
 };
 
 export const deleteAttachment: RequestHandler = async (req, res, next) => {
@@ -246,5 +262,3 @@ export const deleteAttachment: RequestHandler = async (req, res, next) => {
 export const uploadAttachment: RequestHandler = async (_req, _res, next) => {
   next(new AppError(501, "Use POST /comments/:commentId/attachments para anexar documentos a comentários."));
 };
-
-export const downloadAttachment: RequestHandler = serveAttachment;

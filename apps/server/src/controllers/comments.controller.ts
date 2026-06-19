@@ -9,6 +9,7 @@ import { commentNotificationMessage, createAndEmitNotification } from "../lib/no
 import { extractUserMentionIds } from "../lib/commentMentions.js";
 import { taskActivityTypes } from "../lib/taskActivity.js";
 import { Role } from "../lib/enums.js";
+import { normalizeAttachmentFilename } from "../lib/attachmentFilename.js";
 
 interface CommentBody {
   content: string;
@@ -40,7 +41,7 @@ function toAttachmentDto(attachment: {
   return {
     id: attachment.id,
     commentId: attachment.commentId,
-    filename: attachment.filename,
+    filename: normalizeAttachmentFilename(attachment.filename),
     mimeType: attachment.mimeType,
     sizeBytes: attachment.sizeBytes,
     uploadedById: attachment.uploadedById,

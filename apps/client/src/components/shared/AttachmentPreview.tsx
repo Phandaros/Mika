@@ -1,9 +1,16 @@
-import { File, FileText, Table2, X } from "lucide-react";
+import { Download, File, FileText, Table2, X } from "lucide-react";
 import type { AttachmentDto } from "shared";
 import { Role } from "shared";
 import { useDeleteAttachment } from "../../hooks/useCommentAttachments";
-import { openAuthenticatedAsset } from "../../hooks/useAuthenticatedAsset";
-import { attachmentFileUrl, formatFileSize } from "../../lib/attachmentUtils";
+import {
+  downloadAuthenticatedAsset,
+  openAuthenticatedAsset
+} from "../../hooks/useAuthenticatedAsset";
+import {
+  attachmentDownloadUrl,
+  attachmentFileUrl,
+  formatFileSize
+} from "../../lib/attachmentUtils";
 import { cn } from "../../lib/utils";
 
 interface AttachmentPreviewProps {
@@ -48,6 +55,13 @@ export function AttachmentPreview({
     await openAuthenticatedAsset(attachmentFileUrl(attachment.id));
   }
 
+  async function handleDownload() {
+    await downloadAuthenticatedAsset(
+      attachmentDownloadUrl(attachment.id),
+      attachment.filename
+    );
+  }
+
   async function handleDelete(event: React.MouseEvent) {
     event.stopPropagation();
 
@@ -79,6 +93,16 @@ export function AttachmentPreview({
           <p className="max-w-[160px] truncate text-[13px] text-[--color-text-primary]">{attachment.filename}</p>
           <p className="text-[11px] text-[--color-text-muted]">{formatFileSize(attachment.sizeBytes)}</p>
         </div>
+      </button>
+
+      <button
+        type="button"
+        aria-label={`Baixar ${attachment.filename}`}
+        title="Baixar anexo"
+        onClick={() => void handleDownload()}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[--color-text-muted] transition-colors hover:bg-[--bg-2] hover:text-[--color-text-primary]"
+      >
+        <Download size={14} />
       </button>
 
       {canDelete ? (

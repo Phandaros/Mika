@@ -93,3 +93,27 @@ export async function openAuthenticatedAsset(src: string): Promise<void> {
   window.open(objectUrl, "_blank", "noopener,noreferrer");
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
 }
+
+export async function downloadAuthenticatedAsset(src: string, filename: string): Promise<void> {
+  const requestPath = resolveAssetRequestUrl(src);
+
+  if (!requestPath) {
+    const externalLink = document.createElement("a");
+    externalLink.href = src;
+    externalLink.download = filename;
+    externalLink.rel = "noopener noreferrer";
+    externalLink.click();
+    return;
+  }
+
+  const response = await api.get(requestPath, { responseType: "blob" });
+  const objectUrl = URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+}

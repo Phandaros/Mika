@@ -13,6 +13,7 @@ import apiRoutes from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import mikeAuthRoutes from "./modules/mike/auth/mike-auth.router.js";
 import { startWeeklyReportJob } from "./lib/weeklyReportJob.js";
+import { repairStoredAttachmentFilenames } from "./lib/attachmentFilename.js";
 
 fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
 
@@ -74,6 +75,10 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 await normalizeAllProjectSections(prisma);
+const repairedAttachmentNames = await repairStoredAttachmentFilenames(prisma);
+if (repairedAttachmentNames > 0) {
+  console.log(`${repairedAttachmentNames} nome(s) de anexo legado(s) reparado(s)`);
+}
 
 server.listen(env.PORT, "0.0.0.0", () => {
   console.log(`MK Projetos server running on port ${env.PORT}`);

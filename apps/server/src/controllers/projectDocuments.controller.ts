@@ -10,6 +10,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { deleteAttachmentsFromDisk } from "../lib/attachmentCleanup.js";
+import { normalizeAttachmentFilename } from "../lib/attachmentFilename.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 
@@ -126,7 +127,7 @@ function toAttachmentDto(attachment: {
     commentId: attachment.commentId,
     projectNoteId: attachment.projectNoteId,
     meetingMinuteId: attachment.meetingMinuteId,
-    filename: attachment.filename,
+    filename: normalizeAttachmentFilename(attachment.filename),
     mimeType: attachment.mimeType,
     sizeBytes: attachment.sizeBytes,
     uploadedById: attachment.uploadedById,

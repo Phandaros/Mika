@@ -402,6 +402,9 @@ Paleta de comandos (**cmdk** + Radix Dialog), toasts (**sonner**), atalhos globa
 ## 8. Upload de Arquivos
 
 - Multer (quando ativo) salva em `apps/server/uploads/` com nome UUID.
+- O nome original normalizado fica persistido no registro do anexo e deve ser usado na interface e no download.
+- `GET /attachments/:id/file` serve o conteúdo inline; `GET /attachments/:id/download` força download com o nome original em UTF-8.
+- Nomes físicos UUID e nomes originais são independentes; nunca renomear arquivos existentes para corrigir metadados.
 - Limite: 50 MB por arquivo.
 - Tipos permitidos: `pdf, dwg, dxf, rvt, ifc, jpg, jpeg, png, xlsx, docx, zip`.
 - Ate a Fase 2, o controller pode responder **501** com mensagem em portugues; o client nao deve exibir fluxo de anexo quebrado.

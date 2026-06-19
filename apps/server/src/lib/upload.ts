@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import multer from "multer";
 import { env } from "../config/env.js";
+import { normalizeAttachmentFilename } from "./attachmentFilename.js";
 
 export const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -34,6 +35,7 @@ const storage = multer.diskStorage({
     cb(null, env.UPLOAD_DIR);
   },
   filename: (_req, file, cb) => {
+    file.originalname = normalizeAttachmentFilename(file.originalname);
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, `${randomUUID()}${ext}`);
   }
@@ -46,6 +48,8 @@ export const upload = multer({
     files: 5
   },
   fileFilter: (_req, file, cb) => {
+    file.originalname = normalizeAttachmentFilename(file.originalname);
+
     if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
       cb(null, true);
       return;

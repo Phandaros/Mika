@@ -36,5 +36,8 @@ _Evitar_: nota do projeto, comentário do projeto
 Registro colaborativo de uma reunião vinculada a um **Projeto**, com data, participantes e conteúdo textual ou anexos. Participantes podem ser usuários do Mika ou pessoas externas.
 _Evitar_: anotação de reunião, comentário de reunião
 
+### Anexo
+Arquivo associado a um comentário de tarefa, revisão, anotação ou ata de reunião. Seu nome é o nome apresentado ao usuário e utilizado no download, independentemente do identificador físico usado para armazenar o arquivo.
+
 ---
 *MK Engenharia · Balneário Camboriú/SC*

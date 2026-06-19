@@ -106,6 +106,10 @@ export function attachmentFileUrl(attachmentId: string): string {
   return `${getApiBaseUrl()}/attachments/${attachmentId}/file`;
 }
 
+export function attachmentDownloadUrl(attachmentId: string): string {
+  return `${getApiBaseUrl()}/attachments/${attachmentId}/download`;
+}
+
 export function toAbsoluteApiUrl(relativePath: string): string {
   if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
     return relativePath;
