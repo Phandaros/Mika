@@ -1,21 +1,18 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { CalendarDays, FolderKanban, Inbox, UserRound } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { TaskStatus, type Task } from "shared";
-import { Avatar } from "../components/shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, taskStatusLabels } from "../components/shared/Chip";
 import { EmptyState } from "../components/shared/EmptyState";
-import { PriorityBadge } from "../components/shared/PriorityBadge";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
-import { TaskContextMenu } from "../components/task/TaskContextMenu";
+import { KanbanColumn } from "../components/task/KanbanColumn";
+import { KanbanTaskCard } from "../components/task/TaskCard";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
-import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { useAuth } from "../hooks/useAuth";
 import { useSprintBoardColumnTasks, useSprintBoardSummary, useTaskById, useUpdateTaskStatus } from "../hooks/useTasks";
 import { canManageTasks } from "../lib/permissions";
-import { cn, formatDateOnly } from "../lib/utils";
+import { cn } from "../lib/utils";
 
 type SprintBoardScope = "civil" | "electrical";
 
@@ -195,27 +192,18 @@ function SprintColumn({
   return (
     <Droppable droppableId={status}>
       {(provided, snapshot) => (
-        <section
+        <KanbanColumn
           ref={provided.innerRef}
           {...provided.droppableProps}
           data-testid={`sprint-column-${status}`}
-          className={cn(
-            "flex h-[calc(100vh-230px)] min-h-[520px] w-80 flex-none flex-col rounded-md border border-border bg-surface p-3 transition",
-            snapshot.isDraggingOver && acceptsDrop ? "border-brand-orange" : "",
-            snapshot.isDraggingOver && !acceptsDrop ? "border-[var(--status-late-text)]" : ""
-          )}
+          status={status}
+          label={label}
+          count={totalCount}
+          countTestId={`sprint-column-count-${status}`}
+          isDraggingOver={snapshot.isDraggingOver}
+          isDropBlocked={!acceptsDrop}
         >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-bold text-text-primary">{label}</h2>
-              <p className="mt-1 text-xs text-text-muted">{taskStatusLabels[status]}</p>
-            </div>
-            <span data-testid={`sprint-column-count-${status}`} className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">
-              {totalCount}
-            </span>
-          </div>
-          <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pr-1">
-            {isLoading ? (
+          {isLoading ? (
               <>
                 <TaskCardSkeleton />
                 <TaskCardSkeleton />
@@ -235,7 +223,7 @@ function SprintColumn({
                         data-task-status={task.status}
                         className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
                       >
-                        <SprintTaskCard
+                        <KanbanTaskCard
                           task={task}
                           onOpen={onOpenTask}
                           fallbackLinkPath={scope === "civil" ? "/sprint/civil" : "/sprint/eletrico"}
@@ -247,87 +235,16 @@ function SprintColumn({
                 {tasks.length === 0 && totalCount === 0 ? <EmptyState icon={<Inbox size={28} />} title="Nenhuma tarefa aqui" /> : null}
                 <div ref={loadMoreRef} className="min-h-1" />
                 {isFetchingNextPage ? <TaskCardSkeleton /> : null}
-                {totalCount > 0 ? (
+                {hasNextPage && totalCount > 0 ? (
                   <p className="pb-1 text-center text-[11px] font-medium text-text-muted">
                     {tasks.length} de {totalCount}
                   </p>
                 ) : null}
               </>
-            )}
-            {provided.placeholder}
-          </div>
-        </section>
+          )}
+          {provided.placeholder}
+        </KanbanColumn>
       )}
     </Droppable>
-  );
-}
-
-function SprintTaskCard({
-  task,
-  onOpen,
-  fallbackLinkPath
-}: {
-  task: Task;
-  onOpen: (task: Task) => void;
-  fallbackLinkPath: string;
-}) {
-  const projectName = task.discipline?.projectName ?? task.projects?.[0]?.name ?? "Sem projeto";
-  const sectionName = task.discipline?.name ?? task.projects?.[0]?.sectionName ?? "";
-  const dateLabel = task.maxDeadline ?? task.dueDate;
-
-  return (
-    <TaskContextMenu
-      task={task}
-      projectId={task.discipline?.projectId}
-      onOpen={onOpen}
-      fallbackLinkPath={fallbackLinkPath}
-    >
-      <article
-        role="button"
-        tabIndex={0}
-        onClick={() => onOpen(task)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onOpen(task);
-          }
-        }}
-        className={cn(
-          "cursor-pointer rounded-md border border-border bg-surface-card p-3 transition hover:border-brand-orange hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
-          task.completed ? "opacity-70" : ""
-        )}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 className={cn("line-clamp-2 min-w-0 text-sm font-semibold leading-5", task.completed ? "text-text-muted" : "text-text-primary")}>
-            {task.title}
-          </h3>
-          {task.assignee ? <Avatar name={task.assignee.name} imageUrl={task.assignee.avatarUrl} className="h-7 w-7" /> : null}
-        </div>
-
-        <div className="mt-3 grid gap-2 text-xs text-text-secondary">
-          <InfoLine icon={<FolderKanban size={13} />} value={projectName} />
-          <InfoLine icon={<UserRound size={13} />} value={task.assignee?.name ?? "Sem responsável"} />
-          {dateLabel ? <InfoLine icon={<CalendarDays size={13} />} value={formatDateOnly(dateLabel, "dd/MM/yyyy")} /> : null}
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <PriorityBadge priority={task.priority} />
-          {task.taskDiscipline || sectionName ? <DisciplineChip discipline={task.taskDiscipline ?? sectionName} /> : null}
-          <TaskStatusBadge status={task.status} />
-          <CompletionStatusChip completed={task.completed} />
-        </div>
-      </article>
-    </TaskContextMenu>
-  );
-}
-
-function InfoLine({ icon, value }: { icon: ReactNode; value: string }) {
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className="shrink-0 text-text-muted">{icon}</span>
-      <span className="truncate" title={value}>
-        {value}
-      </span>
-    </div>
   );
 }

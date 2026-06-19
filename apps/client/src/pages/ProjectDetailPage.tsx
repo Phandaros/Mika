@@ -22,7 +22,8 @@ import { ViewTab } from "../components/shared/ViewTab";
 import { Avatar } from "../components/shared/Avatar";
 import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
 import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
-import { TaskCard } from "../components/task/TaskCard";
+import { KanbanColumn } from "../components/task/KanbanColumn";
+import { KanbanTaskCard } from "../components/task/TaskCard";
 import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
@@ -67,6 +68,7 @@ type TaskWithDiscipline = Task & {
     id: string;
     name: string;
     projectId: string;
+    projectName: string;
     type: DisciplineType;
   };
 };
@@ -82,7 +84,7 @@ const columns: Array<{ status: TaskStatus; label: string }> = [
   { status: TaskStatus.FINISHED, label: "FINALIZADO" }
 ];
 
-function tasksFromDisciplines(sections: Section[]): TaskWithDiscipline[] {
+function tasksFromDisciplines(sections: Section[], projectName: string): TaskWithDiscipline[] {
   return sections.flatMap((section) =>
     (section.tasks ?? []).map((task) => ({
       ...task,
@@ -90,6 +92,7 @@ function tasksFromDisciplines(sections: Section[]): TaskWithDiscipline[] {
         id: section.id,
         name: section.name,
         projectId: section.projectId,
+        projectName,
         type: section.type
       }
     }))
@@ -149,7 +152,7 @@ export function ProjectDetailPage() {
   const { data: portfolioBuilders = [] } = usePortfolioFacets();
 
   const disciplines = project?.sections ?? project?.disciplines ?? [];
-  const allTasks = useMemo(() => tasksFromDisciplines(disciplines), [disciplines]);
+  const allTasks = useMemo(() => tasksFromDisciplines(disciplines, project?.name ?? ""), [disciplines, project?.name]);
 
   const assigneeFilterInitialized = useRef(false);
 
@@ -618,7 +621,7 @@ function KanbanView({
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
             return (
-              <KanbanColumn
+              <ProjectKanbanColumn
                 key={column.status}
                 projectId={projectId}
                 disciplineId={disciplineId}
@@ -652,7 +655,7 @@ function ScopePill({ active, label, onClick }: { active: boolean; label: string;
   );
 }
 
-function KanbanColumn({
+function ProjectKanbanColumn({
   projectId,
   disciplineId,
   status,
@@ -691,81 +694,82 @@ function KanbanColumn({
   return (
     <Droppable droppableId={status}>
       {(provided, snapshot) => (
-        <section
+        <KanbanColumn
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={cn(
-            "flex min-h-[520px] w-72 flex-none flex-col rounded-md border border-border bg-surface p-3 transition",
-            snapshot.isDraggingOver ? "border-brand-orange" : ""
-          )}
-        >
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-text-primary">{label}</h2>
-            <span className="rounded-md bg-surface-card px-2 py-1 text-xs text-text-secondary">{tasks.length}</span>
-          </div>
-          <div className="grid flex-1 content-start gap-3">
-            {isLoading ? (
-              <>
-                <TaskCardSkeleton />
-                <TaskCardSkeleton />
-                <TaskCardSkeleton />
-              </>
-            ) : (
-              <>
-                {tasks.map((task, index) => (
-                  <Draggable draggableId={task.id} index={index} key={task.id} isDragDisabled={!canManage}>
-                    {(dragProvided, dragSnapshot) => (
-                      <div
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        className={cn(dragSnapshot.isDragging ? "opacity-80" : "")}
-                      >
-                        <TaskCard task={task} disciplineName={task.discipline.name} onOpen={onOpenTask} />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {tasks.length === 0 ? <EmptyState icon={<Inbox size={28} />} title="Nenhuma tarefa aqui" /> : null}
-              </>
-            )}
-            {provided.placeholder}
-          </div>
-          {canManage ? (
-            <div className="mt-3 border-t border-border pt-3">
-              {isAdding ? (
-                <Input
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      setTitle("");
-                      setIsAdding(false);
-                    }
+          status={status}
+          label={label}
+          count={tasks.length}
+          isDraggingOver={snapshot.isDraggingOver}
+          isDropBlocked={status === TaskStatus.OVERDUE}
+          footer={
+            canManage ? (
+              <div className="mt-3 border-t border-border pt-3">
+                {isAdding ? (
+                  <Input
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        setTitle("");
+                        setIsAdding(false);
+                      }
 
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void submitTask();
-                    }
-                  }}
-                  placeholder="Titulo da tarefa"
-                  disabled={!disciplineId || !canCreateInColumn || createTask.isPending}
-                  autoFocus
-                />
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start px-2"
-                  onClick={() => setIsAdding(true)}
-                  disabled={!disciplineId || !canCreateInColumn}
-                >
-                  <Plus size={16} />
-                  Adicionar tarefa
-                </Button>
-              )}
-            </div>
-          ) : null}
-        </section>
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void submitTask();
+                      }
+                    }}
+                    placeholder="Título da tarefa"
+                    disabled={!disciplineId || !canCreateInColumn || createTask.isPending}
+                    autoFocus
+                  />
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start px-2"
+                    onClick={() => setIsAdding(true)}
+                    disabled={!disciplineId || !canCreateInColumn}
+                  >
+                    <Plus size={16} />
+                    Adicionar tarefa
+                  </Button>
+                )}
+              </div>
+            ) : null
+          }
+        >
+          {isLoading ? (
+            <>
+              <TaskCardSkeleton />
+              <TaskCardSkeleton />
+              <TaskCardSkeleton />
+            </>
+          ) : (
+            <>
+              {tasks.map((task, index) => (
+                <Draggable draggableId={task.id} index={index} key={task.id} isDragDisabled={!canManage}>
+                  {(dragProvided, dragSnapshot) => (
+                    <div
+                      ref={dragProvided.innerRef}
+                      {...dragProvided.draggableProps}
+                      {...dragProvided.dragHandleProps}
+                      className={cn(dragSnapshot.isDragging && "opacity-80")}
+                    >
+                      <KanbanTaskCard
+                        task={task}
+                        onOpen={onOpenTask}
+                        fallbackLinkPath={`/projects/${projectId}`}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {tasks.length === 0 ? <EmptyState icon={<Inbox size={28} />} title="Nenhuma tarefa aqui" /> : null}
+            </>
+          )}
+          {provided.placeholder}
+        </KanbanColumn>
       )}
     </Droppable>
   );

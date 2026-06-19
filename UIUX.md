@@ -430,15 +430,22 @@ A tarefa tem dois conceitos de estado distintos que **nunca devem ser visualment
 ### Colunas
 
 - Fundo: `--bg-1`
-- Header: `text-[12px] font-semibold uppercase tracking-widest text-[--color-text-muted]`
+- Largura: `w-80`; altura: `h-[calc(100vh-230px)] min-h-[520px]`
+- Padding: `p-3`; espaçamento horizontal entre colunas: `gap-4`
+- Header: título `text-sm font-bold text-[--color-text-primary]` + label canônica do status `text-xs text-[--color-text-muted]`
 - Contador: `bg-[--bg-4] text-[--color-text-secondary] text-[11px] px-1.5 py-0.5 rounded`
+- Conteúdo: scroll vertical interno, `gap-3`; estado vazio compartilhado `Nenhuma tarefa aqui`
+- Minhas Tarefas, Projeto e Sprint Boards usam a mesma geometria de coluna. Filtros, criação e paginação permanecem específicos de cada página.
 
 ### Cards
 
-- Fundo: `--bg-2`, borda: `--color-border`, `rounded-lg`
+- Superfície inteira: fundo translúcido e borda definidos por `statusTimelineStyle`, `rounded-md`
 - Padding: `px-3 py-3`
-- Título: `text-[13px] font-medium text-[--color-text-primary]`, máx 2 linhas
-- Footer: avatar 20px + nome `text-[11px] text-[--color-text-muted]` | chip prioridade + data
+- Título: texto do status, `text-sm font-semibold`, máx 2 linhas
+- Anatomia canônica nos Kanbans por status: título + avatar, projeto, responsável, data efetiva (`maxDeadline` ou entrega), prioridade, disciplina e Status de Conclusão.
+- Projeto, responsável e data mantêm texto neutro para preservar hierarquia e contraste.
+- O chip de Status operacional não aparece dentro dos Kanbans organizados por status; o cabeçalho da coluna e a superfície do card já comunicam esse valor. O chip de Status de Conclusão permanece.
+- O mesmo contrato de superfície deve ser usado em Minhas Tarefas, Projeto, Sprint Boards e Quadro do Time, inclusive variantes compactas. No Quadro do Time, preservar métricas, alertas, faixa de prioridade e chip textual de Status.
 - Badge de seção: chip `--disc-*`, `text-[10px]`
 - Estado dragging: `opacity-70 shadow-2xl scale-[1.02]`
 - Todo card/linha clicável que representa uma tarefa deve suportar o menu de contexto da tarefa no clique direito, usando `TaskContextMenu` ou o equivalente compartilhado. O menu deve preservar ações esperadas como abrir detalhes, copiar link, abrir projeto, alterar status, duplicar, recalcular datas e excluir quando a permissão permitir.

@@ -5,6 +5,7 @@ import { PriorityBadge } from "../shared/PriorityBadge";
 import { priorityColors } from "../shared/statusVisuals";
 import { TaskStatusBadge } from "../task/TaskStatusBadge";
 import { TaskContextMenu } from "../task/TaskContextMenu";
+import { statusTimelineStyle } from "../../lib/taskTimelineStyle";
 import { formatEffortLabel, isTaskStale } from "../../lib/teamBoardMetrics";
 import { cn, formatDateOnly, toDateOnly } from "../../lib/utils";
 
@@ -45,10 +46,13 @@ export function TeamBoardTaskCard({
           }
         }}
         className={cn(
-          "relative cursor-pointer overflow-hidden rounded-md border border-border bg-surface-card pl-4 transition hover:border-brand-orange hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
-          compact ? "p-2.5" : "p-3",
-          task.metrics.isOverdue ? "border-[var(--status-late-text)]/40" : ""
+          "relative cursor-pointer overflow-hidden rounded-md border pl-4 transition-[transform,box-shadow] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
+          compact ? "p-2.5" : "p-3"
         )}
+        style={{
+          ...statusTimelineStyle(task.status),
+          ...(task.metrics.isOverdue ? { boxShadow: "inset 0 0 0 1px var(--status-late-text)" } : {})
+        }}
       >
         <span
           aria-hidden
@@ -57,7 +61,7 @@ export function TeamBoardTaskCard({
         />
 
         <div className="flex items-start justify-between gap-3">
-          <h3 className="line-clamp-2 min-w-0 text-sm font-semibold leading-5 text-text-primary">{task.title}</h3>
+          <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-5">{task.title}</h3>
           {task.commentCount > 0 ? (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-surface px-2 py-1 text-[11px] font-semibold text-text-secondary">
               <MessageSquare size={12} />

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, KanbanSquare, List, Plus, Search } from "lucide-react";
+import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, Inbox, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Role, TaskStatus, type Task, type UpdateTaskRequest, type User } from "shared";
 import {
@@ -22,7 +22,8 @@ import { ViewTab } from "../components/shared/ViewTab";
 import { Avatar } from "../components/shared/Avatar";
 import { CompletionStatusChip, DisciplineChip, PlatformChip } from "../components/shared/Chip";
 import { StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
-import { TaskCard } from "../components/task/TaskCard";
+import { KanbanColumn } from "../components/task/KanbanColumn";
+import { KanbanTaskCard } from "../components/task/TaskCard";
 import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
 import { MyTasksCalendarView, type MyTasksCalendarViewHandle } from "../components/task/MyTasksCalendarView";
@@ -62,14 +63,14 @@ type TaskWithProject = Task & {
 };
 
 const columns: Array<{ status: TaskStatus; label: string }> = [
-  { status: TaskStatus.TODO, label: "A fazer" },
-  { status: TaskStatus.ON_SCHEDULE, label: "No Cronograma" },
-  { status: TaskStatus.OVERDUE, label: "Atrasado" },
-  { status: TaskStatus.IN_PROGRESS, label: "Em andamento" },
-  { status: TaskStatus.AWAITING_REVIEW, label: "Aguardando Revisão" },
-  { status: TaskStatus.IN_ANALYSIS, label: "Em Análise" },
-  { status: TaskStatus.AWAITING_DEFINITION, label: "Aguardando Definição" },
-  { status: TaskStatus.FINISHED, label: "Finalizado" }
+  { status: TaskStatus.TODO, label: "A FAZER" },
+  { status: TaskStatus.ON_SCHEDULE, label: "NO CRONOGRAMA" },
+  { status: TaskStatus.OVERDUE, label: "ATRASADO" },
+  { status: TaskStatus.IN_PROGRESS, label: "EM ANDAMENTO" },
+  { status: TaskStatus.AWAITING_REVIEW, label: "AGUARDANDO REVISÃO" },
+  { status: TaskStatus.IN_ANALYSIS, label: "EM ANÁLISE" },
+  { status: TaskStatus.AWAITING_DEFINITION, label: "AGUARDANDO DEFINIÇÃO" },
+  { status: TaskStatus.FINISHED, label: "FINALIZADO" }
 ];
 
 export function MyTasksPage() {
@@ -406,8 +407,10 @@ export function MyTasksPage() {
       ) : null}
 
       {isLoading ? <MyTasksContentSkeleton view={view} /> : null}
-      {!isLoading && !isError && myTasks.length === 0 ? <EmptyState title="Você não possui tarefas atribuídas" /> : null}
-      {!isLoading && !isError && myTasks.length > 0 && visibleTasks.length === 0 ? (
+      {!isLoading && !isError && view !== "kanban" && myTasks.length === 0 ? (
+        <EmptyState title="Você não possui tarefas atribuídas" />
+      ) : null}
+      {!isLoading && !isError && view !== "kanban" && myTasks.length > 0 && visibleTasks.length === 0 ? (
         <EmptyState title="Nenhuma tarefa corresponde aos filtros" />
       ) : null}
       {!isLoading && !isError && view === "list" ? (
@@ -706,41 +709,38 @@ function KanbanView({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="overflow-x-auto py-4">
-        <div className="flex min-w-max gap-3">
+        <div className="flex min-w-max gap-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
             return (
               <Droppable key={column.status} droppableId={column.status}>
                 {(provided, snapshot) => (
-                  <section
+                  <KanbanColumn
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={cn(
-                      "flex min-h-[560px] w-72 flex-none flex-col rounded-md border border-border bg-surface p-2 transition",
-                      snapshot.isDraggingOver ? "border-brand-orange" : ""
-                    )}
+                    status={column.status}
+                    label={column.label}
+                    count={columnTasks.length}
+                    isDraggingOver={snapshot.isDraggingOver}
+                    isDropBlocked={column.status === TaskStatus.OVERDUE}
                   >
-                    <div className="mb-2 flex h-8 items-center justify-between px-2">
-                      <h2 className="text-sm font-bold text-text-primary">{column.label}</h2>
-                      <span className="rounded bg-surface-card px-2 py-0.5 text-xs text-text-secondary">{columnTasks.length}</span>
-                    </div>
-                    <div className="grid flex-1 content-start gap-2">
-                      {columnTasks.map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!canManage}>
-                          {(dragProvided) => (
-                            <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                              <TaskCard
-                                task={task}
-                                disciplineName={task.discipline.name}
-                                onOpen={onOpenTask}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  </section>
+                    {columnTasks.map((task, index) => (
+                      <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!canManage}>
+                        {(dragProvided, dragSnapshot) => (
+                          <div
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            {...dragProvided.dragHandleProps}
+                            className={cn(dragSnapshot.isDragging && "opacity-80")}
+                          >
+                            <KanbanTaskCard task={task} onOpen={onOpenTask} fallbackLinkPath="/my-tasks" />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {columnTasks.length === 0 ? <EmptyState icon={<Inbox size={28} />} title="Nenhuma tarefa aqui" /> : null}
+                    {provided.placeholder}
+                  </KanbanColumn>
                 )}
               </Droppable>
             );
@@ -754,4 +754,3 @@ function KanbanView({
 function statusLabel(status: TaskStatus): string {
   return columns.find((column) => column.status === status)?.label ?? status;
 }
-
