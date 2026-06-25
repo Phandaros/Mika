@@ -1,6 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import type {
   CreateProjectRequest,
+  PortfolioCustomFieldFilter,
   PortfolioFacetsResponse,
   PortfolioProjectSort,
   PortfolioProjectsResponse,
@@ -30,6 +31,7 @@ export interface PortfolioProjectsFilters {
   platform?: string[];
   builder?: string[];
   query?: string;
+  customFieldFilters?: PortfolioCustomFieldFilter[];
 }
 
 export function buildPortfolioQueryParams(filters: PortfolioProjectsFilters, cursor?: string) {
@@ -41,7 +43,8 @@ export function buildPortfolioQueryParams(filters: PortfolioProjectsFilters, cur
     ...(filters.status?.length ? { status: filters.status } : {}),
     ...(filters.platform?.length ? { platform: filters.platform } : {}),
     ...(filters.builder !== undefined ? { builder: filters.builder } : {}),
-    ...(query ? { q: query } : {})
+    ...(query ? { q: query } : {}),
+    ...(filters.customFieldFilters?.length ? { customFieldFilters: JSON.stringify(filters.customFieldFilters) } : {})
   };
 }
 

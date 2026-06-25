@@ -4,6 +4,8 @@ import { DisciplineStatus, DisciplineType, ProjectStatus, Role } from "shared";
 import {
   buildMentionMarkdown,
   buildMentionSuggestions,
+  editorMentionsToMarkdown,
+  markdownMentionsToEditorContent,
   normalizeMentionContentForRender,
   parseMentionHref,
   type MentionContext
@@ -148,7 +150,7 @@ describe("buildMentionMarkdown", () => {
         label: "João",
         type: "user"
       })
-    ).toBe("[João](mk://user/user-1)");
+    ).toBe("@[João](mk://user/user-1)");
   });
 
   it("strips brackets from labels", () => {
@@ -158,7 +160,7 @@ describe("buildMentionMarkdown", () => {
         label: "Tarefa [urgente]",
         type: "task"
       })
-    ).toBe("[Tarefa urgente](mk://task/task-1)");
+    ).toBe("@[Tarefa urgente](mk://task/task-1)");
   });
 });
 
@@ -168,6 +170,32 @@ describe("normalizeMentionContentForRender", () => {
       "[Torino PPCI](mk://task/task-1)"
     );
   });
+
+  it("keeps legacy mention links without @ renderable", () => {
+    expect(normalizeMentionContentForRender("[Torino PPCI](mk://task/task-1)")).toBe(
+      "[Torino PPCI](mk://task/task-1)"
+    );
+  });
+});
+
+describe("editor mention markdown conversion", () => {
+  it("converts persisted mention links to atomic editor shortcodes", () => {
+    expect(markdownMentionsToEditorContent("Olá @[João](mk://user/user-1)")).toBe(
+      'Olá [@ id="user/user-1" label="João"]'
+    );
+  });
+
+  it("converts legacy mention links to atomic editor shortcodes", () => {
+    expect(markdownMentionsToEditorContent("[Tarefa](mk://task/task-1)")).toBe(
+      '[@ id="task/task-1" label="Tarefa"]'
+    );
+  });
+
+  it("converts editor shortcodes back to public markdown", () => {
+    expect(editorMentionsToMarkdown('Ver [@ id="meeting-minute/minute-1" label="Reunião inicial"]')).toBe(
+      "Ver @[Reunião inicial](mk://meeting-minute/minute-1)"
+    );
+  });
 });
 
 describe("parseMentionHref", () => {
@@ -175,6 +203,7 @@ describe("parseMentionHref", () => {
     expect(parseMentionHref("mk://user/user-1")).toEqual({ type: "user", id: "user-1" });
     expect(parseMentionHref("mk://task/task-1")).toEqual({ type: "task", id: "task-1" });
     expect(parseMentionHref("mk://project/project-1")).toEqual({ type: "project", id: "project-1" });
+    expect(parseMentionHref("mk://meeting-minute/minute-1")).toEqual({ type: "meeting-minute", id: "minute-1" });
   });
 
   it("returns null for non-mention urls", () => {
@@ -225,5 +254,15 @@ describe("buildMentionSuggestions", () => {
 
     expect(task).toBeDefined();
     expect(task?.label).toBe("[Torino] PPCI - Executivo");
+  });
+
+  it("includes meeting minutes from the current project only", () => {
+    const suggestions = buildMentionSuggestions("reunião", context, users, projects, [
+      { id: "minute-current", projectId: "project-a", title: "Reunião inicial", meetingDate: "2026-06-25T00:00:00.000Z" },
+      { id: "minute-other", projectId: "project-b", title: "Reunião externa", meetingDate: "2026-06-25T00:00:00.000Z" }
+    ]);
+    const minuteIds = suggestions.filter((item) => item.type === "meeting-minute").map((item) => item.id);
+
+    expect(minuteIds).toEqual(["minute-current"]);
   });
 });

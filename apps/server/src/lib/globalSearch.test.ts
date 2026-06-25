@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADVANCED_SEARCH_DEFAULT_LIMIT,
+  ADVANCED_SEARCH_MAX_LIMIT,
   GLOBAL_SEARCH_DEFAULT_LIMIT,
   GLOBAL_SEARCH_MAX_LIMIT,
+  buildAdvancedTaskSearchWhere,
   buildTaskSearchWhere,
+  clampAdvancedSearchLimit,
   clampSearchLimit,
+  paginateSearchResults,
+  projectMatchesAdvancedStatus,
   projectMatchesSearch,
   searchTextMatches,
   normalizeSearchTerm,
   toGlobalSearchTask
 } from "./globalSearch.js";
+import { Priority, ProjectStatus, TaskStatus } from "./enums.js";
 
 describe("globalSearch helpers", () => {
   it("normalizes the search term", () => {
@@ -43,9 +50,50 @@ describe("globalSearch helpers", () => {
     expect(clampSearchLimit("999")).toBe(GLOBAL_SEARCH_MAX_LIMIT);
   });
 
+  it("caps the advanced requested limit", () => {
+    expect(clampAdvancedSearchLimit(undefined)).toBe(ADVANCED_SEARCH_DEFAULT_LIMIT);
+    expect(clampAdvancedSearchLimit("0")).toBe(1);
+    expect(clampAdvancedSearchLimit("999")).toBe(ADVANCED_SEARCH_MAX_LIMIT);
+  });
+
+  it("paginates advanced result arrays", () => {
+    expect(paginateSearchResults([1, 2, 3, 4, 5], 2, 2)).toEqual([3, 4]);
+  });
+
   it("always excludes legacy subtasks from task search", () => {
     expect(buildTaskSearchWhere("Teste")).toMatchObject({ parentId: null });
     expect(buildTaskSearchWhere("")).toEqual({ parentId: null });
+  });
+
+  it("builds advanced task filters without allowing legacy subtasks", () => {
+    expect(
+      buildAdvancedTaskSearchWhere({
+        term: "Teste",
+        projectId: "project-1",
+        taskStatuses: [TaskStatus.IN_PROGRESS],
+        priorities: [Priority.HIGH],
+        assigneeId: "user-1",
+        dueFrom: "2026-06-01",
+        dueTo: "2026-06-30",
+        completion: "open"
+      })
+    ).toMatchObject({
+      AND: [
+        expect.objectContaining({ parentId: null }),
+        expect.any(Object),
+        { mikaStatus: { in: [TaskStatus.IN_PROGRESS] } },
+        { priority: { in: [Priority.HIGH] } },
+        { assignee: { id: "user-1" } },
+        { dueOn: { gte: "2026-06-01", lte: "2026-06-30" } },
+        { completed: false }
+      ]
+    });
+  });
+
+  it("matches advanced project status from archived state", () => {
+    expect(projectMatchesAdvancedStatus({ archived: false }, [ProjectStatus.ACTIVE])).toBe(true);
+    expect(projectMatchesAdvancedStatus({ archived: true }, [ProjectStatus.COMPLETED])).toBe(true);
+    expect(projectMatchesAdvancedStatus({ archived: false }, [ProjectStatus.COMPLETED])).toBe(false);
   });
 
   it("maps a task result to the command palette target", () => {

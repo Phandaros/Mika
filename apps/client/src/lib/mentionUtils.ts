@@ -5,7 +5,14 @@ export type MentionProject = Pick<Project, "id" | "name"> & {
   disciplines?: Array<{ name: string; tasks?: Array<{ id: string; title: string }> }>;
 };
 
-export type MentionEntityType = "user" | "task" | "project";
+export type MentionMeetingMinute = {
+  id: string;
+  projectId: string;
+  title: string;
+  meetingDate?: string;
+};
+
+export type MentionEntityType = "user" | "task" | "project" | "meeting-minute";
 
 export interface MentionSuggestionItem {
   id: string;
@@ -27,10 +34,12 @@ function sectionsOf(project: MentionProject) {
 const TYPE_ORDER: Record<MentionEntityType, number> = {
   user: 0,
   project: 1,
-  task: 2
+  task: 2,
+  "meeting-minute": 3
 };
 
-const LEGACY_MENTION_PATTERN = new RegExp(String.raw`@\[(.+?)\]\(mk://`, "g");
+const MARKDOWN_MENTION_PATTERN = /(^|[^!])@?\[([^\]]+)\]\(mk:\/\/(user|task|project|meeting-minute)\/([^)]+)\)/g;
+const TIPTAP_MENTION_PATTERN = /\[@\s+([^\]]*)\]/g;
 
 function normalizeSearchText(value: string): string {
   return value
@@ -50,16 +59,68 @@ function matchesQuery(value: string, query: string): boolean {
 
 export function buildMentionMarkdown(item: Pick<MentionSuggestionItem, "id" | "label" | "type">): string {
   const safeLabel = item.label.replace(/[[\]]/g, "");
-  return `[${safeLabel}](mk://${item.type}/${item.id})`;
+  return `@[${safeLabel}](mk://${item.type}/${item.id})`;
 }
 
-/** Removes legacy leading @ before mk mention links so render shows a single @ prefix. */
+function escapeMentionAttribute(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
+
+function unescapeMentionAttribute(value: string): string {
+  return value.replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+}
+
+function parseMentionAttributes(value: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  const pattern = /(\w+)=(?:"([^"]*)"|'([^']*)')/g;
+  let match = pattern.exec(value);
+
+  while (match) {
+    const key = match[1];
+    if (key) {
+      attrs[key] = unescapeMentionAttribute(match[2] ?? match[3] ?? "");
+    }
+    match = pattern.exec(value);
+  }
+
+  return attrs;
+}
+
+export function markdownMentionsToEditorContent(content: string): string {
+  return content.replace(MARKDOWN_MENTION_PATTERN, (_match, prefix: string, label: string, type: MentionEntityType, id: string) => {
+    const entityId = `${type}/${id}`;
+    return `${prefix}[@ id="${escapeMentionAttribute(entityId)}" label="${escapeMentionAttribute(label)}"]`;
+  });
+}
+
+export function editorMentionsToMarkdown(content: string): string {
+  return content.replace(TIPTAP_MENTION_PATTERN, (match, attrString: string) => {
+    const attrs = parseMentionAttributes(attrString);
+    const idParts = attrs.id?.split("/");
+    const type = idParts?.[0] as MentionEntityType | undefined;
+    const id = idParts?.slice(1).join("/");
+
+    if (!type || !id || !["user", "task", "project", "meeting-minute"].includes(type)) {
+      return match;
+    }
+
+    return buildMentionMarkdown({
+      id,
+      label: attrs.label ?? id,
+      type
+    });
+  });
+}
+
+/** Removes the saved @ marker before ReactMarkdown so MentionLink renders exactly one visual @. */
 export function normalizeMentionContentForRender(content: string): string {
-  return content.replace(LEGACY_MENTION_PATTERN, "[$1](mk://");
+  return content.replace(MARKDOWN_MENTION_PATTERN, (_match, prefix: string, label: string, type: MentionEntityType, id: string) => {
+    return `${prefix}[${label}](mk://${type}/${id})`;
+  });
 }
 
 export function parseMentionHref(href: string): { type: MentionEntityType; id: string } | null {
-  const match = /^mk:\/\/(user|task|project)\/([^/?#]+)$/.exec(href);
+  const match = /^mk:\/\/(user|task|project|meeting-minute)\/([^/?#]+)$/.exec(href);
 
   if (!match) {
     return null;
@@ -81,7 +142,8 @@ export function buildMentionSuggestions(
   query: string,
   context: MentionContext,
   users: User[],
-  projects: MentionProject[]
+  projects: MentionProject[],
+  meetingMinutes: MentionMeetingMinute[] = []
 ): MentionSuggestionItem[] {
   const normalizedQuery = query.trim();
   const items: MentionSuggestionItem[] = [];
@@ -132,6 +194,20 @@ export function buildMentionSuggestions(
         });
       }
     }
+  }
+
+  for (const minute of meetingMinutes) {
+    if (minute.projectId !== context.projectId || !matchesQuery(minute.title, normalizedQuery)) {
+      continue;
+    }
+
+    items.push({
+      id: minute.id,
+      label: minute.title,
+      type: "meeting-minute",
+      subtitle: minute.meetingDate ? `Ata de reunião · ${minute.meetingDate.slice(0, 10)}` : "Ata de reunião",
+      affinity: 4
+    });
   }
 
   const deduped = new Map<string, MentionSuggestionItem>();

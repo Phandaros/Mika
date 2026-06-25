@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { FolderKanban, ListTodo, UserRound } from "lucide-react";
+import { ClipboardList, FolderKanban, ListTodo, UserRound } from "lucide-react";
 import type { MentionEntityType, MentionSuggestionItem } from "../../lib/mentionUtils";
 import { cn } from "../../lib/utils";
 
@@ -21,6 +21,10 @@ function MentionIcon({ type }: { type: MentionEntityType }) {
     return <ListTodo size={14} className="shrink-0 text-text-muted" />;
   }
 
+  if (type === "meeting-minute") {
+    return <ClipboardList size={14} className="shrink-0 text-text-muted" />;
+  }
+
   return <FolderKanban size={14} className="shrink-0 text-text-muted" />;
 }
 
@@ -31,6 +35,10 @@ function groupLabel(type: MentionEntityType): string {
 
   if (type === "task") {
     return "Tarefas";
+  }
+
+  if (type === "meeting-minute") {
+    return "Atas de reunião";
   }
 
   return "Projetos";

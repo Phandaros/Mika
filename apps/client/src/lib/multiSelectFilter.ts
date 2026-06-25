@@ -28,6 +28,14 @@ export function defaultAssigneeSelection(userIds: string[]): string[] {
   return ["none", ...userIds];
 }
 
+export function initializeAssigneeSelection(current: readonly string[] | undefined, userIds: readonly string[]): string[] {
+  if (current !== undefined) {
+    return [...current];
+  }
+
+  return defaultAssigneeSelection([...userIds]);
+}
+
 export function matchesMultiSelect(value: string, selected: ReadonlySet<string>): boolean {
   return selected.size > 0 && selected.has(value);
 }

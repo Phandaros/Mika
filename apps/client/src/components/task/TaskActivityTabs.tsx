@@ -258,7 +258,12 @@ function CommentItem({
           </div>
         ) : (
           <>
-            <MarkdownComment content={comment.content} className="mt-2" onMentionTask={onMentionTask} />
+            <MarkdownComment
+              content={comment.content}
+              className="mt-2"
+              mentionContext={mentionContext}
+              onMentionTask={onMentionTask}
+            />
             {documentAttachments.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-2">
                 {documentAttachments.map((attachment) => (

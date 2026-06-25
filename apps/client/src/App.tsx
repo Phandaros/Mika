@@ -13,6 +13,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ReviewsPage } from "./pages/ReviewsPage";
+import { SearchPage } from "./pages/SearchPage";
 import { SprintBoardPage } from "./pages/SprintBoardPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { UsersPage } from "./pages/UsersPage";
@@ -129,6 +130,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+            <Route path="/search" element={<SearchPage />} />
             <Route path="/workloads/geral" element={<GlobalWorkloadPage scope="general" />} />
             <Route path="/workloads/civil" element={<GlobalWorkloadPage scope="civil" />} />
             <Route path="/workloads/eletrico" element={<GlobalWorkloadPage scope="electrical" />} />

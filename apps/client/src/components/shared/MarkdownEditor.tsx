@@ -39,7 +39,11 @@ import { useUploadInlineImage } from "../../hooks/useCommentAttachments";
 import { useProjectOptions } from "../../hooks/useProjects";
 import { useUsers } from "../../hooks/useUsers";
 import { createMentionSuggestionExtension } from "../../lib/mentionSuggestion";
-import type { MentionContext } from "../../lib/mentionUtils";
+import {
+  editorMentionsToMarkdown,
+  markdownMentionsToEditorContent,
+  type MentionContext
+} from "../../lib/mentionUtils";
 import {
   classifyFile,
   DOCUMENT_ACCEPT,
@@ -186,7 +190,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   useEffect(() => () => revokeBlobUrls(), [revokeBlobUrls]);
 
   const getEditorMarkdown = useCallback((editor: Editor): string => {
-    return (editor as MarkdownEditor).getMarkdown();
+    return editorMentionsToMarkdown((editor as MarkdownEditor).getMarkdown());
   }, []);
 
   const syncMarkdownValue = useCallback(
@@ -198,7 +202,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const editor = editorRef.current;
 
       if (options?.updateEditor !== false && editor) {
-        editor.commands.setContent(nextMarkdown, { contentType: "markdown", emitUpdate: false });
+        editor.commands.setContent(markdownMentionsToEditorContent(nextMarkdown), { contentType: "markdown", emitUpdate: false });
       }
 
       isApplyingMarkdownRef.current = false;
@@ -399,7 +403,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }),
       ...(mentionContext ? [mentionExtension] : [])
     ],
-    content: value,
+    content: markdownMentionsToEditorContent(value),
     contentType: "markdown",
     editorProps: {
       attributes: {

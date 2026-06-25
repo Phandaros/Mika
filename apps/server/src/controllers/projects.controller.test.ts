@@ -59,6 +59,31 @@ function projectRow(id: string, name: string, builder: string | null) {
   };
 }
 
+function projectCandidate(
+  id: string,
+  name: string,
+  builder: string | null,
+  values: Array<{
+    customFieldGid: string;
+    customFieldName: string | null;
+    type: string;
+    displayValue?: string | null;
+    enumOptionName?: string | null;
+    multiEnumValues?: Array<{ name: string; color?: string | null; gid?: string | null }> | null;
+  }>
+) {
+  return {
+    ...projectRow(id, name, builder),
+    customFieldValues: values.map((value) => ({
+      displayValue: null,
+      enumOptionName: null,
+      multiEnumValues: null,
+      customField: null,
+      ...value
+    }))
+  };
+}
+
 describe("portfolio projects controller", () => {
   const next = vi.fn() as NextFunction;
 
@@ -173,7 +198,8 @@ describe("portfolio projects controller", () => {
         select: {
           id: true,
           name: true,
-          builder: true
+          builder: true,
+          customFieldValues: expect.any(Object)
         }
       })
     );
@@ -203,5 +229,217 @@ describe("portfolio projects controller", () => {
       nextCursor: null,
       totalCount: 0
     });
+  });
+
+  it("filtra Disciplinas contendo Sprinkler", async () => {
+    const matchingProject = projectCandidate("project-sprinkler", "Torre Sul", "Construtora Sul", [
+      {
+        customFieldGid: "mika:portfolio:disciplinas",
+        customFieldName: "Disciplinas",
+        type: "multi_enum",
+        multiEnumValues: [{ name: "Sprinkler" }, { name: "Elétrico" }]
+      }
+    ]);
+    prismaMock.project.findMany
+      .mockResolvedValueOnce([
+        matchingProject,
+        projectCandidate("project-ele", "Torre Norte", "Construtora Norte", [
+          {
+            customFieldGid: "mika:portfolio:disciplinas",
+            customFieldName: "Disciplinas",
+            type: "multi_enum",
+            multiEnumValues: [{ name: "Elétrico" }]
+          }
+        ])
+      ])
+      .mockResolvedValueOnce([matchingProject]);
+    const res = responseMock();
+
+    await listPortfolioProjects(
+      {
+        query: {
+          customFieldFilters: JSON.stringify([
+            { fieldKey: "disciplinas", type: "multi_enum", operator: "containsAny", values: ["Sprinkler"] }
+          ])
+        }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projects: [matchingProject],
+        totalCount: 1
+      })
+    );
+  });
+
+  it("filtra Disciplinas contendo todos os valores selecionados", async () => {
+    const matchingProject = projectCandidate("project-all", "Torre Sul", "Construtora Sul", [
+      {
+        customFieldGid: "mika:portfolio:disciplinas",
+        customFieldName: "Disciplinas",
+        type: "multi_enum",
+        multiEnumValues: [{ name: "Sprinkler" }, { name: "Elétrico" }]
+      }
+    ]);
+    prismaMock.project.findMany
+      .mockResolvedValueOnce([
+        matchingProject,
+        projectCandidate("project-one", "Torre Norte", "Construtora Norte", [
+          {
+            customFieldGid: "mika:portfolio:disciplinas",
+            customFieldName: "Disciplinas",
+            type: "multi_enum",
+            multiEnumValues: [{ name: "Sprinkler" }]
+          }
+        ])
+      ])
+      .mockResolvedValueOnce([matchingProject]);
+    const res = responseMock();
+
+    await listPortfolioProjects(
+      {
+        query: {
+          customFieldFilters: JSON.stringify([
+            { fieldKey: "disciplinas", type: "multi_enum", operator: "containsAll", values: ["Sprinkler", "Elétrico"] }
+          ])
+        }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ projects: [matchingProject], totalCount: 1 }));
+  });
+
+  it("filtra Disciplinas que não contêm nenhum valor selecionado", async () => {
+    const matchingProject = projectCandidate("project-hid", "Torre Hid", "Construtora Sul", [
+      {
+        customFieldGid: "mika:portfolio:disciplinas",
+        customFieldName: "Disciplinas",
+        type: "multi_enum",
+        multiEnumValues: [{ name: "Hidráulico" }]
+      }
+    ]);
+    prismaMock.project.findMany
+      .mockResolvedValueOnce([
+        matchingProject,
+        projectCandidate("project-sprinkler", "Torre Sprinkler", "Construtora Norte", [
+          {
+            customFieldGid: "mika:portfolio:disciplinas",
+            customFieldName: "Disciplinas",
+            type: "multi_enum",
+            multiEnumValues: [{ name: "Sprinkler" }]
+          }
+        ])
+      ])
+      .mockResolvedValueOnce([matchingProject]);
+    const res = responseMock();
+
+    await listPortfolioProjects(
+      {
+        query: {
+          customFieldFilters: JSON.stringify([
+            { fieldKey: "disciplinas", type: "multi_enum", operator: "containsNone", values: ["Sprinkler"] }
+          ])
+        }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ projects: [matchingProject], totalCount: 1 }));
+  });
+
+  it("filtra campos em branco e não em branco", async () => {
+    const blankProject = projectCandidate("project-blank", "Sem disciplina", "Construtora Sul", []);
+    const filledProject = projectCandidate("project-filled", "Com disciplina", "Construtora Sul", [
+      {
+        customFieldGid: "mika:portfolio:disciplinas",
+        customFieldName: "Disciplinas",
+        type: "multi_enum",
+        multiEnumValues: [{ name: "Sprinkler" }]
+      }
+    ]);
+    prismaMock.project.findMany
+      .mockResolvedValueOnce([blankProject, filledProject])
+      .mockResolvedValueOnce([blankProject]);
+    const res = responseMock();
+
+    await listPortfolioProjects(
+      {
+        query: {
+          customFieldFilters: JSON.stringify([{ fieldKey: "disciplinas", type: "multi_enum", operator: "isBlank" }])
+        }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ projects: [blankProject], totalCount: 1 }));
+
+    prismaMock.project.findMany
+      .mockResolvedValueOnce([blankProject, filledProject])
+      .mockResolvedValueOnce([filledProject]);
+    const notBlankRes = responseMock();
+
+    await listPortfolioProjects(
+      {
+        query: {
+          customFieldFilters: JSON.stringify([{ fieldKey: "disciplinas", type: "multi_enum", operator: "isNotBlank" }])
+        }
+      } as unknown as Request,
+      notBlankRes,
+      next
+    );
+
+    expect(notBlankRes.json).toHaveBeenCalledWith(expect.objectContaining({ projects: [filledProject], totalCount: 1 }));
+  });
+
+  it("combina filtros custom com filtros estruturados e texto usando AND", async () => {
+    const matchingProject = projectCandidate("project-approved", "Residencial Atlântico", "Construtora Ácme", [
+      {
+        customFieldGid: "mika:portfolio:eleAprov",
+        customFieldName: "ELE APROV.",
+        type: "enum",
+        enumOptionName: "Aprovado",
+        displayValue: "Aprovado"
+      }
+    ]);
+    prismaMock.project.findMany
+      .mockResolvedValueOnce([
+        matchingProject,
+        projectCandidate("project-todo", "Residencial Atlântico", "Construtora Ácme", [
+          {
+            customFieldGid: "mika:portfolio:eleAprov",
+            customFieldName: "ELE APROV.",
+            type: "enum",
+            enumOptionName: "To Do",
+            displayValue: "To Do"
+          }
+        ])
+      ])
+      .mockResolvedValueOnce([matchingProject]);
+    const res = responseMock();
+
+    await listPortfolioProjects(
+      {
+        query: {
+          q: "atlantico",
+          status: "ACTIVE",
+          platform: "CAD",
+          builder: "Construtora Ácme",
+          customFieldFilters: JSON.stringify([
+            { fieldKey: "eleAprov", type: "enum", operator: "isAnyOf", values: ["Aprovado"] }
+          ])
+        }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ projects: [matchingProject], totalCount: 1 }));
   });
 });

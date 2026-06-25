@@ -19,7 +19,15 @@ describe("portfolio project query helpers", () => {
     status: ["ACTIVE"],
     platform: ["CAD"],
     builder: ["Construtora Sul"],
-    query: "  Atlântico  "
+    query: "  Atlântico  ",
+    customFieldFilters: [
+      {
+        fieldKey: "disciplinas",
+        type: "multi_enum",
+        operator: "containsAny",
+        values: ["Sprinkler"]
+      }
+    ]
   };
 
   it("envia o filtro textual como q junto dos demais filtros", () => {
@@ -29,7 +37,8 @@ describe("portfolio project query helpers", () => {
       status: ["ACTIVE"],
       platform: ["CAD"],
       builder: ["Construtora Sul"],
-      q: "Atlântico"
+      q: "Atlântico",
+      customFieldFilters: JSON.stringify(filters.customFieldFilters)
     });
   });
 

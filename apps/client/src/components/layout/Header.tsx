@@ -32,7 +32,7 @@ export function Header({ updater }: HeaderProps) {
       return;
     }
 
-    navigate(`/my-tasks?search=${encodeURIComponent(trimmedSearch)}`);
+    navigate(`/search?q=${encodeURIComponent(trimmedSearch)}`);
   }
 
   return (
@@ -66,7 +66,7 @@ export function Header({ updater }: HeaderProps) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="h-9 w-full rounded-full border border-border-subtle bg-bg-2 pl-9 pr-4 text-sm text-text-primary outline-none placeholder:text-text-muted focus:border-border focus:bg-bg-3"
-            placeholder="Buscar tarefas"
+            placeholder="Buscar"
           />
         </form>
       </div>

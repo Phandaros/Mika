@@ -2,7 +2,7 @@ import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from "react-mar
 import { ImageOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedAsset, openAuthenticatedAsset } from "../../hooks/useAuthenticatedAsset";
-import { normalizeMentionContentForRender, parseMentionHref } from "../../lib/mentionUtils";
+import { normalizeMentionContentForRender, parseMentionHref, type MentionContext } from "../../lib/mentionUtils";
 import { cn } from "../../lib/utils";
 
 const mentionUrlTransform: UrlTransform = (url) => {
@@ -16,6 +16,7 @@ const mentionUrlTransform: UrlTransform = (url) => {
 interface MarkdownCommentProps {
   content: string;
   className?: string;
+  mentionContext?: MentionContext | null;
   onMentionTask?: (taskId: string) => void;
 }
 
@@ -55,10 +56,12 @@ function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
 function MentionLink({
   href,
   children,
+  mentionContext,
   onMentionTask
 }: {
   href: string;
   children: React.ReactNode;
+  mentionContext?: MentionContext | null;
   onMentionTask?: (taskId: string) => void;
 }) {
   const navigate = useNavigate();
@@ -91,6 +94,13 @@ function MentionLink({
       return;
     }
 
+    if (target.type === "meeting-minute") {
+      if (mentionContext?.projectId) {
+        navigate(`/projects/${mentionContext.projectId}?area=documents&docs=meeting-minutes&meeting=${target.id}`);
+      }
+      return;
+    }
+
     onMentionTask?.(target.id);
   }
 
@@ -105,7 +115,7 @@ function MentionLink({
   );
 }
 
-export function MarkdownComment({ content, className, onMentionTask }: MarkdownCommentProps) {
+export function MarkdownComment({ content, className, mentionContext = null, onMentionTask }: MarkdownCommentProps) {
   const normalizedContent = normalizeMentionContentForRender(content);
 
   return (
@@ -127,7 +137,7 @@ export function MarkdownComment({ content, className, onMentionTask }: MarkdownC
             <blockquote className="my-2 border-l-2 border-[--color-border-focus] pl-3 text-[--color-text-secondary]">{children}</blockquote>
           ),
           a: ({ href, children }) => (
-            <MentionLink href={href ?? ""} onMentionTask={onMentionTask}>
+            <MentionLink href={href ?? ""} mentionContext={mentionContext} onMentionTask={onMentionTask}>
               {children}
             </MentionLink>
           )

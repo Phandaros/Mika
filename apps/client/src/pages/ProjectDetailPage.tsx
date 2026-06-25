@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -47,9 +47,9 @@ import { usePortfolioFacets, useProject } from "../hooks/useProjects";
 import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import {
-  defaultAssigneeSelection,
   defaultPrioritySelection,
   defaultProjectTaskStatusSelection,
+  initializeAssigneeSelection,
   matchesMultiSelect
 } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
@@ -135,7 +135,7 @@ export function ProjectDetailPage() {
   const [taskScope, setTaskScope] = useState<TaskScope>("general");
   const [statusFilter, setStatusFilter] = useState<string[]>(defaultProjectTaskStatusSelection);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
-  const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
+  const [assigneeFilter, setAssigneeFilter] = useState<string[] | undefined>(undefined);
   const [priorityFilter, setPriorityFilter] = useState<string[]>(defaultPrioritySelection);
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [search, setSearch] = useState("");
@@ -154,11 +154,8 @@ export function ProjectDetailPage() {
   const disciplines = project?.sections ?? project?.disciplines ?? [];
   const allTasks = useMemo(() => tasksFromDisciplines(disciplines, project?.name ?? ""), [disciplines, project?.name]);
 
-  const assigneeFilterInitialized = useRef(false);
-
   useEffect(() => {
-    assigneeFilterInitialized.current = false;
-    setAssigneeFilter([]);
+    setAssigneeFilter(undefined);
   }, [projectId]);
 
   useEffect(() => {
@@ -166,22 +163,18 @@ export function ProjectDetailPage() {
       return;
     }
 
-    const defaults = defaultAssigneeSelection(users.map((item) => item.id));
-
     setAssigneeFilter((current) => {
-      const isUninitialized = current.length === 0;
-      const isStaleDefault =
-        !assigneeFilterInitialized.current && current.length === 1 && current[0] === "none";
-
-      if (isUninitialized || isStaleDefault) {
-        assigneeFilterInitialized.current = true;
-        return defaults;
-      }
-
-      assigneeFilterInitialized.current = true;
-      return current;
+      const next = initializeAssigneeSelection(
+        current,
+        users.map((item) => item.id)
+      );
+      return next;
     });
-  }, [users]);
+  }, [projectId, users]);
+
+  function handleAssigneeFilterChange(values: string[]) {
+    setAssigneeFilter(values);
+  }
 
   useEffect(() => {
     const taskId = searchParams.get("task");
@@ -287,10 +280,16 @@ export function ProjectDetailPage() {
       ? disciplines
       : disciplines.filter((discipline) => scopedDisciplineIds.has(discipline.id));
 
+  const assigneeOptions = [
+    { value: "none", label: "Sem responsável" },
+    ...users.map((item) => ({ value: item.id, label: item.name, description: item.email, avatarUrl: item.avatarUrl }))
+  ];
+  const effectiveAssigneeFilter = assigneeFilter ?? assigneeOptions.map((option) => option.value);
+
   const visibleTasks = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     const statusSet = new Set(statusFilter);
-    const assigneeSet = new Set(assigneeFilter);
+    const assigneeSet = new Set(effectiveAssigneeFilter);
     const prioritySet = new Set(priorityFilter);
 
     return disciplineFilteredTasks
@@ -302,7 +301,7 @@ export function ProjectDetailPage() {
         return completionFilter === "completed" ? task.completed : !task.completed;
       })
       .filter((task) => matchesMultiSelect(task.status, statusSet))
-      .filter((task) => matchesMultiSelect(task.assigneeId ?? "none", assigneeSet))
+      .filter((task) => assigneeFilter === undefined || matchesMultiSelect(task.assigneeId ?? "none", assigneeSet))
       .filter((task) => matchesMultiSelect(task.priority, prioritySet))
       .filter((task) => {
         if (!normalizedSearch) {
@@ -314,7 +313,7 @@ export function ProjectDetailPage() {
           .toLowerCase()
           .includes(normalizedSearch);
       });
-  }, [assigneeFilter, completionFilter, disciplineFilteredTasks, priorityFilter, search, statusFilter]);
+  }, [assigneeFilter, completionFilter, disciplineFilteredTasks, effectiveAssigneeFilter, priorityFilter, search, statusFilter]);
 
   const listTasks = useMemo(
     () =>
@@ -357,10 +356,6 @@ export function ProjectDetailPage() {
     color: taskStatusColors[status],
     render: <StatusOptionPill label={taskStatusLabels[status]} color={taskStatusColors[status]} />
   }));
-  const assigneeOptions = [
-    { value: "none", label: "Sem responsável" },
-    ...users.map((item) => ({ value: item.id, label: item.name, description: item.email, avatarUrl: item.avatarUrl }))
-  ];
   const priorityOptions = Object.values(Priority).map((priority) => ({
     value: priority,
     label: priority,
@@ -500,7 +495,7 @@ export function ProjectDetailPage() {
             />
           </label>
           <SearchableMultiSelect
-            values={assigneeFilter}
+            values={effectiveAssigneeFilter}
             options={assigneeOptions}
             triggerClassName="h-8 w-44"
             searchPlaceholder="Buscar responsável..."
@@ -508,7 +503,7 @@ export function ProjectDetailPage() {
             allSelectedLabel="Todos responsáveis"
             noneSelectedLabel="Nenhum responsável"
             partialSelectedLabel={(count) => `${count} responsáveis`}
-            onValuesChange={setAssigneeFilter}
+            onValuesChange={handleAssigneeFilterChange}
           />
           <SearchableMultiSelect
             values={priorityFilter}

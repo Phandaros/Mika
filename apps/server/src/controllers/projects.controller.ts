@@ -1,5 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import type { RequestHandler } from "express";
+import type { PortfolioCustomFieldFilter } from "shared";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { ProjectStatus, type ProjectStatus as ProjectStatusValue } from "../lib/enums.js";
@@ -16,6 +17,11 @@ import {
   toTaskDto
 } from "../lib/asanaDto.js";
 import { ensureCanonicalSectionsForProject } from "../lib/canonicalSections.js";
+import {
+  findPortfolioCatalogField,
+  normalizePortfolioFieldName,
+  portfolioCatalogGid
+} from "../lib/portfolioCatalog.js";
 import { normalizeSearchTerm, searchTextMatches } from "../lib/globalSearch.js";
 import {
   applyProjectCustomFieldPatches,
@@ -105,6 +111,43 @@ const PORTFOLIO_LIMIT_DEFAULT = 25;
 const PORTFOLIO_LIMIT_MAX = 50;
 const PORTFOLIO_SORT_VALUES = ["updatedAt-desc", "name-asc", "endDate-asc"] as const;
 const PORTFOLIO_PLATFORM_VALUES = ["CAD", "BIM", "none"] as const;
+const PORTFOLIO_MULTI_ENUM_FILTER_OPERATORS = ["containsAny", "containsAll", "containsNone", "isBlank", "isNotBlank"] as const;
+const PORTFOLIO_ENUM_FILTER_OPERATORS = ["isAnyOf", "isNoneOf", "isBlank", "isNotBlank"] as const;
+
+const portfolioCustomFieldFilterSchema = z.discriminatedUnion("type", [
+  z.object({
+    fieldKey: z.string().trim().min(1),
+    type: z.literal("multi_enum"),
+    operator: z.enum(PORTFOLIO_MULTI_ENUM_FILTER_OPERATORS),
+    values: z.array(z.string().trim().min(1)).optional()
+  }),
+  z.object({
+    fieldKey: z.string().trim().min(1),
+    type: z.literal("enum"),
+    operator: z.enum(PORTFOLIO_ENUM_FILTER_OPERATORS),
+    values: z.array(z.string().trim().min(1)).optional()
+  })
+]);
+
+function parsePortfolioCustomFieldFilters(value: unknown): PortfolioCustomFieldFilter[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value as PortfolioCustomFieldFilter[];
+  }
+
+  if (typeof value !== "string" || !value.trim()) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(value) as PortfolioCustomFieldFilter[];
+  } catch {
+    return [];
+  }
+}
 
 const portfolioProjectsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(PORTFOLIO_LIMIT_MAX).optional().default(PORTFOLIO_LIMIT_DEFAULT),
@@ -113,6 +156,10 @@ const portfolioProjectsQuerySchema = z.object({
   status: z.union([z.string(), z.array(z.string())]).optional(),
   platform: z.union([z.string(), z.array(z.string())]).optional(),
   builder: z.union([z.string(), z.array(z.string())]).optional(),
+  customFieldFilters: z.preprocess(
+    parsePortfolioCustomFieldFilters,
+    z.array(portfolioCustomFieldFilterSchema).max(20).optional()
+  ),
   q: z.string().trim().max(200).optional()
 });
 
@@ -239,6 +286,24 @@ function portfolioBuilderWhere(builders: string[] | undefined): Prisma.ProjectWh
   };
 }
 
+type PortfolioFilterProjectCandidate = {
+  id: string;
+  name: string;
+  builder: string | null;
+  customFieldValues: Array<{
+    customFieldGid: string;
+    customFieldName: string | null;
+    type: string;
+    displayValue: string | null;
+    enumOptionName: string | null;
+    multiEnumValues: Prisma.JsonValue | null;
+    customField: {
+      mikaKey: string | null;
+      mikaLabel: string | null;
+    } | null;
+  }>;
+};
+
 function buildPortfolioWhere(query: {
   status?: string[];
   platform?: string[];
@@ -255,9 +320,10 @@ function buildPortfolioWhere(query: {
 
 async function portfolioSearchProjectIds(
   baseWhere: Prisma.ProjectWhereInput,
-  query: string
+  query: string,
+  customFieldFilters: PortfolioCustomFieldFilter[] | undefined
 ): Promise<string[] | null> {
-  if (!query) {
+  if (!query && !customFieldFilters?.length) {
     return null;
   }
 
@@ -266,13 +332,143 @@ async function portfolioSearchProjectIds(
     select: {
       id: true,
       name: true,
-      builder: true
+      builder: true,
+      customFieldValues: {
+        select: {
+          customFieldGid: true,
+          customFieldName: true,
+          type: true,
+          displayValue: true,
+          enumOptionName: true,
+          multiEnumValues: true,
+          customField: {
+            select: {
+              mikaKey: true,
+              mikaLabel: true
+            }
+          }
+        }
+      }
     }
   });
 
   return candidates
-    .filter((project) => searchTextMatches(query, [project.name, project.builder]))
+    .filter((project) => {
+      if (query && !searchTextMatches(query, [project.name, project.builder])) {
+        return false;
+      }
+
+      return portfolioCustomFiltersMatch(project, customFieldFilters);
+    })
     .map((project) => project.id);
+}
+
+function portfolioCustomFiltersMatch(
+  project: PortfolioFilterProjectCandidate,
+  filters: PortfolioCustomFieldFilter[] | undefined
+): boolean {
+  if (!filters?.length) {
+    return true;
+  }
+
+  return filters.every((filter) => portfolioCustomFilterMatches(project, filter));
+}
+
+function portfolioCustomFilterMatches(
+  project: PortfolioFilterProjectCandidate,
+  filter: PortfolioCustomFieldFilter
+): boolean {
+  const catalogField = findPortfolioCatalogField({ mikaKey: filter.fieldKey });
+
+  if (!catalogField || catalogField.type !== filter.type) {
+    return false;
+  }
+
+  const row = project.customFieldValues.find((value) => {
+    if (value.customFieldGid === portfolioCatalogGid(catalogField.key)) {
+      return true;
+    }
+
+    if (value.customField?.mikaKey === catalogField.key) {
+      return true;
+    }
+
+    return findPortfolioCatalogField({
+      mikaKey: value.customField?.mikaKey,
+      customFieldGid: value.customFieldGid,
+      label: value.customField?.mikaLabel ?? value.customFieldName
+    })?.key === catalogField.key;
+  });
+
+  if (filter.type === "multi_enum") {
+    const values = portfolioMultiEnumNames(row?.multiEnumValues);
+    const selected = normalizeFilterValues(filter.values);
+
+    if (filter.operator === "isBlank") {
+      return values.length === 0;
+    }
+
+    if (filter.operator === "isNotBlank") {
+      return values.length > 0;
+    }
+
+    if (selected.size === 0) {
+      return false;
+    }
+
+    const current = new Set(values);
+
+    if (filter.operator === "containsAny") {
+      return [...selected].some((value) => current.has(value));
+    }
+
+    if (filter.operator === "containsAll") {
+      return [...selected].every((value) => current.has(value));
+    }
+
+    return [...selected].every((value) => !current.has(value));
+  }
+
+  const value = normalizePortfolioFieldName(row?.enumOptionName ?? row?.displayValue);
+  const selected = normalizeFilterValues(filter.values);
+
+  if (filter.operator === "isBlank") {
+    return !value;
+  }
+
+  if (filter.operator === "isNotBlank") {
+    return Boolean(value);
+  }
+
+  if (selected.size === 0) {
+    return false;
+  }
+
+  if (filter.operator === "isAnyOf") {
+    return selected.has(value);
+  }
+
+  return !selected.has(value);
+}
+
+function portfolioMultiEnumNames(value: Prisma.JsonValue | null | undefined): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || !("name" in entry) || typeof entry.name !== "string") {
+        return "";
+      }
+
+      return normalizePortfolioFieldName(entry.name);
+    })
+    .filter(Boolean);
+}
+
+function normalizeFilterValues(values: string[] | undefined): Set<string> {
+  return new Set((values ?? []).map((value) => normalizePortfolioFieldName(value)).filter(Boolean));
 }
 
 function portfolioCursorWhere(cursor: PortfolioCursor | null, sort: PortfolioSort): Prisma.ProjectWhereInput {
@@ -363,7 +559,7 @@ export const listPortfolioProjects: RequestHandler = async (req, res, next) => {
     };
     const query = normalizeSearchTerm(parsed.data.q);
     const baseWhere = buildPortfolioWhere(filters);
-    const matchingProjectIds = await portfolioSearchProjectIds(baseWhere, query);
+    const matchingProjectIds = await portfolioSearchProjectIds(baseWhere, query, parsed.data.customFieldFilters);
     const filteredWhere =
       matchingProjectIds === null
         ? baseWhere

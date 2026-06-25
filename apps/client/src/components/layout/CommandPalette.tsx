@@ -1,5 +1,5 @@
 import { Command } from "cmdk";
-import { FolderKanban, Home, LayoutList, Search, UserRound, Users } from "lucide-react";
+import { ArrowRight, FolderKanban, Home, LayoutList, Search, UserRound, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Role } from "shared";
@@ -8,7 +8,7 @@ import { useGlobalSearch } from "../../hooks/useGlobalSearch";
 import { queryClient } from "../../lib/queryClient";
 import { cn } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
-import { Dialog, DialogContent } from "../ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 
 export function CommandPalette() {
   const navigate = useNavigate();
@@ -35,6 +35,16 @@ export function CommandPalette() {
     navigate(path);
   }
 
+  function goSearch() {
+    const q = search.trim();
+
+    if (!q) {
+      return;
+    }
+
+    go(`/search?q=${encodeURIComponent(q)}`);
+  }
+
   function goProject(projectId: string, taskId?: string) {
     queryClient.removeQueries({ queryKey: ["projects", projectId], exact: true });
     setOpen(false);
@@ -44,6 +54,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-xl overflow-hidden p-0" hideClose>
+        <DialogTitle className="sr-only">Busca global</DialogTitle>
         <Command className="rounded-lg border-0 bg-surface-card text-text-primary" label="Comando rapido" shouldFilter={false}>
           <div className="flex items-center gap-2 border-b border-border px-3">
             <Search size={16} className="shrink-0 text-text-muted" />
@@ -57,6 +68,20 @@ export function CommandPalette() {
           <Command.List className="max-h-[min(60vh,420px)] overflow-y-auto p-2">
             <>
               <Command.Empty className="px-3 py-6 text-center text-sm text-text-secondary">Nenhum resultado.</Command.Empty>
+
+              {search.trim() ? (
+                <Command.Group heading="Pesquisar" className="px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-muted">
+                  <Command.Item
+                    value={`Buscar por ${search.trim()}`}
+                    onSelect={goSearch}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
+                  >
+                    <Search size={16} className="text-brand-orange" />
+                    <span className="min-w-0 flex-1 truncate">Buscar por "{search.trim()}"</span>
+                    <ArrowRight size={15} className="text-text-muted" />
+                  </Command.Item>
+                </Command.Group>
+              ) : null}
 
               <Command.Group heading="Navegação" className="px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-muted">
                 <Command.Item

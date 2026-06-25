@@ -119,6 +119,33 @@ export interface UpdateProjectRequest {
 
 export type PortfolioProjectSort = "updatedAt-desc" | "name-asc" | "endDate-asc";
 
+export type PortfolioMultiEnumFilterOperator =
+  | "containsAny"
+  | "containsAll"
+  | "containsNone"
+  | "isBlank"
+  | "isNotBlank";
+
+export type PortfolioEnumFilterOperator =
+  | "isAnyOf"
+  | "isNoneOf"
+  | "isBlank"
+  | "isNotBlank";
+
+export type PortfolioCustomFieldFilter =
+  | {
+      fieldKey: string;
+      type: "multi_enum";
+      operator: PortfolioMultiEnumFilterOperator;
+      values?: string[];
+    }
+  | {
+      fieldKey: string;
+      type: "enum";
+      operator: PortfolioEnumFilterOperator;
+      values?: string[];
+    };
+
 export interface PortfolioProjectsResponse {
   projects: Project[];
   nextCursor: string | null;
