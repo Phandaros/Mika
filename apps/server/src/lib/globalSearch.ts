@@ -270,23 +270,39 @@ interface TaskSearchRecord {
   }>;
 }
 
-export function toGlobalSearchTask(task: TaskSearchRecord): GlobalSearchTaskResult | null {
-  for (const membership of task.memberships) {
+function membershipProjectId(membership: TaskSearchRecord["memberships"][number]): string | null {
+  return membership.section?.project.id ?? membership.project?.id ?? null;
+}
+
+function preferredTaskMembership(task: TaskSearchRecord, preferredProjectId?: string): TaskSearchRecord["memberships"][number] | null {
+  if (preferredProjectId) {
+    const preferred = task.memberships.find((membership) => membershipProjectId(membership) === preferredProjectId);
+
+    if (preferred) {
+      return preferred;
+    }
+  }
+
+  return task.memberships.find((membership) => Boolean(membershipProjectId(membership))) ?? null;
+}
+
+export function toGlobalSearchTask(task: TaskSearchRecord, preferredProjectId?: string): GlobalSearchTaskResult | null {
+  const membership = preferredTaskMembership(task, preferredProjectId);
+
+  if (membership) {
     const project = membership.section?.project ?? membership.project;
     const projectId = project?.id ?? null;
     const projectName = project?.name ?? membership.projectName ?? null;
 
-    if (!projectId || !projectName) {
-      continue;
+    if (projectId && projectName) {
+      return {
+        id: task.id,
+        title: task.name,
+        projectId,
+        projectName,
+        sectionName: membership.section?.name ?? membership.sectionName ?? "Sem secao"
+      };
     }
-
-    return {
-      id: task.id,
-      title: task.name,
-      projectId,
-      projectName,
-      sectionName: membership.section?.name ?? membership.sectionName ?? "Sem secao"
-    };
   }
 
   return null;

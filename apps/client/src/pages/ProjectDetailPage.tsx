@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
+import { toast } from "sonner";
 import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Priority, TaskStatus, type DisciplineType, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
@@ -53,6 +54,7 @@ import {
   matchesMultiSelect
 } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
+import { isAfterMaxDeadline, MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE } from "../lib/taskDeadlineRules";
 import { cn, formatDateOnly } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
@@ -250,6 +252,11 @@ export function ProjectDetailPage() {
   }
 
   function patchTask(task: TaskWithDiscipline, payload: UpdateTaskRequest) {
+    if (payload.maxDeadline !== undefined && isAfterMaxDeadline(task.dueDate, payload.maxDeadline)) {
+      toast.error(MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE);
+      return;
+    }
+
     void updateTask.mutateAsync({ id: task.id, payload });
   }
 
@@ -794,7 +801,7 @@ function ListView({
   projectId: string;
 }) {
   const groupedTasks = groupTasksByScope(tasks);
-  const columnCount = 10;
+  const columnCount = canManage ? 10 : 9;
 
   if (isLoading) {
     return (
@@ -809,7 +816,7 @@ function ListView({
   return (
     <div className="grid gap-4">
       <DataTableContainer>
-        <DataTable minWidth="1100px" data-testid="project-list-table">
+        <DataTable minWidth={canManage ? "1100px" : "980px"} data-testid="project-list-table">
           <colgroup>
             <col className="w-[320px]" />
             <col className="w-[140px]" />
@@ -817,7 +824,7 @@ function ListView({
             <col className="w-[90px]" />
             <col className="w-[100px]" />
             <col className="w-[120px]" />
-            <col className="w-[120px]" />
+            {canManage ? <col className="w-[120px]" /> : null}
             <col className="w-[90px]" />
             <col className="w-[90px]" />
             <col className="w-[80px]" />
@@ -830,7 +837,7 @@ function ListView({
               <DataTableHeader align="center">Plataforma</DataTableHeader>
               <DataTableHeader align="center">Disciplina</DataTableHeader>
               <DataTableHeader align="center">Status Conclusão</DataTableHeader>
-              <DataTableHeader>Prazo Máximo</DataTableHeader>
+              {canManage ? <DataTableHeader>Prazo Máximo</DataTableHeader> : null}
               <DataTableHeader align="right">Dias Estimados</DataTableHeader>
               <DataTableHeader align="right">Dias Conclusão</DataTableHeader>
               <DataTableHeader>Etapa</DataTableHeader>
@@ -930,19 +937,15 @@ function ListView({
                             <CompletionStatusChip completed={task.completed} />
                           )}
                         </DataTableCell>
-                        <DataTableCell>
-                          {canManage ? (
+                        {canManage ? (
+                          <DataTableCell>
                             <EditableMaxDeadlineField
                               value={task.maxDeadline}
                               variant="table"
                               onSave={(maxDeadline) => onPatchTask(task, { maxDeadline })}
                             />
-                          ) : task.maxDeadline ? (
-                            <span>{formatDateOnly(task.maxDeadline, "dd/MM/yyyy")}</span>
-                          ) : (
-                            <EmptyCell />
-                          )}
-                        </DataTableCell>
+                          </DataTableCell>
+                        ) : null}
                         <DataTableCell align="right" className="font-mono text-[12px]">
                           {canManage ? (
                             <EditableDecimalField

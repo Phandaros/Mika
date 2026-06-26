@@ -5,7 +5,7 @@ import type { RequestHandler } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toPublicUser, toTaskDto, userSelect } from "../lib/asanaDto.js";
-import { TaskStatus } from "../lib/enums.js";
+import { TaskStatus, type Role as RoleValue } from "../lib/enums.js";
 import { createAdjustmentTask } from "../lib/taskRules.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getAuthUser } from "../middleware/auth.js";
@@ -50,9 +50,9 @@ function dateOnly(value: string | null | undefined): string | null | undefined {
   return value ? value.slice(0, 10) : null;
 }
 
-function toReviewDto(review: ReviewRecord, catalog: Awaited<ReturnType<typeof taskFieldCatalog>>) {
-  const sourceTask = toTaskDto(review.sourceTask, undefined, catalog);
-  const rootTask = toTaskDto(review.rootTask, undefined, catalog);
+function toReviewDto(review: ReviewRecord, catalog: Awaited<ReturnType<typeof taskFieldCatalog>>, viewerRole: RoleValue) {
+  const sourceTask = toTaskDto(review.sourceTask, undefined, catalog, { viewerRole });
+  const rootTask = toTaskDto(review.rootTask, undefined, catalog, { viewerRole });
 
   return {
     id: review.id,
@@ -217,7 +217,7 @@ export const listReviews: RequestHandler = async (req, res, next) => {
     ]);
 
     res.json({
-      reviews: reviews.map((review) => toReviewDto(review, catalog)),
+      reviews: reviews.map((review) => toReviewDto(review, catalog, authUser.role)),
       page,
       limit,
       total,
@@ -230,6 +230,7 @@ export const listReviews: RequestHandler = async (req, res, next) => {
 
 export const getReviewById: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const [review, catalog] = await Promise.all([
       prisma.taskReview.findUnique({
         where: { id: req.params.id },
@@ -242,7 +243,7 @@ export const getReviewById: RequestHandler = async (req, res, next) => {
       throw new AppError(404, "Revisao nao encontrada");
     }
 
-    res.json({ review: toReviewDto(review, catalog) });
+    res.json({ review: toReviewDto(review, catalog, authUser.role) });
   } catch (error) {
     next(error);
   }
@@ -250,6 +251,7 @@ export const getReviewById: RequestHandler = async (req, res, next) => {
 
 export const updateReview: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const body = req.body as { reviewerId?: string; startDate?: string | null; dueDate?: string | null };
 
     if (body.reviewerId) {
@@ -274,7 +276,7 @@ export const updateReview: RequestHandler = async (req, res, next) => {
     });
     const catalog = await taskFieldCatalog();
 
-    res.json({ review: toReviewDto(review, catalog) });
+    res.json({ review: toReviewDto(review, catalog, authUser.role) });
   } catch (error) {
     next(error);
   }
@@ -354,7 +356,7 @@ export const approveReview: RequestHandler = async (req, res, next) => {
       }).catch(() => undefined);
     }
 
-    res.json({ review: toReviewDto(result.review, catalog) });
+    res.json({ review: toReviewDto(result.review, catalog, authUser.role) });
   } catch (error) {
     if (!filesLinked) {
       await cleanupFiles(files);
@@ -442,7 +444,7 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
       authorId: authUser.id
     }).catch(() => undefined);
 
-    res.json({ review: toReviewDto(result.review, catalog), adjustmentTaskId: result.adjustmentTaskId });
+    res.json({ review: toReviewDto(result.review, catalog, authUser.role), adjustmentTaskId: result.adjustmentTaskId });
   } catch (error) {
     if (!filesLinked) {
       await cleanupFiles(files);

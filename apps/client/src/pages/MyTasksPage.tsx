@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { ArrowDownUp, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Filter, Inbox, KanbanSquare, List, Plus, Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { Role, TaskStatus, type Task, type UpdateTaskRequest, type User } from "shared";
 import {
   DataTable,
@@ -48,6 +49,7 @@ import { useCreateTask, useTaskById, useUpdateTask, useUpdateTaskCompletion } fr
 import { api } from "../lib/api";
 import { defaultTaskStatusSelection, isAllSelected, matchesMultiSelect } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
+import { isAfterMaxDeadline, MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE } from "../lib/taskDeadlineRules";
 import { cn, formatDateOnly } from "../lib/utils";
 
 type MyTasksView = "list" | "kanban" | "calendar";
@@ -233,6 +235,11 @@ export function MyTasksPage() {
   }
 
   function patchTask(task: TaskWithProject, payload: UpdateTaskRequest) {
+    if (payload.maxDeadline !== undefined && isAfterMaxDeadline(task.dueDate, payload.maxDeadline)) {
+      toast.error(MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE);
+      return;
+    }
+
     void updateTask.mutateAsync({ id: task.id, payload });
   }
 
@@ -470,11 +477,11 @@ function ListView({
     { key: "open", label: "Não concluídas", tasks: openTasks },
     { key: "completed", label: "Concluídas", tasks: completedTasks }
   ].filter((group) => group.tasks.length > 0);
-  const columnCount = 11;
+  const columnCount = canManage ? 11 : 10;
 
   return (
     <DataTableContainer>
-      <DataTable minWidth="1360px">
+      <DataTable minWidth={canManage ? "1360px" : "1240px"}>
         <colgroup>
           <col className="w-[160px]" />
           <col className="w-[260px]" />
@@ -483,7 +490,7 @@ function ListView({
           <col className="w-[90px]" />
           <col className="w-[100px]" />
           <col className="w-[120px]" />
-          <col className="w-[120px]" />
+          {canManage ? <col className="w-[120px]" /> : null}
           <col className="w-[90px]" />
           <col className="w-[90px]" />
           <col className="w-[80px]" />
@@ -497,7 +504,7 @@ function ListView({
             <DataTableHeader align="center">Plataforma</DataTableHeader>
             <DataTableHeader align="center">Disciplina</DataTableHeader>
             <DataTableHeader align="center">Status Conclusão</DataTableHeader>
-            <DataTableHeader>Prazo Máximo</DataTableHeader>
+            {canManage ? <DataTableHeader>Prazo Máximo</DataTableHeader> : null}
             <DataTableHeader align="right">Dias Estimados</DataTableHeader>
             <DataTableHeader align="right">Dias Conclusão</DataTableHeader>
             <DataTableHeader>Etapa</DataTableHeader>
@@ -591,19 +598,15 @@ function ListView({
                         <CompletionStatusChip completed={task.completed} />
                       )}
                     </DataTableCell>
-                    <DataTableCell>
-                      {canManage ? (
+                    {canManage ? (
+                      <DataTableCell>
                         <EditableMaxDeadlineField
                           value={task.maxDeadline}
                           variant="table"
                           onSave={(maxDeadline) => onPatchTask(task, { maxDeadline })}
                         />
-                      ) : task.maxDeadline ? (
-                        <span>{formatDateOnly(task.maxDeadline, "dd/MM/yyyy")}</span>
-                      ) : (
-                        <EmptyCell />
-                      )}
-                    </DataTableCell>
+                      </DataTableCell>
+                    ) : null}
                     <DataTableCell align="right" className="font-mono text-[12px]">
                       {canManage ? (
                         <EditableDecimalField

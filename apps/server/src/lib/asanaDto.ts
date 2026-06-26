@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "../generated/prisma/client.js";
-import { DisciplineStatus, DisciplineType, Priority, ProjectStatus } from "./enums.js";
+import { DisciplineStatus, DisciplineType, Priority, ProjectStatus, Role, type Role as RoleValue } from "./enums.js";
+import { hasMinimumRole } from "./permissions.js";
 import {
   computeDerivedPortfolioFields,
   disciplineCountFromMultiEnum,
@@ -153,6 +154,9 @@ type PortfolioProjectRecord = Prisma.ProjectGetPayload<{ include: typeof project
 type ProjectOptionsRecord = Prisma.ProjectGetPayload<{ include: typeof projectOptionsInclude }>;
 type SectionRecord = ProjectRecord["sections"][number];
 export type TaskCustomFieldCatalog = Prisma.AsanaCustomFieldGetPayload<{ include: typeof taskCustomFieldCatalogInclude }>[];
+type TaskDtoOptions = {
+  viewerRole?: RoleValue;
+};
 
 function taskCustomFieldSortValue(field: Pick<TaskCustomFieldCatalog[number], "mikaSortOrder" | "name">): string {
   return `${String(field.mikaSortOrder ?? 9999).padStart(4, "0")}:${field.name.toLowerCase()}`;
@@ -318,7 +322,8 @@ function taskProjectDtos(task: TaskRecord) {
 export function toTaskDto(
   task: TaskRecord,
   fallbackSection?: { id: string; name: string; projectId: string; projectName?: string | null },
-  taskFieldCatalog?: TaskCustomFieldCatalog
+  taskFieldCatalog?: TaskCustomFieldCatalog,
+  options: TaskDtoOptions = {}
 ) {
   const membership = task.memberships[0];
   const section = membership?.section;
@@ -333,6 +338,8 @@ export function toTaskDto(
         ? (project as { name: string }).name
         : undefined;
   const pendingReview = task.requestedReviews?.[0] ?? null;
+  const canSeeMaxDeadline =
+    options.viewerRole === undefined || hasMinimumRole(options.viewerRole, Role.COORDINATOR);
 
   const customFieldValues = taskFieldCatalog?.length
     ? taskCustomFieldsFromCatalog(task, taskFieldCatalog)
@@ -378,7 +385,7 @@ export function toTaskDto(
     platform: task.platform ?? null,
     taskDiscipline: task.discipline ?? null,
     estimatedTime: task.estimatedTime ?? null,
-    maxDeadline: dateOnlyFromDate(task.maxDeadline),
+    maxDeadline: canSeeMaxDeadline ? dateOnlyFromDate(task.maxDeadline) : null,
     conclusionDays: task.conclusionDays ?? null,
     stage: task.stage ?? null,
     completed: task.completed,
@@ -616,7 +623,12 @@ export function projectCustomFieldValueDtos(project: Pick<ProjectRecord, "areaM2
   return [...catalogDtos, ...derivedDtos];
 }
 
-export function toDisciplineDto(section: SectionRecord, projectId: string, taskFieldCatalog?: TaskCustomFieldCatalog) {
+export function toDisciplineDto(
+  section: SectionRecord,
+  projectId: string,
+  taskFieldCatalog?: TaskCustomFieldCatalog,
+  options?: TaskDtoOptions
+) {
   const tasks = section.memberships
     .filter((membership) => !membership.task.parentId)
     .map((membership) =>
@@ -624,7 +636,7 @@ export function toDisciplineDto(section: SectionRecord, projectId: string, taskF
         id: section.id,
         name: section.name,
         projectId
-      }, taskFieldCatalog)
+      }, taskFieldCatalog, options)
     );
 
   return {
@@ -642,8 +654,8 @@ export function toDisciplineDto(section: SectionRecord, projectId: string, taskF
   };
 }
 
-export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCustomFieldCatalog) {
-  const disciplines = project.sections.map((section) => toDisciplineDto(section, project.id, taskFieldCatalog));
+export function toProjectDto(project: ProjectRecord, taskFieldCatalog?: TaskCustomFieldCatalog, options?: TaskDtoOptions) {
+  const disciplines = project.sections.map((section) => toDisciplineDto(section, project.id, taskFieldCatalog, options));
 
   return {
     id: project.id,

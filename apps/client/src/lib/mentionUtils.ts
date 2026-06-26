@@ -12,6 +12,14 @@ export type MentionMeetingMinute = {
   meetingDate?: string;
 };
 
+export type MentionSearchTask = {
+  id: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  sectionName: string;
+};
+
 export type MentionEntityType = "user" | "task" | "project" | "meeting-minute";
 
 export interface MentionSuggestionItem {
@@ -43,8 +51,11 @@ const TIPTAP_MENTION_PATTERN = /\[@\s+([^\]]*)\]/g;
 
 function normalizeSearchText(value: string): string {
   return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[[\]]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -143,7 +154,8 @@ export function buildMentionSuggestions(
   context: MentionContext,
   users: User[],
   projects: MentionProject[],
-  meetingMinutes: MentionMeetingMinute[] = []
+  meetingMinutes: MentionMeetingMinute[] = [],
+  searchTasks: MentionSearchTask[] = []
 ): MentionSuggestionItem[] {
   const normalizedQuery = query.trim();
   const items: MentionSuggestionItem[] = [];
@@ -194,6 +206,21 @@ export function buildMentionSuggestions(
         });
       }
     }
+  }
+
+  for (const task of searchTasks) {
+    if (!matchesQuery(task.title, normalizedQuery)) {
+      continue;
+    }
+
+    const sameProject = task.projectId === context.projectId;
+    items.push({
+      id: task.id,
+      label: task.title,
+      type: "task",
+      subtitle: `${task.projectName} · ${task.sectionName}`,
+      affinity: sameProject ? 3 : 1
+    });
   }
 
   for (const minute of meetingMinutes) {

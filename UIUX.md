@@ -364,6 +364,9 @@ const inputBase = [
 
 - ❌ NUNCA `<input type="date">` cru
 - ✅ Sempre o componente `DatePicker` compartilhado (Radix + date-fns)
+- O calendário do `DatePicker` é vertical e scrollável; não usar navegação por setas entre meses
+- O dia de hoje deve ter destaque próprio; a data selecionada usa preenchimento laranja
+- Datepicker single-date salva ao selecionar; ranges de tarefa usam `DateRangePicker` com confirmação em `Salvar`
 - Formato de exibição: `dd/MM/yyyy`
 - Formato interno: ISO 8601
 

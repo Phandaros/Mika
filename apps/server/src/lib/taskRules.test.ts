@@ -138,7 +138,7 @@ describe("task rules", () => {
 
   it("reopens tasks by deleting pending review and recalculating status from dates", async () => {
     const tx = txMock();
-    tx.task.findUnique.mockResolvedValue(taskFixture({ completed: false, mikaStatus: TaskStatus.AWAITING_REVIEW, startOn: null, dueOn: "2026-06-20" }));
+    tx.task.findUnique.mockResolvedValue(taskFixture({ completed: false, mikaStatus: TaskStatus.AWAITING_REVIEW, startOn: null, dueOn: "2099-06-20" }));
 
     await applyTaskRules(tx as unknown as Prisma.TransactionClient, "task-1", {
       actor: { id: "designer-1", email: "d@mk.local", name: "Designer", role: Role.DESIGNER },

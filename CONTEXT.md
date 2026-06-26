@@ -28,6 +28,12 @@ Atributos próprios da model Project, **não** são campos de portfólio: **Nome
 ### Campos fixos de tarefa
 Conceito análogo, porém a nível de **Tarefa** (ver `UIUX.md` §4). Distinto dos campos de portfólio do projeto.
 
+### Prazo Máximo
+Data limite externa prometida ao cliente para uma **Tarefa**. É uma informação de coordenação e não deve ser exposta a projetistas ou estagiários.
+
+### Entrega
+Data interna estimada para conclusão de uma **Tarefa**. Nunca deve ser posterior ao **Prazo Máximo** quando esse limite existir.
+
 ### Anotação
 Documento colaborativo vinculado a um **Projeto**, identificado por título e composto por conteúdo textual ou anexos. É diferente da descrição do projeto e dos comentários de tarefas.
 _Evitar_: nota do projeto, comentário do projeto

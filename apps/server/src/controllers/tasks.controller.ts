@@ -12,6 +12,7 @@ import { getAuthUser } from "../middleware/auth.js";
 import { applyTaskRules, ensurePendingTaskReview } from "../lib/taskRules.js";
 import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
 import { loadMyTasks, resolveMyTasksTargetUserId } from "../lib/myTasks.js";
+import { TASK_DEADLINE_ERROR_MESSAGE, taskDeadlineViolation } from "../lib/taskDeadlineRules.js";
 
 function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
   return req.params.sectionId ?? req.params.disciplineId ?? "";
@@ -92,6 +93,21 @@ function dateOnly(value: string | null | undefined): string | null | undefined {
   }
 
   return value.slice(0, 10);
+}
+
+function existingDueDate(task: { dueOn: string | null; dueAt?: Date | null }): string | null {
+  return task.dueOn?.slice(0, 10) ?? task.dueAt?.toISOString().slice(0, 10) ?? null;
+}
+
+function assertTaskDeadline(input: {
+  dueDate?: string | null;
+  maxDeadline?: string | null;
+  existingDueDate?: string | null;
+  existingMaxDeadline?: Date | null;
+}) {
+  if (taskDeadlineViolation(input)) {
+    throw new AppError(400, TASK_DEADLINE_ERROR_MESSAGE);
+  }
 }
 
 function writableStatus(value: TaskStatusValue | string | null | undefined): TaskStatusValue {
@@ -517,6 +533,7 @@ async function createOptionalTaskMembership(
 
 export const listTasks: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const section = await prisma.section.findUnique({
       where: { id: sectionIdFromReq(req) },
       include: {
@@ -543,7 +560,7 @@ export const listTasks: RequestHandler = async (req, res, next) => {
           id: section.id,
           name: section.name,
           projectId: section.project.id
-        }, catalog)
+        }, catalog, { viewerRole: authUser.role })
       );
 
     res.json({ tasks });
@@ -597,7 +614,7 @@ export const listMyTasks: RequestHandler = async (req, res, next) => {
     ]);
 
     res.json({
-      tasks: rows.map((task) => toTaskDto(task, undefined, catalog))
+      tasks: rows.map((task) => toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }))
     });
   } catch (error) {
     next(error);
@@ -606,6 +623,7 @@ export const listMyTasks: RequestHandler = async (req, res, next) => {
 
 export const getTaskById: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const task = await prisma.task.findUnique({
       where: { id: req.params.id },
       include: taskInclude
@@ -617,7 +635,7 @@ export const getTaskById: RequestHandler = async (req, res, next) => {
 
     const catalog = await taskFieldCatalog();
 
-    res.json({ task: toTaskDto(task, undefined, catalog) });
+    res.json({ task: toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }
@@ -628,6 +646,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
     const authUser = getAuthUser(req);
     const body = req.body as Required<Pick<TaskBody, "title">> & TaskBody;
     const routeSectionId = sectionIdFromReq(req);
+    assertTaskDeadline({ dueDate: body.dueDate, maxDeadline: body.maxDeadline });
 
     const task = await prisma.$transaction(async (tx) => {
       const status = writableStatus(body.status);
@@ -741,7 +760,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
 
     const catalog = await taskFieldCatalog();
 
-    res.status(201).json({ task: toTaskDto(task, undefined, catalog) });
+    res.status(201).json({ task: toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }
@@ -768,6 +787,13 @@ export const updateTask: RequestHandler = async (req, res, next) => {
     if (!existing) {
       throw new AppError(404, "Task not found");
     }
+
+    assertTaskDeadline({
+      dueDate: body.dueDate,
+      maxDeadline: body.maxDeadline,
+      existingDueDate: existingDueDate(existing),
+      existingMaxDeadline: existing.maxDeadline
+    });
 
     const task = await prisma.$transaction(async (tx) => {
       const status = body.status === undefined ? undefined : writableStatus(body.status);
@@ -852,7 +878,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
     const catalog = await taskFieldCatalog();
 
-    res.json({ task: toTaskDto(task, undefined, catalog) });
+    res.json({ task: toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }
@@ -923,7 +949,7 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
 
     const catalog = await taskFieldCatalog();
 
-    res.json({ task: toTaskDto(task, undefined, catalog) });
+    res.json({ task: toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }
@@ -986,7 +1012,7 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
 
     const catalog = await taskFieldCatalog();
 
-    res.json({ task: toTaskDto(task, undefined, catalog) });
+    res.json({ task: toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }
@@ -1093,7 +1119,7 @@ export const sendTaskToReview: RequestHandler = async (req, res, next) => {
     }
 
     const catalog = await taskFieldCatalog();
-    const task = toTaskDto(result.task, undefined, catalog);
+    const task = toTaskDto(result.task, undefined, catalog, { viewerRole: authUser.role });
 
     res.json({
       task,

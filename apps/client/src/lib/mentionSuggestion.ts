@@ -2,12 +2,13 @@ import Mention from "@tiptap/extension-mention";
 import { ReactRenderer } from "@tiptap/react";
 import { type SuggestionKeyDownProps, type SuggestionOptions, type SuggestionProps } from "@tiptap/suggestion";
 import type { RefObject } from "react";
-import type { MeetingMinutesResponse } from "shared";
+import type { GlobalSearchResponse, MeetingMinutesResponse } from "shared";
 import { MentionList, type MentionListHandle } from "../components/shared/MentionList";
 import {
   buildMentionSuggestions,
   type MentionContext,
   type MentionMeetingMinute,
+  type MentionSearchTask,
   type MentionSuggestionItem
 } from "./mentionUtils";
 import type { MentionProject } from "./mentionUtils";
@@ -40,20 +41,27 @@ function updatePopupPosition(element: HTMLElement, props: SuggestionProps<Mentio
     return;
   }
 
-  const popupHeight = element.offsetHeight || POPUP_MAX_HEIGHT;
-  const popupWidth = element.offsetWidth || POPUP_WIDTH;
+  const bounds = element.getBoundingClientRect();
+  const popupHeight = Math.min(bounds.height || element.scrollHeight || POPUP_MAX_HEIGHT, POPUP_MAX_HEIGHT);
+  const popupWidth = bounds.width || element.offsetWidth || POPUP_WIDTH;
   const spaceBelow = window.innerHeight - rect.bottom;
   const spaceAbove = rect.top;
   const openUpward = spaceBelow < popupHeight + POPUP_GAP && spaceAbove > spaceBelow;
   const maxLeft = Math.max(0, window.innerWidth - popupWidth);
   const left = Math.min(Math.max(0, rect.left), maxLeft);
+  const nextTop = openUpward
+    ? Math.max(POPUP_GAP, rect.top - popupHeight - POPUP_GAP)
+    : Math.min(rect.bottom + POPUP_GAP, Math.max(POPUP_GAP, window.innerHeight - popupHeight - POPUP_GAP));
 
   element.style.position = "fixed";
   element.style.left = `${left}px`;
-  element.style.top = openUpward
-    ? `${Math.max(POPUP_GAP, rect.top - popupHeight - POPUP_GAP)}px`
-    : `${rect.bottom + POPUP_GAP}px`;
+  element.style.top = `${nextTop}px`;
   element.style.zIndex = "60";
+}
+
+function schedulePopupPosition(element: HTMLElement, props: SuggestionProps<MentionSuggestionItem>) {
+  updatePopupPosition(element, props);
+  window.requestAnimationFrame(() => updatePopupPosition(element, props));
 }
 
 async function listMeetingMinuteSuggestions(query: string, context: MentionContext) {
@@ -69,6 +77,20 @@ async function listMeetingMinuteSuggestions(query: string, context: MentionConte
   }));
 }
 
+async function listTaskSuggestions(query: string, context: MentionContext): Promise<MentionSearchTask[]> {
+  const response = await api.get<GlobalSearchResponse>("/search", {
+    params: { q: query.trim(), limit: 25, projectId: context.projectId }
+  });
+
+  return response.data.tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    projectId: task.projectId,
+    projectName: task.projectName,
+    sectionName: task.sectionName
+  }));
+}
+
 export function createMentionSuggestionExtension(dataSource: MentionDataSource) {
   const suggestionOptions: Omit<SuggestionOptions<MentionSuggestionItem>, "editor"> = {
     char: "@",
@@ -81,11 +103,19 @@ export function createMentionSuggestionExtension(dataSource: MentionDataSource) 
       }
 
       let meetingMinutes: MentionMeetingMinute[] = [];
+      let searchTasks: MentionSearchTask[] = [];
 
-      try {
-        meetingMinutes = await listMeetingMinuteSuggestions(query, context);
-      } catch {
-        meetingMinutes = [];
+      const [meetingMinuteResult, taskResult] = await Promise.allSettled([
+        listMeetingMinuteSuggestions(query, context),
+        listTaskSuggestions(query, context)
+      ]);
+
+      if (meetingMinuteResult.status === "fulfilled") {
+        meetingMinutes = meetingMinuteResult.value;
+      }
+
+      if (taskResult.status === "fulfilled") {
+        searchTasks = taskResult.value;
       }
 
       return buildMentionSuggestions(
@@ -93,7 +123,8 @@ export function createMentionSuggestionExtension(dataSource: MentionDataSource) 
         context,
         dataSource.usersRef.current ?? [],
         dataSource.projectsRef.current ?? [],
-        meetingMinutes
+        meetingMinutes,
+        searchTasks
       );
     },
     command: ({
@@ -136,12 +167,12 @@ export function createMentionSuggestionExtension(dataSource: MentionDataSource) 
           element.setAttribute("data-mika-mention-suggestion", "true");
           element.style.pointerEvents = "auto";
           document.body.appendChild(element);
-          updatePopupPosition(element, props);
+          schedulePopupPosition(element, props);
         },
         onUpdate: (props: SuggestionProps<MentionSuggestionItem>) => {
           component?.updateProps(props);
           if (element) {
-            updatePopupPosition(element, props);
+            schedulePopupPosition(element, props);
           }
         },
         onKeyDown: (props: SuggestionKeyDownProps) => component?.ref?.onKeyDown(props.event) ?? false,

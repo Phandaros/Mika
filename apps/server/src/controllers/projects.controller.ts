@@ -29,6 +29,7 @@ import {
 } from "../lib/projectCustomFields.js";
 import { excludeBacklogWhere, isBacklogTask } from "../lib/taskStatusWhere.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { getAuthUser } from "../middleware/auth.js";
 
 interface ProjectBody {
   name?: string;
@@ -73,8 +74,9 @@ async function workspaceGid(tx: Prisma.TransactionClient): Promise<string> {
   return createdWorkspace.asanaGid;
 }
 
-export const listProjects: RequestHandler = async (_req, res, next) => {
+export const listProjects: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const [projects, taskFieldCatalog] = await Promise.all([
       prisma.project.findMany({
         orderBy: { updatedAt: "desc" },
@@ -87,7 +89,7 @@ export const listProjects: RequestHandler = async (_req, res, next) => {
       })
     ]);
 
-    res.json({ projects: projects.map((project) => toProjectDto(project, taskFieldCatalog)) });
+    res.json({ projects: projects.map((project) => toProjectDto(project, taskFieldCatalog, { viewerRole: authUser.role })) });
   } catch (error) {
     next(error);
   }
@@ -716,6 +718,7 @@ function resolveWorkloadDisciplineFallback(
 
 export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const parsed = workloadTasksQuerySchema.safeParse(req.query);
 
     if (!parsed.success) {
@@ -777,7 +780,9 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
     const dtos = filtered
-      .map((task) => toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog))
+      .map((task) =>
+        toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog, { viewerRole: authUser.role })
+      )
       .filter((task) => Boolean(task.discipline.id));
 
     res.json({ tasks: dtos });
@@ -788,6 +793,7 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
 
 export const getProjectById: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const project = await prisma.project.findUnique({
       where: { id: req.params.id },
       include: projectInclude
@@ -803,7 +809,7 @@ export const getProjectById: RequestHandler = async (req, res, next) => {
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
 
-    res.json({ project: toProjectDto(project, taskFieldCatalog) });
+    res.json({ project: toProjectDto(project, taskFieldCatalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }
@@ -811,6 +817,7 @@ export const getProjectById: RequestHandler = async (req, res, next) => {
 
 export const createProject: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const body = req.body as Required<Pick<ProjectBody, "name">> & ProjectBody;
 
     const project = await prisma.$transaction(async (tx) => {
@@ -847,7 +854,7 @@ export const createProject: RequestHandler = async (req, res, next) => {
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
 
-    res.status(201).json({ project: toProjectDto(project, taskFieldCatalog) });
+    res.status(201).json({ project: toProjectDto(project, taskFieldCatalog, { viewerRole: authUser.role }) });
   } catch (error) {
     next(error);
   }

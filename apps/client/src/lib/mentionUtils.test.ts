@@ -8,7 +8,8 @@ import {
   markdownMentionsToEditorContent,
   normalizeMentionContentForRender,
   parseMentionHref,
-  type MentionContext
+  type MentionContext,
+  type MentionSearchTask
 } from "./mentionUtils";
 
 const context: MentionContext = {
@@ -142,6 +143,23 @@ const projects: Project[] = [
   }
 ];
 
+const searchTasks: MentionSearchTask[] = [
+  {
+    id: "task-spk",
+    title: "SPK - Tipos e Sala Comercial",
+    projectId: "project-a",
+    projectName: "SPK - Executivo",
+    sectionName: "Civil"
+  },
+  {
+    id: "task-spk-remote",
+    title: "SPK - Checklist remoto",
+    projectId: "project-b",
+    projectName: "Residencial Sul",
+    sectionName: "Geral"
+  }
+];
+
 describe("buildMentionMarkdown", () => {
   it("builds mention link syntax", () => {
     expect(
@@ -254,6 +272,52 @@ describe("buildMentionSuggestions", () => {
 
     expect(task).toBeDefined();
     expect(task?.label).toBe("[Torino] PPCI - Executivo");
+  });
+
+  it("includes tasks returned from global search", () => {
+    const suggestions = buildMentionSuggestions("spk", context, users, projects, [], searchTasks);
+    const task = suggestions.find((item) => item.id === "task-spk");
+
+    expect(task).toBeDefined();
+    expect(task?.label).toBe("SPK - Tipos e Sala Comercial");
+    expect(task?.subtitle).toBe("SPK - Executivo · Civil");
+  });
+
+  it("prioritizes global search tasks from the current project", () => {
+    const suggestions = buildMentionSuggestions("spk", context, users, projects, [], searchTasks);
+    const taskIds = suggestions.filter((item) => item.type === "task").map((item) => item.id);
+
+    expect(taskIds.indexOf("task-spk")).toBeLessThan(taskIds.indexOf("task-spk-remote"));
+  });
+
+  it("deduplicates local and global search task suggestions", () => {
+    const suggestions = buildMentionSuggestions("memorial", context, users, projects, [], [
+      {
+        id: "task-dup",
+        title: "Memorial descritivo",
+        projectId: "project-a",
+        projectName: "EdifÃ­cio Central",
+        sectionName: "ElÃ©trica"
+      }
+    ]);
+    const duplicateTasks = suggestions.filter((item) => item.type === "task" && item.id === "task-dup");
+
+    expect(duplicateTasks).toHaveLength(1);
+  });
+
+  it("matches search text without accents or punctuation", () => {
+    const suggestions = buildMentionSuggestions("eletrica revisao", context, users, projects, [], [
+      {
+        id: "task-accent",
+        title: "El\u00e9trica - Revis\u00e3o",
+        projectId: "project-a",
+        projectName: "Edif\u00edcio Central",
+        sectionName: "El\u00e9trica"
+      }
+    ]);
+    const task = suggestions.find((item) => item.id === "task-accent");
+
+    expect(task).toBeDefined();
   });
 
   it("includes meeting minutes from the current project only", () => {

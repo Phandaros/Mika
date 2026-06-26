@@ -6,6 +6,7 @@ import { taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/as
 import { AppError } from "../middleware/errorHandler.js";
 import { excludeBacklogWhere, isBacklogTask } from "../lib/taskStatusWhere.js";
 import { parseWorkloadScope, sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
+import { getAuthUser } from "../middleware/auth.js";
 
 const globalWorkloadQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -156,6 +157,7 @@ function resolveGlobalWorkloadFallback(task: GlobalWorkloadTaskRecord): { id: st
 
 export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const parsed = globalWorkloadQuerySchema.safeParse(req.query);
 
     if (!parsed.success) {
@@ -229,7 +231,7 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
     const dtos = filtered
       .map((task) => {
         const fallback = resolveGlobalWorkloadFallback(task);
-        return toTaskDto(task, fallback ?? undefined, taskFieldCatalog);
+        return toTaskDto(task, fallback ?? undefined, taskFieldCatalog, { viewerRole: authUser.role });
       })
       .filter((row): row is NonNullable<typeof row> => row !== null);
 

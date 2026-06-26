@@ -57,6 +57,7 @@ export const globalSearch: RequestHandler = async (req, res, next) => {
   try {
     const q = normalizeSearchTerm(req.query.q);
     const limit = clampSearchLimit(req.query.limit);
+    const projectId = normalizeSearchTerm(req.query.projectId) || undefined;
 
     const [projects, tasks, users] = await Promise.all([
       prisma.project.findMany({
@@ -91,13 +92,23 @@ export const globalSearch: RequestHandler = async (req, res, next) => {
 
     const mappedTasks: GlobalSearchTaskResult[] = tasks
       .filter((task) => taskMatchesSearch(task, q))
-      .slice(0, limit)
-      .map(toGlobalSearchTask)
+      .map((task) => toGlobalSearchTask(task, projectId))
       .filter((task): task is GlobalSearchTaskResult => Boolean(task));
+    const sortedTasks = projectId
+      ? mappedTasks.sort((a, b) => {
+          const projectDiff = Number(b.projectId === projectId) - Number(a.projectId === projectId);
+
+          if (projectDiff !== 0) {
+            return projectDiff;
+          }
+
+          return a.title.localeCompare(b.title, "pt-BR");
+        })
+      : mappedTasks;
 
     const response: GlobalSearchResponse = {
       projects: projects.filter((project) => projectMatchesSearch(project, q)).slice(0, limit).map(toGlobalSearchProject),
-      tasks: mappedTasks,
+      tasks: sortedTasks.slice(0, limit),
       users: users.filter((user) => userMatchesSearch(user, q)).slice(0, limit).map(toGlobalSearchUser)
     };
 

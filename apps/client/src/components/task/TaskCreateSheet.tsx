@@ -1,35 +1,25 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isAfter,
-  isBefore,
-  isSameDay,
-  isSameMonth,
-  isWithinInterval,
-  startOfDay,
-  startOfMonth,
-  startOfWeek
-} from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
+import { isBefore, isWithinInterval, startOfDay } from "date-fns";
+import { CalendarDays, Check, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectOption, type ProjectCustomField, type User } from "shared";
 import { useProject, useProjectOptions } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { isTargetInsidePanelPortal } from "../../lib/panelOutsideClick";
-import { cn, dateOnlyToLocalDate, localDateToDateOnly } from "../../lib/utils";
+import {
+  isAfterMaxDeadline,
+  MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE,
+  TASK_DEADLINE_ERROR_MESSAGE
+} from "../../lib/taskDeadlineRules";
+import { cn, dateOnlyToLocalDate } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { DisciplineChip, PlatformChip, taskStatusLabels, taskStatusOptions } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
 import { Button } from "../ui/button";
-import { DatePicker } from "../ui/date-picker";
+import { DatePicker, DateRangePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -221,9 +211,24 @@ export function TaskCreateSheet() {
   }
 
   function handleDateRangeChange(nextStartDate: string, nextDueDate: string) {
+    if (isAfterMaxDeadline(nextDueDate, maxDeadline)) {
+      toast.error(TASK_DEADLINE_ERROR_MESSAGE);
+      return;
+    }
+
     setStartDate(nextStartDate);
     setDueDate(nextDueDate);
     setStatus(statusFromDateRange(nextStartDate, nextDueDate));
+  }
+
+  function handleMaxDeadlineChange(nextMaxDeadline: string | null) {
+    const value = nextMaxDeadline ?? "";
+    if (isAfterMaxDeadline(dueDate, value)) {
+      toast.error(MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE);
+      return;
+    }
+
+    setMaxDeadline(value);
   }
 
   function handleCustomFieldChange(settingId: string, value: string) {
@@ -248,6 +253,11 @@ export function TaskCreateSheet() {
     const parsedConclusionDays = parseDecimalInput(conclusionDays);
     if (parsedConclusionDays !== null && Number.isNaN(parsedConclusionDays)) {
       toast.error("Informe dias de conclusão válidos");
+      return;
+    }
+
+    if (isAfterMaxDeadline(dueDate, maxDeadline)) {
+      toast.error(TASK_DEADLINE_ERROR_MESSAGE);
       return;
     }
 
@@ -382,7 +392,7 @@ export function TaskCreateSheet() {
               render: () => (
                 <DatePicker
                   value={maxDeadline || null}
-                  onValueChange={(value) => setMaxDeadline(value ?? "")}
+                  onValueChange={handleMaxDeadlineChange}
                   placeholder="—"
                   className={compactDatePickerClassName}
                 />
@@ -632,197 +642,16 @@ function CreateDateRangeField({
   dueDate: string;
   onDateRangeChange: (startDate: string, dueDate: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [draftStart, setDraftStart] = useState<Date | null>(null);
-  const [draftEnd, setDraftEnd] = useState<Date | null>(null);
-
-  function openPicker() {
-    setDraftStart(dateOnlyToLocalDate(startDate));
-    setDraftEnd(dateOnlyToLocalDate(dueDate));
-    setOpen(true);
-  }
-
-  function saveDates() {
-    const normalized = normalizeDateDraft(draftStart, draftEnd);
-    onDateRangeChange(localDateToDateOnly(normalized.startDate) ?? "", localDateToDateOnly(normalized.dueDate) ?? "");
-    setOpen(false);
-  }
-
-  function clearDates() {
-    setDraftStart(null);
-    setDraftEnd(null);
-    onDateRangeChange("", "");
-    setOpen(false);
-  }
-
   return (
-    <Popover
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (nextOpen) {
-          openPicker();
-          return;
-        }
-
-        setOpen(false);
-      }}
-    >
-      <PopoverTrigger asChild>
-        <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
-          <CompletionDateLabel startDate={startDate} dueDate={dueDate} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" collisionPadding={16} className="w-80 p-0">
-        <CreateDateRangePanel
-          startDate={draftStart}
-          endDate={draftEnd}
-          onStartDateChange={setDraftStart}
-          onEndDateChange={setDraftEnd}
-          onSave={saveDates}
-          onClear={clearDates}
-        />
-      </PopoverContent>
-    </Popover>
+    <DateRangePicker
+      startDate={startDate || null}
+      endDate={dueDate || null}
+      onStartDateChange={() => undefined}
+      onEndDateChange={() => undefined}
+      onSave={(value) => onDateRangeChange(value.startDate ?? "", value.endDate ?? "")}
+      onClear={() => onDateRangeChange("", "")}
+    />
   );
-}
-
-function CreateDateRangePanel({
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange,
-  onSave,
-  onClear
-}: {
-  startDate: Date | null;
-  endDate: Date | null;
-  onStartDateChange: (date: Date | null) => void;
-  onEndDateChange: (date: Date | null) => void;
-  onSave: () => void;
-  onClear: () => void;
-}) {
-  const [month, setMonth] = useState(() => new Date());
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month)),
-    end: endOfWeek(endOfMonth(month))
-  });
-
-  function handleStartInputChange(value: string) {
-    const date = dateOnlyToLocalDate(value);
-    onStartDateChange(date);
-
-    if (date) {
-      setMonth(date);
-    }
-  }
-
-  function handleEndInputChange(value: string) {
-    const date = dateOnlyToLocalDate(value);
-    onEndDateChange(date);
-
-    if (date) {
-      setMonth(date);
-    }
-  }
-
-  function handleDaySelect(day: Date) {
-    if (!startDate || (startDate && endDate)) {
-      onStartDateChange(day);
-      onEndDateChange(null);
-      return;
-    }
-
-    if (isBefore(day, startDate)) {
-      onStartDateChange(day);
-      onEndDateChange(startDate);
-      return;
-    }
-
-    onEndDateChange(day);
-  }
-
-  return (
-    <div className="w-80 rounded-md border border-border bg-surface-card shadow-2xl">
-      <div className="grid gap-3 p-3">
-        <div className="grid grid-cols-2 gap-3">
-          <DatePicker value={localDateToDateOnly(startDate)} onValueChange={(value) => handleStartInputChange(value ?? "")} placeholder="Início" />
-          <DatePicker value={localDateToDateOnly(endDate)} onValueChange={(value) => handleEndInputChange(value ?? "")} placeholder="Entrega" />
-        </div>
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
-            <ChevronLeft size={16} />
-          </Button>
-          <span className="text-sm font-semibold text-text-primary">{formatMonthLabel(month)}</span>
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
-            <ChevronRight size={16} />
-          </Button>
-        </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-text-muted">
-          {["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => (
-            <span key={`${day}-${index}`} className="py-1">
-              {day}
-            </span>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-0 overflow-hidden rounded-md border border-border bg-border">
-          {days.map((day) => {
-            const s0 = startDate ? startOfDay(startDate) : null;
-            const e0 = endDate ? startOfDay(endDate) : null;
-            const d0 = startOfDay(day);
-            const rangeOk = Boolean(s0 && e0 && !isAfter(s0, e0));
-            const inClosedRange = rangeOk && s0 && e0 ? isWithinInterval(d0, { start: s0, end: e0 }) : false;
-            const isStart = Boolean(startDate && isSameDay(day, startDate));
-            const isEnd = Boolean(endDate && isSameDay(day, endDate));
-            const isMiddle = inClosedRange && !isStart && !isEnd;
-
-            return (
-              <button
-                key={day.toISOString()}
-                type="button"
-                onClick={() => handleDaySelect(day)}
-                className={cn(
-                  "flex h-8 items-center justify-center border border-transparent text-sm font-semibold transition outline-none",
-                  isSameMonth(day, month) ? "text-text-primary" : "text-text-muted",
-                  isMiddle && "bg-brand-orange/45 text-text-primary hover:bg-brand-orange/60",
-                  (isStart || isEnd) && "z-[1] bg-brand-orange font-bold text-brand-white hover:bg-brand-orange",
-                  !isMiddle && !isStart && !isEnd && "bg-surface-card hover:bg-surface-hover"
-                )}
-              >
-                {format(day, "d")}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="flex items-center justify-between border-t border-border p-3">
-        <Button variant="ghost" onClick={onClear}>
-          Apagar
-        </Button>
-        <Button onClick={onSave}>Salvar</Button>
-      </div>
-    </div>
-  );
-}
-
-function CompletionDateLabel({ startDate, dueDate }: { startDate: string | null; dueDate: string | null }) {
-  if (startDate && dueDate) {
-    return <span>{formatDisplayDate(startDate)} - {formatDisplayDate(dueDate)}</span>;
-  }
-
-  if (startDate) {
-    return <span>Início {formatDisplayDate(startDate)}</span>;
-  }
-
-  if (dueDate) {
-    return <span>Entrega {formatDisplayDate(dueDate)}</span>;
-  }
-
-  return <span className="text-text-secondary">Sem data</span>;
-}
-
-function formatDisplayDate(value: string): string {
-  const date = dateOnlyToLocalDate(value);
-  return date ? format(date, "dd/MM/yyyy") : "";
 }
 
 function CreateStageField({
@@ -1029,11 +858,6 @@ function ProjectSectionLabel({
       {suffix ? <span className="shrink-0 text-text-muted">/ {suffix}</span> : null}
     </span>
   );
-}
-
-function formatMonthLabel(date: Date): string {
-  const label = format(date, "MMMM 'de' yyyy", { locale: ptBR });
-  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }
 
 function fieldIdentityMatches(field: Pick<ProjectCustomField, "mikaKey" | "mikaLabel" | "name">, normalizedMatches: string[]): boolean {

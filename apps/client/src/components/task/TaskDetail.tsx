@@ -1,22 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isAfter,
-  isBefore,
-  isSameDay,
-  isSameMonth,
-  isWithinInterval,
-  startOfDay,
-  startOfMonth,
-  startOfWeek
-} from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Flag, FolderKanban, UserRound } from "lucide-react";
+import { format } from "date-fns";
+import { CalendarDays, Check, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Priority, TaskStatus, type Project, type ProjectOption, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
@@ -30,7 +15,12 @@ import { useUsers } from "../../hooks/useUsers";
 import { api } from "../../lib/api";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
 import { isPointInsidePanelPortal, isTargetInsidePanelPortal } from "../../lib/panelOutsideClick";
-import { cn, dateOnlyToLocalDate, localDateToDateOnly, toDateOnly } from "../../lib/utils";
+import {
+  isAfterMaxDeadline,
+  MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE,
+  TASK_DEADLINE_ERROR_MESSAGE
+} from "../../lib/taskDeadlineRules";
+import { cn, dateOnlyToLocalDate, toDateOnly } from "../../lib/utils";
 import { Avatar } from "../shared/Avatar";
 import { PriorityBadge } from "../shared/PriorityBadge";
 import { enumColor } from "../shared/statusVisuals";
@@ -49,7 +39,7 @@ import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
 import { TaskActionsMenu } from "./TaskActionsMenu";
 import { TaskCommentEditor, type CommentEditorHandle, type PendingCommentFile } from "./TaskCommentEditor";
 import { Button } from "../ui/button";
-import { DatePicker } from "../ui/date-picker";
+import { DatePicker, DateRangePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
 import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -70,7 +60,6 @@ interface TaskDetailProps {
   onOpenTask?: (task: Task) => void;
 }
 
-type EditableField = "priority" | "completionDate" | null;
 type TaskCustomField = NonNullable<Task["customFieldValues"]>[number];
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
@@ -97,9 +86,6 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   const canToggleCompletion = canCompleteTasks(user);
   const [visibleTask, setVisibleTask] = useState<Task | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [openField, setOpenField] = useState<EditableField>(null);
-  const [dateDraftStart, setDateDraftStart] = useState<Date | null>(null);
-  const [dateDraftEnd, setDateDraftEnd] = useState<Date | null>(null);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -174,9 +160,6 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
       return undefined;
     }
 
-    setOpenField(null);
-    setDateDraftStart(dateOnlyToLocalDate(task.startDate));
-    setDateDraftEnd(dateOnlyToLocalDate(task.dueDate));
     setIsEditingDescription(false);
     setIsEditingTitle(false);
     setDescriptionDraft(task.description ?? "");
@@ -214,7 +197,24 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 
     const updatedTask = await updateTask.mutateAsync({ id: currentTask.id, payload });
     setVisibleTask((current) => (current?.id === updatedTask.id ? { ...current, ...updatedTask } : current));
-    setOpenField(null);
+  }
+
+  function patchTaskDates(value: { startDate: string | null; endDate: string | null }) {
+    if (isAfterMaxDeadline(value.endDate, visibleTask?.maxDeadline)) {
+      toast.error(TASK_DEADLINE_ERROR_MESSAGE);
+      return;
+    }
+
+    void patchTask({ startDate: value.startDate, dueDate: value.endDate });
+  }
+
+  function patchMaxDeadline(maxDeadline: string | null) {
+    if (isAfterMaxDeadline(visibleTask?.dueDate, maxDeadline)) {
+      toast.error(MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE);
+      return;
+    }
+
+    void patchTask({ maxDeadline });
   }
 
   async function patchTaskCompletion(completed: boolean) {
@@ -256,32 +256,6 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
     await patchTask({ customFieldValues: [{ id: field.id, mikaKey: field.mikaKey ?? undefined, value: normalized }] });
   }
 
-  function openCompletionDate() {
-    const currentTask = visibleTask;
-
-    if (!currentTask) {
-      return;
-    }
-
-    setDateDraftStart(dateOnlyToLocalDate(currentTask.startDate));
-    setDateDraftEnd(dateOnlyToLocalDate(currentTask.dueDate));
-    setOpenField(openField === "completionDate" ? null : "completionDate");
-  }
-
-  async function saveCompletionDate() {
-    const normalized = normalizeDateDraft(dateDraftStart, dateDraftEnd);
-    await patchTask({
-      startDate: localDateToDateOnly(normalized.startDate),
-      dueDate: localDateToDateOnly(normalized.dueDate)
-    });
-  }
-
-  async function clearCompletionDate() {
-    setDateDraftStart(null);
-    setDateDraftEnd(null);
-    await patchTask({ startDate: null, dueDate: null });
-  }
-
   useEffect(() => {
     if (!visibleTask || !isOpen) {
       return undefined;
@@ -291,12 +265,6 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 
     function handleTaskPanelEscape(event: globalThis.KeyboardEvent) {
       if (event.key !== "Escape" || event.defaultPrevented) {
-        return;
-      }
-
-      if (openField) {
-        event.preventDefault();
-        setOpenField(null);
         return;
       }
 
@@ -320,7 +288,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 
     document.addEventListener("keydown", handleTaskPanelEscape);
     return () => document.removeEventListener("keydown", handleTaskPanelEscape);
-  }, [isEditingDescription, isEditingTitle, isOpen, openField, visibleTask]);
+  }, [isEditingDescription, isEditingTitle, isOpen, visibleTask]);
 
   useEffect(() => {
     if (!visibleTask || !isOpen) {
@@ -599,19 +567,20 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
                   )
                 )
               },
-              {
-                key: "maxDeadline",
-                label: "Prazo Máximo",
-                render: () =>
-                  canManageTaskFields ? (
-                    <EditableMaxDeadlineField
-                      value={fixedMaxDeadline ?? null}
-                      onSave={(maxDeadline) => void patchTask({ maxDeadline })}
-                    />
-                  ) : (
-                    <ReadOnlyValue value={fixedMaxDeadline ? formatDisplayDate(fixedMaxDeadline) : null} />
-                  )
-              },
+              ...(canManageTaskFields
+                ? [
+                    {
+                      key: "maxDeadline",
+                      label: "Prazo Máximo",
+                      render: () => (
+                        <EditableMaxDeadlineField
+                          value={fixedMaxDeadline ?? null}
+                          onSave={patchMaxDeadline}
+                        />
+                      )
+                    }
+                  ]
+                : []),
               {
                 key: "estimatedTime",
                 label: "Dias Estimados",
@@ -690,38 +659,14 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 
             <DetailRow icon={<CalendarDays size={18} />} label="Datas">
               {canManageTaskFields ? (
-                <Popover
-                  open={openField === "completionDate"}
-                  onOpenChange={(open) => {
-                    if (open) {
-                      openCompletionDate();
-                      return;
-                    }
-
-                    setDateDraftStart(dateOnlyToLocalDate(visibleTask.startDate));
-                    setDateDraftEnd(dateOnlyToLocalDate(visibleTask.dueDate));
-                    setOpenField(null);
-                  }}
-                >
-                  <PopoverTrigger asChild>
-                    <button type="button" className="min-h-10 w-full rounded-md px-2 text-left text-text-primary transition hover:bg-surface-hover">
-                      <CompletionDateLabel
-                        startDate={openField === "completionDate" ? dateDraftStart : visibleTask.startDate}
-                        dueDate={openField === "completionDate" ? dateDraftEnd : visibleTask.dueDate}
-                      />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" collisionPadding={16} className="w-80 p-0">
-                    <DateRangePanel
-                      startDate={dateDraftStart}
-                      endDate={dateDraftEnd}
-                      onStartDateChange={setDateDraftStart}
-                      onEndDateChange={setDateDraftEnd}
-                      onSave={() => void saveCompletionDate()}
-                      onClear={() => void clearCompletionDate()}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DateRangePicker
+                  startDate={visibleTask.startDate}
+                  endDate={visibleTask.dueDate}
+                  onStartDateChange={() => undefined}
+                  onEndDateChange={() => undefined}
+                  onSave={patchTaskDates}
+                  onClear={() => patchTask({ startDate: null, dueDate: null })}
+                />
               ) : (
                 <ReadOnlyValue value={dateRangeDisplayValue(visibleTask.startDate, visibleTask.dueDate)} />
               )}
@@ -1328,170 +1273,6 @@ function normalizeFieldName(name: string): string {
     .trim();
 }
 
-function CompletionDateLabel({ startDate, dueDate }: { startDate: string | Date | null; dueDate: string | Date | null }) {
-  if (startDate && dueDate) {
-    return (
-      <span>
-        {formatDisplayDate(startDate)} - {formatDisplayDate(dueDate)}
-      </span>
-    );
-  }
-
-  if (startDate) {
-    return <span>Início {formatDisplayDate(startDate)}</span>;
-  }
-
-  if (dueDate) {
-    return <span>Entrega {formatDisplayDate(dueDate)}</span>;
-  }
-
-  return <span className="text-text-secondary">Sem data</span>;
-}
-
-function DateRangePanel({
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange,
-  onSave,
-  onClear
-}: {
-  startDate: Date | null;
-  endDate: Date | null;
-  onStartDateChange: (date: Date | null) => void;
-  onEndDateChange: (date: Date | null) => void;
-  onSave: () => void;
-  onClear: () => void;
-}) {
-  const [month, setMonth] = useState(() => new Date());
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month)),
-    end: endOfWeek(endOfMonth(month))
-  });
-
-  function handleStartInputChange(value: string) {
-    const date = inputDateValue(value);
-    onStartDateChange(date);
-
-    if (date) {
-      setMonth(date);
-    }
-  }
-
-  function handleEndInputChange(value: string) {
-    const date = inputDateValue(value);
-    onEndDateChange(date);
-
-    if (date) {
-      setMonth(date);
-    }
-  }
-
-  function handleDaySelect(day: Date) {
-    if (!startDate || (startDate && endDate)) {
-      onStartDateChange(day);
-      onEndDateChange(null);
-      return;
-    }
-
-    if (isBefore(day, startDate)) {
-      onStartDateChange(day);
-      onEndDateChange(startDate);
-      return;
-    }
-
-    onEndDateChange(day);
-  }
-
-  return (
-    <div className="w-80 rounded-md border border-border bg-surface-card shadow-2xl">
-      <div className="grid gap-3 p-3">
-        <div className="grid grid-cols-2 gap-3">
-          <DatePicker
-            value={dateInputValue(startDate)}
-            onValueChange={(value) => handleStartInputChange(value ?? "")}
-            placeholder="Início"
-          />
-          <DatePicker
-            value={dateInputValue(endDate)}
-            onValueChange={(value) => handleEndInputChange(value ?? "")}
-            placeholder="Entrega"
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, -1))} title="Mês anterior">
-            <ChevronLeft size={16} />
-          </Button>
-          <span className="text-sm font-semibold text-text-primary">{formatMonthLabel(month)}</span>
-          <Button variant="ghost" className="h-8 w-8 px-0" onClick={() => setMonth((current) => addMonths(current, 1))} title="Próximo mês">
-            <ChevronRight size={16} />
-          </Button>
-        </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-text-muted">
-          {["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => (
-            <span key={`${day}-${index}`} className="py-1">
-              {day}
-            </span>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-0 overflow-hidden rounded-md border border-border bg-border">
-          {days.map((day) => {
-            const s0 = startDate ? startOfDay(startDate) : null;
-            const e0 = endDate ? startOfDay(endDate) : null;
-            const d0 = startOfDay(day);
-            const rangeOk = Boolean(s0 && e0 && !isAfter(s0, e0));
-            const inClosedRange = rangeOk && s0 && e0 ? isWithinInterval(d0, { start: s0, end: e0 }) : false;
-            const isStart = Boolean(startDate && isSameDay(day, startDate));
-            const isEnd = Boolean(endDate && isSameDay(day, endDate));
-            const isMiddle = inClosedRange && !isStart && !isEnd;
-
-            return (
-              <button
-                key={day.toISOString()}
-                type="button"
-                onClick={() => handleDaySelect(day)}
-                className={cn(
-                  "flex h-8 items-center justify-center border border-transparent text-sm font-semibold transition outline-none",
-                  isSameMonth(day, month) ? "text-text-primary" : "text-text-muted",
-                  isMiddle && "bg-brand-orange/45 text-text-primary hover:bg-brand-orange/60",
-                  (isStart || isEnd) && "z-[1] bg-brand-orange font-bold text-brand-white hover:bg-brand-orange",
-                  !isMiddle && !isStart && !isEnd && "bg-surface-card hover:bg-surface-hover"
-                )}
-              >
-                {format(day, "d")}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="flex items-center justify-between border-t border-border p-3">
-        <Button variant="ghost" onClick={onClear}>
-          Apagar
-        </Button>
-        <Button onClick={onSave}>Salvar</Button>
-      </div>
-    </div>
-  );
-}
-
-function dateInputValue(date: Date | null): string {
-  return localDateToDateOnly(date) ?? "";
-}
-
-function normalizeDateDraft(startDate: Date | null, endDate: Date | null): { startDate: Date | null; dueDate: Date | null } {
-  if (startDate && endDate) {
-    return isBefore(endDate, startDate)
-      ? { startDate: endDate, dueDate: startDate }
-      : { startDate, dueDate: endDate };
-  }
-
-  return { startDate: null, dueDate: startDate ?? endDate };
-}
-
-function inputDateValue(value: string): Date | null {
-  return dateOnlyToLocalDate(value);
-}
-
 function formatDisplayDate(date: string | Date): string {
   if (typeof date === "string") {
     const dateOnly = toDateOnly(date);
@@ -1500,9 +1281,4 @@ function formatDisplayDate(date: string | Date): string {
   }
 
   return format(date, "dd/MM/yyyy");
-}
-
-function formatMonthLabel(date: Date): string {
-  const label = format(date, "MMMM 'de' yyyy", { locale: ptBR });
-  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }

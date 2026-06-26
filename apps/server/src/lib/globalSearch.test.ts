@@ -17,6 +17,41 @@ import {
 } from "./globalSearch.js";
 import { Priority, ProjectStatus, TaskStatus } from "./enums.js";
 
+type TaskSearchRecord = Parameters<typeof toGlobalSearchTask>[0];
+
+function taskWithMemberships(): TaskSearchRecord {
+  return {
+    id: "task-1",
+    name: "SPK - Tipos e Sala Comercial",
+    memberships: [
+      {
+        sectionName: "Geral",
+        projectName: "Projeto remoto",
+        section: {
+          name: "Geral",
+          project: {
+            id: "project-remote",
+            name: "Projeto remoto"
+          }
+        },
+        project: null
+      },
+      {
+        sectionName: "Civil",
+        projectName: "SPK - Executivo",
+        section: {
+          name: "Civil",
+          project: {
+            id: "project-current",
+            name: "SPK - Executivo"
+          }
+        },
+        project: null
+      }
+    ]
+  };
+}
+
 describe("globalSearch helpers", () => {
   it("normalizes the search term", () => {
     expect(normalizeSearchTerm("  Teste  ")).toBe("Teste");
@@ -122,6 +157,24 @@ describe("globalSearch helpers", () => {
       projectId: "project-1",
       projectName: "Teste",
       sectionName: "Civil"
+    });
+  });
+
+  it("uses the preferred project membership when provided", () => {
+    expect(toGlobalSearchTask(taskWithMemberships(), "project-current")).toMatchObject({
+      id: "task-1",
+      title: "SPK - Tipos e Sala Comercial",
+      projectId: "project-current",
+      projectName: "SPK - Executivo",
+      sectionName: "Civil"
+    });
+  });
+
+  it("falls back to the first valid membership without a preferred project", () => {
+    expect(toGlobalSearchTask(taskWithMemberships())).toMatchObject({
+      projectId: "project-remote",
+      projectName: "Projeto remoto",
+      sectionName: "Geral"
     });
   });
 });

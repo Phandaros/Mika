@@ -7,6 +7,7 @@ import { TaskStatus, type TaskStatus as TaskStatusValue } from "../lib/enums.js"
 import { excludeBacklogWhere, normalizedStatusWhere } from "../lib/taskStatusWhere.js";
 import { sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { getAuthUser } from "../middleware/auth.js";
 
 const SPRINT_TASK_LIMIT_DEFAULT = 25;
 const SPRINT_TASK_LIMIT_MAX = 50;
@@ -144,6 +145,7 @@ function matchingActiveMembership(task: SprintTaskRecord, scope: WorkloadScope) 
 
 export const listSprintTasks: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const parsed = sprintTasksQuerySchema.safeParse(req.query);
 
     if (!parsed.success) {
@@ -186,7 +188,8 @@ export const listSprintTasks: RequestHandler = async (req, res, next) => {
             projectId: project.id,
             projectName: project.name
           },
-          taskFieldCatalog
+          taskFieldCatalog,
+          { viewerRole: authUser.role }
         );
       })
       .filter((task): task is NonNullable<typeof task> => task !== null);

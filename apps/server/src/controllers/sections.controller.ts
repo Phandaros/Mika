@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toDisciplineDto } from "../lib/asanaDto.js";
 import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { getAuthUser } from "../middleware/auth.js";
 
 interface SectionBody {
   name?: string;
@@ -10,6 +11,7 @@ interface SectionBody {
 
 export const listSections: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const project = await prisma.project.findUnique({
       where: { id: req.params.projectId },
       include: {
@@ -37,7 +39,7 @@ export const listSections: RequestHandler = async (req, res, next) => {
     });
     const sections = project.sections
       .filter((section) => isCanonicalSectionName(section.name))
-      .map((section) => toDisciplineDto(section, project.id, taskFieldCatalog));
+      .map((section) => toDisciplineDto(section, project.id, taskFieldCatalog, { viewerRole: authUser.role }));
     res.json({ sections, disciplines: sections });
   } catch (error) {
     next(error);
@@ -54,6 +56,7 @@ export const createSection: RequestHandler = async (req, res, next) => {
 
 export const updateSection: RequestHandler = async (req, res, next) => {
   try {
+    const authUser = getAuthUser(req);
     const section = await prisma.section.findUnique({
       where: { id: req.params.id },
       include: {
@@ -80,7 +83,7 @@ export const updateSection: RequestHandler = async (req, res, next) => {
       include: taskCustomFieldCatalogInclude,
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
-    const dto = toDisciplineDto(section, section.project.id, taskFieldCatalog);
+    const dto = toDisciplineDto(section, section.project.id, taskFieldCatalog, { viewerRole: authUser.role });
     res.json({ section: dto, discipline: dto });
   } catch (error) {
     next(error);

@@ -22,10 +22,12 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import { Priority, Role, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Filter, Group, Hash, MoreHorizontal, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuth";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { canManageTasks } from "../../lib/permissions";
+import { clampTaskDatesToMaxDeadline, TASK_DEADLINE_CLAMP_MESSAGE } from "../../lib/taskDeadlineRules";
 import { cn, toDateOnly } from "../../lib/utils";
 import { workloadTaskDisplayLabel, workloadTaskLabel, type WorkloadTaskDisplayLabel } from "../../lib/workloadTaskLabel";
 import { useUiStore } from "../../store/uiStore";
@@ -92,6 +94,7 @@ type DragPreview = {
   pixelOffsetY: number;
   targetAssigneeId: string | null;
   targetRowOffset: number;
+  clampedToMaxDeadline: boolean;
 };
 
 type UndatedDropPreview = {
@@ -99,6 +102,7 @@ type UndatedDropPreview = {
   startDate: string;
   dueDate: string;
   targetAssigneeId: string | null;
+  clampedToMaxDeadline: boolean;
 };
 
 type QueuedTaskMove = {
@@ -985,11 +989,15 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     const targetAssigneeId =
       grouping === "assignee" && targetRow ? targetRow.assigneeId : (task?.assigneeId ?? null);
 
+    const maxDeadline = toYmd(task?.maxDeadline);
+    const clampedYmd = maxDeadline && ymd > maxDeadline ? maxDeadline : ymd;
+
     setUndatedDropPreview({
       taskId,
-      startDate: ymd,
-      dueDate: ymd,
-      targetAssigneeId
+      startDate: clampedYmd,
+      dueDate: clampedYmd,
+      targetAssigneeId,
+      clampedToMaxDeadline: clampedYmd !== ymd
     });
   }
 
@@ -1093,8 +1101,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     const targetRow = workloadRowAtClientY(event.clientY);
-    const payload: UpdateTaskRequest = { startDate: ymd, dueDate: ymd };
-    const visual: PendingTaskMove = { startDate: ymd, dueDate: ymd };
+    const maxDeadline = toYmd(task.maxDeadline);
+    const clampedYmd = maxDeadline && ymd > maxDeadline ? maxDeadline : ymd;
+    const payload: UpdateTaskRequest = { startDate: clampedYmd, dueDate: clampedYmd };
+    const visual: PendingTaskMove = { startDate: clampedYmd, dueDate: clampedYmd };
 
     if (grouping === "assignee" && targetRow) {
       payload.assigneeId = targetRow.assigneeId;
@@ -1102,6 +1112,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     queueTaskMove(task, payload, visual);
+    if (clampedYmd !== ymd) {
+      toast.warning(TASK_DEADLINE_CLAMP_MESSAGE);
+    }
   }
 
   function assigneeIdForRow(rowId: string): string | null {
@@ -1203,6 +1216,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     let targetAssigneeId = originalAssigneeId;
     let targetRowOffset = 0;
     let moved = false;
+    let clampedToMaxDeadline = false;
 
     function onMove(e: PointerEvent) {
       if (e.pointerId !== pointerId) {
@@ -1241,16 +1255,33 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           targetDueDate = addCalendarDaysYmd(bounds.end, next);
         }
 
+        clampedToMaxDeadline = false;
+        const maxDeadline = toYmd(task.maxDeadline);
+        if (maxDeadline && targetDueDate > maxDeadline) {
+          clampedToMaxDeadline = true;
+          if (kind === "move") {
+            const clamped = clampTaskDatesToMaxDeadline(targetStartDate, targetDueDate, maxDeadline);
+            targetStartDate = clamped.startDate;
+            targetDueDate = clamped.dueDate;
+          } else if (kind === "resize-end") {
+            targetDueDate = maxDeadline;
+          }
+        }
+
+        const previewPixelOffset =
+          kind === "move" && clampedToMaxDeadline ? diffCalendarDaysYmd(targetStartDate, bounds.start) * DAY_W : pixelOffset;
+
         setDragPreview({
           taskId: task.id,
           kind,
           startDate: targetStartDate,
           dueDate: targetDueDate,
           deltaDays: next,
-          pixelOffset,
+          pixelOffset: previewPixelOffset,
           pixelOffsetY: kind === "move" ? pixelOffsetY : 0,
           targetAssigneeId,
-          targetRowOffset
+          targetRowOffset,
+          clampedToMaxDeadline
         });
       }
     }
@@ -1292,6 +1323,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         dueDate: targetDueDate,
         ...(assigneeChanged ? { assigneeId: targetAssigneeId } : {})
       });
+      if (clampedToMaxDeadline) {
+        toast.warning(TASK_DEADLINE_CLAMP_MESSAGE);
+      }
     }
 
     window.addEventListener("pointermove", onMove);
@@ -1369,17 +1403,26 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               {activeDragPreview && previewClip && (activeDragPreview.deltaDays !== 0 || previewAssigneeChanged) ? (
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute z-[5] rounded-md border border-dashed bg-[var(--color-brand-orange-muted)]"
+                  className={cn(
+                    "pointer-events-none absolute z-[5] rounded-md border border-dashed bg-[var(--color-brand-orange-muted)]",
+                    activeDragPreview.clampedToMaxDeadline && "border-amber-300 bg-amber-500/15"
+                  )}
                   style={{
                     left: previewLeft,
                     width: previewWidth,
                     top: barTop + lane * laneStride + activeDragPreview.targetRowOffset,
                     height: barHeight,
-                    borderColor: "var(--color-brand-orange)",
+                    borderColor: activeDragPreview.clampedToMaxDeadline ? "rgb(252 211 77)" : "var(--color-brand-orange)",
                     transition:
                       "left 120ms var(--ease-out-expo), top 120ms var(--ease-out-expo), opacity 120ms var(--ease-out-expo)"
                   }}
-                />
+                >
+                  {activeDragPreview.clampedToMaxDeadline ? (
+                    <span className="absolute -top-5 left-0 whitespace-nowrap rounded border border-amber-300/70 bg-bg-2 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200 shadow">
+                      Limite do prazo máximo
+                    </span>
+                  ) : null}
+                </div>
               ) : null}
               <TaskContextMenu
                 task={p.task}
@@ -1520,15 +1563,23 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     return (
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute z-[5] flex min-w-0 flex-col justify-center overflow-hidden rounded-md border border-dashed bg-[var(--color-brand-orange-muted)] px-3 text-[11px] font-semibold text-text-primary"
+        className={cn(
+          "pointer-events-none absolute z-[5] flex min-w-0 flex-col justify-center overflow-visible rounded-md border border-dashed bg-[var(--color-brand-orange-muted)] px-3 text-[11px] font-semibold text-text-primary",
+          undatedDropPreview.clampedToMaxDeadline && "border-amber-300 bg-amber-500/15"
+        )}
         style={{
           left,
           width,
           top: barTop,
           height: workloadBarHeight(mode),
-          borderColor: "var(--color-brand-orange)"
+          borderColor: undatedDropPreview.clampedToMaxDeadline ? "rgb(252 211 77)" : "var(--color-brand-orange)"
         }}
       >
+        {undatedDropPreview.clampedToMaxDeadline ? (
+          <span className="absolute -top-5 left-0 whitespace-nowrap rounded border border-amber-300/70 bg-bg-2 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200 shadow">
+            Limite do prazo máximo
+          </span>
+        ) : null}
         <span className="w-full truncate leading-none">{label?.taskTitle ?? "Nova tarefa"}</span>
         {label?.projectName ? (
           <span className="mt-0.5 w-full truncate text-[9px] font-medium leading-none text-text-secondary/80">
