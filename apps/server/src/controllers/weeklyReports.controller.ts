@@ -6,6 +6,11 @@ import { taskInclude, toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { Role } from "../lib/enums.js";
 import { hasMinimumRole } from "../lib/permissions.js";
 import { prisma } from "../lib/prisma.js";
+import { attachmentContentDisposition } from "../lib/attachmentFilename.js";
+import {
+  generateMonthlyCompletedReportDocx,
+  getMonthlyCompletedReportData
+} from "../lib/monthlyCompletedReport.js";
 import {
   buildTaskSnapshot,
   createWeeklyReportForUser,
@@ -30,6 +35,10 @@ const listReportsQuerySchema = z.object({
 const historyQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(25)
+});
+
+const monthlyCompletedTemplateQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
 });
 
 const updateItemSchema = z.object({
@@ -206,6 +215,34 @@ export const listReports: RequestHandler = async (req, res, next) => {
       totalPages: Math.ceil(total / limit),
       summary
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadMonthlyCompletedTemplate: RequestHandler = async (req, res, next) => {
+  try {
+    const parsed = monthlyCompletedTemplateQuerySchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      throw new AppError(400, "Mês do relatório inválido", parsed.error.flatten());
+    }
+
+    const reportData = await getMonthlyCompletedReportData(parsed.data.month);
+
+    if (!reportData) {
+      throw new AppError(400, "Mês do relatório inválido");
+    }
+
+    const buffer = await generateMonthlyCompletedReportDocx(reportData);
+    const filename = `relatorio-mensal-concluidas-${reportData.period.month}.docx`;
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    res.setHeader("Content-Disposition", attachmentContentDisposition("attachment", filename));
+    res.send(buffer);
   } catch (error) {
     next(error);
   }

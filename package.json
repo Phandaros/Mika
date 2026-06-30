@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "predev": "pnpm --filter shared build && powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ports=@(3101,5173); foreach ($port in $ports) { $ids=(Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($id in $ids) { if ($id -and $id -ne $PID) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } } }\"",
     "dev": "cross-env NODE_ENV=development PORT=3101 CLIENT_URL=http://localhost:5173 VITE_API_URL=http://localhost:3101/api/v1 VITE_SOCKET_URL=http://localhost:3101 turbo run dev --filter=server --filter=client",

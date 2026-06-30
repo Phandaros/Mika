@@ -258,6 +258,9 @@ model Task {
   createdByUserId    String?
   workflowRootTaskId String?
   adjustmentNumber   Int     @default(0)
+  splitRootTaskId    String?
+  splitPartNumber    Int?
+  splitPartTotal     Int?
 
   /// `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
   parentAsanaGid String?
@@ -289,6 +292,7 @@ model Task {
   @@index([assigneeGid])
   @@index([createdByUserId])
   @@index([workflowRootTaskId])
+  @@index([splitRootTaskId])
   @@index([parentAsanaGid])
   @@index([parentId])
   @@index([completed])

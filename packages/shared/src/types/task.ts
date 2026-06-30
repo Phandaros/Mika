@@ -16,6 +16,9 @@ export interface Task {
   creatorId: string | null;
   workflowRootTaskId?: string | null;
   adjustmentNumber?: number;
+  splitRootTaskId?: string | null;
+  splitPartNumber?: number | null;
+  splitPartTotal?: number | null;
   startDate: string | null;
   dueDate: string | null;
   /** Dias estimados de esforço (opcional); usado na vista Carga de trabalho. */

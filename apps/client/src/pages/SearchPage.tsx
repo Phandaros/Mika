@@ -6,11 +6,14 @@ import {
   ProjectStatus,
   TaskStatus,
   type AdvancedSearchCompletion,
+  type AdvancedSearchIndicatorMetric,
   type AdvancedSearchProjectResult,
   type AdvancedSearchResponse,
   type AdvancedSearchTaskResult,
   type AdvancedSearchType,
-  type AdvancedSearchUserResult
+  type AdvancedSearchUserResult,
+  type IndicatorPeriod,
+  type IndicatorScope
 } from "shared";
 import { ProjectStatusChip, priorityLabels, taskStatusLabels } from "../components/shared/Chip";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
@@ -85,6 +88,7 @@ export function SearchPage() {
 
   function updateFilters(mutator: (next: URLSearchParams) => void) {
     const next = new URLSearchParams(searchParams);
+    clearIndicatorParams(next);
     mutator(next);
     next.delete("page");
     setSearchParams(next, { replace: true });
@@ -111,6 +115,7 @@ export function SearchPage() {
     event.preventDefault();
     const next = new URLSearchParams(searchParams);
     const query = draftSearch.trim();
+    clearIndicatorParams(next);
 
     if (query) {
       next.set("q", query);
@@ -146,6 +151,7 @@ export function SearchPage() {
 
   const pageCount = totalPages(data, filters.type);
   const hasResults = Boolean(data && (data.tasks.total > 0 || data.projects.total > 0 || data.users.total > 0));
+  const indicatorContext = indicatorContextLabel(filters);
 
   return (
     <div className="flex flex-col gap-5">
@@ -255,6 +261,12 @@ export function SearchPage() {
           Limpar filtros
         </Button>
       </section>
+
+      {indicatorContext ? (
+        <div className="flex items-center">
+          <Badge tone="blue">{indicatorContext}</Badge>
+        </div>
+      ) : null}
 
       {advancedSearch.isLoading ? <SearchSkeleton /> : null}
 
@@ -431,7 +443,11 @@ function parseSearchFilters(searchParams: URLSearchParams): AdvancedSearchFilter
     priority: searchParamArray(searchParams, "priority"),
     dueFrom: searchParams.get("dueFrom") ?? undefined,
     dueTo: searchParams.get("dueTo") ?? undefined,
-    completion
+    completion,
+    source: searchParams.get("source") === "indicators" ? "indicators" : undefined,
+    indicatorMetric: parseIndicatorMetric(searchParams.get("indicatorMetric")),
+    indicatorPeriod: parseIndicatorPeriod(searchParams.get("indicatorPeriod")),
+    indicatorScope: parseIndicatorScope(searchParams.get("indicatorScope"))
   };
 }
 
@@ -449,6 +465,71 @@ function parseType(value: string | null): AdvancedSearchType {
 
 function parseCompletion(value: string | null): AdvancedSearchCompletion {
   return value === "completed" || value === "all" ? value : "open";
+}
+
+function parseIndicatorMetric(value: string | null): AdvancedSearchIndicatorMetric | undefined {
+  return value === "openTasks" ||
+    value === "completedTasks" ||
+    value === "overdueTasks" ||
+    value === "dueTasks" ||
+    value === "allTasks"
+    ? value
+    : undefined;
+}
+
+function parseIndicatorPeriod(value: string | null): IndicatorPeriod | undefined {
+  return value === "month" || value === "year" || value === "all" ? value : undefined;
+}
+
+function parseIndicatorScope(value: string | null): IndicatorScope | undefined {
+  return value === "general" || value === "civil" || value === "electrical" ? value : undefined;
+}
+
+function clearIndicatorParams(searchParams: URLSearchParams) {
+  searchParams.delete("source");
+  searchParams.delete("indicatorMetric");
+  searchParams.delete("indicatorPeriod");
+  searchParams.delete("indicatorScope");
+}
+
+function indicatorContextLabel(filters: AdvancedSearchFilters): string | null {
+  if (filters.source !== "indicators" || !filters.indicatorMetric || !filters.indicatorPeriod || !filters.indicatorScope) {
+    return null;
+  }
+
+  return `Indicador: ${indicatorMetricLabel(filters.indicatorMetric)} · ${indicatorPeriodLabel(filters.indicatorPeriod)} · ${indicatorScopeLabel(filters.indicatorScope)}`;
+}
+
+function indicatorMetricLabel(metric: AdvancedSearchIndicatorMetric): string {
+  const labels: Record<AdvancedSearchIndicatorMetric, string> = {
+    openTasks: "Tarefas abertas",
+    completedTasks: "Concluídas",
+    overdueTasks: "Atrasadas",
+    dueTasks: "Com entrega no período",
+    allTasks: "Tarefas"
+  };
+
+  return labels[metric] ?? metric;
+}
+
+function indicatorPeriodLabel(period: IndicatorPeriod): string {
+  const labels: Record<IndicatorPeriod, string> = {
+    month: "Mês atual",
+    year: "Ano atual",
+    all: "Todos os tempos"
+  };
+
+  return labels[period];
+}
+
+function indicatorScopeLabel(scope: IndicatorScope): string {
+  const labels: Record<IndicatorScope, string> = {
+    general: "Geral",
+    civil: "Civil",
+    electrical: "Elétrico"
+  };
+
+  return labels[scope];
 }
 
 function shouldShowSection(current: AdvancedSearchType, section: Exclude<AdvancedSearchType, "all">): boolean {

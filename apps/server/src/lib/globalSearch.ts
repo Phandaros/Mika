@@ -1,6 +1,7 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import type {
   AdvancedSearchCompletion,
+  AdvancedSearchIndicatorMetric,
   AdvancedSearchProjectResult,
   AdvancedSearchTaskResult,
   AdvancedSearchType,
@@ -10,6 +11,13 @@ import type {
   GlobalSearchUserResult
 } from "shared";
 import { Priority, ProjectStatus, TaskStatus } from "./enums.js";
+import {
+  indicatorTaskMatchesMetric,
+  indicatorTaskMatchesScope,
+  indicatorTaskPeriodWhere
+} from "./indicators.js";
+import { publicTaskStatus } from "./taskStatus.js";
+import { activeStatusesWhere, excludeBacklogWhere } from "./taskStatusWhere.js";
 
 export const GLOBAL_SEARCH_DEFAULT_LIMIT = 12;
 export const GLOBAL_SEARCH_MAX_LIMIT = 25;
@@ -141,9 +149,15 @@ export function buildAdvancedTaskSearchWhere(filters: {
   dueFrom?: string;
   dueTo?: string;
   completion: AdvancedSearchCompletion;
+  indicatorPeriod?: import("shared").IndicatorPeriod;
 }): Prisma.TaskWhereInput {
   const base = buildTaskSearchWhere(filters.term);
   const and: Prisma.TaskWhereInput[] = [base];
+
+  if (filters.indicatorPeriod) {
+    and.push(excludeBacklogWhere());
+    and.push(indicatorTaskPeriodWhere(filters.indicatorPeriod));
+  }
 
   if (filters.projectId) {
     and.push({
@@ -159,7 +173,7 @@ export function buildAdvancedTaskSearchWhere(filters: {
   }
 
   if (filters.taskStatuses.length > 0) {
-    and.push({ mikaStatus: { in: filters.taskStatuses } });
+    and.push(activeStatusesWhere(filters.taskStatuses));
   }
 
   if (filters.priorities.length > 0) {
@@ -171,11 +185,23 @@ export function buildAdvancedTaskSearchWhere(filters: {
   }
 
   if (filters.dueFrom || filters.dueTo) {
+    const fromDate = filters.dueFrom ? new Date(`${filters.dueFrom}T00:00:00.000Z`) : null;
+    const toDate = filters.dueTo ? new Date(`${filters.dueTo}T23:59:59.999Z`) : null;
     and.push({
-      dueOn: {
-        ...(filters.dueFrom ? { gte: filters.dueFrom } : {}),
-        ...(filters.dueTo ? { lte: filters.dueTo } : {})
-      }
+      OR: [
+        {
+          dueOn: {
+            ...(filters.dueFrom ? { gte: filters.dueFrom } : {}),
+            ...(filters.dueTo ? { lte: filters.dueTo } : {})
+          }
+        },
+        {
+          dueAt: {
+            ...(fromDate ? { gte: fromDate } : {}),
+            ...(toDate ? { lte: toDate } : {})
+          }
+        }
+      ]
     });
   }
 
@@ -244,9 +270,11 @@ interface TaskSearchRecord {
   id: string;
   name: string;
   mikaStatus?: string | null;
+  assigneeStatus?: string | null;
   priority?: string | null;
   assigneeGid?: string | null;
   dueOn?: string | null;
+  dueAt?: Date | null;
   completed?: boolean;
   updatedAt?: Date;
   assignee?: {
@@ -261,13 +289,35 @@ interface TaskSearchRecord {
       project: {
         id: string;
         name: string;
+        archived: boolean;
       };
     } | null;
     project: {
       id: string;
       name: string;
+      archived: boolean;
     } | null;
   }>;
+}
+
+export function filterTasksByIndicator(
+  tasks: TaskSearchRecord[],
+  filters: {
+    indicatorMetric?: AdvancedSearchIndicatorMetric;
+    indicatorPeriod?: import("shared").IndicatorPeriod;
+    indicatorScope?: import("shared").IndicatorScope;
+  }
+): TaskSearchRecord[] {
+  if (!filters.indicatorMetric || !filters.indicatorPeriod || !filters.indicatorScope) {
+    return tasks;
+  }
+
+  return tasks.filter((task) => {
+    return (
+      indicatorTaskMatchesScope(task, filters.indicatorScope!) &&
+      indicatorTaskMatchesMetric(task, filters.indicatorMetric!, filters.indicatorPeriod!)
+    );
+  });
 }
 
 function membershipProjectId(membership: TaskSearchRecord["memberships"][number]): string | null {
@@ -315,7 +365,13 @@ export function toAdvancedSearchTask(task: TaskSearchRecord): AdvancedSearchTask
     return null;
   }
 
-  const status = isTaskStatus(task.mikaStatus) ? task.mikaStatus : TaskStatus.TODO;
+  const status = publicTaskStatus({
+    completed: task.completed ?? false,
+    mikaStatus: task.mikaStatus ?? null,
+    assigneeStatus: task.assigneeStatus ?? null,
+    dueOn: task.dueOn ?? null,
+    dueAt: task.dueAt ?? null
+  });
   const priority = isPriority(task.priority) ? task.priority : Priority.MEDIUM;
 
   return {
@@ -324,7 +380,7 @@ export function toAdvancedSearchTask(task: TaskSearchRecord): AdvancedSearchTask
     priority: priority as AdvancedSearchTaskResult["priority"],
     assigneeId: task.assignee?.id ?? null,
     assigneeName: task.assignee?.name ?? null,
-    dueDate: task.dueOn ?? null,
+    dueDate: task.dueOn ?? task.dueAt?.toISOString().slice(0, 10) ?? null,
     completed: task.completed ?? false,
     updatedAt: task.updatedAt?.toISOString() ?? ""
   };

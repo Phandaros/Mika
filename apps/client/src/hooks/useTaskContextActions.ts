@@ -8,6 +8,7 @@ import { useCompanyHolidays } from "./useCompanyHolidays";
 import {
   useCreateTaskInSection,
   useSendTaskToReview,
+  useSplitTask,
   useUpdateTask,
   useUpdateTaskCompletion,
   useUpdateTaskStatus
@@ -20,6 +21,7 @@ export function useTaskContextActions(task: Task, projectId = "") {
   const updateTaskStatus = useUpdateTaskStatus(resolvedProjectId);
   const updateTaskCompletion = useUpdateTaskCompletion(resolvedProjectId);
   const sendTaskToReviewMutation = useSendTaskToReview(resolvedProjectId);
+  const splitTaskMutation = useSplitTask(resolvedProjectId);
 
   const startDate = toDateOnly(task.startDate);
   const holidayFrom = startDate ?? new Date().toISOString().slice(0, 10);
@@ -140,21 +142,35 @@ export function useTaskContextActions(task: Task, projectId = "") {
     }
   }
 
+  async function splitTask() {
+    try {
+      await splitTaskMutation.mutateAsync(task.id);
+      toast.success("Tarefa dividida");
+    } catch {
+      toast.error("Não foi possível dividir a tarefa");
+    }
+  }
+
   const canSendToReview = task.status !== TaskStatus.FINISHED;
+  const canSplitTask = !task.completed && task.status !== TaskStatus.FINISHED && task.status !== TaskStatus.AWAITING_REVIEW;
 
   return {
     duplicateTask,
+    splitTask,
     recalculateDates,
     changeStatus,
     toggleCompletion,
     sendToReview,
     canRecalculate,
     canSendToReview,
+    canSplitTask,
     isDuplicating: createTaskInSection.isPending,
+    isSplitting: splitTaskMutation.isPending,
     isUpdating:
       updateTask.isPending ||
       updateTaskStatus.isPending ||
       updateTaskCompletion.isPending ||
-      sendTaskToReviewMutation.isPending
+      sendTaskToReviewMutation.isPending ||
+      splitTaskMutation.isPending
   };
 }

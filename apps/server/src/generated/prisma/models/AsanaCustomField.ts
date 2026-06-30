@@ -726,14 +726,6 @@ export type AsanaCustomFieldUncheckedUpdateManyWithoutCreatedByNestedInput = {
   deleteMany?: Prisma.AsanaCustomFieldScalarWhereInput | Prisma.AsanaCustomFieldScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type AsanaCustomFieldCreateNestedOneWithoutEnumOptionsInput = {
   create?: Prisma.XOR<Prisma.AsanaCustomFieldCreateWithoutEnumOptionsInput, Prisma.AsanaCustomFieldUncheckedCreateWithoutEnumOptionsInput>
   connectOrCreate?: Prisma.AsanaCustomFieldCreateOrConnectWithoutEnumOptionsInput

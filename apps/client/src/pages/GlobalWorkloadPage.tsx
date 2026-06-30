@@ -69,21 +69,23 @@ export function GlobalWorkloadPage({ scope }: { scope: GlobalWorkloadScope }) {
   }
 
   return (
-    <div className="grid min-w-0 gap-6">
-      <header>
+    <div className="flex h-full min-h-0 min-w-0 flex-col gap-6">
+      <header className="shrink-0">
         <h1 className="text-2xl font-bold text-text-primary">{titles[scope]}</h1>
         <p className="mt-2 max-w-3xl text-sm text-text-secondary">{descriptions[scope]}</p>
       </header>
 
-      <ProjectWorkloadTimeline
-        mode="global"
-        workloadScope={scope}
-        users={users}
-        isActive
-        onOpenTask={openTaskDetail}
-        onTaskUpdated={handleTimelineTaskUpdated}
-        updateTask={updateTask}
-      />
+      <div className="min-h-0 min-w-0 flex-1">
+        <ProjectWorkloadTimeline
+          mode="global"
+          workloadScope={scope}
+          users={users}
+          isActive
+          onOpenTask={openTaskDetail}
+          onTaskUpdated={handleTimelineTaskUpdated}
+          updateTask={updateTask}
+        />
+      </div>
       <TaskDetail
         task={selectedTask}
         onClose={closeTaskDetail}

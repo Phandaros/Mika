@@ -5,6 +5,7 @@ import { LoadingSpinner } from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
 import { AdminCalendarPage } from "./pages/AdminCalendarPage";
 import { GlobalWorkloadPage } from "./pages/GlobalWorkloadPage";
+import { IndicatorsPage } from "./pages/IndicatorsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyTasksPage } from "./pages/MyTasksPage";
@@ -139,6 +140,7 @@ export function App() {
             <Route path="/weekly-reports/mine" element={<WeeklyReportPage />} />
             <Route element={<CoordinatorRoute />}>
               <Route path="/weekly-reports" element={<WeeklyReportsAdminPage />} />
+              <Route path="/indicators" element={<IndicatorsPage />} />
               <Route path="/sprint/civil" element={<SprintBoardPage scope="civil" />} />
               <Route path="/sprint/eletrico" element={<SprintBoardPage scope="electrical" />} />
               <Route path="/reviews" element={<ReviewsPage />} />

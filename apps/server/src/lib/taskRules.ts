@@ -35,6 +35,10 @@ export function isOpenStatus(status: TaskStatusValue): boolean {
   return !isTerminalStatus(status);
 }
 
+function canRecalculateOpenStatus(task: Pick<RuleTask, "completed" | "mikaStatus">): boolean {
+  return !task.completed && !completionStatuses.has(task.mikaStatus as TaskStatusValue);
+}
+
 export function statusForCompletedTaskByAssigneeRole(task: Pick<RuleTask, "assignee">): TaskStatusValue {
   const role = task.assignee?.isActive ? task.assignee.role : null;
   return role === Role.ADMIN || role === Role.COORDINATOR ? TaskStatus.FINISHED : TaskStatus.AWAITING_REVIEW;
@@ -119,14 +123,8 @@ export async function applyTaskRules(tx: Prisma.TransactionClient, taskId: strin
     nextCompletedAt = null;
   }
 
-  if (event.recalculateOpenStatus && nextStatus === undefined) {
-    if (task.completed) {
-      nextStatus = statusForCompletedTaskByAssigneeRole(task);
-      nextCompleted = true;
-      nextCompletedAt = task.completedAtAsana ?? new Date();
-    } else {
-      nextStatus = statusForOpenTaskDates(task);
-    }
+  if (event.recalculateOpenStatus && nextStatus === undefined && canRecalculateOpenStatus(task)) {
+    nextStatus = statusForOpenTaskDates(task);
   }
 
   if (nextStatus || nextCompleted !== undefined) {

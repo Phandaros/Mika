@@ -1,8 +1,11 @@
 import type { RequestHandler } from "express";
 import type {
   AdvancedSearchCompletion,
+  AdvancedSearchIndicatorMetric,
   AdvancedSearchResponse,
   AdvancedSearchType,
+  IndicatorPeriod,
+  IndicatorScope,
   GlobalSearchResponse,
   GlobalSearchTaskResult
 } from "shared";
@@ -17,6 +20,7 @@ import {
   buildUserSearchWhere,
   clampAdvancedSearchLimit,
   clampSearchLimit,
+  filterTasksByIndicator,
   normalizeSearchTerm,
   paginateSearchResults,
   parseAdvancedSearchPage,
@@ -37,6 +41,10 @@ import { AppError } from "../middleware/errorHandler.js";
 
 const advancedSearchTypeSchema = z.enum(["all", "tasks", "projects", "users"]);
 const advancedSearchCompletionSchema = z.enum(["open", "completed", "all"]);
+const indicatorSourceSchema = z.enum(["indicators"]);
+const indicatorMetricSchema = z.enum(["openTasks", "completedTasks", "overdueTasks", "dueTasks", "allTasks"]);
+const indicatorPeriodSchema = z.enum(["month", "year", "all"]);
+const indicatorScopeSchema = z.enum(["general", "civil", "electrical"]);
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const advancedSearchQuerySchema = z.object({
@@ -50,7 +58,11 @@ const advancedSearchQuerySchema = z.object({
   priority: z.union([z.string(), z.array(z.string())]).optional(),
   dueFrom: dateOnlySchema.optional(),
   dueTo: dateOnlySchema.optional(),
-  completion: advancedSearchCompletionSchema.optional()
+  completion: advancedSearchCompletionSchema.optional(),
+  source: indicatorSourceSchema.optional(),
+  indicatorMetric: indicatorMetricSchema.optional(),
+  indicatorPeriod: indicatorPeriodSchema.optional(),
+  indicatorScope: indicatorScopeSchema.optional()
 });
 
 export const globalSearch: RequestHandler = async (req, res, next) => {
@@ -154,6 +166,9 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
       Object.values(Priority).includes(value as Priority)
     );
     const completion: AdvancedSearchCompletion = parsed.data.completion ?? "open";
+    const indicatorMetric: AdvancedSearchIndicatorMetric | undefined = parsed.data.source === "indicators" ? parsed.data.indicatorMetric : undefined;
+    const indicatorPeriod: IndicatorPeriod | undefined = indicatorMetric ? parsed.data.indicatorPeriod : undefined;
+    const indicatorScope: IndicatorScope | undefined = indicatorMetric ? parsed.data.indicatorScope : undefined;
 
     const [projects, tasks, users] = await Promise.all([
       shouldSearchBucket(type, "projects")
@@ -188,7 +203,8 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
               assigneeId: parsed.data.assigneeId,
               dueFrom: parsed.data.dueFrom,
               dueTo: parsed.data.dueTo,
-              completion
+              completion,
+              indicatorPeriod
             }),
             orderBy: [{ name: "asc" }, { updatedAt: "desc" }],
             include: taskSearchInclude
@@ -208,7 +224,8 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
         : Promise.resolve([])
     ]);
 
-    const taskItems = tasks
+    const indicatorFilteredTasks = filterTasksByIndicator(tasks, { indicatorMetric, indicatorPeriod, indicatorScope });
+    const taskItems = indicatorFilteredTasks
       .filter((task) => taskMatchesSearch(task, q))
       .map(toAdvancedSearchTask)
       .filter((task): task is NonNullable<typeof task> => Boolean(task));

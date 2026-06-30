@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   CopyPlus,
   Eye,
+  GitBranch,
   RefreshCw,
   RotateCcw,
   Trash2
@@ -53,13 +54,16 @@ export function TaskContextMenu<TTask extends Task>({
   const { data: users = [] } = useUsers();
   const {
     duplicateTask,
+    splitTask,
     recalculateDates,
     changeStatus,
     toggleCompletion,
     sendToReview,
     canRecalculate,
     canSendToReview,
+    canSplitTask,
     isDuplicating,
+    isSplitting,
     isUpdating
   } = useTaskContextActions(task, projectId);
 
@@ -152,6 +156,12 @@ export function TaskContextMenu<TTask extends Task>({
           <ContextMenuItem disabled={isDuplicating} onSelect={() => void duplicateTask()}>
             <CopyPlus className="h-4 w-4" />
             Duplicar tarefa
+          </ContextMenuItem>
+        ) : null}
+        {canManage ? (
+          <ContextMenuItem disabled={!canSplitTask || isSplitting || isUpdating} onSelect={() => void splitTask()}>
+            <GitBranch className="h-4 w-4" />
+            Dividir tarefa
           </ContextMenuItem>
         ) : null}
         {canManage ? (

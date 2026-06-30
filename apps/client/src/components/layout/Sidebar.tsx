@@ -60,7 +60,8 @@ const sidebarSections: SidebarNavSection[] = [
     items: [
       { to: "/projects", label: "Projetos ativos", icon: FolderKanban },
       { to: "/reviews", label: "Revisões", icon: ClipboardCheck, minRole: Role.COORDINATOR },
-      { to: "/weekly-reports", label: "Relatórios semanais", icon: BarChart2, minRole: Role.COORDINATOR }
+      { to: "/weekly-reports", label: "Relatórios semanais", icon: BarChart2, minRole: Role.COORDINATOR },
+      { to: "/indicators", label: "Indicadores", icon: BarChart2, minRole: Role.COORDINATOR }
     ]
   },
   {

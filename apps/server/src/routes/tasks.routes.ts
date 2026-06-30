@@ -7,6 +7,7 @@ import {
   listTaskHistory,
   listMyTasks,
   sendTaskToReview,
+  splitTask,
   listTasks,
   updateTask,
   updateTaskCompletion,
@@ -83,6 +84,7 @@ router.post("/sections/:sectionId/tasks", auth, requireRole(Role.COORDINATOR), v
 router.post("/disciplines/:disciplineId/tasks", auth, requireRole(Role.COORDINATOR), validateBody(createTaskSchema), createTask);
 router.patch("/tasks/:id", auth, requireRole(Role.COORDINATOR), validateBody(updateTaskSchema), updateTask);
 router.delete("/tasks/:id", auth, requireRole(Role.COORDINATOR), deleteTask);
+router.post("/tasks/:id/split", auth, requireRole(Role.COORDINATOR), splitTask);
 router.post("/tasks/:id/send-to-review", auth, requireRole(Role.COORDINATOR), validateBody(sendTaskToReviewSchema), sendTaskToReview);
 router.patch("/tasks/:id/status", auth, requireRole(Role.COORDINATOR), validateBody(taskStatusSchema), updateTaskStatus);
 router.patch("/tasks/:id/completed", auth, requireRole(Role.DESIGNER), validateBody(taskCompletionSchema), updateTaskCompletion);

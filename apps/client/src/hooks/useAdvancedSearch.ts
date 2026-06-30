@@ -1,5 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import type { AdvancedSearchCompletion, AdvancedSearchResponse, AdvancedSearchType } from "shared";
+import type {
+  AdvancedSearchCompletion,
+  AdvancedSearchIndicatorMetric,
+  AdvancedSearchResponse,
+  AdvancedSearchType,
+  IndicatorPeriod,
+  IndicatorScope
+} from "shared";
 import { api } from "../lib/api";
 
 export interface AdvancedSearchFilters {
@@ -14,6 +21,10 @@ export interface AdvancedSearchFilters {
   dueFrom?: string;
   dueTo?: string;
   completion: AdvancedSearchCompletion;
+  source?: "indicators";
+  indicatorMetric?: AdvancedSearchIndicatorMetric;
+  indicatorPeriod?: IndicatorPeriod;
+  indicatorScope?: IndicatorScope;
 }
 
 const EMPTY_PAGE = {
@@ -47,7 +58,11 @@ export function useAdvancedSearch(filters: AdvancedSearchFilters) {
           priority: filters.priority.length ? filters.priority : undefined,
           dueFrom: filters.dueFrom,
           dueTo: filters.dueTo,
-          completion: filters.completion
+          completion: filters.completion,
+          source: filters.source,
+          indicatorMetric: filters.indicatorMetric,
+          indicatorPeriod: filters.indicatorPeriod,
+          indicatorScope: filters.indicatorScope
         },
         paramsSerializer: {
           indexes: null

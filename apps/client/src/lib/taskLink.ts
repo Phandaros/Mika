@@ -33,8 +33,15 @@ export function buildTaskPath(task: TaskLinkSource, options?: BuildTaskLinkOptio
 
 export function buildTaskLink(task: TaskLinkSource, options?: BuildTaskLinkOptions): string {
   const path = buildTaskPath(task, options);
+  return buildAbsoluteAppUrl(path);
+}
+
+export function buildAbsoluteAppUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const hashPrefix = typeof window !== "undefined" && window.mkProjetos?.isDesktop === true ? "#" : "";
-  return `${window.location.origin}${hashPrefix}${path}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+  return `${origin}${hashPrefix}${normalizedPath}`;
 }
 
 export function resolveTaskProjectId(task: TaskLinkSource): string | undefined {

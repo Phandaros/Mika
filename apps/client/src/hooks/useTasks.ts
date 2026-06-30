@@ -38,6 +38,10 @@ interface SendTaskToReviewResponse {
   review: TaskReview;
 }
 
+interface SplitTaskResponse {
+  tasks: Task[];
+}
+
 type UpdateTaskMutationContext = {
   previousTask: Task | undefined;
   previousProjects: Project[] | undefined;
@@ -847,6 +851,43 @@ export function useSendTaskToReview(projectId: string) {
       invalidateMyTasksQuery();
       void queryClient.invalidateQueries({ queryKey: ["reviews"] });
       void queryClient.invalidateQueries({ queryKey: ["tasks", task.id, "history"] });
+    }
+  });
+}
+
+export function useSplitTask(projectId: string) {
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await api.post<SplitTaskResponse>(`/tasks/${taskId}/split`);
+      return response.data.tasks;
+    },
+    onSuccess: async (tasks) => {
+      const sectionIds = new Set<string>();
+
+      for (const task of tasks) {
+        updateTaskInProjectCache(projectId, task);
+        updateSprintBoardTaskCaches(task);
+        if (task.disciplineId) {
+          sectionIds.add(task.disciplineId);
+        }
+        void queryClient.invalidateQueries({ queryKey: ["tasks", task.id, "history"] });
+      }
+
+      if (projectId) {
+        await queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
+
+      for (const sectionId of sectionIds) {
+        await queryClient.invalidateQueries({ queryKey: ["sections", sectionId, "tasks"] });
+      }
+
+      invalidateWorkloadTaskQueries(projectId);
+      invalidateSprintBoardTaskQueries();
+      invalidateTeamBoardQueries();
+      invalidateHomeDashboardQuery();
+      invalidateMyTasksQuery();
     }
   });
 }

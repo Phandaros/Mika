@@ -33,6 +33,8 @@ export type TaskAvgAggregateOutputType = {
   estimatedTime: number | null
   conclusionDays: number | null
   adjustmentNumber: number | null
+  splitPartNumber: number | null
+  splitPartTotal: number | null
 }
 
 export type TaskSumAggregateOutputType = {
@@ -42,6 +44,8 @@ export type TaskSumAggregateOutputType = {
   estimatedTime: number | null
   conclusionDays: number | null
   adjustmentNumber: number | null
+  splitPartNumber: number | null
+  splitPartTotal: number | null
 }
 
 export type TaskMinAggregateOutputType = {
@@ -75,6 +79,9 @@ export type TaskMinAggregateOutputType = {
   createdByUserId: string | null
   workflowRootTaskId: string | null
   adjustmentNumber: number | null
+  splitRootTaskId: string | null
+  splitPartNumber: number | null
+  splitPartTotal: number | null
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
@@ -113,6 +120,9 @@ export type TaskMaxAggregateOutputType = {
   createdByUserId: string | null
   workflowRootTaskId: string | null
   adjustmentNumber: number | null
+  splitRootTaskId: string | null
+  splitPartNumber: number | null
+  splitPartTotal: number | null
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
@@ -151,6 +161,9 @@ export type TaskCountAggregateOutputType = {
   createdByUserId: number
   workflowRootTaskId: number
   adjustmentNumber: number
+  splitRootTaskId: number
+  splitPartNumber: number
+  splitPartTotal: number
   parentAsanaGid: number
   parentName: number
   parentId: number
@@ -167,6 +180,8 @@ export type TaskAvgAggregateInputType = {
   estimatedTime?: true
   conclusionDays?: true
   adjustmentNumber?: true
+  splitPartNumber?: true
+  splitPartTotal?: true
 }
 
 export type TaskSumAggregateInputType = {
@@ -176,6 +191,8 @@ export type TaskSumAggregateInputType = {
   estimatedTime?: true
   conclusionDays?: true
   adjustmentNumber?: true
+  splitPartNumber?: true
+  splitPartTotal?: true
 }
 
 export type TaskMinAggregateInputType = {
@@ -209,6 +226,9 @@ export type TaskMinAggregateInputType = {
   createdByUserId?: true
   workflowRootTaskId?: true
   adjustmentNumber?: true
+  splitRootTaskId?: true
+  splitPartNumber?: true
+  splitPartTotal?: true
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
@@ -247,6 +267,9 @@ export type TaskMaxAggregateInputType = {
   createdByUserId?: true
   workflowRootTaskId?: true
   adjustmentNumber?: true
+  splitRootTaskId?: true
+  splitPartNumber?: true
+  splitPartTotal?: true
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
@@ -285,6 +308,9 @@ export type TaskCountAggregateInputType = {
   createdByUserId?: true
   workflowRootTaskId?: true
   adjustmentNumber?: true
+  splitRootTaskId?: true
+  splitPartNumber?: true
+  splitPartTotal?: true
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
@@ -410,6 +436,9 @@ export type TaskGroupByOutputType = {
   createdByUserId: string | null
   workflowRootTaskId: string | null
   adjustmentNumber: number
+  splitRootTaskId: string | null
+  splitPartNumber: number | null
+  splitPartTotal: number | null
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
@@ -471,6 +500,9 @@ export type TaskWhereInput = {
   createdByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
   workflowRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
   adjustmentNumber?: Prisma.IntFilter<"Task"> | number
+  splitRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
+  splitPartNumber?: Prisma.IntNullableFilter<"Task"> | number | null
+  splitPartTotal?: Prisma.IntNullableFilter<"Task"> | number | null
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
@@ -525,6 +557,9 @@ export type TaskOrderByWithRelationInput = {
   createdByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   workflowRootTaskId?: Prisma.SortOrderInput | Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitRootTaskId?: Prisma.SortOrderInput | Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrderInput | Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   parentName?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -582,6 +617,9 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   createdByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
   workflowRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
   adjustmentNumber?: Prisma.IntFilter<"Task"> | number
+  splitRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
+  splitPartNumber?: Prisma.IntNullableFilter<"Task"> | number | null
+  splitPartTotal?: Prisma.IntNullableFilter<"Task"> | number | null
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
@@ -636,6 +674,9 @@ export type TaskOrderByWithAggregationInput = {
   createdByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   workflowRootTaskId?: Prisma.SortOrderInput | Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitRootTaskId?: Prisma.SortOrderInput | Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrderInput | Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   parentName?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -682,6 +723,9 @@ export type TaskScalarWhereWithAggregatesInput = {
   createdByUserId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   workflowRootTaskId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   adjustmentNumber?: Prisma.IntWithAggregatesFilter<"Task"> | number
+  splitRootTaskId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  splitPartNumber?: Prisma.IntNullableWithAggregatesFilter<"Task"> | number | null
+  splitPartTotal?: Prisma.IntNullableWithAggregatesFilter<"Task"> | number | null
   parentAsanaGid?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
@@ -717,6 +761,9 @@ export type TaskCreateInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -770,6 +817,9 @@ export type TaskUncheckedCreateInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -817,6 +867,9 @@ export type TaskUpdateInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -870,6 +923,9 @@ export type TaskUncheckedUpdateInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -920,6 +976,9 @@ export type TaskCreateManyInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -955,6 +1014,9 @@ export type TaskUpdateManyMutationInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -992,6 +1054,9 @@ export type TaskUncheckedUpdateManyInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1045,6 +1110,9 @@ export type TaskCountOrderByAggregateInput = {
   createdByUserId?: Prisma.SortOrder
   workflowRootTaskId?: Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitRootTaskId?: Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
@@ -1059,6 +1127,8 @@ export type TaskAvgOrderByAggregateInput = {
   estimatedTime?: Prisma.SortOrder
   conclusionDays?: Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrder
 }
 
 export type TaskMaxOrderByAggregateInput = {
@@ -1092,6 +1162,9 @@ export type TaskMaxOrderByAggregateInput = {
   createdByUserId?: Prisma.SortOrder
   workflowRootTaskId?: Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitRootTaskId?: Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
@@ -1130,6 +1203,9 @@ export type TaskMinOrderByAggregateInput = {
   createdByUserId?: Prisma.SortOrder
   workflowRootTaskId?: Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitRootTaskId?: Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrder
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
@@ -1144,6 +1220,8 @@ export type TaskSumOrderByAggregateInput = {
   estimatedTime?: Prisma.SortOrder
   conclusionDays?: Prisma.SortOrder
   adjustmentNumber?: Prisma.SortOrder
+  splitPartNumber?: Prisma.SortOrder
+  splitPartTotal?: Prisma.SortOrder
 }
 
 export type TaskScalarRelationFilter = {
@@ -1277,6 +1355,14 @@ export type TaskUncheckedCreateNestedManyWithoutWorkflowRootInput = {
 
 export type IntFieldUpdateOperationsInput = {
   set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
   increment?: number
   decrement?: number
   multiply?: number
@@ -1527,6 +1613,9 @@ export type TaskCreateWithoutAssigneeInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -1578,6 +1667,9 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -1634,6 +1726,9 @@ export type TaskCreateWithoutCreatorInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -1685,6 +1780,9 @@ export type TaskUncheckedCreateWithoutCreatorInput = {
   assigneeGid?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -1763,6 +1861,9 @@ export type TaskScalarWhereInput = {
   createdByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
   workflowRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
   adjustmentNumber?: Prisma.IntFilter<"Task"> | number
+  splitRootTaskId?: Prisma.StringNullableFilter<"Task"> | string | null
+  splitPartNumber?: Prisma.IntNullableFilter<"Task"> | number | null
+  splitPartTotal?: Prisma.IntNullableFilter<"Task"> | number | null
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
@@ -1814,6 +1915,9 @@ export type TaskCreateWithoutSubtasksInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -1866,6 +1970,9 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -1917,6 +2024,9 @@ export type TaskCreateWithoutParentInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -1969,6 +2079,9 @@ export type TaskUncheckedCreateWithoutParentInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -2024,6 +2137,9 @@ export type TaskCreateWithoutWorkflowAdjustmentsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -2076,6 +2192,9 @@ export type TaskUncheckedCreateWithoutWorkflowAdjustmentsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -2127,6 +2246,9 @@ export type TaskCreateWithoutWorkflowRootInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -2178,6 +2300,9 @@ export type TaskUncheckedCreateWithoutWorkflowRootInput = {
   assigneeGid?: string | null
   createdByUserId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -2245,6 +2370,9 @@ export type TaskUpdateWithoutSubtasksInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2297,6 +2425,9 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2370,6 +2501,9 @@ export type TaskUpdateWithoutWorkflowAdjustmentsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2422,6 +2556,9 @@ export type TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2484,6 +2621,9 @@ export type TaskCreateWithoutRequestedReviewsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -2536,6 +2676,9 @@ export type TaskUncheckedCreateWithoutRequestedReviewsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -2587,6 +2730,9 @@ export type TaskCreateWithoutRootReviewsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -2639,6 +2785,9 @@ export type TaskUncheckedCreateWithoutRootReviewsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -2701,6 +2850,9 @@ export type TaskUpdateWithoutRequestedReviewsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2753,6 +2905,9 @@ export type TaskUncheckedUpdateWithoutRequestedReviewsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2810,6 +2965,9 @@ export type TaskUpdateWithoutRootReviewsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2862,6 +3020,9 @@ export type TaskUncheckedUpdateWithoutRootReviewsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2908,6 +3069,9 @@ export type TaskCreateWithoutCommentsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -2960,6 +3124,9 @@ export type TaskUncheckedCreateWithoutCommentsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -3022,6 +3189,9 @@ export type TaskUpdateWithoutCommentsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3074,6 +3244,9 @@ export type TaskUncheckedUpdateWithoutCommentsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3120,6 +3293,9 @@ export type TaskCreateWithoutActivitiesInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -3172,6 +3348,9 @@ export type TaskUncheckedCreateWithoutActivitiesInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -3234,6 +3413,9 @@ export type TaskUpdateWithoutActivitiesInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3286,6 +3468,9 @@ export type TaskUncheckedUpdateWithoutActivitiesInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3332,6 +3517,9 @@ export type TaskCreateWithoutMembershipsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -3384,6 +3572,9 @@ export type TaskUncheckedCreateWithoutMembershipsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -3446,6 +3637,9 @@ export type TaskUpdateWithoutMembershipsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3498,6 +3692,9 @@ export type TaskUncheckedUpdateWithoutMembershipsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3544,6 +3741,9 @@ export type TaskCreateWithoutFollowersInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -3596,6 +3796,9 @@ export type TaskUncheckedCreateWithoutFollowersInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -3658,6 +3861,9 @@ export type TaskUpdateWithoutFollowersInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3710,6 +3916,9 @@ export type TaskUncheckedUpdateWithoutFollowersInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3756,6 +3965,9 @@ export type TaskCreateWithoutLikesInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -3808,6 +4020,9 @@ export type TaskUncheckedCreateWithoutLikesInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -3870,6 +4085,9 @@ export type TaskUpdateWithoutLikesInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3922,6 +4140,9 @@ export type TaskUncheckedUpdateWithoutLikesInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3968,6 +4189,9 @@ export type TaskCreateWithoutTagsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -4020,6 +4244,9 @@ export type TaskUncheckedCreateWithoutTagsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -4082,6 +4309,9 @@ export type TaskUpdateWithoutTagsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -4134,6 +4364,9 @@ export type TaskUncheckedUpdateWithoutTagsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4180,6 +4413,9 @@ export type TaskCreateWithoutCustomFieldValuesInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -4232,6 +4468,9 @@ export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -4294,6 +4533,9 @@ export type TaskUpdateWithoutCustomFieldValuesInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -4346,6 +4588,9 @@ export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4392,6 +4637,9 @@ export type TaskCreateWithoutWeeklyReportItemsInput = {
   conclusionDays?: number | null
   stage?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -4444,6 +4692,9 @@ export type TaskUncheckedCreateWithoutWeeklyReportItemsInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -4506,6 +4757,9 @@ export type TaskUpdateWithoutWeeklyReportItemsInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -4558,6 +4812,9 @@ export type TaskUncheckedUpdateWithoutWeeklyReportItemsInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4606,6 +4863,9 @@ export type TaskCreateManyAssigneeInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -4643,6 +4903,9 @@ export type TaskCreateManyCreatorInput = {
   assigneeGid?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -4678,6 +4941,9 @@ export type TaskUpdateWithoutAssigneeInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -4729,6 +4995,9 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4778,6 +5047,9 @@ export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4813,6 +5085,9 @@ export type TaskUpdateWithoutCreatorInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -4864,6 +5139,9 @@ export type TaskUncheckedUpdateWithoutCreatorInput = {
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4913,6 +5191,9 @@ export type TaskUncheckedUpdateManyWithoutCreatorInput = {
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4951,6 +5232,9 @@ export type TaskCreateManyParentInput = {
   createdByUserId?: string | null
   workflowRootTaskId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   createdAt?: Date | string
@@ -4987,6 +5271,9 @@ export type TaskCreateManyWorkflowRootInput = {
   assigneeGid?: string | null
   createdByUserId?: string | null
   adjustmentNumber?: number
+  splitRootTaskId?: string | null
+  splitPartNumber?: number | null
+  splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
@@ -5022,6 +5309,9 @@ export type TaskUpdateWithoutParentInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -5074,6 +5364,9 @@ export type TaskUncheckedUpdateWithoutParentInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -5123,6 +5416,9 @@ export type TaskUncheckedUpdateManyWithoutParentInput = {
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   workflowRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -5157,6 +5453,9 @@ export type TaskUpdateWithoutWorkflowRootInput = {
   conclusionDays?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -5208,6 +5507,9 @@ export type TaskUncheckedUpdateWithoutWorkflowRootInput = {
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5257,6 +5559,9 @@ export type TaskUncheckedUpdateManyWithoutWorkflowRootInput = {
   assigneeGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adjustmentNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  splitRootTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  splitPartNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5425,6 +5730,9 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdByUserId?: boolean
   workflowRootTaskId?: boolean
   adjustmentNumber?: boolean
+  splitRootTaskId?: boolean
+  splitPartNumber?: boolean
+  splitPartTotal?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
@@ -5480,6 +5788,9 @@ export type TaskSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   createdByUserId?: boolean
   workflowRootTaskId?: boolean
   adjustmentNumber?: boolean
+  splitRootTaskId?: boolean
+  splitPartNumber?: boolean
+  splitPartTotal?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
@@ -5522,6 +5833,9 @@ export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   createdByUserId?: boolean
   workflowRootTaskId?: boolean
   adjustmentNumber?: boolean
+  splitRootTaskId?: boolean
+  splitPartNumber?: boolean
+  splitPartTotal?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
@@ -5564,6 +5878,9 @@ export type TaskSelectScalar = {
   createdByUserId?: boolean
   workflowRootTaskId?: boolean
   adjustmentNumber?: boolean
+  splitRootTaskId?: boolean
+  splitPartNumber?: boolean
+  splitPartTotal?: boolean
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
@@ -5571,7 +5888,7 @@ export type TaskSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "createdByUserId" | "workflowRootTaskId" | "adjustmentNumber" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
+export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "createdByUserId" | "workflowRootTaskId" | "adjustmentNumber" | "splitRootTaskId" | "splitPartNumber" | "splitPartTotal" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
 export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
   creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
@@ -5668,6 +5985,9 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     createdByUserId: string | null
     workflowRootTaskId: string | null
     adjustmentNumber: number
+    splitRootTaskId: string | null
+    splitPartNumber: number | null
+    splitPartTotal: number | null
     /**
      * `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
      */
@@ -6145,6 +6465,9 @@ export interface TaskFieldRefs {
   readonly createdByUserId: Prisma.FieldRef<"Task", 'String'>
   readonly workflowRootTaskId: Prisma.FieldRef<"Task", 'String'>
   readonly adjustmentNumber: Prisma.FieldRef<"Task", 'Int'>
+  readonly splitRootTaskId: Prisma.FieldRef<"Task", 'String'>
+  readonly splitPartNumber: Prisma.FieldRef<"Task", 'Int'>
+  readonly splitPartTotal: Prisma.FieldRef<"Task", 'Int'>
   readonly parentAsanaGid: Prisma.FieldRef<"Task", 'String'>
   readonly parentName: Prisma.FieldRef<"Task", 'String'>
   readonly parentId: Prisma.FieldRef<"Task", 'String'>

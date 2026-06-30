@@ -34,6 +34,13 @@ Data limite externa prometida ao cliente para uma **Tarefa**. É uma informaçã
 ### Entrega
 Data interna estimada para conclusão de uma **Tarefa**. Nunca deve ser posterior ao **Prazo Máximo** quando esse limite existir.
 
+### Mudança de data
+Alteração do Início ou da **Entrega** de uma **Tarefa**. Pode recalcular o status operacional de uma tarefa aberta, mas não envia tarefa para revisão.
+
+### Indicadores
+Painel gerencial de métricas agregadas para coordenação. Consolida tarefas, prazos, entregas, equipe operacional e áreas de projeto em gráficos e contadores. Indicadores de tarefas usam período operacional; indicadores de projetos são leitura de carteira geral ou por ano de origem do projeto. Não é o mesmo que **Relatório semanal**, que é um registro individual preenchido pelo usuário sobre a semana.
+_Evitar_: relatórios, dashboard configurável
+
 ### Anotação
 Documento colaborativo vinculado a um **Projeto**, identificado por título e composto por conteúdo textual ou anexos. É diferente da descrição do projeto e dos comentários de tarefas.
 _Evitar_: nota do projeto, comentário do projeto
@@ -44,6 +51,10 @@ _Evitar_: anotação de reunião, comentário de reunião
 
 ### Anexo
 Arquivo associado a um comentário de tarefa, revisão, anotação ou ata de reunião. Seu nome é o nome apresentado ao usuário e utilizado no download, independentemente do identificador físico usado para armazenar o arquivo.
+
+### Relatório mensal de concluídas
+Documento gerencial mensal que lista tarefas concluídas no período, agrupadas por responsável, para apoiar fechamento e complemento manual pela coordenação. É diferente do **Relatório semanal**, que é um registro individual preenchido pelo usuário sobre sua semana.
+_Evitar_: relatório semanal mensal, template mensal genérico
 
 ---
 *MK Engenharia · Balneário Camboriú/SC*

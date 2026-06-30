@@ -16,3 +16,4 @@ export * from "./types/teamBoard.js";
 export * from "./types/homeDashboard.js";
 export * from "./types/myTasks.js";
 export * from "./types/search.js";
+export * from "./types/indicators.js";

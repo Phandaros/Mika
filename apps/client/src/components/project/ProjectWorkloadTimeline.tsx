@@ -516,6 +516,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollAdjust = useRef(0);
   const scrollReady = useRef(false);
+  const lastTimelineScrollLeft = useRef(0);
   const smoothWheelVelocity = useRef(0);
   const smoothWheelFrame = useRef<number | null>(null);
   const smoothWheelIntent = useRef(0);
@@ -664,6 +665,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
   const dayCount = days.length;
   const timelineWidth = dayCount * DAY_W;
+  const timelineContentWidth = NAME_COL + timelineWidth;
 
   const todayKey = format(today, "yyyy-MM-dd");
   const todayIdx = days.indexOf(todayKey);
@@ -831,6 +833,11 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         return;
       }
 
+      if (box.scrollLeft === lastTimelineScrollLeft.current) {
+        return;
+      }
+
+      lastTimelineScrollLeft.current = box.scrollLeft;
       maybeExtendTimeline(box, "both");
     }
 
@@ -1128,7 +1135,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     const rect = box.getBoundingClientRect();
-    const x = clientX - rect.left + box.scrollLeft;
+    const visibleX = clientX - rect.left;
+    if (visibleX < NAME_COL) {
+      return null;
+    }
+
+    const x = visibleX + box.scrollLeft - NAME_COL;
     const idx = Math.floor(x / DAY_W);
     return days[idx] ?? null;
   }
@@ -1175,7 +1187,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       return null;
     }
 
-    const y = clientY - box.getBoundingClientRect().top;
+    const y = clientY - box.getBoundingClientRect().top + box.scrollTop;
     let rowTop = HEADER_H + totalRowH;
 
     for (const row of workloadRows) {
@@ -1746,111 +1758,78 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
             <div className="absolute right-2 top-2 z-40 text-xs text-text-muted">Atualizando...</div>
           ) : null}
 
-          <div className="flex w-full min-w-0 max-w-full">
-            <div className="z-30 shrink-0 border-r border-border bg-bg-2" style={{ width: NAME_COL }}>
-              <div className="border-b border-border bg-bg-2" style={{ height: HEADER_H }} />
-              {showEstimatedDays ? (
-                <div
-                  className="flex items-center border-b border-border-subtle px-3 text-xs font-semibold text-text-secondary"
-                  style={{ height: totalRowH, boxSizing: "border-box" }}
-                >
-                  Total (dias est.)
-                </div>
-              ) : null}
-              {workloadRows.map((row) => {
-                const chartSlotHeight = showEstimatedDays ? CHART_H + CHART_GAP : 0;
-                const rowContentHeight = Math.max(0, row.rowH - chartSlotHeight - ROW_BORDER_H);
-
-                return (
-                  <div
-                    key={row.id}
-                    className={cn(
-                      "border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
-                      highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
-                    )}
-                    style={{ height: row.rowH, paddingTop: chartSlotHeight, boxSizing: "border-box" }}
-                  >
-                    <div
-                      className="flex items-center gap-2 px-3 py-2"
-                      style={{ height: rowContentHeight }}
-                    >
-                      {row.avatarName ? (
-                        <Avatar name={row.avatarName} imageUrl={row.avatarUrl} className="h-8 w-8 shrink-0" />
-                      ) : (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-card text-xs font-bold text-text-secondary">
-                          #
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-text-primary">{row.label}</p>
-                        {row.sublabel ? <p className="truncate text-xs text-text-muted">{row.sublabel}</p> : null}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
             <div
               ref={scrollRef}
               data-testid="workload-timeline-scroll"
-              className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain"
+              className="max-h-[calc(100dvh-216px)] min-h-[360px] min-w-0 overflow-auto overscroll-contain"
               onPointerDownCapture={cancelSmoothWheelScroll}
               onDragOverCapture={handleTimelineDragOver}
               onDragLeave={handleTimelineDragLeave}
               onDropCapture={handleTimelineDrop}
             >
-              <div className="relative" style={{ width: timelineWidth }}>
+              <div className="relative" style={{ width: timelineContentWidth, minWidth: timelineContentWidth }}>
                 <div
-                  className="sticky top-0 z-20 flex border-b border-border bg-bg-2"
-                  style={{ width: timelineWidth, height: HEADER_H }}
+                  className="sticky top-0 z-30 flex border-b border-border bg-bg-2"
+                  style={{ width: timelineContentWidth, height: HEADER_H }}
                 >
-                  {days.map((d, idx) => {
-                    const isToday = d === todayKey;
-                    const holidayName = holidayMap.get(d);
-                    const weekDay = getDay(parseYmdToLocalNoon(d));
-                    const isNonWorking = weekDay === 0 || weekDay === 6 || Boolean(holidayName);
-                    const prevDay = idx > 0 ? days[idx - 1] : undefined;
-                    const showMonth =
-                      idx === 0 ||
-                      (prevDay !== undefined && d.slice(0, 7) !== prevDay.slice(0, 7));
+                  <div className="sticky left-0 z-40 shrink-0 border-r border-border bg-bg-2" style={{ width: NAME_COL }} />
+                  <div className="flex" style={{ width: timelineWidth, minWidth: timelineWidth }}>
+                    {days.map((d, idx) => {
+                      const isToday = d === todayKey;
+                      const holidayName = holidayMap.get(d);
+                      const weekDay = getDay(parseYmdToLocalNoon(d));
+                      const isNonWorking = weekDay === 0 || weekDay === 6 || Boolean(holidayName);
+                      const prevDay = idx > 0 ? days[idx - 1] : undefined;
+                      const showMonth =
+                        idx === 0 ||
+                        (prevDay !== undefined && d.slice(0, 7) !== prevDay.slice(0, 7));
 
-                    return (
-                      <div
-                        key={d}
-                        style={{ width: DAY_W, minWidth: DAY_W }}
-                        title={holidayName ?? (isNonWorking ? "Final de semana" : undefined)}
-                        className={cn(
-                          "flex flex-col items-center justify-center border-r border-border-subtle text-[10px] text-text-muted",
-                          isNonWorking && "bg-[rgba(244,244,245,0.04)]",
-                          holidayName && "bg-brand-orange/10",
-                          isToday && "bg-bg-3 text-text-primary"
-                        )}
-                      >
-                        <span className="h-2.5 text-[9px] font-medium leading-none uppercase text-text-muted">
-                          {showMonth ? format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR }) : ""}
-                        </span>
-                        <span className="text-[9px] font-medium leading-none uppercase text-text-muted">
-                          {WEEKDAY_LABELS[weekDay]}
-                        </span>
-                        <span className={cn("font-semibold leading-none text-text-secondary", isToday && "text-text-primary")}>
-                          {format(parseYmdToLocalNoon(d), "d")}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div
+                          key={d}
+                          style={{ width: DAY_W, minWidth: DAY_W }}
+                          title={holidayName ?? (isNonWorking ? "Final de semana" : undefined)}
+                          className={cn(
+                            "flex flex-col items-center justify-center border-r border-border-subtle text-[10px] text-text-muted",
+                            isNonWorking && "bg-[rgba(244,244,245,0.04)]",
+                            holidayName && "bg-brand-orange/10",
+                            isToday && "bg-bg-3 text-text-primary"
+                          )}
+                        >
+                          <span className="h-2.5 text-[9px] font-medium leading-none uppercase text-text-muted">
+                            {showMonth ? format(parseYmdToLocalNoon(d), "MMM", { locale: ptBR }) : ""}
+                          </span>
+                          <span className="text-[9px] font-medium leading-none uppercase text-text-muted">
+                            {WEEKDAY_LABELS[weekDay]}
+                          </span>
+                          <span className={cn("font-semibold leading-none text-text-secondary", isToday && "text-text-primary")}>
+                            {format(parseYmdToLocalNoon(d), "d")}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="relative">
                   {todayIdx >= 0 && todayIdx < dayCount ? (
                     <div
                       className="pointer-events-none absolute bottom-0 top-0 z-[4] w-px bg-[var(--color-brand-orange)] opacity-60"
-                      style={{ left: todayIdx * DAY_W + DAY_W / 2 }}
+                      style={{ left: NAME_COL + todayIdx * DAY_W + DAY_W / 2 }}
                     />
                   ) : null}
 
                   {showEstimatedDays ? (
-                    <div className="flex border-b border-border-subtle" style={{ height: totalRowH, boxSizing: "border-box" }}>
+                    <div
+                      className="flex border-b border-border-subtle"
+                      style={{ width: timelineContentWidth, height: totalRowH, boxSizing: "border-box" }}
+                    >
+                      <div
+                        className="sticky left-0 z-20 flex shrink-0 items-center border-r border-border bg-bg-2 px-3 text-xs font-semibold text-text-secondary"
+                        style={{ width: NAME_COL, height: totalRowH, boxSizing: "border-box" }}
+                      >
+                        Total (dias est.)
+                      </div>
                       <div
                         className="relative h-full"
                         style={{ width: timelineWidth, minWidth: timelineWidth }}
@@ -1876,6 +1855,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
                   {workloadRows.map((row) => {
                     const loads = buildDailyLoadsForTasks(row.rowTasks, days, nonWorkingDays);
+                    const chartSlotHeight = showEstimatedDays ? CHART_H + CHART_GAP : 0;
+                    const rowContentHeight = Math.max(0, row.rowH - chartSlotHeight - ROW_BORDER_H);
+
                     return (
                       <ContextMenu key={row.id}>
                         <ContextMenuTrigger asChild>
@@ -1884,9 +1866,33 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                               "flex border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover",
                               highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
                             )}
-                            style={{ height: row.rowH, boxSizing: "border-box" }}
+                            style={{ width: timelineContentWidth, height: row.rowH, boxSizing: "border-box" }}
                             onContextMenu={(event) => handleEmptyRowContextMenu(event, row)}
                           >
+                            <div
+                              className={cn(
+                                "sticky left-0 z-20 shrink-0 border-r border-border bg-bg-1 transition-colors duration-150",
+                                highlightedAssigneeId === assigneeIdForRow(row.id) && "bg-[var(--color-brand-orange-muted)]"
+                              )}
+                              style={{ width: NAME_COL, height: row.rowH, paddingTop: chartSlotHeight, boxSizing: "border-box" }}
+                            >
+                              <div
+                                className="flex items-center gap-2 px-3 py-2"
+                                style={{ height: rowContentHeight }}
+                              >
+                                {row.avatarName ? (
+                                  <Avatar name={row.avatarName} imageUrl={row.avatarUrl} className="h-8 w-8 shrink-0" />
+                                ) : (
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-card text-xs font-bold text-text-secondary">
+                                    #
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <p className="truncate text-[13px] font-semibold text-text-primary">{row.label}</p>
+                                  {row.sublabel ? <p className="truncate text-xs text-text-muted">{row.sublabel}</p> : null}
+                                </div>
+                              </div>
+                            </div>
                             <div className="relative h-full" style={{ width: timelineWidth, minWidth: timelineWidth }}>
                               {renderNonWorkingBands(Math.max(0, row.rowH - ROW_BORDER_H), row.id)}
                               {renderUndatedDropGhost(row)}
@@ -1907,7 +1913,6 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 </div>
               </div>
             </div>
-          </div>
         </div>
 
       <WorkloadUndatedPanel

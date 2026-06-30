@@ -11,6 +11,7 @@ import { createAndEmitNotification, notificationTaskStatusLabel } from "../lib/n
 import { getAuthUser } from "../middleware/auth.js";
 import { applyTaskRules, ensurePendingTaskReview } from "../lib/taskRules.js";
 import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
+import { buildTaskSplitPlan, splitPartName } from "../lib/taskSplit.js";
 import { loadMyTasks, resolveMyTasksTargetUserId } from "../lib/myTasks.js";
 import { TASK_DEADLINE_ERROR_MESSAGE, taskDeadlineViolation } from "../lib/taskDeadlineRules.js";
 
@@ -300,6 +301,12 @@ function taskMembershipSummary(memberships: Array<{ projectName: string | null; 
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return labels.length > 0 ? labels.join(", ") : null;
+}
+
+function assertCanSplitTask(task: { completed: boolean; mikaStatus: string | null }): void {
+  if (task.completed || task.mikaStatus === TaskStatus.FINISHED || task.mikaStatus === TaskStatus.AWAITING_REVIEW) {
+    throw new AppError(400, "Esta tarefa não pode ser dividida");
+  }
 }
 
 function toPendingTaskReviewDto(review: PendingTaskReviewDtoInput, title: string) {
@@ -761,6 +768,171 @@ export const createTask: RequestHandler = async (req, res, next) => {
     const catalog = await taskFieldCatalog();
 
     res.status(201).json({ task: toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const splitTask: RequestHandler = async (req, res, next) => {
+  try {
+    const authUser = getAuthUser(req);
+    const taskId = req.params.id;
+
+    if (!taskId) {
+      throw new AppError(400, "Task id is required");
+    }
+
+    const tasks = await prisma.$transaction(async (tx) => {
+      const sourceTask = await tx.task.findUnique({
+        where: { id: taskId },
+        include: {
+          memberships: true,
+          tags: true,
+          customFieldValues: true
+        }
+      });
+
+      if (!sourceTask) {
+        throw new AppError(404, "Task not found");
+      }
+
+      assertCanSplitTask(sourceTask);
+
+      const rootTaskId = sourceTask.splitRootTaskId ?? sourceTask.id;
+      const existingParts = sourceTask.splitRootTaskId
+        ? await tx.task.findMany({
+            where: {
+              OR: [{ id: rootTaskId }, { splitRootTaskId: rootTaskId }]
+            },
+            orderBy: [{ splitPartNumber: "asc" }, { createdAt: "asc" }, { id: "asc" }]
+          })
+        : [sourceTask];
+
+      let previewPlan: ReturnType<typeof buildTaskSplitPlan>;
+
+      try {
+        previewPlan = buildTaskSplitPlan(existingParts, sourceTask.id, "__new_task__");
+      } catch {
+        throw new AppError(400, "Não foi possível localizar a tarefa no grupo de divisão");
+      }
+
+      const createdTask = await tx.task.create({
+        data: {
+          asanaGid: makeLocalAsanaGid("task"),
+          name: splitPartName(previewPlan.baseName, previewPlan.insertedPartNumber, previewPlan.partTotal),
+          notes: sourceTask.notes,
+          htmlNotes: sourceTask.htmlNotes,
+          resourceType: sourceTask.resourceType,
+          assigneeStatus: sourceTask.assigneeStatus,
+          mikaStatus: sourceTask.mikaStatus,
+          priority: sourceTask.priority,
+          dueAt: sourceTask.dueAt,
+          startOn: sourceTask.startOn,
+          dueOn: sourceTask.dueOn,
+          estimatedDays: sourceTask.estimatedDays,
+          platform: sourceTask.platform,
+          discipline: sourceTask.discipline,
+          estimatedTime: sourceTask.estimatedTime,
+          maxDeadline: sourceTask.maxDeadline,
+          conclusionDays: sourceTask.conclusionDays,
+          stage: sourceTask.stage,
+          assigneeGid: sourceTask.assigneeGid,
+          createdByUserId: authUser.id,
+          workflowRootTaskId: sourceTask.workflowRootTaskId,
+          adjustmentNumber: sourceTask.adjustmentNumber,
+          splitRootTaskId: rootTaskId,
+          splitPartNumber: previewPlan.insertedPartNumber,
+          splitPartTotal: previewPlan.partTotal,
+          completed: false,
+          completedAtAsana: null
+        }
+      });
+
+      for (const membership of sourceTask.memberships) {
+        await tx.taskMembership.create({
+          data: {
+            taskId: createdTask.id,
+            projectGid: membership.projectGid,
+            projectName: membership.projectName,
+            sectionGid: membership.sectionGid,
+            sectionName: membership.sectionName
+          }
+        });
+      }
+
+      for (const tag of sourceTask.tags) {
+        await tx.taskTag.create({
+          data: {
+            taskId: createdTask.id,
+            tagGid: tag.tagGid
+          }
+        });
+      }
+
+      for (const field of sourceTask.customFieldValues) {
+        await tx.taskCustomFieldValue.create({
+          data: {
+            taskId: createdTask.id,
+            customFieldGid: field.customFieldGid,
+            customFieldName: field.customFieldName,
+            type: field.type,
+            precision: field.precision,
+            displayValue: field.displayValue,
+            numberValue: field.numberValue,
+            enumOptionGid: field.enumOptionGid,
+            enumOptionName: field.enumOptionName,
+            enumOptionColor: field.enumOptionColor,
+            customFieldId: field.customFieldId,
+            enumOptionId: field.enumOptionId
+          }
+        });
+      }
+
+      const splitPlan = buildTaskSplitPlan(existingParts, sourceTask.id, createdTask.id);
+
+      for (const rename of splitPlan.renames) {
+        await tx.task.update({
+          where: { id: rename.id },
+          data: {
+            name: rename.name,
+            splitRootTaskId: rootTaskId,
+            splitPartNumber: rename.partNumber,
+            splitPartTotal: rename.partTotal
+          }
+        });
+
+        await createTaskUpdateActivity(tx, {
+          taskId: rename.id,
+          actorId: authUser.id,
+          field: "title",
+          fromValue: rename.previousName,
+          toValue: rename.name
+        });
+      }
+
+      await createTaskActivity(tx, {
+        taskId: createdTask.id,
+        actorId: authUser.id,
+        type: taskActivityTypes.CREATED,
+        field: "split",
+        toValue: createdTask.name,
+        metadata: { sourceTaskId: sourceTask.id, splitRootTaskId: rootTaskId }
+      });
+
+      return tx.task.findMany({
+        where: {
+          OR: [{ id: rootTaskId }, { splitRootTaskId: rootTaskId }]
+        },
+        include: taskInclude,
+        orderBy: [{ splitPartNumber: "asc" }, { createdAt: "asc" }, { id: "asc" }]
+      });
+    });
+
+    const catalog = await taskFieldCatalog();
+
+    res.status(201).json({
+      tasks: tasks.map((task) => toTaskDto(task, undefined, catalog, { viewerRole: authUser.role }))
+    });
   } catch (error) {
     next(error);
   }

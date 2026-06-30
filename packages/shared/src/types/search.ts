@@ -27,6 +27,7 @@ export interface GlobalSearchResponse {
 export type AdvancedSearchType = "all" | "tasks" | "projects" | "users";
 
 export type AdvancedSearchCompletion = "open" | "completed" | "all";
+export type AdvancedSearchIndicatorMetric = "openTasks" | "completedTasks" | "overdueTasks" | "dueTasks" | "allTasks";
 
 export interface AdvancedSearchTaskResult extends GlobalSearchTaskResult {
   status: import("./enums.js").TaskStatus;

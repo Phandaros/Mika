@@ -136,6 +136,27 @@ describe("task rules", () => {
     expect(tx.taskReview.create).not.toHaveBeenCalled();
   });
 
+  it("creates a pending review when status explicitly enters awaiting review", async () => {
+    const tx = txMock();
+    tx.task.findUnique.mockResolvedValue(taskFixture({ assigneeRole: Role.DESIGNER }));
+    tx.taskReview.findFirst.mockResolvedValue(null);
+    tx.user.findUnique.mockResolvedValue({ id: "coordinator-1", role: Role.COORDINATOR, isActive: true });
+
+    await applyTaskRules(tx as unknown as Prisma.TransactionClient, "task-1", {
+      actor: { id: "designer-1", email: "d@mk.local", name: "Designer", role: Role.DESIGNER },
+      status: TaskStatus.AWAITING_REVIEW
+    });
+
+    expect(tx.task.update).toHaveBeenCalledWith({
+      where: { id: "task-1" },
+      data: expect.objectContaining({
+        mikaStatus: TaskStatus.AWAITING_REVIEW,
+        completed: true
+      })
+    });
+    expect(tx.taskReview.create).toHaveBeenCalledTimes(1);
+  });
+
   it("reopens tasks by deleting pending review and recalculating status from dates", async () => {
     const tx = txMock();
     tx.task.findUnique.mockResolvedValue(taskFixture({ completed: false, mikaStatus: TaskStatus.AWAITING_REVIEW, startOn: null, dueOn: "2099-06-20" }));
@@ -154,6 +175,50 @@ describe("task rules", () => {
       })
     });
     expect(tx.taskReview.deleteMany).toHaveBeenCalledWith({ where: { sourceTaskId: "task-1", status: "PENDING" } });
+  });
+
+  it("does not move completed or terminal tasks to awaiting review when only recalculating dates", async () => {
+    for (const status of [TaskStatus.FINISHED, TaskStatus.AWAITING_REVIEW, TaskStatus.IN_ANALYSIS]) {
+      const tx = txMock();
+      tx.task.findUnique.mockResolvedValue(
+        taskFixture({ completed: true, mikaStatus: status, assigneeRole: Role.DESIGNER, dueOn: "2099-06-20" })
+      );
+
+      await applyTaskRules(tx as unknown as Prisma.TransactionClient, "task-1", {
+        actor: { id: "coordinator-1", email: "c@mk.local", name: "Coordinator", role: Role.COORDINATOR },
+        recalculateOpenStatus: true
+      });
+
+      expect(tx.task.update).not.toHaveBeenCalled();
+      expect(tx.taskReview.create).not.toHaveBeenCalled();
+      expect(tx.taskReview.deleteMany).not.toHaveBeenCalled();
+    }
+  });
+
+  it("recalculates open task status from dates when requested", async () => {
+    const cases = [
+      { task: taskFixture(), expected: TaskStatus.TODO },
+      { task: taskFixture({ dueOn: "2099-06-20" }), expected: TaskStatus.ON_SCHEDULE },
+      { task: taskFixture({ startOn: "2000-01-01", dueOn: "2099-06-20" }), expected: TaskStatus.IN_PROGRESS },
+      { task: taskFixture({ dueOn: "2000-01-01" }), expected: TaskStatus.OVERDUE }
+    ];
+
+    for (const item of cases) {
+      const tx = txMock();
+      tx.task.findUnique.mockResolvedValue(item.task);
+
+      await applyTaskRules(tx as unknown as Prisma.TransactionClient, "task-1", {
+        actor: { id: "coordinator-1", email: "c@mk.local", name: "Coordinator", role: Role.COORDINATOR },
+        recalculateOpenStatus: true
+      });
+
+      expect(tx.task.update).toHaveBeenCalledWith({
+        where: { id: "task-1" },
+        data: expect.objectContaining({
+          mikaStatus: item.expected
+        })
+      });
+    }
   });
 
   it("calculates open task status from dates", () => {

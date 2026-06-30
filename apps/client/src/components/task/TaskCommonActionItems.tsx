@@ -1,3 +1,4 @@
+import { useRef, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Copy, FolderKanban, Trash2 } from "lucide-react";
 import type { Task } from "shared";
@@ -5,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCopyTaskLink } from "../../hooks/useCopyTaskLink";
 import { useDeferredTaskDelete } from "../../hooks/useDeferredTaskDelete";
 import { canManageTasks } from "../../lib/permissions";
+import { buildAbsoluteAppUrl } from "../../lib/taskLink";
 import { buildOpenProjectPath, resolveTaskProjectTargets } from "../../lib/taskProjectActions";
 import { cn } from "../../lib/utils";
 import {
@@ -40,6 +42,7 @@ export function TaskCommonActionItems({
   includeDelete = true
 }: TaskCommonActionItemsProps) {
   const navigate = useNavigate();
+  const skipNextOpenProjectSelectRef = useRef(false);
   const { user } = useAuth();
   const { copyTaskLink } = useCopyTaskLink();
   const { scheduleTaskDelete } = useDeferredTaskDelete(projectId);
@@ -56,6 +59,49 @@ export function TaskCommonActionItems({
     navigate(buildOpenProjectPath(targetProjectId, task.id));
   }
 
+  function openProjectInNewTab(targetProjectId: string) {
+    window.open(buildAbsoluteAppUrl(buildOpenProjectPath(targetProjectId, task.id)), "_blank", "noopener,noreferrer");
+  }
+
+  function skipNextOpenProjectSelect() {
+    skipNextOpenProjectSelectRef.current = true;
+    window.setTimeout(() => {
+      skipNextOpenProjectSelectRef.current = false;
+    }, 0);
+  }
+
+  function handleOpenProjectSelect(event: Event, targetProjectId: string) {
+    if (skipNextOpenProjectSelectRef.current) {
+      event.preventDefault();
+      skipNextOpenProjectSelectRef.current = false;
+      return;
+    }
+
+    openProject(targetProjectId);
+  }
+
+  function handleOpenProjectClick(event: MouseEvent, targetProjectId: string) {
+    if (!event.ctrlKey && !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    skipNextOpenProjectSelect();
+    openProjectInNewTab(targetProjectId);
+  }
+
+  function handleOpenProjectAuxClick(event: MouseEvent, targetProjectId: string) {
+    if (event.button !== 1) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    skipNextOpenProjectSelect();
+    openProjectInNewTab(targetProjectId);
+  }
+
   function handleDelete() {
     scheduleTaskDelete(task);
     onDeleted?.();
@@ -66,7 +112,11 @@ export function TaskCommonActionItems({
   return (
     <>
       {projectTargets.length === 1 ? (
-        <Item onSelect={() => openProject(projectTargets[0]!.id)}>
+        <Item
+          onAuxClick={(event) => handleOpenProjectAuxClick(event, projectTargets[0]!.id)}
+          onClick={(event) => handleOpenProjectClick(event, projectTargets[0]!.id)}
+          onSelect={(event) => handleOpenProjectSelect(event, projectTargets[0]!.id)}
+        >
           <FolderKanban className="h-4 w-4" />
           Abrir projeto
         </Item>
@@ -79,7 +129,12 @@ export function TaskCommonActionItems({
           </SubTrigger>
           <SubContent className="w-64">
             {projectTargets.map((target) => (
-              <Item key={target.id} onSelect={() => openProject(target.id)}>
+              <Item
+                key={target.id}
+                onAuxClick={(event) => handleOpenProjectAuxClick(event, target.id)}
+                onClick={(event) => handleOpenProjectClick(event, target.id)}
+                onSelect={(event) => handleOpenProjectSelect(event, target.id)}
+              >
                 <span className="min-w-0 flex-1 truncate">{target.label}</span>
               </Item>
             ))}

@@ -6,7 +6,7 @@
 /*
  * This file should be your main import to use Prisma-related types and utilities in a browser. 
  * Use it to get access to models, enums, and input types.
- *
+ * 
  * This file does not contain a `PrismaClient` class, nor several other helpers that are intended as server-side only.
  * See `client.ts` for the standard, server-side entry point.
  *
@@ -25,12 +25,12 @@ export * from './enums.js';
 export type User = Prisma.UserModel
 /**
  * Model CompanyHoliday
- *
+ * 
  */
 export type CompanyHoliday = Prisma.CompanyHolidayModel
 /**
  * Model Notification
- *
+ * 
  */
 export type Notification = Prisma.NotificationModel
 /**
@@ -85,17 +85,17 @@ export type Comment = Prisma.CommentModel
 export type Attachment = Prisma.AttachmentModel
 /**
  * Model ProjectNote
- *
+ * 
  */
 export type ProjectNote = Prisma.ProjectNoteModel
 /**
  * Model MeetingMinute
- *
+ * 
  */
 export type MeetingMinute = Prisma.MeetingMinuteModel
 /**
  * Model MeetingMinuteParticipant
- *
+ * 
  */
 export type MeetingMinuteParticipant = Prisma.MeetingMinuteParticipantModel
 /**

@@ -3,11 +3,13 @@ import {
   addWeeks,
   format,
   parseISO,
+  startOfMonth,
   startOfWeek,
   subWeeks
 } from "date-fns";
-import { BarChart2, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart2, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { Role, TaskStatus, type WeeklyReportStatus, type WeeklyReportSummaryDto } from "shared";
 import { Avatar } from "../components/shared/Avatar";
 import { Chip, taskStatusLabels, taskStatusTokens } from "../components/shared/Chip";
@@ -16,8 +18,10 @@ import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { Button } from "../components/ui/button";
 import { DatePicker } from "../components/ui/date-picker";
 import { SearchableSelect } from "../components/ui/searchable-select";
+import { useAuth } from "../hooks/useAuth";
 import { useUsers } from "../hooks/useUsers";
-import { useWeeklyReport, useWeeklyReports } from "../hooks/useWeeklyReports";
+import { useDownloadMonthlyCompletedTemplate, useWeeklyReport, useWeeklyReports } from "../hooks/useWeeklyReports";
+import { hasMinimumRole } from "../lib/permissions";
 import { cn, localDateToDateOnly } from "../lib/utils";
 
 const reportStatusConfig: Record<
@@ -96,10 +100,15 @@ function ReportListCard({
 
 export function WeeklyReportsAdminPage() {
   const [selectedWeek, setSelectedWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [selectedReportMonth, setSelectedReportMonth] = useState(() => startOfMonth(new Date()));
   const [userId, setUserId] = useState<string | undefined>();
   const [statusFilter, setStatusFilter] = useState<"ALL" | WeeklyReportStatus>("ALL");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
+  const { user } = useAuth();
+  const canGenerateMonthlyTemplate = hasMinimumRole(user, Role.COORDINATOR);
+  const downloadMonthlyCompletedTemplate = useDownloadMonthlyCompletedTemplate();
+  const reportMonth = format(selectedReportMonth, "yyyy-MM");
   const weekStartIso = selectedWeek.toISOString();
   const { data: users = [] } = useUsers();
   const { data: listData, isLoading: listLoading } = useWeeklyReports({
@@ -126,14 +135,48 @@ export function WeeklyReportsAdminPage() {
   const reports = listData?.reports ?? [];
   const summary = listData?.summary;
 
+  async function handleDownloadMonthlyTemplate() {
+    try {
+      await downloadMonthlyCompletedTemplate.mutateAsync(reportMonth);
+      toast.success("Word gerado com sucesso");
+    } catch {
+      toast.error("Não foi possível gerar o Word");
+    }
+  }
+
   return (
     <div className="grid min-w-0 gap-5">
-      <header>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
         <p className="text-sm font-semibold uppercase text-brand-orange">Gestão</p>
         <h1 className="mt-1 text-2xl font-bold text-text-primary">Relatórios semanais</h1>
         <p className="mt-2 max-w-3xl text-sm text-text-secondary">
           Acompanhe o envio dos relatórios dos projetistas por semana.
         </p>
+        </div>
+        {canGenerateMonthlyTemplate ? (
+          <div className="flex flex-wrap items-end gap-2 rounded-md border border-border bg-surface-card p-3">
+            <div className="min-w-44">
+              <p className="mb-2 text-xs font-semibold uppercase text-text-muted">Mês do Word</p>
+              <DatePicker
+                value={localDateToDateOnly(selectedReportMonth)}
+                onValueChange={(value) => {
+                  if (value) {
+                    setSelectedReportMonth(startOfMonth(new Date(`${value}T12:00:00`)));
+                  }
+                }}
+              />
+            </div>
+            <Button
+              onClick={() => void handleDownloadMonthlyTemplate()}
+              disabled={downloadMonthlyCompletedTemplate.isPending}
+              className="h-10"
+            >
+              <Download size={16} />
+              {downloadMonthlyCompletedTemplate.isPending ? "Gerando..." : "Gerar Word"}
+            </Button>
+          </div>
+        ) : null}
       </header>
 
       {summary ? (

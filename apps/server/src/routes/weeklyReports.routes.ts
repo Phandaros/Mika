@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  downloadMonthlyCompletedTemplate,
   getMyHistory,
   getMyReport,
   getReport,
@@ -22,6 +23,12 @@ const updateItemBodySchema = z.object({
 router.get("/weekly-reports/mine", auth, getMyReport);
 router.get("/weekly-reports/mine/history", auth, getMyHistory);
 router.get("/weekly-reports", auth, requireRole(Role.COORDINATOR), listReports);
+router.get(
+  "/weekly-reports/monthly-completed-template",
+  auth,
+  requireRole(Role.COORDINATOR),
+  downloadMonthlyCompletedTemplate
+);
 router.get("/weekly-reports/:id", auth, getReport);
 router.patch(
   "/weekly-reports/:id/items/:itemId",

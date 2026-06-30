@@ -31,7 +31,8 @@ function taskWithMemberships(): TaskSearchRecord {
           name: "Geral",
           project: {
             id: "project-remote",
-            name: "Projeto remoto"
+            name: "Projeto remoto",
+            archived: false
           }
         },
         project: null
@@ -43,7 +44,8 @@ function taskWithMemberships(): TaskSearchRecord {
           name: "Civil",
           project: {
             id: "project-current",
-            name: "SPK - Executivo"
+            name: "SPK - Executivo",
+            archived: false
           }
         },
         project: null
@@ -116,10 +118,15 @@ describe("globalSearch helpers", () => {
       AND: [
         expect.objectContaining({ parentId: null }),
         expect.any(Object),
-        { mikaStatus: { in: [TaskStatus.IN_PROGRESS] } },
+        expect.objectContaining({ completed: false }),
         { priority: { in: [Priority.HIGH] } },
         { assignee: { id: "user-1" } },
-        { dueOn: { gte: "2026-06-01", lte: "2026-06-30" } },
+        {
+          OR: [
+            { dueOn: { gte: "2026-06-01", lte: "2026-06-30" } },
+            { dueAt: { gte: new Date("2026-06-01T00:00:00.000Z"), lte: new Date("2026-06-30T23:59:59.999Z") } }
+          ]
+        },
         { completed: false }
       ]
     });
@@ -141,10 +148,11 @@ describe("globalSearch helpers", () => {
           projectName: null,
           section: {
             name: "Civil",
-            project: {
-              id: "project-1",
-              name: "Teste"
-            }
+          project: {
+            id: "project-1",
+            name: "Teste",
+            archived: false
+          }
           },
           project: null
         }
