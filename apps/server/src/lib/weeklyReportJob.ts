@@ -57,15 +57,23 @@ async function runWeeklyReportGeneration(): Promise<void> {
   console.log(`[weeklyReportJob] Relatórios gerados para ${designers.length} projetistas.`);
 }
 
+export async function runWeeklyReportGenerationSafely(): Promise<void> {
+  try {
+    await runWeeklyReportGeneration();
+  } catch (error) {
+    console.error("[weeklyReportJob] Falha ao gerar relatórios semanais", error);
+  }
+}
+
 export function startWeeklyReportJob(): void {
   if (intervalId) {
     return;
   }
 
-  void runWeeklyReportGeneration();
+  void runWeeklyReportGenerationSafely();
 
   intervalId = setInterval(() => {
-    void runWeeklyReportGeneration();
+    void runWeeklyReportGenerationSafely();
   }, CHECK_INTERVAL_MS);
 }
 

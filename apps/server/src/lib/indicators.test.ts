@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TaskStatus } from "./enums.js";
+import { DeliveryStatus, TaskStatus } from "./enums.js";
 
 const prismaMock = vi.hoisted(() => ({
   task: {
@@ -25,6 +25,8 @@ type TestTaskRecord = {
   dueAt: Date | null;
   completedAtAsana: Date | null;
   estimatedDays: number | null;
+  estimatedTime: number | null;
+  conclusionDays: number | null;
   assignee: { id: string; name: string } | null;
   memberships: TestMembership[];
 };
@@ -60,12 +62,14 @@ describe("buildIndicators", () => {
     prismaMock.project.findMany.mockReset();
   });
 
-  it("groups tasks by assignee and keeps unassigned overdue work visible", async () => {
+  it("groups completed deliveries by assignee and delivery status", async () => {
     prismaMock.task.findMany.mockResolvedValue([
       taskRecord({
         id: "task-1",
-        completed: false,
-        dueOn: "2000-01-01",
+        completed: true,
+        completedAtAsana: new Date("2026-06-01T12:00:00.000Z"),
+        estimatedDays: 2,
+        conclusionDays: 3,
         assignee: null,
         memberships: []
       }),
@@ -73,7 +77,17 @@ describe("buildIndicators", () => {
         id: "task-2",
         completed: true,
         completedAtAsana: new Date("2026-06-02T12:00:00.000Z"),
-        dueOn: "2026-06-03",
+        estimatedDays: 3,
+        conclusionDays: 2,
+        assignee: { id: "user-1", name: "Ana Projetista" },
+        memberships: [membership("Civil")]
+      }),
+      taskRecord({
+        id: "task-3",
+        completed: true,
+        completedAtAsana: new Date("2026-06-03T12:00:00.000Z"),
+        estimatedDays: null,
+        conclusionDays: 2,
         assignee: { id: "user-1", name: "Ana Projetista" },
         memberships: [membership("Civil")]
       })
@@ -82,14 +96,33 @@ describe("buildIndicators", () => {
 
     const data = await buildIndicators("all", "general");
 
-    expect(data.tasks.kpis.openTasks).toBe(1);
-    expect(data.tasks.kpis.completedTasks).toBe(1);
-    expect(data.tasks.kpis.overdueTasks).toBe(1);
-    expect(data.tasks.kpis.onTimeRate).toBe(100);
+    expect(data.tasks.kpis.completedTasks).toBe(3);
+    expect(data.tasks.kpis.onTimeDeliveries).toBe(1);
+    expect(data.tasks.kpis.lateDeliveries).toBe(1);
+    expect(data.tasks.kpis.unclassifiedDeliveries).toBe(1);
+    expect(data.tasks.kpis.onTimeRate).toBe(50);
+    expect(data.tasks.deliveryDistribution.find((item) => item.key === DeliveryStatus.LATE)).toMatchObject({ value: 1 });
     expect(data.tasks.byUser.find((item) => item.userId === null)).toMatchObject({
       userName: "Sem responsável",
-      overdueTasks: 1
+      lateDeliveries: 1
     });
+  });
+
+  it("filters delivery indicators by completion date", async () => {
+    prismaMock.task.findMany.mockResolvedValue([]);
+    prismaMock.project.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    await buildIndicators("month", "general");
+
+    expect(prismaMock.task.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        completed: true,
+        completedAtAsana: expect.objectContaining({
+          gte: expect.any(Date),
+          lte: expect.any(Date)
+        })
+      })
+    }));
   });
 
   it("computes portfolio discipline counts and projected area from catalog fields", async () => {
@@ -167,15 +200,19 @@ describe("buildIndicators", () => {
     prismaMock.task.findMany.mockResolvedValue([
       taskRecord({
         id: "civil-task",
-        completed: false,
+        completed: true,
+        completedAtAsana: new Date("2026-06-02T12:00:00.000Z"),
         estimatedDays: 2,
+        conclusionDays: 2,
         dueOn: null,
         memberships: [membership("Civil")]
       }),
       taskRecord({
         id: "electrical-task",
-        completed: false,
+        completed: true,
+        completedAtAsana: new Date("2026-06-03T12:00:00.000Z"),
         estimatedDays: 3,
+        conclusionDays: 4,
         dueOn: null,
         memberships: [membership("Elétrico")]
       })
@@ -185,11 +222,13 @@ describe("buildIndicators", () => {
     const data = await buildIndicators("all", "general");
 
     expect(data.team.byScope.find((item) => item.scope === "civil")).toMatchObject({
-      openTasks: 1,
+      completedTasks: 1,
+      onTimeDeliveries: 1,
       estimatedDays: 2
     });
     expect(data.team.byScope.find((item) => item.scope === "electrical")).toMatchObject({
-      openTasks: 1,
+      completedTasks: 1,
+      lateDeliveries: 1,
       estimatedDays: 3
     });
   });
@@ -212,6 +251,8 @@ function baseTaskRecord(): TestTaskRecord {
     dueAt: null,
     completedAtAsana: null,
     estimatedDays: null,
+    estimatedTime: null,
+    conclusionDays: null,
     assignee: { id: "user", name: "Usuário" },
     memberships: [membership("Civil")]
   };

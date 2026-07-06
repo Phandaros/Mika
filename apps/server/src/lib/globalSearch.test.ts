@@ -98,8 +98,8 @@ describe("globalSearch helpers", () => {
   });
 
   it("always excludes legacy subtasks from task search", () => {
-    expect(buildTaskSearchWhere("Teste")).toMatchObject({ parentId: null });
-    expect(buildTaskSearchWhere("")).toEqual({ parentId: null });
+    expect(buildTaskSearchWhere("Teste")).toMatchObject({ deletedAt: null, parentId: null });
+    expect(buildTaskSearchWhere("")).toEqual({ deletedAt: null, parentId: null });
   });
 
   it("builds advanced task filters without allowing legacy subtasks", () => {

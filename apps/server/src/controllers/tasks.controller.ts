@@ -3,14 +3,22 @@ import type { RequestHandler } from "express";
 import { NotificationType } from "shared";
 import { prisma } from "../lib/prisma.js";
 import { Priority, Role, TaskStatus, type Priority as PriorityValue, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
-import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
+import { makeLocalAsanaGid, taskCustomFieldCatalogInclude, taskInclude, toPublicUser, toTaskDto, userSelect } from "../lib/asanaDto.js";
 import { isCanonicalSectionName } from "../lib/canonicalSections.js";
 import { writableTaskStatus } from "../lib/taskStatus.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { createAndEmitNotification, notificationTaskStatusLabel } from "../lib/notify.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { applyTaskRules, ensurePendingTaskReview } from "../lib/taskRules.js";
-import { createTaskActivity, createTaskUpdateActivity, taskActivityInclude, taskActivityTypes, toTaskActivityDto } from "../lib/taskActivity.js";
+import { activeTaskWhere } from "../lib/taskDeletion.js";
+import {
+  createReviewTaskActivity,
+  createTaskActivity,
+  createTaskUpdateActivity,
+  taskActivityInclude,
+  taskActivityTypes,
+  toTaskActivityDto
+} from "../lib/taskActivity.js";
 import { buildTaskSplitPlan, splitPartName } from "../lib/taskSplit.js";
 import { loadMyTasks, resolveMyTasksTargetUserId } from "../lib/myTasks.js";
 import { TASK_DEADLINE_ERROR_MESSAGE, taskDeadlineViolation } from "../lib/taskDeadlineRules.js";
@@ -339,6 +347,58 @@ async function validateReviewAssignee(tx: Prisma.TransactionClient, reviewerId: 
   }
 }
 
+async function reviewUser(tx: Prisma.TransactionClient, reviewerId: string): Promise<{ id: string; name: string } | null> {
+  return tx.user.findUnique({
+    where: { id: reviewerId },
+    select: { id: true, name: true }
+  });
+}
+
+async function recordReviewRequestedActivity(
+  tx: Prisma.TransactionClient,
+  input: {
+    taskId: string;
+    actorId: string | null;
+    reviewId: string;
+    reviewerId: string;
+  }
+): Promise<void> {
+  const reviewer = await reviewUser(tx, input.reviewerId);
+
+  await createReviewTaskActivity(tx, {
+    taskId: input.taskId,
+    actorId: input.actorId,
+    type: taskActivityTypes.REVIEW_REQUESTED,
+    reviewId: input.reviewId,
+    reviewerId: input.reviewerId,
+    reviewerName: reviewer?.name ?? null
+  });
+}
+
+async function recordPendingReviewRequestedActivity(
+  tx: Prisma.TransactionClient,
+  input: {
+    taskId: string;
+    actorId: string | null;
+  }
+): Promise<void> {
+  const pendingReview = await tx.taskReview.findFirst({
+    where: { sourceTaskId: input.taskId, status: "PENDING" },
+    select: { id: true, reviewerId: true }
+  });
+
+  if (!pendingReview) {
+    return;
+  }
+
+  await recordReviewRequestedActivity(tx, {
+    taskId: input.taskId,
+    actorId: input.actorId,
+    reviewId: pendingReview.id,
+    reviewerId: pendingReview.reviewerId
+  });
+}
+
 async function recordTaskFieldActivities(
   tx: Prisma.TransactionClient,
   taskId: string,
@@ -545,6 +605,7 @@ export const listTasks: RequestHandler = async (req, res, next) => {
       where: { id: sectionIdFromReq(req) },
       include: {
         memberships: {
+          where: { task: activeTaskWhere() },
           include: {
             task: {
               include: taskInclude
@@ -636,7 +697,7 @@ export const getTaskById: RequestHandler = async (req, res, next) => {
       include: taskInclude
     });
 
-    if (!task) {
+    if (!task || task.deletedAt) {
       throw new AppError(404, "Task not found");
     }
 
@@ -792,7 +853,7 @@ export const splitTask: RequestHandler = async (req, res, next) => {
         }
       });
 
-      if (!sourceTask) {
+      if (!sourceTask || sourceTask.deletedAt) {
         throw new AppError(404, "Task not found");
       }
 
@@ -802,6 +863,7 @@ export const splitTask: RequestHandler = async (req, res, next) => {
       const existingParts = sourceTask.splitRootTaskId
         ? await tx.task.findMany({
             where: {
+              ...activeTaskWhere(),
               OR: [{ id: rootTaskId }, { splitRootTaskId: rootTaskId }]
             },
             orderBy: [{ splitPartNumber: "asc" }, { createdAt: "asc" }, { id: "asc" }]
@@ -921,6 +983,7 @@ export const splitTask: RequestHandler = async (req, res, next) => {
 
       return tx.task.findMany({
         where: {
+          ...activeTaskWhere(),
           OR: [{ id: rootTaskId }, { splitRootTaskId: rootTaskId }]
         },
         include: taskInclude,
@@ -956,7 +1019,7 @@ export const updateTask: RequestHandler = async (req, res, next) => {
       }
     });
 
-    if (!existing) {
+    if (!existing || existing.deletedAt) {
       throw new AppError(404, "Task not found");
     }
 
@@ -1034,6 +1097,13 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
       await recordTaskFieldActivities(tx, taskId, authUser.id, existing, updatedTask, body);
 
+      if (existing.mikaStatus !== TaskStatus.AWAITING_REVIEW && updatedTask.mikaStatus === TaskStatus.AWAITING_REVIEW) {
+        await recordPendingReviewRequestedActivity(tx, {
+          taskId,
+          actorId: authUser.id
+        });
+      }
+
       return updatedTask;
     });
 
@@ -1058,7 +1128,47 @@ export const updateTask: RequestHandler = async (req, res, next) => {
 
 export const deleteTask: RequestHandler = async (req, res, next) => {
   try {
-    await prisma.task.delete({ where: { id: req.params.id } });
+    const authUser = getAuthUser(req);
+    const taskId = req.params.id;
+
+    await prisma.$transaction(async (tx) => {
+      const task = await tx.task.findUnique({
+        where: { id: taskId },
+        select: { id: true, deletedAt: true }
+      });
+
+      if (!task || task.deletedAt) {
+        throw new AppError(404, "Task not found");
+      }
+
+      await tx.weeklyReportItem.deleteMany({
+        where: {
+          taskId,
+          report: { status: { in: ["PENDING", "LATE"] } }
+        }
+      });
+
+      const submittedItem = await tx.weeklyReportItem.findFirst({
+        where: {
+          taskId,
+          report: { status: "SUBMITTED" }
+        },
+        select: { id: true }
+      });
+
+      if (submittedItem) {
+        await tx.task.update({
+          where: { id: taskId },
+          data: {
+            deletedAt: new Date(),
+            deletedByUserId: authUser.id
+          }
+        });
+        return;
+      }
+
+      await tx.task.delete({ where: { id: taskId } });
+    });
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -1076,10 +1186,10 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
     const status = writableStatus(body.status);
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { mikaStatus: true }
+      select: { mikaStatus: true, deletedAt: true }
     });
 
-    if (!existing) {
+    if (!existing || existing.deletedAt) {
       throw new AppError(404, "Task not found");
     }
 
@@ -1105,6 +1215,13 @@ export const updateTaskStatus: RequestHandler = async (req, res, next) => {
         fromValue: existing.mikaStatus,
         toValue: updatedTask.mikaStatus
       });
+
+      if (existing.mikaStatus !== TaskStatus.AWAITING_REVIEW && updatedTask.mikaStatus === TaskStatus.AWAITING_REVIEW) {
+        await recordPendingReviewRequestedActivity(tx, {
+          taskId,
+          actorId: authUser.id
+        });
+      }
 
       return updatedTask;
     });
@@ -1137,10 +1254,10 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
     }
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { completed: true, completedAtAsana: true, mikaStatus: true }
+      select: { completed: true, completedAtAsana: true, mikaStatus: true, deletedAt: true }
     });
 
-    if (!existing) {
+    if (!existing || existing.deletedAt) {
       throw new AppError(404, "Task not found");
     }
 
@@ -1179,6 +1296,13 @@ export const updateTaskCompletion: RequestHandler = async (req, res, next) => {
         });
       }
 
+      if (body.completed && updatedTask.mikaStatus === TaskStatus.AWAITING_REVIEW) {
+        await recordPendingReviewRequestedActivity(tx, {
+          taskId,
+          actorId: authUser.id
+        });
+      }
+
       return updatedTask;
     });
 
@@ -1207,11 +1331,12 @@ export const sendTaskToReview: RequestHandler = async (req, res, next) => {
           id: true,
           name: true,
           mikaStatus: true,
-          completed: true
+          completed: true,
+          deletedAt: true
         }
       });
 
-      if (!existing) {
+      if (!existing || existing.deletedAt) {
         throw new AppError(404, "Task not found");
       }
 
@@ -1277,6 +1402,15 @@ export const sendTaskToReview: RequestHandler = async (req, res, next) => {
         });
       }
 
+      if (!pendingReview || pendingReview.reviewerId !== review.reviewerId) {
+        await recordReviewRequestedActivity(tx, {
+          taskId,
+          actorId: authUser.id,
+          reviewId: review.id,
+          reviewerId: review.reviewerId
+        });
+      }
+
       return { task: updatedTask, review, shouldNotify: !pendingReview || pendingReview.reviewerId !== review.reviewerId };
     });
 
@@ -1302,21 +1436,126 @@ export const sendTaskToReview: RequestHandler = async (req, res, next) => {
   }
 };
 
+const reviewHistoryInclude = {
+  reviewer: { select: userSelect },
+  requestedBy: { select: userSelect }
+} satisfies Prisma.TaskReviewInclude;
+
+type TaskHistoryActivityDto = ReturnType<typeof toTaskActivityDto>;
+type TaskReviewHistoryRecord = Prisma.TaskReviewGetPayload<{ include: typeof reviewHistoryInclude }>;
+
+function reviewActivityKey(activity: TaskHistoryActivityDto): string | null {
+  if (
+    activity.type !== taskActivityTypes.REVIEW_REQUESTED &&
+    activity.type !== taskActivityTypes.REVIEW_APPROVED &&
+    activity.type !== taskActivityTypes.REVIEW_REJECTED
+  ) {
+    return null;
+  }
+
+  const reviewId = activity.metadata?.reviewId;
+  return typeof reviewId === "string" ? `${activity.type}:${reviewId}` : null;
+}
+
+function syntheticReviewActivity(
+  review: TaskReviewHistoryRecord,
+  type:
+    | typeof taskActivityTypes.REVIEW_REQUESTED
+    | typeof taskActivityTypes.REVIEW_APPROVED
+    | typeof taskActivityTypes.REVIEW_REJECTED,
+  createdAt: Date
+): TaskHistoryActivityDto {
+  const actor = type === taskActivityTypes.REVIEW_REQUESTED ? review.requestedBy : review.reviewer;
+
+  return {
+    id: `synthetic:${review.id}:${type}`,
+    taskId: review.sourceTaskId,
+    actorId: type === taskActivityTypes.REVIEW_REQUESTED ? review.requestedById : review.reviewerId,
+    type,
+    field: "review",
+    fromValue: null,
+    toValue: review.reviewer.name,
+    metadata: {
+      synthetic: true,
+      reviewId: review.id,
+      reviewerId: review.reviewerId,
+      reviewerName: review.reviewer.name
+    },
+    createdAt,
+    actor: toPublicUser(actor)
+  };
+}
+
+function syntheticReviewActivities(
+  reviews: TaskReviewHistoryRecord[],
+  existingReviewActivityKeys: Set<string>
+): TaskHistoryActivityDto[] {
+  const activities: TaskHistoryActivityDto[] = [];
+
+  for (const review of reviews) {
+    const requested = syntheticReviewActivity(review, taskActivityTypes.REVIEW_REQUESTED, review.createdAt);
+    const requestedKey = reviewActivityKey(requested);
+    if (requestedKey && !existingReviewActivityKeys.has(requestedKey)) {
+      activities.push(requested);
+    }
+
+    if (review.status === "APPROVED") {
+      const approved = syntheticReviewActivity(
+        review,
+        taskActivityTypes.REVIEW_APPROVED,
+        review.decidedAt ?? review.updatedAt
+      );
+      const approvedKey = reviewActivityKey(approved);
+      if (approvedKey && !existingReviewActivityKeys.has(approvedKey)) {
+        activities.push(approved);
+      }
+    }
+
+    if (review.status === "REJECTED") {
+      const rejected = syntheticReviewActivity(
+        review,
+        taskActivityTypes.REVIEW_REJECTED,
+        review.decidedAt ?? review.updatedAt
+      );
+      const rejectedKey = reviewActivityKey(rejected);
+      if (rejectedKey && !existingReviewActivityKeys.has(rejectedKey)) {
+        activities.push(rejected);
+      }
+    }
+  }
+
+  return activities;
+}
+
 export const listTaskHistory: RequestHandler = async (req, res, next) => {
   try {
-    const task = await prisma.task.findUnique({ where: { id: req.params.id }, select: { id: true } });
+    const task = await prisma.task.findUnique({ where: { id: req.params.id }, select: { id: true, deletedAt: true } });
 
-    if (!task) {
+    if (!task || task.deletedAt) {
       throw new AppError(404, "Task not found");
     }
 
-    const activities = await prisma.taskActivity.findMany({
-      where: { taskId: task.id },
-      orderBy: { createdAt: "desc" },
-      include: taskActivityInclude()
-    });
+    const [activities, reviews] = await Promise.all([
+      prisma.taskActivity.findMany({
+        where: { taskId: task.id },
+        orderBy: { createdAt: "desc" },
+        include: taskActivityInclude()
+      }),
+      prisma.taskReview.findMany({
+        where: { sourceTaskId: task.id },
+        include: reviewHistoryInclude,
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
+    const activityDtos = activities.map(toTaskActivityDto);
+    const existingReviewActivityKeys = new Set(
+      activityDtos.map(reviewActivityKey).filter((key): key is string => Boolean(key))
+    );
+    const mergedActivities = [...activityDtos, ...syntheticReviewActivities(reviews, existingReviewActivityKeys)].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
 
-    res.json({ activities: activities.map(toTaskActivityDto) });
+    res.json({ activities: mergedActivities });
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,4 @@
-import type { TaskStatus } from "./enums.js";
+import type { DeliveryStatus, TaskStatus } from "./enums.js";
 
 export type IndicatorPeriod = "month" | "year" | "all";
 export type IndicatorScope = "general" | "civil" | "electrical";
@@ -20,26 +20,28 @@ export interface IndicatorUserPoint {
   userId: string | null;
   userName: string;
   initials: string;
-  openTasks: number;
   completedTasks: number;
-  overdueTasks: number;
+  onTimeDeliveries: number;
+  lateDeliveries: number;
+  unclassifiedDeliveries: number;
   estimatedDays: number;
 }
 
 export interface IndicatorScopePoint {
   scope: IndicatorScope;
   label: string;
-  openTasks: number;
   completedTasks: number;
-  overdueTasks: number;
+  onTimeDeliveries: number;
+  lateDeliveries: number;
+  unclassifiedDeliveries: number;
   estimatedDays: number;
 }
 
 export interface IndicatorTaskKpis {
-  openTasks: number;
   completedTasks: number;
-  overdueTasks: number;
-  dueTasks: number;
+  onTimeDeliveries: number;
+  lateDeliveries: number;
+  unclassifiedDeliveries: number;
   onTimeRate: number;
 }
 
@@ -60,8 +62,9 @@ export interface IndicatorPortfolioStatusGroup {
 export interface IndicatorTasksSection {
   kpis: IndicatorTaskKpis;
   statusDistribution: IndicatorStatusPoint[];
+  deliveryDistribution: IndicatorValuePoint[];
   byUser: IndicatorUserPoint[];
-  overdueByUser: IndicatorUserPoint[];
+  lateByUser: IndicatorUserPoint[];
 }
 
 export interface IndicatorPortfolioSection {

@@ -2,10 +2,12 @@ import { ArrowRight, BriefcaseBusiness, FolderKanban, Search, UserRound, X } fro
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  DeliveryStatus,
   Priority,
   ProjectStatus,
   TaskStatus,
   type AdvancedSearchCompletion,
+  type AdvancedSearchDeliveryStatus,
   type AdvancedSearchIndicatorMetric,
   type AdvancedSearchProjectResult,
   type AdvancedSearchResponse,
@@ -444,6 +446,9 @@ function parseSearchFilters(searchParams: URLSearchParams): AdvancedSearchFilter
     dueFrom: searchParams.get("dueFrom") ?? undefined,
     dueTo: searchParams.get("dueTo") ?? undefined,
     completion,
+    deliveryStatus: searchParamArray(searchParams, "deliveryStatus").filter((value): value is AdvancedSearchDeliveryStatus =>
+      Object.values(DeliveryStatus).includes(value as DeliveryStatus)
+    ),
     source: searchParams.get("source") === "indicators" ? "indicators" : undefined,
     indicatorMetric: parseIndicatorMetric(searchParams.get("indicatorMetric")),
     indicatorPeriod: parseIndicatorPeriod(searchParams.get("indicatorPeriod")),
@@ -472,7 +477,10 @@ function parseIndicatorMetric(value: string | null): AdvancedSearchIndicatorMetr
     value === "completedTasks" ||
     value === "overdueTasks" ||
     value === "dueTasks" ||
-    value === "allTasks"
+    value === "allTasks" ||
+    value === "onTimeDeliveries" ||
+    value === "lateDeliveries" ||
+    value === "unclassifiedDeliveries"
     ? value
     : undefined;
 }
@@ -490,6 +498,7 @@ function clearIndicatorParams(searchParams: URLSearchParams) {
   searchParams.delete("indicatorMetric");
   searchParams.delete("indicatorPeriod");
   searchParams.delete("indicatorScope");
+  searchParams.delete("deliveryStatus");
 }
 
 function indicatorContextLabel(filters: AdvancedSearchFilters): string | null {
@@ -506,7 +515,10 @@ function indicatorMetricLabel(metric: AdvancedSearchIndicatorMetric): string {
     completedTasks: "Concluídas",
     overdueTasks: "Atrasadas",
     dueTasks: "Com entrega no período",
-    allTasks: "Tarefas"
+    allTasks: "Tarefas",
+    onTimeDeliveries: "Entregues no prazo",
+    lateDeliveries: "Entregues em atraso",
+    unclassifiedDeliveries: "Entregas sem status"
   };
 
   return labels[metric] ?? metric;

@@ -34,8 +34,21 @@ Data limite externa prometida ao cliente para uma **Tarefa**. É uma informaçã
 ### Entrega
 Data interna estimada para conclusão de uma **Tarefa**. Nunca deve ser posterior ao **Prazo Máximo** quando esse limite existir.
 
+### Status de entrega
+Resultado de uma **Tarefa** concluída a partir da comparação entre **Dias estimados** e **Dias conclusão**. É diferente do status operacional da tarefa; seus valores são antes do prazo, no prazo, em atraso e sem status.
+_Evitar_: status da tarefa, atraso operacional
+
 ### Mudança de data
 Alteração do Início ou da **Entrega** de uma **Tarefa**. Pode recalcular o status operacional de uma tarefa aberta, mas não envia tarefa para revisão.
+
+### Revisão
+Avaliação de uma **Tarefa** concluída por um revisor responsável antes de considerá-la definitivamente finalizada. Pode ser iniciada automaticamente pelas regras de conclusão ou enviada manualmente para uma pessoa revisora escolhida.
+
+### Aprovação de revisão
+Decisão positiva do revisor sobre uma **Revisão**. Confirma que a **Tarefa** revisada foi aceita.
+
+### Recusa de revisão
+Decisão negativa do revisor sobre uma **Revisão**. Indica que a **Tarefa** revisada precisa de ajustes, mas a recusa pertence ao histórico da tarefa que foi enviada para revisão.
 
 ### Indicadores
 Painel gerencial de métricas agregadas para coordenação. Consolida tarefas, prazos, entregas, equipe operacional e áreas de projeto em gráficos e contadores. Indicadores de tarefas usam período operacional; indicadores de projetos são leitura de carteira geral ou por ano de origem do projeto. Não é o mesmo que **Relatório semanal**, que é um registro individual preenchido pelo usuário sobre a semana.

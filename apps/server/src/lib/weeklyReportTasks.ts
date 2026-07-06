@@ -2,6 +2,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import { taskInclude, toTaskDto } from "./asanaDto.js";
 import { Role, TaskStatus } from "./enums.js";
 import { prisma } from "./prisma.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 import { getCurrentWeekEnd, getCurrentWeekStart } from "./weekUtils.js";
 
 export const REPORT_ELIGIBLE_ROLES = [Role.DESIGNER, Role.INTERN] as const;
@@ -14,6 +15,24 @@ export interface TaskSnapshot {
 }
 
 type TaskRecord = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
+type WeeklyReportRecord = Awaited<ReturnType<typeof prisma.weeklyReport.create>>;
+
+function isUniqueWeeklyReportConstraintError(error: unknown): boolean {
+  if (!(error instanceof Error) || !("code" in error) || error.code !== "P2002") {
+    return false;
+  }
+
+  const meta = "meta" in error ? error.meta : null;
+  const target = meta && typeof meta === "object" && "target" in meta ? meta.target : undefined;
+  const fields =
+    Array.isArray(target)
+      ? target
+      : meta && typeof meta === "object" && "driverAdapterError" in meta
+        ? (meta.driverAdapterError as { cause?: { constraint?: { fields?: unknown } } }).cause?.constraint?.fields
+        : undefined;
+
+  return Array.isArray(fields) && fields.includes("userId") && fields.includes("weekStart");
+}
 
 export function buildTaskSnapshot(task: TaskRecord): TaskSnapshot {
   const dto = toTaskDto(task);
@@ -30,6 +49,7 @@ export function buildTaskSnapshot(task: TaskRecord): TaskSnapshot {
 
 export function eligibleTasksWhere(userId: string, weekStart: Date, weekEnd: Date): Prisma.TaskWhereInput {
   return {
+    ...activeTaskWhere(),
     assignee: { id: userId },
     OR: [
       {
@@ -66,7 +86,7 @@ export async function createWeeklyReportForUser(
   userId: string,
   weekStart: Date = getCurrentWeekStart(),
   weekEnd: Date = getCurrentWeekEnd()
-): Promise<{ report: Awaited<ReturnType<typeof prisma.weeklyReport.create>>; created: boolean }> {
+): Promise<{ report: WeeklyReportRecord; created: boolean }> {
   const existing = await prisma.weeklyReport.findUnique({
     where: {
       userId_weekStart: {
@@ -82,23 +102,44 @@ export async function createWeeklyReportForUser(
 
   const tasks = await findEligibleTasksForUser(userId, weekStart, weekEnd);
 
-  const report = await prisma.weeklyReport.create({
-    data: {
-      userId,
-      weekStart,
-      weekEnd,
-      status: "PENDING",
-      items: {
-        create: tasks.map((task) => ({
-          taskId: task.id,
-          comment: "",
-          taskSnapshot: {}
-        }))
+  try {
+    const report = await prisma.weeklyReport.create({
+      data: {
+        userId,
+        weekStart,
+        weekEnd,
+        status: "PENDING",
+        items: {
+          create: tasks.map((task) => ({
+            taskId: task.id,
+            comment: "",
+            taskSnapshot: {}
+          }))
+        }
       }
-    }
-  });
+    });
 
-  return { report, created: true };
+    return { report, created: true };
+  } catch (error) {
+    if (!isUniqueWeeklyReportConstraintError(error)) {
+      throw error;
+    }
+
+    const report = await prisma.weeklyReport.findUnique({
+      where: {
+        userId_weekStart: {
+          userId,
+          weekStart
+        }
+      }
+    });
+
+    if (!report) {
+      throw error;
+    }
+
+    return { report, created: false };
+  }
 }
 
 export async function markPreviousWeekReportsLate(previousWeekStart: Date) {

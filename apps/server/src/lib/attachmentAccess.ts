@@ -41,9 +41,9 @@ export async function canAccessAttachment(attachmentId: string): Promise<boolean
   if (attachment.comment?.taskId) {
     const task = await prisma.task.findUnique({
       where: { id: attachment.comment.taskId },
-      select: { id: true }
+      select: { id: true, deletedAt: true }
     });
-    return Boolean(task);
+    return Boolean(task && !task.deletedAt);
   }
 
   if (attachment.projectNote || attachment.meetingMinute) {

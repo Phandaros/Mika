@@ -8,6 +8,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { commentNotificationMessage, createAndEmitNotification } from "../lib/notify.js";
 import { extractUserMentionIds } from "../lib/commentMentions.js";
 import { taskActivityTypes } from "../lib/taskActivity.js";
+import { activeTaskWhere } from "../lib/taskDeletion.js";
 import { Role } from "../lib/enums.js";
 import { normalizeAttachmentFilename } from "../lib/attachmentFilename.js";
 
@@ -118,7 +119,7 @@ function canMutateComment(
 
 export const listComments: RequestHandler = async (req, res, next) => {
   try {
-    const task = await prisma.task.findUnique({ where: { id: req.params.taskId }, select: { id: true } });
+    const task = await prisma.task.findFirst({ where: { id: req.params.taskId, ...activeTaskWhere() }, select: { id: true } });
 
     if (!task) {
       throw new AppError(404, "Task not found");
@@ -140,7 +141,7 @@ export const listComments: RequestHandler = async (req, res, next) => {
 
 export const createComment: RequestHandler = async (req, res, next) => {
   try {
-    const task = await prisma.task.findUnique({ where: { id: req.params.taskId }, select: { id: true } });
+    const task = await prisma.task.findFirst({ where: { id: req.params.taskId, ...activeTaskWhere() }, select: { id: true } });
 
     if (!task) {
       throw new AppError(404, "Task not found");
@@ -175,7 +176,7 @@ export const createComment: RequestHandler = async (req, res, next) => {
       }
     });
 
-    if (fullTask) {
+    if (fullTask && !fullTask.deletedAt) {
       const recipients = new Set<string>();
       if (fullTask.assignee) {
         recipients.add(fullTask.assignee.id);
@@ -239,10 +240,10 @@ export const updateComment: RequestHandler = async (req, res, next) => {
 
     const task = await prisma.task.findUnique({
       where: { id: comment.taskId },
-      select: { id: true, name: true }
+      select: { id: true, name: true, deletedAt: true }
     });
 
-    if (task) {
+    if (task && !task.deletedAt) {
       await notifyMentionedUsers({
         content: body.content,
         taskId: task.id,

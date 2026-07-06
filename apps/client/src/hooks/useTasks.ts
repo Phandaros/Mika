@@ -562,6 +562,7 @@ export function useCreateTask(projectId: string, sectionId: string) {
         stage: payload.stage ?? null,
         completed: false,
         completedAt: null,
+        deliveryStatus: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         assignee: null

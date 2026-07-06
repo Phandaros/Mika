@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
-  Clock3,
   FolderKanban,
   PieChart as PieChartIcon,
   Users
@@ -31,7 +30,7 @@ import type {
   IndicatorUserPoint,
   IndicatorValuePoint
 } from "shared";
-import { TaskStatus } from "shared";
+import { DeliveryStatus, TaskStatus } from "shared";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "../components/ui/chart";
 import { Button } from "../components/ui/button";
 import { EmptyState } from "../components/shared/EmptyState";
@@ -57,15 +56,17 @@ const scopeOptions: Array<{ value: IndicatorScope; label: string }> = [
 ];
 
 const userChartConfig = {
-  openTasks: { label: "Abertas", color: "var(--status-inprogress-text)" },
   completedTasks: { label: "Concluídas", color: "var(--status-done-text)" },
-  overdueTasks: { label: "Atrasadas", color: "var(--status-late-text)" }
+  onTimeDeliveries: { label: "No prazo", color: "var(--status-done-text)" },
+  lateDeliveries: { label: "Em atraso", color: "var(--status-late-text)" },
+  unclassifiedDeliveries: { label: "Sem status", color: "var(--color-text-muted)" }
 } satisfies ChartConfig;
 
 const scopeChartConfig = {
-  openTasks: { label: "Abertas", color: "var(--status-inprogress-text)" },
   completedTasks: { label: "Concluídas", color: "var(--status-done-text)" },
-  overdueTasks: { label: "Atrasadas", color: "var(--status-late-text)" },
+  onTimeDeliveries: { label: "No prazo", color: "var(--status-done-text)" },
+  lateDeliveries: { label: "Em atraso", color: "var(--status-late-text)" },
+  unclassifiedDeliveries: { label: "Sem status", color: "var(--color-text-muted)" },
   estimatedDays: { label: "Dias estimados", color: "var(--color-brand-orange)" }
 } satisfies ChartConfig;
 
@@ -305,46 +306,51 @@ function TasksTab({
     () => data.statusDistribution.map((point) => ({ ...point, fill: statusColor(point.status) })),
     [data.statusDistribution]
   );
+  const deliveryData = useMemo(
+    () => data.deliveryDistribution.map((point) => ({ ...point, fill: deliveryStatusColor(point.key) })),
+    [data.deliveryDistribution]
+  );
 
   return (
     <>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Tarefas abertas"
-          value={data.kpis.openTasks}
-          icon={<Clock3 size={16} />}
-          to={taskIndicatorLink({ period, scope, completion: "open", metric: "openTasks" })}
+          label="Entregues no prazo"
+          value={data.kpis.onTimeDeliveries}
+          icon={<CheckCircle2 size={16} />}
+          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "onTimeDeliveries", deliveryStatus: [DeliveryStatus.EARLY, DeliveryStatus.ON_TIME] })}
           onNavigate={rememberScroll}
         />
         <MetricCard
           label="Concluídas"
           value={data.kpis.completedTasks}
           icon={<CheckCircle2 size={16} />}
-          to={taskIndicatorLink({ period, scope, status: TaskStatus.FINISHED, completion: "completed", metric: "completedTasks" })}
+          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "completedTasks" })}
           onNavigate={rememberScroll}
         />
         <MetricCard
-          label="Atrasadas"
-          value={data.kpis.overdueTasks}
+          label="Entregues em atraso"
+          value={data.kpis.lateDeliveries}
           icon={<AlertTriangle size={16} />}
           tone="danger"
-          to={taskIndicatorLink({ period, scope, status: TaskStatus.OVERDUE, metric: "overdueTasks" })}
+          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "lateDeliveries", deliveryStatus: DeliveryStatus.LATE })}
           onNavigate={rememberScroll}
         />
         <MetricCard
-          label="No prazo"
-          value={`${data.kpis.onTimeRate}%`}
+          label="Sem status"
+          value={data.kpis.unclassifiedDeliveries}
           icon={<BarChart3 size={16} />}
-          helper={`${numberFormatter.format(data.kpis.dueTasks)} com entrega no período`}
-          to={taskIndicatorLink({ period, scope, completion: "all", metric: "dueTasks" })}
+          helper={`${data.kpis.onTimeRate}% no prazo entre classificadas`}
+          tone="muted"
+          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "unclassifiedDeliveries", deliveryStatus: DeliveryStatus.UNCLASSIFIED })}
           onNavigate={rememberScroll}
         />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.8fr)]">
-        <ChartPanel title={`Tarefas por responsável · ${scopedLabel}`} icon={<BarChart3 size={16} />}>
+        <ChartPanel title={`Entregas por responsável · ${scopedLabel}`} icon={<BarChart3 size={16} />}>
           {data.byUser.length === 0 ? (
-            <EmptyState title="Sem tarefas para o período" />
+            <EmptyState title="Sem entregas para o período" />
           ) : (
             <ChartContainer config={userChartConfig} className="h-[320px] w-full aspect-auto [&_.recharts-bar-rectangle]:cursor-pointer">
               <BarChart data={userBarData(data.byUser)} margin={{ left: 0, right: 12, top: 12, bottom: 0 }}>
@@ -352,34 +358,34 @@ function TasksTab({
                 <XAxis dataKey="initials" tickLine={false} axisLine={false} />
                 <YAxis tickLine={false} axisLine={false} width={34} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="openTasks" stackId="tasks" fill="var(--status-inprogress-text)" radius={[0, 0, 4, 4]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "openTasks", onNavigate)} />
-                <Bar dataKey="completedTasks" stackId="tasks" fill="var(--status-done-text)" isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "completedTasks", onNavigate)} />
-                <Bar dataKey="overdueTasks" stackId="tasks" fill="var(--status-late-text)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "overdueTasks", onNavigate)} />
+                <Bar dataKey="onTimeDeliveries" stackId="tasks" fill="var(--status-done-text)" radius={[0, 0, 4, 4]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "onTimeDeliveries", onNavigate)} />
+                <Bar dataKey="lateDeliveries" stackId="tasks" fill="var(--status-late-text)" isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "lateDeliveries", onNavigate)} />
+                <Bar dataKey="unclassifiedDeliveries" stackId="tasks" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "unclassifiedDeliveries", onNavigate)} />
               </BarChart>
             </ChartContainer>
           )}
         </ChartPanel>
 
-        <ChartPanel title="Distribuição por status" icon={<PieChartIcon size={16} />}>
-          {statusData.length === 0 ? (
-            <EmptyState title="Sem status para mostrar" />
+        <ChartPanel title="Status de entrega" icon={<PieChartIcon size={16} />}>
+          {deliveryData.length === 0 ? (
+            <EmptyState title="Sem entregas para classificar" />
           ) : (
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px] xl:grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_170px]">
-              <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, statusData, (point) => openTaskStatus(point, period, scope, onNavigate))}>
+              <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, deliveryData, (point) => openDeliveryStatus(point, period, scope, onNavigate))}>
                 <ChartContainer config={valueChartConfig} className="h-[260px] w-full aspect-auto [&_.recharts-pie-sector]:cursor-pointer">
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
-                    <Pie data={statusData} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} paddingAngle={2} isAnimationActive={false}>
-                      {statusData.map((entry) => (
-                        <Cell key={entry.status} fill={entry.fill} data-indicator-key={entry.status} />
+                    <Pie data={deliveryData} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} paddingAngle={2} isAnimationActive={false}>
+                      {deliveryData.map((entry) => (
+                        <Cell key={entry.key} fill={entry.fill} data-indicator-key={entry.key} />
                       ))}
                     </Pie>
                   </PieChart>
                 </ChartContainer>
               </div>
               <LegendList
-                items={statusData.map((item) => ({ key: item.status, label: item.label, value: item.value, color: item.fill }))}
-                linkFor={(item) => taskIndicatorLink({ period, scope, status: item.key as TaskStatus, completion: "all", metric: metricForTaskStatus(item.key as TaskStatus) })}
+                items={deliveryData.map((item) => ({ key: item.key, label: item.label, value: item.value, color: item.fill }))}
+                linkFor={(item) => deliveryStatusLink(item.key as DeliveryStatus, period, scope)}
                 onNavigate={rememberScroll}
               />
             </div>
@@ -387,11 +393,37 @@ function TasksTab({
         </ChartPanel>
       </div>
 
-      <ChartPanel title="Responsáveis com atraso" icon={<AlertTriangle size={16} />}>
-        {data.overdueByUser.length === 0 ? (
-          <EmptyState title="Nenhum atraso no recorte atual" />
+      <ChartPanel title="Responsáveis com entregas em atraso" icon={<AlertTriangle size={16} />}>
+        {data.lateByUser.length === 0 ? (
+          <EmptyState title="Nenhuma entrega em atraso no recorte atual" />
         ) : (
-          <UserRanking rows={data.overdueByUser} period={period} scope={scope} mode="overdue" rememberScroll={rememberScroll} />
+          <UserRanking rows={data.lateByUser} period={period} scope={scope} mode="late" rememberScroll={rememberScroll} />
+        )}
+      </ChartPanel>
+
+      <ChartPanel title="Distribuição operacional" icon={<PieChartIcon size={16} />}>
+        {statusData.length === 0 ? (
+          <EmptyState title="Sem status para mostrar" />
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, statusData, (point) => openTaskStatus(point, period, scope, onNavigate))}>
+              <ChartContainer config={valueChartConfig} className="h-[240px] w-full aspect-auto [&_.recharts-pie-sector]:cursor-pointer">
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
+                  <Pie data={statusData} dataKey="value" nameKey="label" innerRadius={54} outerRadius={86} paddingAngle={2} isAnimationActive={false}>
+                    {statusData.map((entry) => (
+                      <Cell key={entry.status} fill={entry.fill} data-indicator-key={entry.status} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            </div>
+            <LegendList
+              items={statusData.map((item) => ({ key: item.status, label: item.label, value: item.value, color: item.fill }))}
+              linkFor={(item) => taskIndicatorLink({ period, scope, status: item.key as TaskStatus, completion: "all", metric: metricForTaskStatus(item.key as TaskStatus) })}
+              onNavigate={rememberScroll}
+            />
+          </div>
         )}
       </ChartPanel>
     </>
@@ -531,9 +563,9 @@ function TeamTab({
               <XAxis dataKey="label" tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} width={34} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="openTasks" fill="var(--status-inprogress-text)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openWorkloadScope(entry.payload, onNavigate)} />
-              <Bar dataKey="completedTasks" fill="var(--status-done-text)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openWorkloadScope(entry.payload, onNavigate)} />
-              <Bar dataKey="overdueTasks" fill="var(--status-late-text)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openWorkloadScope(entry.payload, onNavigate)} />
+              <Bar dataKey="onTimeDeliveries" fill="var(--status-done-text)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openWorkloadScope(entry.payload, onNavigate)} />
+              <Bar dataKey="lateDeliveries" fill="var(--status-late-text)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openWorkloadScope(entry.payload, onNavigate)} />
+              <Bar dataKey="unclassifiedDeliveries" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openWorkloadScope(entry.payload, onNavigate)} />
             </BarChart>
           </ChartContainer>
         </ChartPanel>
@@ -547,9 +579,9 @@ function TeamTab({
                   <span className="text-[12px] text-[--color-brand-orange]">Abrir workload</span>
                 </div>
                 <div className="mt-3 grid grid-cols-4 gap-2 text-[11px]">
-                  <SmallMetric label="Abertas" value={item.openTasks} />
+                  <SmallMetric label="No prazo" value={item.onTimeDeliveries} />
                   <SmallMetric label="Concl." value={item.completedTasks} />
-                  <SmallMetric label="Atras." value={item.overdueTasks} danger />
+                  <SmallMetric label="Atras." value={item.lateDeliveries} danger />
                   <SmallMetric label="Dias" value={item.estimatedDays} />
                 </div>
               </Link>
@@ -598,17 +630,17 @@ function MetricCard({
   to: string;
   helper?: string;
   onNavigate?: () => void;
-  tone?: "default" | "danger";
+  tone?: "default" | "danger" | "muted";
 }) {
   return (
     <Link to={to} onClick={onNavigate} className="cursor-pointer rounded-md border border-[--color-border] bg-[--bg-2] p-4 transition-colors hover:bg-[--bg-3]">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[12px] font-medium text-[--color-text-secondary]">{label}</span>
-        <span className={cn("text-[--color-text-secondary]", tone === "danger" && "text-[--status-late-text]")} aria-hidden="true">
+        <span className={cn("text-[--color-text-secondary]", tone === "danger" && "text-[--status-late-text]", tone === "muted" && "text-[--color-text-muted]")} aria-hidden="true">
           {icon}
         </span>
       </div>
-      <p className={cn("mt-3 break-words text-[24px] font-semibold leading-tight text-[--color-text-primary]", tone === "danger" && "text-[--status-late-text]")}>
+      <p className={cn("mt-3 break-words text-[24px] font-semibold leading-tight text-[--color-text-primary]", tone === "danger" && "text-[--status-late-text]", tone === "muted" && "text-[--color-text-muted]")}>
         {typeof value === "number" ? numberFormatter.format(value) : value}
       </p>
       <p className="mt-2 truncate text-[12px] text-[--color-text-muted]">{helper ?? "Ver registros"}</p>
@@ -626,16 +658,16 @@ function UserRanking({
   rows: IndicatorUserPoint[];
   period: IndicatorPeriod;
   scope: IndicatorScope;
-  mode: "overdue" | "team";
+  mode: "late" | "team";
   rememberScroll: () => void;
 }) {
   return (
     <div className="overflow-hidden rounded-md border border-[--color-border-subtle]">
       <div className="grid grid-cols-[minmax(180px,1fr)_90px_90px_90px_90px] gap-3 border-b border-[--color-border] bg-[--bg-1] px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-[--color-text-muted] max-lg:hidden">
         <span>Responsável</span>
-        <span>Abertas</span>
+        <span>No prazo</span>
         <span>Concluídas</span>
-        <span>Atrasadas</span>
+        <span>Em atraso</span>
         <span>Dias est.</span>
       </div>
       <div className="grid">
@@ -646,8 +678,9 @@ function UserRanking({
               period,
               scope,
               assigneeId: row.userId,
-              status: mode === "overdue" ? TaskStatus.OVERDUE : undefined,
-              metric: mode === "overdue" ? "overdueTasks" : "allTasks"
+              completion: "completed",
+              metric: mode === "late" ? "lateDeliveries" : "completedTasks",
+              ...(mode === "late" ? { deliveryStatus: DeliveryStatus.LATE } : {})
             })}
             onClick={rememberScroll}
             className="grid grid-cols-[minmax(180px,1fr)_90px_90px_90px_90px] items-center gap-3 border-b border-[--color-border-subtle] px-3 py-2 text-[13px] transition-colors last:border-b-0 hover:bg-[--bg-3] max-lg:grid-cols-2 max-lg:gap-2"
@@ -658,9 +691,9 @@ function UserRanking({
               </span>
               <span className="truncate font-medium text-[--color-text-primary]">{row.userName}</span>
             </span>
-            <RankingNumber label="Abertas" value={row.openTasks} />
+            <RankingNumber label="No prazo" value={row.onTimeDeliveries} />
             <RankingNumber label="Concluídas" value={row.completedTasks} />
-            <RankingNumber label="Atrasadas" value={row.overdueTasks} danger />
+            <RankingNumber label="Em atraso" value={row.lateDeliveries} danger />
             <RankingNumber label="Dias est." value={row.estimatedDays} />
           </Link>
         ))}
@@ -812,10 +845,40 @@ function openUserTaskMetric(
     period,
     scope,
     assigneeId: userId,
-    status: metric === "overdueTasks" ? TaskStatus.OVERDUE : metric === "completedTasks" ? TaskStatus.FINISHED : undefined,
-    completion: metric === "completedTasks" ? "completed" : metric === "openTasks" ? "open" : "all",
+    completion: metric === "openTasks" ? "open" : metric === "allTasks" ? "all" : "completed",
+    ...(metric === "onTimeDeliveries" ? { deliveryStatus: [DeliveryStatus.EARLY, DeliveryStatus.ON_TIME] } : {}),
+    ...(metric === "lateDeliveries" ? { deliveryStatus: DeliveryStatus.LATE } : {}),
+    ...(metric === "unclassifiedDeliveries" ? { deliveryStatus: DeliveryStatus.UNCLASSIFIED } : {}),
     metric
   }));
+}
+
+function openDeliveryStatus(
+  payload: unknown,
+  period: IndicatorPeriod,
+  scope: IndicatorScope,
+  onNavigate: (to: string) => void
+) {
+  const point = rechartsPayload(payload);
+  if (!isRecord(point) || !Object.values(DeliveryStatus).includes(point.key as DeliveryStatus)) {
+    return;
+  }
+
+  onNavigate(deliveryStatusLink(point.key as DeliveryStatus, period, scope));
+}
+
+function deliveryStatusLink(status: DeliveryStatus, period: IndicatorPeriod, scope: IndicatorScope): string {
+  return taskIndicatorLink({
+    period,
+    scope,
+    completion: "completed",
+    deliveryStatus: status,
+    metric: status === DeliveryStatus.LATE
+      ? "lateDeliveries"
+      : status === DeliveryStatus.UNCLASSIFIED
+        ? "unclassifiedDeliveries"
+        : "onTimeDeliveries"
+  });
 }
 
 function openTaskStatus(
@@ -983,6 +1046,18 @@ function statusColor(status: TaskStatus): string {
   };
 
   return colors[status];
+}
+
+function deliveryStatusColor(status: string): string {
+  if (status === DeliveryStatus.LATE) {
+    return "var(--status-late-text)";
+  }
+
+  if (status === DeliveryStatus.UNCLASSIFIED) {
+    return "var(--color-text-muted)";
+  }
+
+  return "var(--status-done-text)";
 }
 
 function platformColor(key: string): string {

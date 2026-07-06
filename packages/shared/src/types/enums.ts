@@ -48,6 +48,13 @@ export enum TaskStatus {
   FINISHED = "FINISHED"
 }
 
+export enum DeliveryStatus {
+  EARLY = "EARLY",
+  ON_TIME = "ON_TIME",
+  LATE = "LATE",
+  UNCLASSIFIED = "UNCLASSIFIED"
+}
+
 export enum Priority {
   LOW = "LOW",
   MEDIUM = "MEDIUM",

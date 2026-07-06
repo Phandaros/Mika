@@ -85,6 +85,8 @@ export type TaskMinAggregateOutputType = {
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
+  deletedAt: Date | null
+  deletedByUserId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -126,6 +128,8 @@ export type TaskMaxAggregateOutputType = {
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
+  deletedAt: Date | null
+  deletedByUserId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -167,6 +171,8 @@ export type TaskCountAggregateOutputType = {
   parentAsanaGid: number
   parentName: number
   parentId: number
+  deletedAt: number
+  deletedByUserId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -232,6 +238,8 @@ export type TaskMinAggregateInputType = {
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
+  deletedAt?: true
+  deletedByUserId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -273,6 +281,8 @@ export type TaskMaxAggregateInputType = {
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
+  deletedAt?: true
+  deletedByUserId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -314,6 +324,8 @@ export type TaskCountAggregateInputType = {
   parentAsanaGid?: true
   parentName?: true
   parentId?: true
+  deletedAt?: true
+  deletedByUserId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -442,6 +454,8 @@ export type TaskGroupByOutputType = {
   parentAsanaGid: string | null
   parentName: string | null
   parentId: string | null
+  deletedAt: Date | null
+  deletedByUserId: string | null
   createdAt: Date
   updatedAt: Date
   _count: TaskCountAggregateOutputType | null
@@ -506,6 +520,8 @@ export type TaskWhereInput = {
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
+  deletedByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   assignee?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -563,6 +579,8 @@ export type TaskOrderByWithRelationInput = {
   parentAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   parentName?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   assignee?: Prisma.UserOrderByWithRelationInput
@@ -623,6 +641,8 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
+  deletedByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   assignee?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -680,6 +700,8 @@ export type TaskOrderByWithAggregationInput = {
   parentAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   parentName?: Prisma.SortOrderInput | Prisma.SortOrder
   parentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TaskCountOrderByAggregateInput
@@ -729,6 +751,8 @@ export type TaskScalarWhereWithAggregatesInput = {
   parentAsanaGid?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Task"> | Date | string | null
+  deletedByUserId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Task"> | Date | string
 }
@@ -766,6 +790,8 @@ export type TaskCreateInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -823,6 +849,8 @@ export type TaskUncheckedCreateInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -872,6 +900,8 @@ export type TaskUpdateInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -929,6 +959,8 @@ export type TaskUncheckedUpdateInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -982,6 +1014,8 @@ export type TaskCreateManyInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1019,6 +1053,8 @@ export type TaskUpdateManyMutationInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1060,6 +1096,8 @@ export type TaskUncheckedUpdateManyInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1116,6 +1154,8 @@ export type TaskCountOrderByAggregateInput = {
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
+  deletedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1168,6 +1208,8 @@ export type TaskMaxOrderByAggregateInput = {
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
+  deletedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1209,6 +1251,8 @@ export type TaskMinOrderByAggregateInput = {
   parentAsanaGid?: Prisma.SortOrder
   parentName?: Prisma.SortOrder
   parentId?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
+  deletedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1618,6 +1662,8 @@ export type TaskCreateWithoutAssigneeInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   creator?: Prisma.UserCreateNestedOneWithoutCreatedTasksInput
@@ -1673,6 +1719,8 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -1731,6 +1779,8 @@ export type TaskCreateWithoutCreatorInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -1786,6 +1836,8 @@ export type TaskUncheckedCreateWithoutCreatorInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -1867,6 +1919,8 @@ export type TaskScalarWhereInput = {
   parentAsanaGid?: Prisma.StringNullableFilter<"Task"> | string | null
   parentName?: Prisma.StringNullableFilter<"Task"> | string | null
   parentId?: Prisma.StringNullableFilter<"Task"> | string | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
+  deletedByUserId?: Prisma.StringNullableFilter<"Task"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string
 }
@@ -1920,6 +1974,8 @@ export type TaskCreateWithoutSubtasksInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -1976,6 +2032,8 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   workflowAdjustments?: Prisma.TaskUncheckedCreateNestedManyWithoutWorkflowRootInput
@@ -2029,6 +2087,8 @@ export type TaskCreateWithoutParentInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -2084,6 +2144,8 @@ export type TaskUncheckedCreateWithoutParentInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -2142,6 +2204,8 @@ export type TaskCreateWithoutWorkflowAdjustmentsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -2198,6 +2262,8 @@ export type TaskUncheckedCreateWithoutWorkflowAdjustmentsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -2251,6 +2317,8 @@ export type TaskCreateWithoutWorkflowRootInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -2306,6 +2374,8 @@ export type TaskUncheckedCreateWithoutWorkflowRootInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -2375,6 +2445,8 @@ export type TaskUpdateWithoutSubtasksInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -2431,6 +2503,8 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   workflowAdjustments?: Prisma.TaskUncheckedUpdateManyWithoutWorkflowRootNestedInput
@@ -2506,6 +2580,8 @@ export type TaskUpdateWithoutWorkflowAdjustmentsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -2562,6 +2638,8 @@ export type TaskUncheckedUpdateWithoutWorkflowAdjustmentsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -2626,6 +2704,8 @@ export type TaskCreateWithoutRequestedReviewsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -2682,6 +2762,8 @@ export type TaskUncheckedCreateWithoutRequestedReviewsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -2735,6 +2817,8 @@ export type TaskCreateWithoutRootReviewsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -2791,6 +2875,8 @@ export type TaskUncheckedCreateWithoutRootReviewsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -2855,6 +2941,8 @@ export type TaskUpdateWithoutRequestedReviewsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -2911,6 +2999,8 @@ export type TaskUncheckedUpdateWithoutRequestedReviewsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -2970,6 +3060,8 @@ export type TaskUpdateWithoutRootReviewsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -3026,6 +3118,8 @@ export type TaskUncheckedUpdateWithoutRootReviewsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -3074,6 +3168,8 @@ export type TaskCreateWithoutCommentsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -3130,6 +3226,8 @@ export type TaskUncheckedCreateWithoutCommentsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -3194,6 +3292,8 @@ export type TaskUpdateWithoutCommentsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -3250,6 +3350,8 @@ export type TaskUncheckedUpdateWithoutCommentsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -3298,6 +3400,8 @@ export type TaskCreateWithoutActivitiesInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -3354,6 +3458,8 @@ export type TaskUncheckedCreateWithoutActivitiesInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -3418,6 +3524,8 @@ export type TaskUpdateWithoutActivitiesInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -3474,6 +3582,8 @@ export type TaskUncheckedUpdateWithoutActivitiesInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -3522,6 +3632,8 @@ export type TaskCreateWithoutMembershipsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -3578,6 +3690,8 @@ export type TaskUncheckedCreateWithoutMembershipsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -3642,6 +3756,8 @@ export type TaskUpdateWithoutMembershipsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -3698,6 +3814,8 @@ export type TaskUncheckedUpdateWithoutMembershipsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -3746,6 +3864,8 @@ export type TaskCreateWithoutFollowersInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -3802,6 +3922,8 @@ export type TaskUncheckedCreateWithoutFollowersInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -3866,6 +3988,8 @@ export type TaskUpdateWithoutFollowersInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -3922,6 +4046,8 @@ export type TaskUncheckedUpdateWithoutFollowersInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -3970,6 +4096,8 @@ export type TaskCreateWithoutLikesInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -4026,6 +4154,8 @@ export type TaskUncheckedCreateWithoutLikesInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -4090,6 +4220,8 @@ export type TaskUpdateWithoutLikesInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -4146,6 +4278,8 @@ export type TaskUncheckedUpdateWithoutLikesInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -4194,6 +4328,8 @@ export type TaskCreateWithoutTagsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -4250,6 +4386,8 @@ export type TaskUncheckedCreateWithoutTagsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -4314,6 +4452,8 @@ export type TaskUpdateWithoutTagsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -4370,6 +4510,8 @@ export type TaskUncheckedUpdateWithoutTagsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -4418,6 +4560,8 @@ export type TaskCreateWithoutCustomFieldValuesInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -4474,6 +4618,8 @@ export type TaskUncheckedCreateWithoutCustomFieldValuesInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -4538,6 +4684,8 @@ export type TaskUpdateWithoutCustomFieldValuesInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -4594,6 +4742,8 @@ export type TaskUncheckedUpdateWithoutCustomFieldValuesInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -4642,6 +4792,8 @@ export type TaskCreateWithoutWeeklyReportItemsInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignee?: Prisma.UserCreateNestedOneWithoutAssignedTasksInput
@@ -4698,6 +4850,8 @@ export type TaskUncheckedCreateWithoutWeeklyReportItemsInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   subtasks?: Prisma.TaskUncheckedCreateNestedManyWithoutParentInput
@@ -4762,6 +4916,8 @@ export type TaskUpdateWithoutWeeklyReportItemsInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -4818,6 +4974,8 @@ export type TaskUncheckedUpdateWithoutWeeklyReportItemsInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -4869,6 +5027,8 @@ export type TaskCreateManyAssigneeInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -4909,6 +5069,8 @@ export type TaskCreateManyCreatorInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -4946,6 +5108,8 @@ export type TaskUpdateWithoutAssigneeInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.UserUpdateOneWithoutCreatedTasksNestedInput
@@ -5001,6 +5165,8 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -5053,6 +5219,8 @@ export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -5090,6 +5258,8 @@ export type TaskUpdateWithoutCreatorInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -5145,6 +5315,8 @@ export type TaskUncheckedUpdateWithoutCreatorInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -5197,6 +5369,8 @@ export type TaskUncheckedUpdateManyWithoutCreatorInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -5237,6 +5411,8 @@ export type TaskCreateManyParentInput = {
   splitPartTotal?: number | null
   parentAsanaGid?: string | null
   parentName?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -5277,6 +5453,8 @@ export type TaskCreateManyWorkflowRootInput = {
   parentAsanaGid?: string | null
   parentName?: string | null
   parentId?: string | null
+  deletedAt?: Date | string | null
+  deletedByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -5314,6 +5492,8 @@ export type TaskUpdateWithoutParentInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -5369,6 +5549,8 @@ export type TaskUncheckedUpdateWithoutParentInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -5421,6 +5603,8 @@ export type TaskUncheckedUpdateManyWithoutParentInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -5458,6 +5642,8 @@ export type TaskUpdateWithoutWorkflowRootInput = {
   splitPartTotal?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignee?: Prisma.UserUpdateOneWithoutAssignedTasksNestedInput
@@ -5513,6 +5699,8 @@ export type TaskUncheckedUpdateWithoutWorkflowRootInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subtasks?: Prisma.TaskUncheckedUpdateManyWithoutParentNestedInput
@@ -5565,6 +5753,8 @@ export type TaskUncheckedUpdateManyWithoutWorkflowRootInput = {
   parentAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -5736,6 +5926,8 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
+  deletedAt?: boolean
+  deletedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
@@ -5794,6 +5986,8 @@ export type TaskSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
+  deletedAt?: boolean
+  deletedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
@@ -5839,6 +6033,8 @@ export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
+  deletedAt?: boolean
+  deletedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
@@ -5884,11 +6080,13 @@ export type TaskSelectScalar = {
   parentAsanaGid?: boolean
   parentName?: boolean
   parentId?: boolean
+  deletedAt?: boolean
+  deletedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "createdByUserId" | "workflowRootTaskId" | "adjustmentNumber" | "splitRootTaskId" | "splitPartNumber" | "splitPartTotal" | "parentAsanaGid" | "parentName" | "parentId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
+export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "asanaGid" | "name" | "notes" | "htmlNotes" | "resourceType" | "assigneeStatus" | "completed" | "liked" | "numLikes" | "numSubtasks" | "mikaStatus" | "priority" | "dueAt" | "completedAtAsana" | "asanaCreatedAt" | "asanaModifiedAt" | "dueOn" | "startOn" | "estimatedDays" | "platform" | "discipline" | "estimatedTime" | "maxDeadline" | "conclusionDays" | "stage" | "assigneeGid" | "createdByUserId" | "workflowRootTaskId" | "adjustmentNumber" | "splitRootTaskId" | "splitPartNumber" | "splitPartTotal" | "parentAsanaGid" | "parentName" | "parentId" | "deletedAt" | "deletedByUserId" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
 export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Task$assigneeArgs<ExtArgs>
   creator?: boolean | Prisma.Task$creatorArgs<ExtArgs>
@@ -5994,6 +6192,8 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     parentAsanaGid: string | null
     parentName: string | null
     parentId: string | null
+    deletedAt: Date | null
+    deletedByUserId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["task"]>
@@ -6471,6 +6671,8 @@ export interface TaskFieldRefs {
   readonly parentAsanaGid: Prisma.FieldRef<"Task", 'String'>
   readonly parentName: Prisma.FieldRef<"Task", 'String'>
   readonly parentId: Prisma.FieldRef<"Task", 'String'>
+  readonly deletedAt: Prisma.FieldRef<"Task", 'DateTime'>
+  readonly deletedByUserId: Prisma.FieldRef<"Task", 'String'>
   readonly createdAt: Prisma.FieldRef<"Task", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Task", 'DateTime'>
 }

@@ -174,6 +174,7 @@ function toTaskContextMenuTask(task: HomeDashboardTask): Task {
     estimatedDays: null,
     completed: false,
     completedAt: null,
+    deliveryStatus: null,
     createdAt: "",
     updatedAt: "",
     assignee: null,

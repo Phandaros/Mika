@@ -10,13 +10,15 @@ import type {
   GlobalSearchTaskResult,
   GlobalSearchUserResult
 } from "shared";
-import { Priority, ProjectStatus, TaskStatus } from "./enums.js";
+import { Priority, ProjectStatus, TaskStatus, type DeliveryStatus as DeliveryStatusValue } from "./enums.js";
 import {
   indicatorTaskMatchesMetric,
   indicatorTaskMatchesScope,
   indicatorTaskPeriodWhere
 } from "./indicators.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 import { publicTaskStatus } from "./taskStatus.js";
+import { taskDeliveryStatus } from "./taskDeliveryStatus.js";
 import { activeStatusesWhere, excludeBacklogWhere } from "./taskStatusWhere.js";
 
 export const GLOBAL_SEARCH_DEFAULT_LIMIT = 12;
@@ -121,7 +123,7 @@ export function buildAdvancedProjectSearchWhere(filters: {
 }
 
 export function buildTaskSearchWhere(term: string): Prisma.TaskWhereInput {
-  const base: Prisma.TaskWhereInput = { parentId: null };
+  const base: Prisma.TaskWhereInput = { ...activeTaskWhere(), parentId: null };
 
   if (!term) {
     return base;
@@ -275,6 +277,10 @@ interface TaskSearchRecord {
   assigneeGid?: string | null;
   dueOn?: string | null;
   dueAt?: Date | null;
+  completedAtAsana?: Date | null;
+  estimatedDays?: number | null;
+  estimatedTime?: number | null;
+  conclusionDays?: number | null;
   completed?: boolean;
   updatedAt?: Date;
   assignee?: {
@@ -298,6 +304,23 @@ interface TaskSearchRecord {
       archived: boolean;
     } | null;
   }>;
+}
+
+export function filterTasksByDeliveryStatus(tasks: TaskSearchRecord[], deliveryStatuses: DeliveryStatusValue[]): TaskSearchRecord[] {
+  if (deliveryStatuses.length === 0) {
+    return tasks;
+  }
+
+  const allowed = new Set(deliveryStatuses);
+  return tasks.filter((task) => {
+    const status = taskDeliveryStatus({
+      completed: Boolean(task.completed),
+      estimatedDays: task.estimatedDays ?? null,
+      estimatedTime: task.estimatedTime ?? null,
+      conclusionDays: task.conclusionDays ?? null
+    });
+    return Boolean(status && allowed.has(status));
+  });
 }
 
 export function filterTasksByIndicator(

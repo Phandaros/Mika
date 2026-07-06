@@ -1,5 +1,5 @@
 import type { AdvancedSearchIndicatorMetric, IndicatorPeriod, IndicatorScope } from "shared";
-import { TaskStatus } from "shared";
+import { DeliveryStatus, TaskStatus } from "shared";
 
 export function taskIndicatorLink(input: {
   period: IndicatorPeriod;
@@ -8,6 +8,7 @@ export function taskIndicatorLink(input: {
   status?: TaskStatus;
   assigneeId?: string | null;
   completion?: "open" | "completed" | "all";
+  deliveryStatus?: DeliveryStatus | DeliveryStatus[];
 }): string {
   const params = new URLSearchParams();
   params.set("type", "tasks");
@@ -23,6 +24,11 @@ export function taskIndicatorLink(input: {
 
   if (input.assigneeId) {
     params.set("assigneeId", input.assigneeId);
+  }
+
+  if (input.deliveryStatus) {
+    const values = Array.isArray(input.deliveryStatus) ? input.deliveryStatus : [input.deliveryStatus];
+    values.forEach((value) => params.append("deliveryStatus", value));
   }
 
   return `/search?${params.toString()}`;

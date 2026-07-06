@@ -12,9 +12,10 @@ import type {
   IndicatorValuePoint,
   TaskStatus as SharedTaskStatus
 } from "shared";
-import { TaskStatus, type TaskStatus as TaskStatusValue } from "./enums.js";
+import { DeliveryStatus, TaskStatus, type DeliveryStatus as DeliveryStatusValue, type TaskStatus as TaskStatusValue } from "./enums.js";
 import { excludeBacklogWhere } from "./taskStatusWhere.js";
 import { publicTaskStatus } from "./taskStatus.js";
+import { deliveryStatusIsOnTime, taskDeliveryStatus } from "./taskDeliveryStatus.js";
 import {
   findPortfolioCatalogField,
   PORTFOLIO_CATALOG,
@@ -22,6 +23,7 @@ import {
 } from "./portfolioCatalog.js";
 import { sectionMatchesWorkloadScope } from "./workloadScope.js";
 import { prisma } from "./prisma.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 
 type PeriodWindow = {
   from: string | null;
@@ -49,6 +51,13 @@ const scopeLabels: Record<IndicatorScope, string> = {
   general: "Geral",
   civil: "Civil",
   electrical: "Elétrico"
+};
+
+const deliveryStatusLabels: Record<DeliveryStatusValue, string> = {
+  [DeliveryStatus.EARLY]: "Antes do prazo",
+  [DeliveryStatus.ON_TIME]: "No prazo",
+  [DeliveryStatus.LATE]: "Em atraso",
+  [DeliveryStatus.UNCLASSIFIED]: "Sem status"
 };
 
 const taskInclude = {
@@ -109,6 +118,7 @@ export async function buildIndicators(
   const [tasks, projects, portfolioYearRows] = await Promise.all([
     prisma.task.findMany({
       where: {
+        ...activeTaskWhere(),
         parentId: null,
         ...excludeBacklogWhere(),
         ...indicatorTaskPeriodWhere(period)
@@ -133,7 +143,7 @@ export async function buildIndicators(
     availablePortfolioYears: availablePortfolioYears(portfolioYearRows),
     periodLabel: window.label,
     generatedAt: new Date().toISOString(),
-    tasks: buildTasksSection(scopedTasks, window),
+    tasks: buildTasksSection(scopedTasks),
     portfolio: buildPortfolioSection(projects),
     team: {
       byScope: indicatorScopes.map((itemScope) => buildScopePoint(itemScope, tasks.filter((task) => indicatorTaskMatchesScope(task, itemScope)))),
@@ -167,11 +177,8 @@ export function indicatorTaskPeriodWhere(period: IndicatorPeriod): Prisma.TaskWh
   }
 
   return {
-    OR: [
-      { dueOn: { gte: window.from, lte: window.to } },
-      { dueAt: { gte: window.fromDate, lte: window.toDate } },
-      { completedAtAsana: { gte: window.fromDate, lte: window.toDate } }
-    ]
+    completed: true,
+    completedAtAsana: { gte: window.fromDate, lte: window.toDate }
   };
 }
 
@@ -226,8 +233,12 @@ export function indicatorTaskMatchesMetric(
     assigneeStatus?: string | null;
     dueOn?: string | null;
     dueAt?: Date | null;
+    completedAtAsana?: Date | null;
+    estimatedDays?: number | null;
+    estimatedTime?: number | null;
+    conclusionDays?: number | null;
   },
-  metric: "openTasks" | "completedTasks" | "overdueTasks" | "dueTasks" | "allTasks",
+  metric: "openTasks" | "completedTasks" | "overdueTasks" | "dueTasks" | "allTasks" | "onTimeDeliveries" | "lateDeliveries" | "unclassifiedDeliveries",
   period: IndicatorPeriod
 ): boolean {
   if (metric === "allTasks") {
@@ -240,6 +251,25 @@ export function indicatorTaskMatchesMetric(
 
   if (metric === "completedTasks") {
     return Boolean(task.completed);
+  }
+
+  if (metric === "onTimeDeliveries" || metric === "lateDeliveries" || metric === "unclassifiedDeliveries") {
+    const status = taskDeliveryStatus({
+      completed: Boolean(task.completed),
+      estimatedDays: task.estimatedDays ?? null,
+      estimatedTime: task.estimatedTime ?? null,
+      conclusionDays: task.conclusionDays ?? null
+    });
+
+    if (metric === "onTimeDeliveries") {
+      return deliveryStatusIsOnTime(status);
+    }
+
+    if (metric === "lateDeliveries") {
+      return status === DeliveryStatus.LATE;
+    }
+
+    return status === DeliveryStatus.UNCLASSIFIED;
   }
 
   if (metric === "overdueTasks") {
@@ -255,21 +285,27 @@ export function indicatorTaskMatchesMetric(
   return dateInWindow(taskDueDate(task), periodWindow(period));
 }
 
-function buildTasksSection(tasks: IndicatorTaskRecord[], window: PeriodWindow) {
+function buildTasksSection(tasks: IndicatorTaskRecord[]) {
   const statusDistribution = buildStatusDistribution(tasks);
+  const deliveryDistribution = buildDeliveryDistribution(tasks);
   const users = buildUserPoints(tasks);
+  const completedTasks = tasks.filter((task) => task.completed);
+  const onTimeDeliveries = completedTasks.filter((task) => deliveryStatusIsOnTime(taskDeliveryStatus(task))).length;
+  const lateDeliveries = completedTasks.filter((task) => taskDeliveryStatus(task) === DeliveryStatus.LATE).length;
+  const unclassifiedDeliveries = completedTasks.filter((task) => taskDeliveryStatus(task) === DeliveryStatus.UNCLASSIFIED).length;
 
   return {
     kpis: {
-      openTasks: tasks.filter((task) => !task.completed).length,
-      completedTasks: tasks.filter((task) => task.completed).length,
-      overdueTasks: tasks.filter((task) => publicTaskStatus(task) === TaskStatus.OVERDUE).length,
-      dueTasks: tasks.filter((task) => taskDueDate(task) !== null && dateInWindow(taskDueDate(task), window)).length,
-      onTimeRate: calculateOnTimeRate(tasks)
+      completedTasks: completedTasks.length,
+      onTimeDeliveries,
+      lateDeliveries,
+      unclassifiedDeliveries,
+      onTimeRate: calculateOnTimeRate(completedTasks)
     },
     statusDistribution,
-    byUser: sortUserPoints(users).slice(0, 12),
-    overdueByUser: sortUserPoints(users.filter((user) => user.overdueTasks > 0), "overdueTasks").slice(0, 8)
+    deliveryDistribution,
+    byUser: sortUserPoints(users.filter((user) => user.completedTasks > 0), "completedTasks").slice(0, 12),
+    lateByUser: sortUserPoints(users.filter((user) => user.lateDeliveries > 0), "lateDeliveries").slice(0, 8)
   };
 }
 
@@ -291,47 +327,76 @@ function buildStatusDistribution(tasks: IndicatorTaskRecord[]): IndicatorStatusP
     .filter((point) => point.value > 0);
 }
 
+function buildDeliveryDistribution(tasks: IndicatorTaskRecord[]): IndicatorValuePoint[] {
+  const counts = new Map<DeliveryStatusValue, number>([
+    [DeliveryStatus.EARLY, 0],
+    [DeliveryStatus.ON_TIME, 0],
+    [DeliveryStatus.LATE, 0],
+    [DeliveryStatus.UNCLASSIFIED, 0]
+  ]);
+
+  tasks.forEach((task) => {
+    const status = taskDeliveryStatus(task);
+    if (status) {
+      counts.set(status, (counts.get(status) ?? 0) + 1);
+    }
+  });
+
+  return [DeliveryStatus.EARLY, DeliveryStatus.ON_TIME, DeliveryStatus.LATE, DeliveryStatus.UNCLASSIFIED]
+    .map((status) => ({
+      key: status,
+      label: deliveryStatusLabels[status],
+      value: counts.get(status) ?? 0
+    }))
+    .filter((point) => point.value > 0);
+}
+
 function buildUserPoints(tasks: IndicatorTaskRecord[]): IndicatorUserPoint[] {
   const byUser = new Map<string, IndicatorUserPoint>();
 
   tasks.forEach((task) => {
+    if (!task.completed) {
+      return;
+    }
+
     const key = task.assignee?.id ?? "__unassigned__";
     const current = byUser.get(key) ?? {
       userId: task.assignee?.id ?? null,
       userName: task.assignee?.name ?? "Sem responsável",
       initials: initials(task.assignee?.name ?? "SR"),
-      openTasks: 0,
       completedTasks: 0,
-      overdueTasks: 0,
+      onTimeDeliveries: 0,
+      lateDeliveries: 0,
+      unclassifiedDeliveries: 0,
       estimatedDays: 0
     };
+    const deliveryStatus = taskDeliveryStatus(task);
 
-    if (task.completed) {
-      current.completedTasks += 1;
-    } else {
-      current.openTasks += 1;
+    current.completedTasks += 1;
+    if (deliveryStatusIsOnTime(deliveryStatus)) {
+      current.onTimeDeliveries += 1;
+    } else if (deliveryStatus === DeliveryStatus.LATE) {
+      current.lateDeliveries += 1;
+    } else if (deliveryStatus === DeliveryStatus.UNCLASSIFIED) {
+      current.unclassifiedDeliveries += 1;
     }
 
-    if (publicTaskStatus(task) === TaskStatus.OVERDUE) {
-      current.overdueTasks += 1;
-    }
-
-    current.estimatedDays = roundMetric(current.estimatedDays + (task.estimatedDays ?? 0));
+    current.estimatedDays = roundMetric(current.estimatedDays + (task.estimatedDays ?? task.estimatedTime ?? 0));
     byUser.set(key, current);
   });
 
   return [...byUser.values()];
 }
 
-function sortUserPoints(points: IndicatorUserPoint[], primary: keyof IndicatorUserPoint = "openTasks"): IndicatorUserPoint[] {
+function sortUserPoints(points: IndicatorUserPoint[], primary: keyof IndicatorUserPoint = "completedTasks"): IndicatorUserPoint[] {
   return [...points].sort((a, b) => {
     const primaryDiff = numericPointValue(b, primary) - numericPointValue(a, primary);
     if (primaryDiff !== 0) {
       return primaryDiff;
     }
 
-    const totalA = a.openTasks + a.completedTasks + a.overdueTasks;
-    const totalB = b.openTasks + b.completedTasks + b.overdueTasks;
+    const totalA = a.completedTasks + a.onTimeDeliveries + a.lateDeliveries + a.unclassifiedDeliveries;
+    const totalB = b.completedTasks + b.onTimeDeliveries + b.lateDeliveries + b.unclassifiedDeliveries;
     if (totalB !== totalA) {
       return totalB - totalA;
     }
@@ -346,21 +411,18 @@ function numericPointValue(point: IndicatorUserPoint, key: keyof IndicatorUserPo
 }
 
 function calculateOnTimeRate(tasks: IndicatorTaskRecord[]): number {
-  const completedWithDue = tasks.filter((task) => {
-    return Boolean(task.completed && task.completedAtAsana && taskDueDate(task));
+  const classified = tasks.filter((task) => {
+    const status = taskDeliveryStatus(task);
+    return status !== null && status !== DeliveryStatus.UNCLASSIFIED;
   });
 
-  if (completedWithDue.length === 0) {
+  if (classified.length === 0) {
     return 0;
   }
 
-  const onTime = completedWithDue.filter((task) => {
-    const completedAt = task.completedAtAsana?.toISOString().slice(0, 10);
-    const dueDate = taskDueDate(task);
-    return Boolean(completedAt && dueDate && completedAt <= dueDate);
-  }).length;
+  const onTime = classified.filter((task) => deliveryStatusIsOnTime(taskDeliveryStatus(task))).length;
 
-  return Math.round((onTime / completedWithDue.length) * 100);
+  return Math.round((onTime / classified.length) * 100);
 }
 
 function taskDueDate(task: { dueOn?: string | null; dueAt?: Date | null }): string | null {
@@ -385,9 +447,10 @@ function buildScopePoint(scope: IndicatorScope, tasks: IndicatorTaskRecord[]): I
   return {
     scope,
     label: scopeLabels[scope],
-    openTasks: users.reduce((sum, user) => sum + user.openTasks, 0),
     completedTasks: users.reduce((sum, user) => sum + user.completedTasks, 0),
-    overdueTasks: users.reduce((sum, user) => sum + user.overdueTasks, 0),
+    onTimeDeliveries: users.reduce((sum, user) => sum + user.onTimeDeliveries, 0),
+    lateDeliveries: users.reduce((sum, user) => sum + user.lateDeliveries, 0),
+    unclassifiedDeliveries: users.reduce((sum, user) => sum + user.unclassifiedDeliveries, 0),
     estimatedDays: roundMetric(users.reduce((sum, user) => sum + user.estimatedDays, 0))
   };
 }

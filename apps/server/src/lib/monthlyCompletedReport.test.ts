@@ -31,6 +31,7 @@ describe("monthly completed report period", () => {
 
     expect(period).not.toBeNull();
     expect(monthlyCompletedTasksWhere(period!)).toEqual({
+      deletedAt: null,
       completed: true,
       completedAtAsana: {
         gte: period!.from,
@@ -65,6 +66,7 @@ describe("monthly completed report data", () => {
 
     expect(prismaMock.task.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
+        deletedAt: null,
         completed: true,
         completedAtAsana: {
           gte: expect.any(Date),

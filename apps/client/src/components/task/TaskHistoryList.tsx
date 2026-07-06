@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
-import { CheckCircle2, Clock3, History, RotateCcw, UserRoundPen } from "lucide-react";
+import { CheckCircle2, Clock3, History, RotateCcw, Send, UserRoundPen, XCircle } from "lucide-react";
 import { Priority, TaskStatus, type TaskActivity } from "shared";
 import { cn } from "../../lib/utils";
 import { EmptyState } from "../shared/EmptyState";
@@ -90,6 +90,18 @@ function ActivityIcon({ activity }: { activity: TaskActivity }) {
     return <CheckCircle2 className={cn(className, "text-[--status-done-text]")} />;
   }
 
+  if (activity.type === "REVIEW_REQUESTED") {
+    return <Send className={cn(className, "text-[--status-review-text]")} />;
+  }
+
+  if (activity.type === "REVIEW_APPROVED") {
+    return <CheckCircle2 className={cn(className, "text-[--status-done-text]")} />;
+  }
+
+  if (activity.type === "REVIEW_REJECTED") {
+    return <XCircle className={cn(className, "text-[--color-priority-urgent]")} />;
+  }
+
   if (activity.type === "REOPENED") {
     return <RotateCcw className={className} />;
   }
@@ -101,7 +113,7 @@ function ActivityIcon({ activity }: { activity: TaskActivity }) {
   return <UserRoundPen className={className} />;
 }
 
-function activitySentence(activity: TaskActivity): string {
+export function activitySentence(activity: TaskActivity): string {
   if (activity.type === "CREATED") {
     return `criou esta tarefa${activity.toValue ? `: ${activity.toValue}` : ""}`;
   }
@@ -114,8 +126,30 @@ function activitySentence(activity: TaskActivity): string {
     return "reabriu esta tarefa";
   }
 
+  if (activity.type === "REVIEW_REQUESTED") {
+    return `enviou a tarefa para Revisão de ${reviewerName(activity)}`;
+  }
+
+  if (activity.type === "REVIEW_APPROVED") {
+    return "aprovou essa tarefa";
+  }
+
+  if (activity.type === "REVIEW_REJECTED") {
+    return "recusou essa tarefa";
+  }
+
   const field = activity.field ? fieldLabels[activity.field] ?? activity.field : "Campo";
   return `alterou ${field} de ${formatActivityValue(activity.field, activity.fromValue)} para ${formatActivityValue(activity.field, activity.toValue)}`;
+}
+
+function reviewerName(activity: TaskActivity): string {
+  const name = activity.metadata?.reviewerName;
+
+  if (typeof name === "string" && name.trim()) {
+    return name;
+  }
+
+  return activity.toValue ?? "revisor";
 }
 
 function formatActivityValue(field: string | null, value: string | null): string {

@@ -2713,6 +2713,8 @@ export const TaskScalarFieldEnum = {
   parentAsanaGid: 'parentAsanaGid',
   parentName: 'parentName',
   parentId: 'parentId',
+  deletedAt: 'deletedAt',
+  deletedByUserId: 'deletedByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

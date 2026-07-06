@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { AxiosError } from "axios";
 import { toast } from "sonner";
 import type { Task } from "shared";
 import type { TaskCacheSnapshot } from "./useTasks";
@@ -18,6 +19,17 @@ type PendingDelete = {
   snapshot: TaskCacheSnapshot;
 };
 
+function deleteErrorMessage(error: unknown): string {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data;
+    if (data && typeof data === "object" && "error" in data && typeof data.error === "string") {
+      return data.error;
+    }
+  }
+
+  return "Não foi possível excluir a tarefa";
+}
+
 export function useDeferredTaskDelete(projectId?: string) {
   const deleteTask = useDeleteTask(projectId);
   const pendingDeletesRef = useRef<Map<string, PendingDelete>>(new Map());
@@ -32,9 +44,9 @@ export function useDeferredTaskDelete(projectId?: string) {
 
     try {
       await deleteTask.mutateAsync(task.id);
-    } catch {
+    } catch (error) {
       restoreTaskCachesSnapshot(pending.snapshot);
-      toast.error("Não foi possível excluir a tarefa");
+      toast.error(deleteErrorMessage(error));
     }
   }
 

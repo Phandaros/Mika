@@ -3,6 +3,7 @@ import { Role, type Role as RoleValue, type TaskStatus as TaskStatusValue } from
 import { taskInclude } from "./asanaDto.js";
 import { hasMinimumRole } from "./permissions.js";
 import { prisma } from "./prisma.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 import { activeStatusesWhere, excludeBacklogWhere } from "./taskStatusWhere.js";
 
 export type MyTasksCompletionFilter = "open" | "completed" | "all";
@@ -59,6 +60,7 @@ export function buildMyTasksWhere(filters: MyTasksFilters): Prisma.TaskWhereInpu
 
   return {
     AND: [
+      activeTaskWhere(),
       { parentId: null },
       { assigneeGid: filters.asanaGid },
       excludeBacklogWhere(),

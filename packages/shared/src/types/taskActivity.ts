@@ -1,6 +1,14 @@
 import { User } from "./user.js";
 
-export type TaskActivityType = "CREATED" | "UPDATED" | "COMPLETED" | "REOPENED" | "COMMENTED";
+export type TaskActivityType =
+  | "CREATED"
+  | "UPDATED"
+  | "COMPLETED"
+  | "REOPENED"
+  | "COMMENTED"
+  | "REVIEW_REQUESTED"
+  | "REVIEW_APPROVED"
+  | "REVIEW_REJECTED";
 
 export interface TaskActivity {
   id: string;

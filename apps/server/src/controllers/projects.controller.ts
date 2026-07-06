@@ -27,6 +27,7 @@ import {
   applyProjectCustomFieldPatches,
   type ProjectCustomFieldPatch
 } from "../lib/projectCustomFields.js";
+import { activeTaskWhere } from "../lib/taskDeletion.js";
 import { excludeBacklogWhere, isBacklogTask } from "../lib/taskStatusWhere.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getAuthUser } from "../middleware/auth.js";
@@ -750,6 +751,7 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
 
     const tasks = await prisma.task.findMany({
       where: {
+        ...activeTaskWhere(),
         parentId: null,
         AND: [
           workloadDateWindowWhere(from, to, includeUndated),

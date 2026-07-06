@@ -1,4 +1,4 @@
-import { DisciplineType, Priority, TaskStatus } from "./enums.js";
+import { DeliveryStatus, DisciplineType, Priority, TaskStatus } from "./enums.js";
 import { Comment } from "./comment.js";
 import { User } from "./user.js";
 
@@ -31,6 +31,7 @@ export interface Task {
   stage?: string | null;
   completed: boolean;
   completedAt: string | null;
+  deliveryStatus: DeliveryStatus | null;
   createdAt: string;
   updatedAt: string;
   customFieldValues?: Array<{

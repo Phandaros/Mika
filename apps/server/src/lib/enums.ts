@@ -58,6 +58,15 @@ export const TaskStatus = {
 
 export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];
 
+export const DeliveryStatus = {
+  EARLY: "EARLY",
+  ON_TIME: "ON_TIME",
+  LATE: "LATE",
+  UNCLASSIFIED: "UNCLASSIFIED"
+} as const;
+
+export type DeliveryStatus = (typeof DeliveryStatus)[keyof typeof DeliveryStatus];
+
 export const Priority = {
   LOW: "LOW",
   MEDIUM: "MEDIUM",

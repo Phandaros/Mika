@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import type {
   AdvancedSearchCompletion,
+  AdvancedSearchDeliveryStatus,
   AdvancedSearchIndicatorMetric,
   AdvancedSearchResponse,
   AdvancedSearchType,
@@ -10,7 +11,7 @@ import type {
   GlobalSearchTaskResult
 } from "shared";
 import { z } from "zod";
-import { Priority, ProjectStatus, TaskStatus } from "../lib/enums.js";
+import { DeliveryStatus, Priority, ProjectStatus, TaskStatus } from "../lib/enums.js";
 import { prisma } from "../lib/prisma.js";
 import {
   buildAdvancedProjectSearchWhere,
@@ -21,6 +22,7 @@ import {
   clampAdvancedSearchLimit,
   clampSearchLimit,
   filterTasksByIndicator,
+  filterTasksByDeliveryStatus,
   normalizeSearchTerm,
   paginateSearchResults,
   parseAdvancedSearchPage,
@@ -42,7 +44,8 @@ import { AppError } from "../middleware/errorHandler.js";
 const advancedSearchTypeSchema = z.enum(["all", "tasks", "projects", "users"]);
 const advancedSearchCompletionSchema = z.enum(["open", "completed", "all"]);
 const indicatorSourceSchema = z.enum(["indicators"]);
-const indicatorMetricSchema = z.enum(["openTasks", "completedTasks", "overdueTasks", "dueTasks", "allTasks"]);
+const deliveryStatusSchema = z.nativeEnum(DeliveryStatus);
+const indicatorMetricSchema = z.enum(["openTasks", "completedTasks", "overdueTasks", "dueTasks", "allTasks", "onTimeDeliveries", "lateDeliveries", "unclassifiedDeliveries"]);
 const indicatorPeriodSchema = z.enum(["month", "year", "all"]);
 const indicatorScopeSchema = z.enum(["general", "civil", "electrical"]);
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -59,6 +62,7 @@ const advancedSearchQuerySchema = z.object({
   dueFrom: dateOnlySchema.optional(),
   dueTo: dateOnlySchema.optional(),
   completion: advancedSearchCompletionSchema.optional(),
+  deliveryStatus: z.union([deliveryStatusSchema, z.array(deliveryStatusSchema)]).optional(),
   source: indicatorSourceSchema.optional(),
   indicatorMetric: indicatorMetricSchema.optional(),
   indicatorPeriod: indicatorPeriodSchema.optional(),
@@ -166,6 +170,9 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
       Object.values(Priority).includes(value as Priority)
     );
     const completion: AdvancedSearchCompletion = parsed.data.completion ?? "open";
+    const deliveryStatuses = queryStringArray(parsed.data.deliveryStatus).filter((value): value is AdvancedSearchDeliveryStatus =>
+      Object.values(DeliveryStatus).includes(value as AdvancedSearchDeliveryStatus)
+    );
     const indicatorMetric: AdvancedSearchIndicatorMetric | undefined = parsed.data.source === "indicators" ? parsed.data.indicatorMetric : undefined;
     const indicatorPeriod: IndicatorPeriod | undefined = indicatorMetric ? parsed.data.indicatorPeriod : undefined;
     const indicatorScope: IndicatorScope | undefined = indicatorMetric ? parsed.data.indicatorScope : undefined;
@@ -224,7 +231,8 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
         : Promise.resolve([])
     ]);
 
-    const indicatorFilteredTasks = filterTasksByIndicator(tasks, { indicatorMetric, indicatorPeriod, indicatorScope });
+    const deliveryFilteredTasks = filterTasksByDeliveryStatus(tasks, deliveryStatuses);
+    const indicatorFilteredTasks = filterTasksByIndicator(deliveryFilteredTasks, { indicatorMetric, indicatorPeriod, indicatorScope });
     const taskItems = indicatorFilteredTasks
       .filter((task) => taskMatchesSearch(task, q))
       .map(toAdvancedSearchTask)

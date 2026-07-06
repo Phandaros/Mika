@@ -266,6 +266,8 @@ model Task {
   parentAsanaGid String?
   parentName     String?
   parentId       String?
+  deletedAt      DateTime?
+  deletedByUserId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -295,6 +297,8 @@ model Task {
   @@index([splitRootTaskId])
   @@index([parentAsanaGid])
   @@index([parentId])
+  @@index([deletedAt])
+  @@index([deletedByUserId])
   @@index([completed])
   @@index([dueOn])
 }

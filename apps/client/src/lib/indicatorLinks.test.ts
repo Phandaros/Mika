@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TaskStatus } from "shared";
+import { DeliveryStatus, TaskStatus } from "shared";
 import { projectIndicatorLink, taskIndicatorLink, workloadIndicatorLink } from "./indicatorLinks";
 
 describe("indicatorLinks", () => {
@@ -12,6 +12,18 @@ describe("indicatorLinks", () => {
     });
 
     expect(url).toBe("/search?type=tasks&completion=all&source=indicators&indicatorMetric=overdueTasks&indicatorPeriod=all&indicatorScope=general&status=OVERDUE&assigneeId=user-1");
+  });
+
+  it("links delivery indicators with delivery status filters", () => {
+    const url = taskIndicatorLink({
+      period: "month",
+      scope: "civil",
+      completion: "completed",
+      metric: "onTimeDeliveries",
+      deliveryStatus: [DeliveryStatus.EARLY, DeliveryStatus.ON_TIME]
+    });
+
+    expect(url).toBe("/search?type=tasks&completion=completed&source=indicators&indicatorMetric=onTimeDeliveries&indicatorPeriod=month&indicatorScope=civil&deliveryStatus=EARLY&deliveryStatus=ON_TIME");
   });
 
   it("links portfolio indicators to project filters", () => {

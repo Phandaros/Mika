@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../generated/prisma/client.js";
 import { TaskStatus } from "./enums.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 import { normalizeTaskStatus } from "./taskStatus.js";
 import { isBacklogTask } from "./taskStatusWhere.js";
 
@@ -46,6 +47,7 @@ export async function runMoveUndatedTodoToBacklog(
   const sampleSize = options.sampleSize ?? 20;
   const tasks = await prisma.task.findMany({
     where: {
+      ...activeTaskWhere(),
       completed: false,
       startOn: null,
       dueOn: null,

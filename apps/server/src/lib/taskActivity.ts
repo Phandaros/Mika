@@ -6,7 +6,10 @@ export const taskActivityTypes = {
   UPDATED: "UPDATED",
   COMPLETED: "COMPLETED",
   REOPENED: "REOPENED",
-  COMMENTED: "COMMENTED"
+  COMMENTED: "COMMENTED",
+  REVIEW_REQUESTED: "REVIEW_REQUESTED",
+  REVIEW_APPROVED: "REVIEW_APPROVED",
+  REVIEW_REJECTED: "REVIEW_REJECTED"
 } as const;
 
 export type TaskActivityType = (typeof taskActivityTypes)[keyof typeof taskActivityTypes];
@@ -41,6 +44,50 @@ export async function createTaskActivity(tx: Prisma.TransactionClient, input: Ta
       fromValue: stringifyActivityValue(input.fromValue),
       toValue: stringifyActivityValue(input.toValue),
       metadataJson: input.metadata ? JSON.stringify(input.metadata) : null
+    }
+  });
+}
+
+export async function createReviewTaskActivity(
+  tx: Prisma.TransactionClient,
+  input: {
+    taskId: string;
+    actorId: string | null;
+    type:
+      | typeof taskActivityTypes.REVIEW_REQUESTED
+      | typeof taskActivityTypes.REVIEW_APPROVED
+      | typeof taskActivityTypes.REVIEW_REJECTED;
+    reviewId: string;
+    reviewerId: string;
+    reviewerName: string | null;
+  }
+): Promise<void> {
+  const existing = await tx.taskActivity.findFirst({
+    where: {
+      taskId: input.taskId,
+      type: input.type,
+      AND: [
+        { metadataJson: { contains: `"reviewId":"${input.reviewId}"` } },
+        { metadataJson: { contains: `"reviewerId":"${input.reviewerId}"` } }
+      ]
+    },
+    select: { id: true }
+  });
+
+  if (existing) {
+    return;
+  }
+
+  await createTaskActivity(tx, {
+    taskId: input.taskId,
+    actorId: input.actorId,
+    type: input.type,
+    field: "review",
+    toValue: input.reviewerName ?? input.reviewerId,
+    metadata: {
+      reviewId: input.reviewId,
+      reviewerId: input.reviewerId,
+      reviewerName: input.reviewerName
     }
   });
 }

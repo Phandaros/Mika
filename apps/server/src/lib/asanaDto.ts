@@ -10,6 +10,8 @@ import {
   PORTFOLIO_DERIVED_LABELS,
   portfolioCatalogGid
 } from "./portfolioCatalog.js";
+import { activeTaskWhere } from "./taskDeletion.js";
+import { taskDeliveryStatus } from "./taskDeliveryStatus.js";
 import { publicTaskStatus } from "./taskStatus.js";
 
 export const userSelect = {
@@ -83,6 +85,7 @@ export const projectInclude = {
   sections: {
     include: {
       memberships: {
+        where: { task: activeTaskWhere() },
         include: {
           task: {
             include: taskInclude
@@ -93,6 +96,7 @@ export const projectInclude = {
     orderBy: { name: "asc" as const }
   },
   memberships: {
+    where: { task: activeTaskWhere() },
     include: {
       section: true,
       task: {
@@ -393,6 +397,7 @@ export function toTaskDto(
     stage: task.stage ?? null,
     completed: task.completed,
     completedAt: task.completedAtAsana,
+    deliveryStatus: taskDeliveryStatus(task),
     createdAt: task.asanaCreatedAt ?? task.createdAt,
     updatedAt: task.asanaModifiedAt ?? task.updatedAt,
     assignee: toPublicUser(task.assignee),

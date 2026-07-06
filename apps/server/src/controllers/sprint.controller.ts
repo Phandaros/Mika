@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toTaskDto } from "../lib/asanaDto.js";
 import { TaskStatus, type TaskStatus as TaskStatusValue } from "../lib/enums.js";
+import { activeTaskWhere } from "../lib/taskDeletion.js";
 import { excludeBacklogWhere, normalizedStatusWhere } from "../lib/taskStatusWhere.js";
 import { sectionMatchesWorkloadScope, type WorkloadScope } from "../lib/workloadScope.js";
 import { AppError } from "../middleware/errorHandler.js";
@@ -122,6 +123,7 @@ function cursorWhere(cursor: SprintCursor | null): Prisma.TaskWhereInput {
 
 function sprintBaseWhere(scope: Exclude<WorkloadScope, "general">, status?: TaskStatusValue, cursor?: SprintCursor | null): Prisma.TaskWhereInput {
   return {
+    ...activeTaskWhere(),
     parentId: null,
     AND: [
       sprintScopeWhere(scope),

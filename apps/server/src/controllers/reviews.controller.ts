@@ -7,11 +7,12 @@ import { prisma } from "../lib/prisma.js";
 import { taskCustomFieldCatalogInclude, taskInclude, toPublicUser, toTaskDto, userSelect } from "../lib/asanaDto.js";
 import { TaskStatus, type Role as RoleValue } from "../lib/enums.js";
 import { createAdjustmentTask } from "../lib/taskRules.js";
+import { activeTaskWhere } from "../lib/taskDeletion.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { commentNotificationMessage, createAndEmitNotification } from "../lib/notify.js";
 import { extractUserMentionIds } from "../lib/commentMentions.js";
-import { taskActivityTypes } from "../lib/taskActivity.js";
+import { createReviewTaskActivity, taskActivityTypes } from "../lib/taskActivity.js";
 
 const reviewStatusValues = ["PENDING", "APPROVED", "REJECTED"] as const;
 const listReviewsQuerySchema = z.object({
@@ -149,7 +150,7 @@ async function notifyReviewComment(options: {
     }
   });
 
-  if (!task) {
+  if (!task || task.deletedAt) {
     return;
   }
 
@@ -202,6 +203,8 @@ export const listReviews: RequestHandler = async (req, res, next) => {
     const reviewerId = parsed.data.assigneeId === "me" ? authUser.id : parsed.data.assigneeId;
     const where: Prisma.TaskReviewWhereInput = {
       status,
+      sourceTask: activeTaskWhere(),
+      rootTask: activeTaskWhere(),
       ...(reviewerId ? { reviewerId } : {})
     };
     const [total, reviews, catalog] = await Promise.all([
@@ -239,7 +242,7 @@ export const getReviewById: RequestHandler = async (req, res, next) => {
       taskFieldCatalog()
     ]);
 
-    if (!review) {
+    if (!review || review.sourceTask.deletedAt || review.rootTask.deletedAt) {
       throw new AppError(404, "Revisao nao encontrada");
     }
 
@@ -296,10 +299,17 @@ export const approveReview: RequestHandler = async (req, res, next) => {
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.taskReview.findUnique({
         where: { id: reviewId },
-        select: { id: true, sourceTaskId: true, reviewerId: true, status: true, sourceTask: { select: { id: true, name: true } } }
+        select: {
+          id: true,
+          sourceTaskId: true,
+          reviewerId: true,
+          status: true,
+          sourceTask: { select: { id: true, name: true, deletedAt: true } },
+          rootTask: { select: { deletedAt: true } }
+        }
       });
 
-      if (!existing) {
+      if (!existing || existing.sourceTask.deletedAt || existing.rootTask.deletedAt) {
         throw new AppError(404, "Revisao nao encontrada");
       }
 
@@ -337,6 +347,15 @@ export const approveReview: RequestHandler = async (req, res, next) => {
           decidedAt: new Date()
         },
         include: reviewInclude
+      });
+
+      await createReviewTaskActivity(tx, {
+        taskId: existing.sourceTaskId,
+        actorId: authUser.id,
+        type: taskActivityTypes.REVIEW_APPROVED,
+        reviewId,
+        reviewerId: existing.reviewerId,
+        reviewerName: authUser.name
       });
 
       return {
@@ -384,10 +403,16 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.taskReview.findUnique({
         where: { id: reviewId },
-        select: { id: true, reviewerId: true, status: true }
+        select: {
+          id: true,
+          reviewerId: true,
+          status: true,
+          sourceTask: { select: { deletedAt: true } },
+          rootTask: { select: { deletedAt: true } }
+        }
       });
 
-      if (!existing) {
+      if (!existing || existing.sourceTask.deletedAt || existing.rootTask.deletedAt) {
         throw new AppError(404, "Revisao nao encontrada");
       }
 
@@ -430,6 +455,15 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
           decidedAt: new Date()
         },
         include: reviewInclude
+      });
+
+      await createReviewTaskActivity(tx, {
+        taskId: reviewSource.sourceTaskId,
+        actorId: authUser.id,
+        type: taskActivityTypes.REVIEW_REJECTED,
+        reviewId,
+        reviewerId: existing.reviewerId,
+        reviewerName: authUser.name
       });
 
       return { review, adjustmentTaskId, adjustmentTaskName: adjustmentTask.name };

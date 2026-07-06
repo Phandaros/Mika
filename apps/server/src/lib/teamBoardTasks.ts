@@ -11,6 +11,7 @@ import {
 } from "./asanaDto.js";
 import { buildNonWorkingDays, countBusinessDaysBetween } from "./businessDays.js";
 import { prisma } from "./prisma.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 import { activeStatusesWhere, todayDateOnly } from "./taskStatusWhere.js";
 import { REPORT_ELIGIBLE_ROLES } from "./weeklyReportTasks.js";
 
@@ -186,6 +187,7 @@ export async function buildTeamBoardResponse(input: {
     }),
     prisma.task.findMany({
       where: {
+        ...activeTaskWhere(),
         parentId: null,
         completed: false,
         assignee: {

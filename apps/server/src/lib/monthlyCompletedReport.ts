@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import JSZip from "jszip";
 import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "./prisma.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 
 const unassignedUserId = "__unassigned__";
 const dash = "\u2014";
@@ -89,6 +90,7 @@ export function monthlyCompletedTasksWhere(
   period: MonthlyCompletedReportPeriod
 ): Prisma.TaskWhereInput {
   return {
+    ...activeTaskWhere(),
     completed: true,
     completedAtAsana: {
       gte: period.from,

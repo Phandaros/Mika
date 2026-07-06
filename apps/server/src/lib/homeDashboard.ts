@@ -13,6 +13,7 @@ import { excludeBacklogWhere, isBacklogTask } from "./taskStatusWhere.js";
 import { normalizeRole } from "./asanaDto.js";
 import { getCurrentWeekEnd, getCurrentWeekStart } from "./weekUtils.js";
 import { prisma } from "./prisma.js";
+import { activeTaskWhere } from "./taskDeletion.js";
 import type { JwtUser } from "../middleware/auth.js";
 
 type HomeTaskRecord = {
@@ -189,6 +190,7 @@ export async function buildUserHomeDashboard(
 async function loadMyTaskRows(asanaGid: string): Promise<HomeTaskRecord[]> {
   return prisma.task.findMany({
     where: {
+      ...activeTaskWhere(),
       parentId: null,
       assigneeGid: asanaGid,
       completed: false,
@@ -221,6 +223,7 @@ async function loadMyTaskRows(asanaGid: string): Promise<HomeTaskRecord[]> {
 export async function loadRecentActivity(limit: number): Promise<HomeDashboardActivity[]> {
   const [comments, tasks] = await Promise.all([
     prisma.comment.findMany({
+      where: { task: activeTaskWhere() },
       orderBy: { createdAt: "desc" },
       take: limit * 3,
       include: {
@@ -229,7 +232,10 @@ export async function loadRecentActivity(limit: number): Promise<HomeDashboardAc
       }
     }),
     prisma.task.findMany({
-      where: excludeBacklogWhere(),
+      where: {
+        ...activeTaskWhere(),
+        ...excludeBacklogWhere()
+      },
       orderBy: { updatedAt: "desc" },
       take: limit * 3,
       select: { id: true, name: true, updatedAt: true }

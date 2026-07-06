@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type {
   AdvancedSearchCompletion,
+  AdvancedSearchDeliveryStatus,
   AdvancedSearchIndicatorMetric,
   AdvancedSearchResponse,
   AdvancedSearchType,
@@ -21,6 +22,7 @@ export interface AdvancedSearchFilters {
   dueFrom?: string;
   dueTo?: string;
   completion: AdvancedSearchCompletion;
+  deliveryStatus: AdvancedSearchDeliveryStatus[];
   source?: "indicators";
   indicatorMetric?: AdvancedSearchIndicatorMetric;
   indicatorPeriod?: IndicatorPeriod;
@@ -59,6 +61,7 @@ export function useAdvancedSearch(filters: AdvancedSearchFilters) {
           dueFrom: filters.dueFrom,
           dueTo: filters.dueTo,
           completion: filters.completion,
+          deliveryStatus: filters.deliveryStatus.length ? filters.deliveryStatus : undefined,
           source: filters.source,
           indicatorMetric: filters.indicatorMetric,
           indicatorPeriod: filters.indicatorPeriod,
