@@ -108,14 +108,27 @@ export function DataTableRow({ className, children, ...props }: HTMLAttributes<H
   );
 }
 
-export function DataTableGroupRow({ colSpan, label, count }: { colSpan: number; label: string; count: number }) {
+export function DataTableGroupRow({
+  colSpan,
+  label,
+  count,
+  action
+}: {
+  colSpan: number;
+  label: string;
+  count: number;
+  action?: ReactNode;
+}) {
   return (
     <tr className="border-b border-[--color-border-subtle] bg-[--bg-1]">
       <td colSpan={colSpan} className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-[--color-text-muted]">
-        <span>{label}</span>
-        <span className="ml-2 rounded bg-[--bg-4] px-1.5 py-0.5 text-[11px] font-medium normal-case tracking-normal text-[--color-text-secondary]">
-          {count}
-        </span>
+        <div className="flex items-center gap-2">
+          <span>{label}</span>
+          <span className="rounded bg-[--bg-4] px-1.5 py-0.5 text-[11px] font-medium normal-case tracking-normal text-[--color-text-secondary]">
+            {count}
+          </span>
+          {action}
+        </div>
       </td>
     </tr>
   );

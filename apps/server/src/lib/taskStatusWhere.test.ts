@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TaskStatus } from "./enums.js";
 import { normalizeTaskStatus } from "./taskStatus.js";
-import { isBacklogTask } from "./taskStatusWhere.js";
+import { isBacklogTask, normalizedStatusWhere } from "./taskStatusWhere.js";
 import { isUndatedTodoTaskCandidate } from "./moveUndatedTodoToBacklog.js";
 
 describe("task status where helpers", () => {
@@ -23,6 +23,26 @@ describe("task status where helpers", () => {
     expect(normalizeTaskStatus(task)).toBe(TaskStatus.BACKLOG);
     expect(isUndatedTodoTaskCandidate({ ...task, startOn: null, dueOn: null, dueAt: null })).toBe(false);
   });
+
+  it("keeps completed review and analysis tasks out of the finished query", () => {
+    const finishedWhere = normalizedStatusWhere(TaskStatus.FINISHED);
+    const serializedFinishedWhere = JSON.stringify(finishedWhere);
+
+    expect(finishedWhere).toHaveProperty("completed", true);
+    expect(serializedFinishedWhere).toContain(TaskStatus.AWAITING_REVIEW);
+    expect(serializedFinishedWhere).toContain(TaskStatus.IN_ANALYSIS);
+    expect(finishedWhere).toHaveProperty("NOT");
+  });
+
+  it.each([TaskStatus.AWAITING_REVIEW, TaskStatus.IN_ANALYSIS])(
+    "does not require completed=false when querying %s",
+    (status) => {
+      const statusWhere = normalizedStatusWhere(status);
+
+      expect(statusWhere).not.toHaveProperty("completed");
+      expect(JSON.stringify(statusWhere)).toContain(status);
+    }
+  );
 
   it("selects open undated todo tasks for backlog migration", () => {
     expect(

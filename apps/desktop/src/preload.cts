@@ -25,7 +25,8 @@ const updaterChannels = [
 contextBridge.exposeInMainWorld("mkProjetos", {
   isDesktop: true,
   getServerUrl: () => ipcRenderer.invoke("mk-projetos:get-server-url") as Promise<string>,
-  setServerUrl: (serverUrl: string) => ipcRenderer.invoke("mk-projetos:set-server-url", serverUrl) as Promise<string>
+  setServerUrl: (serverUrl: string) => ipcRenderer.invoke("mk-projetos:set-server-url", serverUrl) as Promise<string>,
+  openTaskWindow: (path: string) => ipcRenderer.invoke("mk-projetos:open-task-window", path) as Promise<void>
 });
 
 contextBridge.exposeInMainWorld("updaterAPI", {

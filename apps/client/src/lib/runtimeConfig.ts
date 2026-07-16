@@ -7,6 +7,7 @@ interface DesktopApi {
   isDesktop: true;
   getServerUrl: () => Promise<string>;
   setServerUrl: (serverUrl: string) => Promise<string>;
+  openTaskWindow: (path: string) => Promise<void>;
 }
 
 interface UpdaterApi {

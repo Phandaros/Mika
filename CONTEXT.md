@@ -8,6 +8,12 @@
 ### Projeto
 Empreendimento de engenharia. Pode ser **importado do Asana** ou **criado no Mika**. Ambas as origens são cidadãos de primeira classe: têm exatamente os mesmos campos e comportamento. A origem não muda quais campos existem nem como são calculados.
 
+### Seção
+Unidade canônica entre **Projeto** e **Tarefa**. Todo Projeto possui as Seções fixas **Civil** e **Elétrico**, e toda Tarefa deve pertencer a uma delas.
+
+### Geral
+Visão agregada das Tarefas de **Civil** e **Elétrico** em um Projeto. **Geral** não é uma Seção e não recebe Tarefas diretamente.
+
 ### Campos de portfólio (Portfolio fields)
 Conjunto fixo de campos a nível de projeto, definidos em código (não configuráveis por projeto). Aparecem como colunas no portfólio e no formulário de edição. Aplicam-se a **todo** projeto, independente da origem.
 

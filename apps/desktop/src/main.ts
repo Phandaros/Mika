@@ -71,6 +71,22 @@ function isSafeExternalUrl(url: string): boolean {
   }
 }
 
+function normalizeInternalTaskPath(value: unknown): string {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
+    throw new Error("Rota interna de tarefa inválida.");
+  }
+
+  const internalOrigin = "https://mika.internal";
+  const parsedUrl = new URL(value, internalOrigin);
+  const taskId = parsedUrl.searchParams.get("task")?.trim();
+
+  if (parsedUrl.origin !== internalOrigin || parsedUrl.hash || !taskId) {
+    throw new Error("Rota interna de tarefa inválida.");
+  }
+
+  return `${parsedUrl.pathname}${parsedUrl.search}`;
+}
+
 function clientIndexPath(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "client", "index.html");
@@ -82,6 +98,9 @@ function clientIndexPath(): string {
 function registerIpcHandlers(): void {
   ipcMain.handle("mk-projetos:get-server-url", async () => readServerUrlConfig());
   ipcMain.handle("mk-projetos:set-server-url", async (_event, serverUrl: string) => writeServerUrlConfig(serverUrl));
+  ipcMain.handle("mk-projetos:open-task-window", async (_event, taskPath: unknown) => {
+    await createWindow(normalizeInternalTaskPath(taskPath));
+  });
   ipcMain.handle("updater:check", async () => {
     await updaterService?.checkForUpdates();
   });
@@ -90,7 +109,7 @@ function registerIpcHandlers(): void {
   });
 }
 
-async function createWindow(): Promise<BrowserWindow> {
+async function createWindow(taskPath?: string): Promise<BrowserWindow> {
   nativeTheme.themeSource = "dark";
 
   const mainWindow = new BrowserWindow({
@@ -126,11 +145,15 @@ async function createWindow(): Promise<BrowserWindow> {
   });
 
   if (!app.isPackaged) {
-    await mainWindow.loadURL(devServerUrl);
+    const targetUrl = new URL(devServerUrl);
+    if (taskPath) {
+      targetUrl.hash = taskPath;
+    }
+    await mainWindow.loadURL(targetUrl.toString());
     return mainWindow;
   }
 
-  await mainWindow.loadFile(clientIndexPath());
+  await mainWindow.loadFile(clientIndexPath(), taskPath ? { hash: taskPath } : undefined);
   return mainWindow;
 }
 

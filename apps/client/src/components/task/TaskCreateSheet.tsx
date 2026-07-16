@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { isBefore, isWithinInterval, startOfDay } from "date-fns";
 import { CalendarDays, Check, Flag, FolderKanban, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectOption, type ProjectCustomField, type User } from "shared";
+import { Priority, TaskStatus, type CreateTaskRequest, type Project, type ProjectOption, type ProjectCustomField, type Task, type User } from "shared";
 import { useProject, useProjectOptions } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
@@ -12,7 +12,7 @@ import {
   MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE,
   TASK_DEADLINE_ERROR_MESSAGE
 } from "../../lib/taskDeadlineRules";
-import { cn, dateOnlyToLocalDate } from "../../lib/utils";
+import { dateOnlyToLocalDate } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { DisciplineChip, PlatformChip, taskStatusLabels, taskStatusOptions } from "../shared/Chip";
@@ -37,6 +37,10 @@ import {
 } from "./TaskPanelPrimitives";
 
 type CustomFieldDraft = Record<string, string>;
+
+interface TaskCreateSheetProps {
+  onCreated?: (task: Task) => void;
+}
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
@@ -85,7 +89,7 @@ function isTargetInsidePanelShell(target: Element, aside: HTMLElement | null): b
   return isTargetInsidePanelPortal(target);
 }
 
-export function TaskCreateSheet() {
+export function TaskCreateSheet({ onCreated }: TaskCreateSheetProps) {
   const open = useUiStore((state) => state.taskCreateOpen);
   const setOpen = useUiStore((state) => state.setTaskCreateOpen);
   const defaults = useUiStore((state) => state.taskCreateDefaults);
@@ -283,9 +287,10 @@ export function TaskCreateSheet() {
     };
 
     try {
-      await createTask.mutateAsync(payload);
+      const createdTask = await createTask.mutateAsync(payload);
       toast.success("Tarefa criada");
       setOpen(false);
+      onCreated?.(createdTask);
     } catch {
       toast.error("Não foi possível criar a tarefa");
     }

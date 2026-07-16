@@ -573,6 +573,7 @@ export function ProjectDetailPage() {
             onOpenTask={openTaskDetail}
             onPatchTask={patchTask}
             onPatchCompletion={patchTaskCompletion}
+            onCreateTaskInSection={(sectionId) => openTaskCreate({ projectId, sectionId })}
             projectId={projectId}
           />
         ) : null}
@@ -787,6 +788,7 @@ function ListView({
   onOpenTask,
   onPatchTask,
   onPatchCompletion,
+  onCreateTaskInSection,
   projectId
 }: {
   disciplines: Section[];
@@ -798,9 +800,10 @@ function ListView({
   onOpenTask: (task: TaskWithDiscipline) => void;
   onPatchTask: (task: TaskWithDiscipline, payload: UpdateTaskRequest) => void;
   onPatchCompletion: (task: TaskWithDiscipline, completed: boolean) => void;
+  onCreateTaskInSection: (sectionId: string) => void;
   projectId: string;
 }) {
-  const groupedTasks = groupTasksByScope(tasks);
+  const groupedTasks = groupTasksByScope(tasks, disciplines);
   const columnCount = canManage ? 10 : 9;
 
   if (isLoading) {
@@ -846,7 +849,16 @@ function ListView({
           <tbody>
             {groupedTasks.map((group) => (
               <Fragment key={group.scope}>
-                <DataTableGroupRow colSpan={columnCount} label={group.label} count={group.tasks.length} />
+                <DataTableGroupRow
+                  colSpan={columnCount}
+                  label={group.label}
+                  count={group.tasks.length}
+                  action={
+                    canManage && group.sectionId ? (
+                      <SectionCreateAction label={group.label} sectionId={group.sectionId} onCreate={onCreateTaskInSection} />
+                    ) : undefined
+                  }
+                />
                 {group.tasks.length === 0 ? (
                   <tr className="border-b border-[--color-border-subtle]">
                     <td colSpan={columnCount} className="px-3 py-2 text-[13px] text-[--color-text-muted]">
@@ -998,15 +1010,49 @@ function ListView({
   );
 }
 
+function SectionCreateAction({
+  label,
+  sectionId,
+  onCreate
+}: {
+  label: string;
+  sectionId: string;
+  onCreate: (sectionId: string) => void;
+}) {
+  const accessibleLabel = `Adicionar tarefa em ${label}`;
+
+  return (
+    <Button
+      variant="ghost"
+      className="size-6 px-0"
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
+      onClick={() => onCreate(sectionId)}
+    >
+      <Plus data-icon="inline-start" aria-hidden="true" />
+    </Button>
+  );
+}
+
 function formatDecimalDisplay(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-function groupTasksByScope(tasks: TaskWithDiscipline[]) {
-  const groups: Array<{ scope: TaskScope; label: string; tasks: TaskWithDiscipline[] }> = [
-    { scope: "general", label: "Geral", tasks: [] },
-    { scope: "civil", label: "Civil", tasks: [] },
-    { scope: "electrical", label: "Elétrico", tasks: [] }
+function groupTasksByScope(tasks: TaskWithDiscipline[], sections: Section[]) {
+  const groups: Array<{ scope: TaskScope; label: string; sectionId: string | null; tasks: TaskWithDiscipline[] }> = [
+    { scope: "general", label: "Geral", sectionId: null, tasks: [] },
+    {
+      scope: "civil",
+      label: "Civil",
+      sectionId: sections.find((section) => sectionScope(section) === "civil")?.id ?? null,
+      tasks: []
+    },
+    {
+      scope: "electrical",
+      label: "Elétrico",
+      sectionId: sections.find((section) => sectionScope(section) === "electrical")?.id ?? null,
+      tasks: []
+    }
   ];
 
   for (const task of tasks) {

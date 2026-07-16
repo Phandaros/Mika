@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   CopyPlus,
   Eye,
+  ExternalLink,
   GitBranch,
   RefreshCw,
   RotateCcw,
@@ -17,6 +18,7 @@ import { useDeferredTaskDelete } from "../../hooks/useDeferredTaskDelete";
 import { useTaskContextActions } from "../../hooks/useTaskContextActions";
 import { useUsers } from "../../hooks/useUsers";
 import { canCompleteTasks, canManageTasks } from "../../lib/permissions";
+import { openTaskInNewContext } from "../../lib/taskLink";
 import { editableTaskStatusOptions, taskStatusLabels } from "../shared/Chip";
 import {
   ContextMenu,
@@ -78,16 +80,73 @@ export function TaskContextMenu<TTask extends Task>({
   const currentReviewer = task.pendingReview?.reviewer;
   const currentReviewerName = currentReviewer?.name ?? (task.pendingReview ? "Sem revisor" : null);
   const reviewTriggerLabel = currentReviewerName ? `Revisão: ${currentReviewerName}` : "Enviar para revisão";
+  const newContextLabel = window.mkProjetos?.isDesktop === true ? "Abrir em nova janela" : "Abrir em nova guia";
+
+  function shouldIgnoreNewContextGesture(event: MouseEvent): boolean {
+    if (!(event.target instanceof Element) || !(event.currentTarget instanceof Element)) {
+      return false;
+    }
+
+    if (event.target.closest("[data-task-open-ignore='true']")) {
+      return true;
+    }
+
+    const interactiveTarget = event.target.closest(
+      "a, button, input, textarea, select, [contenteditable='true'], [role='button'], [role='checkbox'], [role='combobox'], [role='menuitem']"
+    );
+
+    return interactiveTarget !== null && interactiveTarget !== event.currentTarget;
+  }
+
+  function openInNewContext() {
+    openTaskInNewContext(task, { projectId, fallbackPath: fallbackLinkPath });
+  }
+
+  function handleTriggerClickCapture(event: MouseEvent) {
+    if (event.button !== 0 || (!event.ctrlKey && !event.metaKey) || shouldIgnoreNewContextGesture(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    openInNewContext();
+  }
+
+  function handleTriggerAuxClickCapture(event: MouseEvent) {
+    if (event.button !== 1 || shouldIgnoreNewContextGesture(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    openInNewContext();
+  }
+
+  function handleTriggerMouseDownCapture(event: MouseEvent) {
+    if (event.button === 1 && !shouldIgnoreNewContextGesture(event)) {
+      event.preventDefault();
+    }
+  }
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild onContextMenu={onContextMenu}>
+      <ContextMenuTrigger
+        asChild
+        onContextMenu={onContextMenu}
+        onClickCapture={handleTriggerClickCapture}
+        onAuxClickCapture={handleTriggerAuxClickCapture}
+        onMouseDownCapture={handleTriggerMouseDownCapture}
+      >
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => onOpen(task)}>
           <Eye className="h-4 w-4" />
           Abrir detalhes da tarefa
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={openInNewContext}>
+          <ExternalLink className="h-4 w-4" />
+          {newContextLabel}
         </ContextMenuItem>
         <TaskCommonActionItems
           task={task}

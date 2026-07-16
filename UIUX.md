@@ -320,6 +320,8 @@ Campos com valor vazio devem ser exibidos na mesma posição e com a mesma altur
 - Coluna de responsável: `<img className="w-5 h-5 rounded-full mr-1.5 inline-block">` + nome `truncate`
 - Colunas numéricas (Dias): `text-right font-mono text-[12px]`
 - As colunas dos campos globais devem vir do catálogo global definido neste arquivo, **não** dos campos presentes nas tarefas filtradas
+- Os cabeçalhos das Seções `Civil` e `Elétrico` exibem, após o contador, uma ação compacta `+` sempre visível para Coordenadores e Administradores; `Geral` é uma agregação e não exibe essa ação.
+- A ação abre o painel completo de criação com Projeto e Seção pré-selecionados, inclusive quando a Seção está vazia, e deve ter nome acessível específico para a Seção.
 
 ### 6.4 Célula vazia
 

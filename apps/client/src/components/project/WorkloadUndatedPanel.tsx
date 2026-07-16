@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Search, X } from "lucide-react";
 import type { DisciplineType, Task } from "shared";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { TaskContextMenu } from "../task/TaskContextMenu";
 
 export const WORKLOAD_TASK_DRAG_MIME = "application/x-mk-workload-task";
 
@@ -28,6 +29,7 @@ type WorkloadUndatedPanelProps = {
   assigneeGrouping: boolean;
   onDragStart: (taskId: string) => void;
   onDragEnd: () => void;
+  onBackdropShiftWheel: (event: WheelEvent) => void;
 };
 
 export function WorkloadUndatedPanel({
@@ -40,10 +42,12 @@ export function WorkloadUndatedPanel({
   canDrag,
   assigneeGrouping,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  onBackdropShiftWheel
 }: WorkloadUndatedPanelProps) {
   const [search, setSearch] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const sorted = useMemo(
     () => [...tasks].sort((a, b) => a.title.localeCompare(b.title, "pt-BR")),
@@ -75,6 +79,18 @@ export function WorkloadUndatedPanel({
       return undefined;
     }
 
+    const frameId = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -99,6 +115,7 @@ export function WorkloadUndatedPanel({
         className="absolute inset-0 cursor-default"
         aria-label="Fechar painel"
         onClick={onClose}
+        onWheel={(event) => onBackdropShiftWheel(event.nativeEvent)}
       />
       <aside
         className={cn(
@@ -120,6 +137,7 @@ export function WorkloadUndatedPanel({
         <div className="relative shrink-0 border-b border-border-subtle px-4 py-2">
           <Search size={14} className="pointer-events-none absolute left-7 top-1/2 -translate-y-1/2 text-text-muted" />
           <Input
+            ref={searchInputRef}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar tarefa..."
@@ -141,34 +159,36 @@ export function WorkloadUndatedPanel({
           ) : (
             filtered.map((task) => (
               <li key={task.id}>
-                <button
-                  type="button"
-                  draggable={canDrag}
-                  onDragStart={(event) => {
-                    if (!canDrag) {
-                      event.preventDefault();
-                      return;
-                    }
+                <TaskContextMenu task={task} projectId={task.discipline.projectId} onOpen={onOpenTask}>
+                  <button
+                    type="button"
+                    draggable={canDrag}
+                    onDragStart={(event) => {
+                      if (!canDrag) {
+                        event.preventDefault();
+                        return;
+                      }
 
-                    event.dataTransfer.setData(WORKLOAD_TASK_DRAG_MIME, task.id);
-                    event.dataTransfer.setData("text/plain", task.id);
-                    event.dataTransfer.effectAllowed = "move";
-                    setIsDragging(true);
-                    onDragStart(task.id);
-                  }}
-                  onDragEnd={() => {
-                    setIsDragging(false);
-                    onDragEnd();
-                  }}
-                  onClick={() => onOpenTask(task)}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange",
-                    canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
-                  )}
-                  style={{ borderLeftWidth: 3, borderLeftColor: statusColorFor(task.status) }}
-                >
-                  <span className="min-w-0 flex-1 truncate">{labelForTask(task)}</span>
-                </button>
+                      event.dataTransfer.setData(WORKLOAD_TASK_DRAG_MIME, task.id);
+                      event.dataTransfer.setData("text/plain", task.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      setIsDragging(true);
+                      onDragStart(task.id);
+                    }}
+                    onDragEnd={() => {
+                      setIsDragging(false);
+                      onDragEnd();
+                    }}
+                    onClick={() => onOpenTask(task)}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange",
+                      canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+                    )}
+                    style={{ borderLeftWidth: 3, borderLeftColor: statusColorFor(task.status) }}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{labelForTask(task)}</span>
+                  </button>
+                </TaskContextMenu>
               </li>
             ))
           )}

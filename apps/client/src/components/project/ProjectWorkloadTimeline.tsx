@@ -865,22 +865,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         return;
       }
 
-      if (event.deltaY === 0) {
-        return;
-      }
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-
-      if (smoothWheelFrame.current === null) {
-        smoothWheelIntent.current = 0;
-      }
-      smoothWheelIntent.current += event.deltaY;
-      smoothWheelVelocity.current += event.deltaY * SMOOTH_WHEEL_VELOCITY_SCALE;
-
-      maybeExtendTimeline(box, event.deltaY < 0 ? "left" : "right");
-      scheduleSmoothWheelScroll();
+      translateShiftWheel(event, box);
     }
 
     box.addEventListener("wheel", onWheel, { passive: false });
@@ -947,6 +932,43 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     }
 
     smoothWheelFrame.current = window.requestAnimationFrame(runSmoothWheelScroll);
+  }
+
+  function translateShiftWheel(event: WheelEvent, box: HTMLDivElement) {
+    if (event.deltaY === 0) {
+      return;
+    }
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    if (smoothWheelFrame.current === null) {
+      smoothWheelIntent.current = 0;
+    }
+    smoothWheelIntent.current += event.deltaY;
+    smoothWheelVelocity.current += event.deltaY * SMOOTH_WHEEL_VELOCITY_SCALE;
+
+    maybeExtendTimeline(box, event.deltaY < 0 ? "left" : "right");
+    scheduleSmoothWheelScroll();
+  }
+
+  function handleUndatedBackdropShiftWheel(event: WheelEvent) {
+    const box = scrollRef.current;
+    if (!box || !event.shiftKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+      return;
+    }
+
+    const rect = box.getBoundingClientRect();
+    const isOverVisibleTimeline =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+
+    if (isOverVisibleTimeline) {
+      translateShiftWheel(event, box);
+    }
   }
 
   function clearUndatedDrag() {
@@ -1207,7 +1229,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     bounds: { start: string; end: string },
     kind: DragPreview["kind"] = "move"
   ) {
-    if (ev.button !== 0) {
+    if (ev.button !== 0 || ev.ctrlKey || ev.metaKey) {
       return;
     }
 
@@ -1479,6 +1501,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                 >
                   <span
                     aria-hidden="true"
+                    data-task-open-ignore="true"
                     className="absolute inset-y-0 left-0 z-[2] w-2 cursor-ew-resize bg-white/10 opacity-0 transition hover:opacity-100"
                     onPointerDown={(e) => {
                       const b = clientTaskBounds(p.task);
@@ -1510,6 +1533,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                   </span>
                   <span
                     aria-hidden="true"
+                    data-task-open-ignore="true"
                     className="absolute inset-y-0 right-0 z-[2] w-2 cursor-ew-resize bg-white/10 opacity-0 transition hover:opacity-100"
                     onPointerDown={(e) => {
                       const b = clientTaskBounds(p.task);
@@ -1925,6 +1949,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         assigneeGrouping={grouping === "assignee"}
         onDragStart={handleUndatedDragStart}
         onDragEnd={handleUndatedDragEnd}
+        onBackdropShiftWheel={handleUndatedBackdropShiftWheel}
         onOpenTask={(task) => {
           setUndatedPanelOpen(false);
           onOpenTask(task);

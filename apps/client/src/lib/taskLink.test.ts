@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildAbsoluteAppUrl } from "./taskLink";
+import { buildAbsoluteAppUrl, buildTaskPath, openTaskInNewContext } from "./taskLink";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -25,5 +25,61 @@ describe("buildAbsoluteAppUrl", () => {
     expect(buildAbsoluteAppUrl("/projects/project-1?task=task-1")).toBe(
       "http://localhost:5173#/projects/project-1?task=task-1"
     );
+  });
+});
+
+describe("buildTaskPath", () => {
+  const task = {
+    id: "task/1",
+    discipline: { projectId: "primary-project" },
+    projects: [{ id: "secondary-project" }]
+  };
+
+  it("prioritizes the contextual project", () => {
+    expect(buildTaskPath(task, { projectId: "current-project" })).toBe(
+      "/projects/current-project?task=task%2F1"
+    );
+  });
+
+  it("uses the task project when there is no contextual project", () => {
+    expect(buildTaskPath(task)).toBe("/projects/primary-project?task=task%2F1");
+  });
+
+  it("uses the fallback path only when the task has no project", () => {
+    expect(buildTaskPath({ id: "task-1" }, { fallbackPath: "/my-tasks?view=list" })).toBe(
+      "/my-tasks?view=list&task=task-1"
+    );
+  });
+});
+
+describe("openTaskInNewContext", () => {
+  it("opens a browser tab without changing the current page", () => {
+    const open = vi.fn();
+    vi.stubGlobal("window", {
+      location: { origin: "http://localhost:5173" },
+      open
+    });
+
+    openTaskInNewContext({ id: "task-1", discipline: { projectId: "project-1" } });
+
+    expect(open).toHaveBeenCalledWith(
+      "http://localhost:5173/projects/project-1?task=task-1",
+      "_blank",
+      "noopener,noreferrer"
+    );
+  });
+
+  it("delegates to the secure desktop bridge", () => {
+    const openTaskWindow = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("window", {
+      mkProjetos: { isDesktop: true, openTaskWindow }
+    });
+
+    openTaskInNewContext(
+      { id: "task-1", discipline: { projectId: "primary-project" } },
+      { projectId: "current-project" }
+    );
+
+    expect(openTaskWindow).toHaveBeenCalledWith("/projects/current-project?task=task-1");
   });
 });

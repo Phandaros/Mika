@@ -7,6 +7,7 @@ export type TaskLinkSource = Pick<Task, "id"> & {
 
 export interface BuildTaskLinkOptions {
   fallbackPath?: string;
+  projectId?: string;
 }
 
 function resolveProjectId(task: TaskLinkSource): string | undefined {
@@ -14,7 +15,7 @@ function resolveProjectId(task: TaskLinkSource): string | undefined {
 }
 
 export function buildTaskPath(task: TaskLinkSource, options?: BuildTaskLinkOptions): string {
-  const projectId = resolveProjectId(task);
+  const projectId = options?.projectId ?? resolveProjectId(task);
   const encodedTaskId = encodeURIComponent(task.id);
 
   if (projectId) {
@@ -42,6 +43,17 @@ export function buildAbsoluteAppUrl(path: string): string {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return `${origin}${hashPrefix}${normalizedPath}`;
+}
+
+export function openTaskInNewContext(task: TaskLinkSource, options?: BuildTaskLinkOptions): void {
+  const path = buildTaskPath(task, options);
+
+  if (typeof window !== "undefined" && window.mkProjetos?.isDesktop === true) {
+    void window.mkProjetos.openTaskWindow(path);
+    return;
+  }
+
+  window.open(buildAbsoluteAppUrl(path), "_blank", "noopener,noreferrer");
 }
 
 export function resolveTaskProjectId(task: TaskLinkSource): string | undefined {
