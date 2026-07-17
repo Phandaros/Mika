@@ -632,7 +632,12 @@ const workloadTaskInclude = {
   },
   customFieldValues: taskInclude.customFieldValues,
   tags: taskInclude.tags,
-  requestedReviews: taskInclude.requestedReviews
+  requestedReviews: taskInclude.requestedReviews,
+  activities: {
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: { createdAt: true }
+  }
 } satisfies Prisma.TaskInclude;
 
 type WorkloadTaskRecord = Prisma.TaskGetPayload<{ include: typeof workloadTaskInclude }>;
@@ -782,10 +787,17 @@ export const listWorkloadTasks: RequestHandler = async (req, res, next) => {
       orderBy: [{ mikaSortOrder: "asc" }, { name: "asc" }]
     });
     const dtos = filtered
-      .map((task) =>
-        toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog, { viewerRole: authUser.role })
-      )
-      .filter((task) => Boolean(task.discipline.id));
+      .map((task) => {
+        const dto = toTaskDto(task, resolveWorkloadDisciplineFallback(task, project), taskFieldCatalog, {
+          viewerRole: authUser.role
+        });
+        return dto
+          ? { ...dto, lastActivityAt: task.activities[0]?.createdAt.toISOString() ?? null }
+          : null;
+      })
+      .filter(
+        (task): task is NonNullable<typeof task> => task !== null && Boolean(task.discipline.id)
+      );
 
     res.json({ tasks: dtos });
   } catch (error) {

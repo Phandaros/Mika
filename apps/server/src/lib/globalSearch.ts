@@ -8,7 +8,8 @@ import type {
   AdvancedSearchUserResult,
   GlobalSearchProjectResult,
   GlobalSearchTaskResult,
-  GlobalSearchUserResult
+  GlobalSearchUserResult,
+  TaskSearchMatchContext
 } from "shared";
 import { Priority, ProjectStatus, TaskStatus, type DeliveryStatus as DeliveryStatusValue } from "./enums.js";
 import {
@@ -25,6 +26,7 @@ export const GLOBAL_SEARCH_DEFAULT_LIMIT = 12;
 export const GLOBAL_SEARCH_MAX_LIMIT = 25;
 export const ADVANCED_SEARCH_DEFAULT_LIMIT = 25;
 export const ADVANCED_SEARCH_MAX_LIMIT = 50;
+export const TASK_SEARCH_EXCERPT_MAX_LENGTH = 180;
 
 export function normalizeSearchTerm(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -133,6 +135,8 @@ export function buildTaskSearchWhere(term: string): Prisma.TaskWhereInput {
     ...base,
     OR: [
       { name: { contains: term } },
+      { notes: { contains: term } },
+      { comments: { some: { content: { contains: term } } } },
       { memberships: { some: { sectionName: { contains: term } } } },
       { memberships: { some: { projectName: { contains: term } } } },
       { memberships: { some: { section: { name: { contains: term } } } } },
@@ -271,6 +275,7 @@ export const taskSearchInclude = {
 interface TaskSearchRecord {
   id: string;
   name: string;
+  notes?: string | null;
   mikaStatus?: string | null;
   assigneeStatus?: string | null;
   priority?: string | null;
@@ -287,6 +292,10 @@ interface TaskSearchRecord {
     id: string;
     name: string;
   } | null;
+  comments?: Array<{
+    content: string;
+    createdAt: Date;
+  }>;
   memberships: Array<{
     sectionName: string | null;
     projectName: string | null;
@@ -359,7 +368,7 @@ function preferredTaskMembership(task: TaskSearchRecord, preferredProjectId?: st
   return task.memberships.find((membership) => Boolean(membershipProjectId(membership))) ?? null;
 }
 
-export function toGlobalSearchTask(task: TaskSearchRecord, preferredProjectId?: string): GlobalSearchTaskResult | null {
+export function toGlobalSearchTask(task: TaskSearchRecord, preferredProjectId?: string, term = ""): GlobalSearchTaskResult | null {
   const membership = preferredTaskMembership(task, preferredProjectId);
 
   if (membership) {
@@ -368,12 +377,15 @@ export function toGlobalSearchTask(task: TaskSearchRecord, preferredProjectId?: 
     const projectName = project?.name ?? membership.projectName ?? null;
 
     if (projectId && projectName) {
+      const matchContext = taskSearchMatchContext(task, term);
+
       return {
         id: task.id,
         title: task.name,
         projectId,
         projectName,
-        sectionName: membership.section?.name ?? membership.sectionName ?? "Sem secao"
+        sectionName: membership.section?.name ?? membership.sectionName ?? "Sem secao",
+        ...(matchContext ? { matchContext } : {})
       };
     }
   }
@@ -381,8 +393,8 @@ export function toGlobalSearchTask(task: TaskSearchRecord, preferredProjectId?: 
   return null;
 }
 
-export function toAdvancedSearchTask(task: TaskSearchRecord): AdvancedSearchTaskResult | null {
-  const base = toGlobalSearchTask(task);
+export function toAdvancedSearchTask(task: TaskSearchRecord, term = ""): AdvancedSearchTaskResult | null {
+  const base = toGlobalSearchTask(task, undefined, term);
 
   if (!base) {
     return null;
@@ -410,10 +422,22 @@ export function toAdvancedSearchTask(task: TaskSearchRecord): AdvancedSearchTask
 }
 
 export function taskMatchesSearch(task: TaskSearchRecord, term: string): boolean {
-  const values: Array<string | null | undefined> = [task.name];
+  return taskSearchRank(task, term) !== null;
+}
+
+export function taskSearchRank(task: TaskSearchRecord, term: string): number | null {
+  if (!normalizeSearchText(term)) {
+    return 0;
+  }
+
+  if (searchTextMatches(term, [task.name])) {
+    return 0;
+  }
+
+  const membershipValues: Array<string | null | undefined> = [];
 
   for (const membership of task.memberships) {
-    values.push(
+    membershipValues.push(
       membership.sectionName,
       membership.projectName,
       membership.section?.name,
@@ -422,7 +446,129 @@ export function taskMatchesSearch(task: TaskSearchRecord, term: string): boolean
     );
   }
 
-  return searchTextMatches(term, values);
+  if (searchTextMatches(term, membershipValues)) {
+    return 1;
+  }
+
+  if (searchTextMatches(term, [task.notes])) {
+    return 2;
+  }
+
+  if (searchTextMatches(term, (task.comments ?? []).map((comment) => comment.content))) {
+    return 3;
+  }
+
+  return null;
+}
+
+export function compareTasksBySearchRelevance(left: TaskSearchRecord, right: TaskSearchRecord, term: string): number {
+  const rankDifference = (taskSearchRank(left, term) ?? Number.MAX_SAFE_INTEGER) - (taskSearchRank(right, term) ?? Number.MAX_SAFE_INTEGER);
+
+  if (rankDifference !== 0) {
+    return rankDifference;
+  }
+
+  return left.name.localeCompare(right.name, "pt-BR");
+}
+
+export function taskSearchMatchContext(task: TaskSearchRecord, term: string): TaskSearchMatchContext | null {
+  const rank = taskSearchRank(task, term);
+
+  if (rank === null || rank < 2) {
+    return null;
+  }
+
+  if (searchTextMatches(term, [task.notes])) {
+    return {
+      source: "description",
+      excerpt: createSearchExcerpt(task.notes ?? "", term)
+    };
+  }
+
+  const matchingComment = [...(task.comments ?? [])]
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+    .find((comment) => searchTextMatches(term, [comment.content]));
+
+  if (!matchingComment) {
+    return null;
+  }
+
+  return {
+    source: "comment",
+    excerpt: createSearchExcerpt(matchingComment.content, term)
+  };
+}
+
+export function createSearchExcerpt(value: string, term: string): string {
+  const text = value.replace(/\s+/g, " ").trim();
+
+  if (text.length <= TASK_SEARCH_EXCERPT_MAX_LENGTH) {
+    return text;
+  }
+
+  const match = normalizedMatchRange(text, term);
+  const contentLength = TASK_SEARCH_EXCERPT_MAX_LENGTH - 2;
+  const matchCenter = match ? Math.floor((match.start + match.end) / 2) : 0;
+  let start = Math.max(0, matchCenter - Math.floor(contentLength / 2));
+  const end = Math.min(text.length, start + contentLength);
+
+  if (end - start < contentLength) {
+    start = Math.max(0, end - contentLength);
+  }
+
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < text.length ? "…" : "";
+  return `${prefix}${text.slice(start, end)}${suffix}`;
+}
+
+function normalizedMatchRange(value: string, term: string): { start: number; end: number } | null {
+  const valueWithMap = normalizeSearchTextWithMap(value);
+  const normalizedTerm = normalizeSearchText(term);
+  const normalizedStart = valueWithMap.text.indexOf(normalizedTerm);
+
+  if (!normalizedTerm || normalizedStart < 0) {
+    return null;
+  }
+
+  const normalizedEnd = normalizedStart + normalizedTerm.length - 1;
+  return {
+    start: valueWithMap.startMap[normalizedStart] ?? 0,
+    end: valueWithMap.endMap[normalizedEnd] ?? value.length
+  };
+}
+
+function normalizeSearchTextWithMap(value: string): { text: string; startMap: number[]; endMap: number[] } {
+  let text = "";
+  let sourceOffset = 0;
+  const startMap: number[] = [];
+  const endMap: number[] = [];
+
+  for (const sourceCharacter of Array.from(value)) {
+    const normalizedCharacter = sourceCharacter.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const lettersAndNumbers = normalizedCharacter.match(/[\p{L}\p{N}]/gu)?.join("").toLowerCase() ?? "";
+
+    if (lettersAndNumbers) {
+      for (const character of Array.from(lettersAndNumbers)) {
+        text += character;
+        startMap.push(sourceOffset);
+        endMap.push(sourceOffset + sourceCharacter.length);
+      }
+    } else if (text && !text.endsWith(" ")) {
+      text += " ";
+      startMap.push(sourceOffset);
+      endMap.push(sourceOffset + sourceCharacter.length);
+    }
+
+    sourceOffset += sourceCharacter.length;
+  }
+
+  while (text.endsWith(" ")) {
+    text = text.slice(0, -1);
+    startMap.pop();
+    endMap.pop();
+  }
+
+  return { text, startMap, endMap };
 }
 
 interface UserSearchRecord {

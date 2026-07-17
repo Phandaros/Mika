@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Search, X } from "lucide-react";
 import type { DisciplineType, Task } from "shared";
 import { cn } from "../../lib/utils";
+import { sortWorkloadUndatedTasks } from "../../lib/workloadUndatedSort";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { TaskContextMenu } from "../task/TaskContextMenu";
@@ -50,7 +51,7 @@ export function WorkloadUndatedPanel({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const sorted = useMemo(
-    () => [...tasks].sort((a, b) => a.title.localeCompare(b.title, "pt-BR")),
+    () => sortWorkloadUndatedTasks(tasks),
     [tasks]
   );
 

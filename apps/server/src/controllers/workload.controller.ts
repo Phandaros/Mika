@@ -33,7 +33,12 @@ const globalWorkloadTaskInclude = {
   },
   customFieldValues: taskInclude.customFieldValues,
   tags: taskInclude.tags,
-  requestedReviews: taskInclude.requestedReviews
+  requestedReviews: taskInclude.requestedReviews,
+  activities: {
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: { createdAt: true }
+  }
 } satisfies Prisma.TaskInclude;
 
 type GlobalWorkloadTaskRecord = Prisma.TaskGetPayload<{ include: typeof globalWorkloadTaskInclude }>;
@@ -233,7 +238,10 @@ export const listGlobalWorkloadTasks: RequestHandler = async (req, res, next) =>
     const dtos = filtered
       .map((task) => {
         const fallback = resolveGlobalWorkloadFallback(task);
-        return toTaskDto(task, fallback ?? undefined, taskFieldCatalog, { viewerRole: authUser.role });
+        const dto = toTaskDto(task, fallback ?? undefined, taskFieldCatalog, { viewerRole: authUser.role });
+        return dto
+          ? { ...dto, lastActivityAt: task.activities[0]?.createdAt.toISOString() ?? null }
+          : null;
       })
       .filter((row): row is NonNullable<typeof row> => row !== null);
 

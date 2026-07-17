@@ -10,6 +10,12 @@ export interface GlobalSearchTaskResult {
   projectId: string;
   projectName: string;
   sectionName: string;
+  matchContext?: TaskSearchMatchContext;
+}
+
+export interface TaskSearchMatchContext {
+  source: "description" | "comment";
+  excerpt: string;
 }
 
 export interface GlobalSearchUserResult {

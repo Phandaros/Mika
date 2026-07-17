@@ -9,6 +9,7 @@ import { queryClient } from "../../lib/queryClient";
 import { cn } from "../../lib/utils";
 import { useUiStore } from "../../store/uiStore";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { SearchMatchContext } from "../shared/SearchMatchContext";
 
 export function CommandPalette() {
   const navigate = useNavigate();
@@ -149,6 +150,7 @@ export function CommandPalette() {
                     >
                       <span className="truncate font-medium">{task.title}</span>
                       <span className="truncate text-xs text-text-muted">{subtitle}</span>
+                      {task.matchContext ? <SearchMatchContext context={task.matchContext} query={debouncedSearch} compact /> : null}
                     </Command.Item>
                   );
                 })}

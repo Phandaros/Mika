@@ -21,6 +21,7 @@ import {
   buildUserSearchWhere,
   clampAdvancedSearchLimit,
   clampSearchLimit,
+  compareTasksBySearchRelevance,
   filterTasksByIndicator,
   filterTasksByDeliveryStatus,
   normalizeSearchTerm,
@@ -106,9 +107,12 @@ export const globalSearch: RequestHandler = async (req, res, next) => {
       })
     ]);
 
-    const mappedTasks: GlobalSearchTaskResult[] = tasks
+    const tasksWithComments = await attachTaskSearchComments(tasks, q);
+    const matchedTasks = tasksWithComments
       .filter((task) => taskMatchesSearch(task, q))
-      .map((task) => toGlobalSearchTask(task, projectId))
+      .sort((left, right) => compareTasksBySearchRelevance(left, right, q));
+    const mappedTasks: GlobalSearchTaskResult[] = matchedTasks
+      .map((task) => toGlobalSearchTask(task, projectId, q))
       .filter((task): task is GlobalSearchTaskResult => Boolean(task));
     const sortedTasks = projectId
       ? mappedTasks.sort((a, b) => {
@@ -118,7 +122,7 @@ export const globalSearch: RequestHandler = async (req, res, next) => {
             return projectDiff;
           }
 
-          return a.title.localeCompare(b.title, "pt-BR");
+          return 0;
         })
       : mappedTasks;
 
@@ -169,7 +173,7 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
     const priorities = priorityValues.filter((value): value is Priority =>
       Object.values(Priority).includes(value as Priority)
     );
-    const completion: AdvancedSearchCompletion = parsed.data.completion ?? "open";
+    const completion: AdvancedSearchCompletion = parsed.data.completion ?? "all";
     const deliveryStatuses = queryStringArray(parsed.data.deliveryStatus).filter((value): value is AdvancedSearchDeliveryStatus =>
       Object.values(DeliveryStatus).includes(value as AdvancedSearchDeliveryStatus)
     );
@@ -203,7 +207,7 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
       shouldSearchBucket(type, "tasks")
         ? prisma.task.findMany({
             where: buildAdvancedTaskSearchWhere({
-              term: q,
+              term: "",
               projectId: parsed.data.projectId,
               taskStatuses,
               priorities,
@@ -231,11 +235,13 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
         : Promise.resolve([])
     ]);
 
-    const deliveryFilteredTasks = filterTasksByDeliveryStatus(tasks, deliveryStatuses);
+    const tasksWithComments = await attachTaskSearchComments(tasks, q);
+    const deliveryFilteredTasks = filterTasksByDeliveryStatus(tasksWithComments, deliveryStatuses);
     const indicatorFilteredTasks = filterTasksByIndicator(deliveryFilteredTasks, { indicatorMetric, indicatorPeriod, indicatorScope });
     const taskItems = indicatorFilteredTasks
       .filter((task) => taskMatchesSearch(task, q))
-      .map(toAdvancedSearchTask)
+      .sort((left, right) => compareTasksBySearchRelevance(left, right, q))
+      .map((task) => toAdvancedSearchTask(task, q))
       .filter((task): task is NonNullable<typeof task> => Boolean(task));
     const projectItems = projects
       .filter((project) => projectMatchesSearch(project, q) && projectMatchesAdvancedStatus(project, projectStatuses))
@@ -285,4 +291,38 @@ function queryStringArray(value: string | string[] | undefined): string[] {
   }
 
   return [];
+}
+
+const SEARCH_COMMENT_BATCH_SIZE = 400;
+
+async function attachTaskSearchComments<TTask extends { id: string }>(tasks: TTask[], term: string) {
+  if (!term || tasks.length === 0) {
+    return tasks.map((task) => ({ ...task, comments: [] }));
+  }
+
+  const commentsByTaskId = new Map<string, Array<{ content: string; createdAt: Date }>>();
+
+  for (let start = 0; start < tasks.length; start += SEARCH_COMMENT_BATCH_SIZE) {
+    const taskIds = tasks.slice(start, start + SEARCH_COMMENT_BATCH_SIZE).map((task) => task.id);
+    const comments = await prisma.comment.findMany({
+      where: { taskId: { in: taskIds } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        taskId: true,
+        content: true,
+        createdAt: true
+      }
+    });
+
+    for (const comment of comments) {
+      const taskComments = commentsByTaskId.get(comment.taskId) ?? [];
+      taskComments.push({ content: comment.content, createdAt: comment.createdAt });
+      commentsByTaskId.set(comment.taskId, taskComments);
+    }
+  }
+
+  return tasks.map((task) => ({
+    ...task,
+    comments: commentsByTaskId.get(task.id) ?? []
+  }));
 }

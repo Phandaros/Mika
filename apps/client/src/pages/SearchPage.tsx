@@ -2,12 +2,9 @@ import { ArrowRight, BriefcaseBusiness, FolderKanban, Search, UserRound, X } fro
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  DeliveryStatus,
   Priority,
   ProjectStatus,
   TaskStatus,
-  type AdvancedSearchCompletion,
-  type AdvancedSearchDeliveryStatus,
   type AdvancedSearchIndicatorMetric,
   type AdvancedSearchProjectResult,
   type AdvancedSearchResponse,
@@ -19,6 +16,7 @@ import {
 } from "shared";
 import { ProjectStatusChip, priorityLabels, taskStatusLabels } from "../components/shared/Chip";
 import { PriorityBadge } from "../components/shared/PriorityBadge";
+import { SearchMatchContext } from "../components/shared/SearchMatchContext";
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -32,6 +30,7 @@ import { useAdvancedSearch, type AdvancedSearchFilters } from "../hooks/useAdvan
 import { useProjectOptions } from "../hooks/useProjects";
 import { useUsers } from "../hooks/useUsers";
 import { projectStatusLabels } from "../lib/projectLabels";
+import { parseSearchFilters } from "../lib/searchFilters";
 import { cn } from "../lib/utils";
 
 const SEARCH_TYPES: Array<{ value: AdvancedSearchType; label: string }> = [
@@ -42,12 +41,10 @@ const SEARCH_TYPES: Array<{ value: AdvancedSearchType; label: string }> = [
 ];
 
 const COMPLETION_OPTIONS: SearchableSelectOption[] = [
+  { value: "all", label: "Todas" },
   { value: "open", label: "Abertas" },
-  { value: "completed", label: "Concluídas" },
-  { value: "all", label: "Todas" }
+  { value: "completed", label: "Concluídas" }
 ];
-
-const LIMIT = 25;
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -239,7 +236,7 @@ export function SearchPage() {
           options={COMPLETION_OPTIONS}
           triggerClassName="h-9"
           searchPlaceholder="Buscar conclusão..."
-          onValueChange={(value) => updateScalarFilter("completion", value === "open" ? null : value)}
+          onValueChange={(value) => updateScalarFilter("completion", value === "all" ? null : value)}
         />
         <DatePicker
           value={filters.dueFrom ?? null}
@@ -287,7 +284,7 @@ export function SearchPage() {
 
       {!advancedSearch.isLoading && !advancedSearch.isError && data ? (
         <div className="flex flex-col gap-4">
-          {shouldShowSection(filters.type, "tasks") ? <TaskResults tasks={data.tasks.items} total={data.tasks.total} /> : null}
+          {shouldShowSection(filters.type, "tasks") ? <TaskResults tasks={data.tasks.items} total={data.tasks.total} query={filters.q} /> : null}
           {shouldShowSection(filters.type, "projects") ? <ProjectResults projects={data.projects.items} total={data.projects.total} /> : null}
           {shouldShowSection(filters.type, "users") ? <UserResults users={data.users.items} total={data.users.total} /> : null}
           {pageCount > 1 ? (
@@ -309,7 +306,7 @@ export function SearchPage() {
   );
 }
 
-function TaskResults({ tasks, total }: { tasks: AdvancedSearchTaskResult[]; total: number }) {
+function TaskResults({ tasks, total, query }: { tasks: AdvancedSearchTaskResult[]; total: number; query: string }) {
   return (
     <ResultSection icon={<BriefcaseBusiness size={16} />} title="Tarefas" total={total}>
       {tasks.map((task) => (
@@ -323,6 +320,7 @@ function TaskResults({ tasks, total }: { tasks: AdvancedSearchTaskResult[]; tota
             <p className="truncate text-xs text-text-muted">
               {task.projectName} / {task.sectionName}
             </p>
+            {task.matchContext ? <SearchMatchContext context={task.matchContext} query={query} /> : null}
           </div>
           <div className="flex items-center">
             <TaskStatusBadge status={task.status} />
@@ -427,70 +425,6 @@ function SearchSkeleton() {
       ))}
     </div>
   );
-}
-
-function parseSearchFilters(searchParams: URLSearchParams): AdvancedSearchFilters {
-  const type = parseType(searchParams.get("type"));
-  const page = Math.max(Number(searchParams.get("page") ?? "1") || 1, 1);
-  const completion = parseCompletion(searchParams.get("completion"));
-
-  return {
-    q: searchParams.get("q") ?? "",
-    type,
-    page,
-    limit: LIMIT,
-    projectId: searchParams.get("projectId") ?? undefined,
-    status: searchParamArray(searchParams, "status"),
-    assigneeId: searchParams.get("assigneeId") ?? undefined,
-    priority: searchParamArray(searchParams, "priority"),
-    dueFrom: searchParams.get("dueFrom") ?? undefined,
-    dueTo: searchParams.get("dueTo") ?? undefined,
-    completion,
-    deliveryStatus: searchParamArray(searchParams, "deliveryStatus").filter((value): value is AdvancedSearchDeliveryStatus =>
-      Object.values(DeliveryStatus).includes(value as DeliveryStatus)
-    ),
-    source: searchParams.get("source") === "indicators" ? "indicators" : undefined,
-    indicatorMetric: parseIndicatorMetric(searchParams.get("indicatorMetric")),
-    indicatorPeriod: parseIndicatorPeriod(searchParams.get("indicatorPeriod")),
-    indicatorScope: parseIndicatorScope(searchParams.get("indicatorScope"))
-  };
-}
-
-function searchParamArray(searchParams: URLSearchParams, key: string): string[] {
-  return searchParams
-    .getAll(key)
-    .flatMap((value) => value.split(","))
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
-
-function parseType(value: string | null): AdvancedSearchType {
-  return value === "tasks" || value === "projects" || value === "users" ? value : "all";
-}
-
-function parseCompletion(value: string | null): AdvancedSearchCompletion {
-  return value === "completed" || value === "all" ? value : "open";
-}
-
-function parseIndicatorMetric(value: string | null): AdvancedSearchIndicatorMetric | undefined {
-  return value === "openTasks" ||
-    value === "completedTasks" ||
-    value === "overdueTasks" ||
-    value === "dueTasks" ||
-    value === "allTasks" ||
-    value === "onTimeDeliveries" ||
-    value === "lateDeliveries" ||
-    value === "unclassifiedDeliveries"
-    ? value
-    : undefined;
-}
-
-function parseIndicatorPeriod(value: string | null): IndicatorPeriod | undefined {
-  return value === "month" || value === "year" || value === "all" ? value : undefined;
-}
-
-function parseIndicatorScope(value: string | null): IndicatorScope | undefined {
-  return value === "general" || value === "civil" || value === "electrical" ? value : undefined;
 }
 
 function clearIndicatorParams(searchParams: URLSearchParams) {

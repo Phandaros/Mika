@@ -34,6 +34,8 @@ export interface Task {
   deliveryStatus: DeliveryStatus | null;
   createdAt: string;
   updatedAt: string;
+  /** Atividade mais recente registrada no MK Projetos; preenchida nas vistas de workload. */
+  lastActivityAt?: string | null;
   customFieldValues?: Array<{
     id: string;
     customFieldId?: string | null;

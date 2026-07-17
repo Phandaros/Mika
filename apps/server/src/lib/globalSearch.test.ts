@@ -8,11 +8,16 @@ import {
   buildTaskSearchWhere,
   clampAdvancedSearchLimit,
   clampSearchLimit,
+  compareTasksBySearchRelevance,
+  createSearchExcerpt,
   paginateSearchResults,
   projectMatchesAdvancedStatus,
   projectMatchesSearch,
   searchTextMatches,
   normalizeSearchTerm,
+  taskMatchesSearch,
+  taskSearchMatchContext,
+  taskSearchRank,
   toGlobalSearchTask
 } from "./globalSearch.js";
 import { Priority, ProjectStatus, TaskStatus } from "./enums.js";
@@ -98,27 +103,32 @@ describe("globalSearch helpers", () => {
   });
 
   it("always excludes legacy subtasks from task search", () => {
-    expect(buildTaskSearchWhere("Teste")).toMatchObject({ deletedAt: null, parentId: null });
+    expect(buildTaskSearchWhere("Teste")).toMatchObject({
+      deletedAt: null,
+      parentId: null,
+      OR: expect.arrayContaining([
+        { notes: { contains: "Teste" } },
+        { comments: { some: { content: { contains: "Teste" } } } }
+      ])
+    });
     expect(buildTaskSearchWhere("")).toEqual({ deletedAt: null, parentId: null });
   });
 
   it("builds advanced task filters without allowing legacy subtasks", () => {
-    expect(
-      buildAdvancedTaskSearchWhere({
-        term: "Teste",
-        projectId: "project-1",
-        taskStatuses: [TaskStatus.IN_PROGRESS],
-        priorities: [Priority.HIGH],
-        assigneeId: "user-1",
-        dueFrom: "2026-06-01",
-        dueTo: "2026-06-30",
-        completion: "open"
-      })
-    ).toMatchObject({
-      AND: [
+    const where = buildAdvancedTaskSearchWhere({
+      term: "Teste",
+      projectId: "project-1",
+      taskStatuses: [TaskStatus.IN_PROGRESS],
+      priorities: [Priority.HIGH],
+      assigneeId: "user-1",
+      dueFrom: "2026-06-01",
+      dueTo: "2026-06-30",
+      completion: "open"
+    });
+
+    expect(where).toEqual(expect.objectContaining({
+      AND: expect.arrayContaining([
         expect.objectContaining({ parentId: null }),
-        expect.any(Object),
-        expect.objectContaining({ completed: false }),
         { priority: { in: [Priority.HIGH] } },
         { assignee: { id: "user-1" } },
         {
@@ -128,8 +138,8 @@ describe("globalSearch helpers", () => {
           ]
         },
         { completed: false }
-      ]
-    });
+      ])
+    }));
   });
 
   it("matches advanced project status from archived state", () => {
@@ -184,5 +194,64 @@ describe("globalSearch helpers", () => {
       projectName: "Projeto remoto",
       sectionName: "Geral"
     });
+  });
+
+  it("matches task descriptions and comments with normalized text", () => {
+    const task: TaskSearchRecord = {
+      ...taskWithMemberships(),
+      notes: "Compatibilização hidráulica",
+      comments: [{ content: "Revisar prancha pré-executiva", createdAt: new Date("2026-07-15T12:00:00.000Z") }]
+    };
+
+    expect(taskMatchesSearch(task, "hidraulica")).toBe(true);
+    expect(taskMatchesSearch(task, "pre executiva")).toBe(true);
+    expect(taskSearchRank(task, "hidraulica")).toBe(2);
+    expect(taskSearchRank(task, "pre executiva")).toBe(3);
+  });
+
+  it("prioritizes title, membership, description and comments in that order", () => {
+    const tasks: TaskSearchRecord[] = [
+      { ...taskWithMemberships(), id: "comment", name: "Delta", comments: [{ content: "termo", createdAt: new Date() }] },
+      { ...taskWithMemberships(), id: "description", name: "Charlie", notes: "termo" },
+      { ...taskWithMemberships(), id: "membership", name: "Bravo", memberships: taskWithMemberships().memberships.map((membership, index) => index === 0 ? { ...membership, sectionName: "Termo" } : membership) },
+      { ...taskWithMemberships(), id: "title", name: "Termo Alpha" }
+    ];
+
+    expect(tasks.sort((left, right) => compareTasksBySearchRelevance(left, right, "termo")).map((task) => task.id)).toEqual([
+      "title",
+      "membership",
+      "description",
+      "comment"
+    ]);
+  });
+
+  it("uses description before comments and the newest matching comment", () => {
+    const comments = [
+      { content: "Comentário antigo com revisão", createdAt: new Date("2026-07-10T12:00:00.000Z") },
+      { content: "Comentário novo com revisão", createdAt: new Date("2026-07-16T12:00:00.000Z") }
+    ];
+    const task: TaskSearchRecord = { ...taskWithMemberships(), name: "Outra tarefa", notes: "Descrição com revisão", comments };
+
+    expect(taskSearchMatchContext(task, "revisao")).toEqual({ source: "description", excerpt: "Descrição com revisão" });
+    expect(taskSearchMatchContext({ ...task, notes: null }, "revisao")).toEqual({ source: "comment", excerpt: "Comentário novo com revisão" });
+  });
+
+  it("does not expose internal context when a visible field already matches", () => {
+    const task: TaskSearchRecord = {
+      ...taskWithMemberships(),
+      name: "Revisão estrutural",
+      notes: "Descrição sobre revisão"
+    };
+
+    expect(taskSearchMatchContext(task, "revisao")).toBeNull();
+  });
+
+  it("centers and limits excerpts while preserving the normalized match", () => {
+    const excerpt = createSearchExcerpt(`${"início ".repeat(30)}Compatibilização hidráulica ${"fim ".repeat(30)}`, "compatibilizacao hidraulica");
+
+    expect(excerpt.length).toBeLessThanOrEqual(180);
+    expect(excerpt.startsWith("…")).toBe(true);
+    expect(excerpt.endsWith("…")).toBe(true);
+    expect(excerpt).toContain("Compatibilização hidráulica");
   });
 });
