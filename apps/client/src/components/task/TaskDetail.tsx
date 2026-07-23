@@ -50,7 +50,8 @@ import {
   DetailRow,
   formatDecimal,
   TaskFixedFieldGrid,
-  TaskPanelShell
+  TaskPanelShell,
+  taskPanelTitleInputClassName
 } from "./TaskPanelPrimitives";
 
 interface TaskDetailProps {
@@ -470,8 +471,8 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
               }
             }}
             className={cn(
-              "h-auto min-w-0 border-transparent bg-transparent px-0 py-1 text-[16px] font-semibold leading-tight focus:border-brand-orange focus:bg-[--bg-3] focus:px-2",
-              !canManageTaskFields && "cursor-default focus:border-transparent focus:bg-transparent focus:px-0",
+              taskPanelTitleInputClassName,
+              !canManageTaskFields && "cursor-default focus:border-transparent focus:bg-transparent",
               visibleTask.completed ? "text-text-muted" : "text-text-primary"
             )}
           />

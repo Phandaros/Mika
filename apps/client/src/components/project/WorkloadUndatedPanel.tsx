@@ -24,7 +24,7 @@ type WorkloadUndatedPanelProps = {
   onClose: () => void;
   tasks: TaskWithDiscipline[];
   labelForTask: (task: TaskWithDiscipline) => string;
-  statusColorFor: (status: string) => string;
+  accentColorForTask: (task: TaskWithDiscipline) => string;
   onOpenTask: (task: TaskWithDiscipline) => void;
   canDrag: boolean;
   assigneeGrouping: boolean;
@@ -38,7 +38,7 @@ export function WorkloadUndatedPanel({
   onClose,
   tasks,
   labelForTask,
-  statusColorFor,
+  accentColorForTask,
   onOpenTask,
   canDrag,
   assigneeGrouping,
@@ -185,7 +185,7 @@ export function WorkloadUndatedPanel({
                       "flex w-full items-center gap-2 rounded-md border border-border bg-bg-1 px-3 py-2 text-left text-sm font-medium text-text-primary transition hover:border-brand-orange",
                       canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
                     )}
-                    style={{ borderLeftWidth: 3, borderLeftColor: statusColorFor(task.status) }}
+                    style={{ borderLeftWidth: 3, borderLeftColor: accentColorForTask(task) }}
                   >
                     <span className="min-w-0 flex-1 truncate">{labelForTask(task)}</span>
                   </button>

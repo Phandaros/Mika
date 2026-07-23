@@ -19,6 +19,8 @@
     "db:studio": "pnpm --filter server prisma studio",
     "db:seed": "pnpm --filter server tsx prisma/seed.ts",
     "db:import-asana-comments": "pnpm --filter server run db:import-asana-comments",
+    "db:import-brazil-holidays": "pnpm --filter server run db:import-brazil-holidays",
+    "db:backfill-task-disciplines": "pnpm --filter server run db:backfill-task-disciplines",
     "release": "pnpm --filter server run tsx ../../scripts/publish-release.ts",
     "desktop:dev": "pnpm --filter desktop dev",
     "desktop:build": "pnpm --filter desktop build"

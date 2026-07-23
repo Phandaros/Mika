@@ -16,7 +16,7 @@ export const DISCIPLINE_CATALOG: readonly DisciplineCatalogItem[] = [
   { name: "Gás", type: DisciplineType.GAS },
   { name: "Sprinkler", type: DisciplineType.SPRINKLER },
   { name: "Arquitetônico", type: DisciplineType.OTHER },
-  { name: "Climatização", type: DisciplineType.HVAC }
+  { name: "Climatização", type: DisciplineType.CLI }
 ];
 
 export function getDisciplineCatalogItem(type: DisciplineTypeValue): DisciplineCatalogItem | undefined {

@@ -65,14 +65,14 @@ export function resolveAsanaColor(color: string): TokenPair {
     blue: tokenPair("disc-ele"),
     "blue-green": tokenPair("disc-tel"),
     "cool-gray": tokenPair("disc-none"),
-    green: tokenPair("disc-hvac"),
+    green: tokenPair("disc-cli"),
     indigo: tokenPair("disc-spda"),
     magenta: tokenPair("disc-spda"),
     orange: tokenPair("disc-coord"),
     purple: tokenPair("disc-spda"),
     red: tokenPair("disc-ppci"),
     yellow: tokenPair("disc-ep"),
-    "yellow-green": tokenPair("disc-hvac"),
+    "yellow-green": tokenPair("disc-cli"),
     "yellow-orange": tokenPair("disc-coord"),
     "hot-pink": tokenPair("disc-spda")
   };

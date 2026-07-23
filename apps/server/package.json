@@ -19,6 +19,8 @@
     "db:migrate": "prisma migrate dev",
     "db:status": "prisma migrate status",
     "db:import-asana-comments": "tsx prisma/importAsanaComments.ts",
+    "db:import-brazil-holidays": "python scripts/import_brazil_holidays.py --server-dir .",
+    "db:backfill-task-disciplines": "python scripts/backfill_task_disciplines.py --server-dir .",
     "db:fix-sprint-board-tasks": "tsx prisma/fixSprintBoardTasks.ts",
     "db:move-undated-todo-to-backlog": "tsx prisma/moveUndatedTodoToBacklog.ts",
     "db:migrate-portfolio-catalog": "tsx scripts/migratePortfolioCatalog.ts"

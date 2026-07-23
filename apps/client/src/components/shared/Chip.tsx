@@ -93,10 +93,16 @@ const disciplineLabels: Record<string, string> = {
   SPDA: "SPDA",
   TEL: "TEL",
   HID: "HID",
+  SAN: "SAN",
   PPCI: "PPCI",
-  HVAC: "HVAC",
+  SPK: "SPK",
+  AUT: "AUT",
+  GAS: "GÁS",
+  CLI: "CLI",
+  FUR: "FUR",
   COORD: "COORD",
-  EP: "EP"
+  EP: "EP",
+  REVISAO: "Revisão"
 };
 
 const disciplineTokens: Record<string, { bg: string; text: string }> = {
@@ -104,10 +110,16 @@ const disciplineTokens: Record<string, { bg: string; text: string }> = {
   SPDA: { bg: "--disc-spda-bg", text: "--disc-spda-text" },
   TEL: { bg: "--disc-tel-bg", text: "--disc-tel-text" },
   HID: { bg: "--disc-hid-bg", text: "--disc-hid-text" },
+  SAN: { bg: "--disc-hid-bg", text: "--disc-hid-text" },
   PPCI: { bg: "--disc-ppci-bg", text: "--disc-ppci-text" },
-  HVAC: { bg: "--disc-hvac-bg", text: "--disc-hvac-text" },
+  SPK: { bg: "--disc-ppci-bg", text: "--disc-ppci-text" },
+  AUT: { bg: "--disc-tel-bg", text: "--disc-tel-text" },
+  GAS: { bg: "--disc-ppci-bg", text: "--disc-ppci-text" },
+  CLI: { bg: "--disc-cli-bg", text: "--disc-cli-text" },
+  FUR: { bg: "--disc-ep-bg", text: "--disc-ep-text" },
   COORD: { bg: "--disc-coord-bg", text: "--disc-coord-text" },
-  EP: { bg: "--disc-ep-bg", text: "--disc-ep-text" }
+  EP: { bg: "--disc-ep-bg", text: "--disc-ep-text" },
+  REVISAO: { bg: "--disc-spda-bg", text: "--disc-spda-text" }
 };
 
 export function tokenStyle(bg: string, text: string): TokenStyle {
@@ -224,12 +236,12 @@ function normalizeDiscipline(value: string | null | undefined): string {
     return "HID";
   }
 
-  if (normalized.includes("PPCI") || normalized.includes("PREVENTIVO") || normalized.includes("INCENDIO")) {
+  if (normalized === "PCI" || normalized.includes("PPCI") || normalized.includes("PREVENTIVO") || normalized.includes("INCENDIO")) {
     return "PPCI";
   }
 
-  if (normalized.includes("HVAC")) {
-    return "HVAC";
+  if (normalized.includes("HVAC") || normalized.includes("CLIMATIZ") || normalized === "CLIMA" || normalized === "CLI") {
+    return "CLI";
   }
 
   if (normalized.includes("COORD")) {

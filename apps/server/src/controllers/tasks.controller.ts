@@ -22,6 +22,7 @@ import {
 import { buildTaskSplitPlan, splitPartName } from "../lib/taskSplit.js";
 import { loadMyTasks, resolveMyTasksTargetUserId } from "../lib/myTasks.js";
 import { TASK_DEADLINE_ERROR_MESSAGE, taskDeadlineViolation } from "../lib/taskDeadlineRules.js";
+import { normalizeTaskDiscipline, taskDisciplineForCreate } from "../lib/taskDiscipline.js";
 
 function sectionIdFromReq(req: { params: Record<string, string | undefined> }): string {
   return req.params.sectionId ?? req.params.disciplineId ?? "";
@@ -730,7 +731,7 @@ export const createTask: RequestHandler = async (req, res, next) => {
           dueOn: dateOnly(body.dueDate),
           estimatedDays: body.estimatedDays === undefined ? undefined : body.estimatedDays,
           platform: body.platform,
-          discipline: body.taskDiscipline ?? body.discipline,
+          discipline: taskDisciplineForCreate(body.title, body.taskDiscipline ?? body.discipline),
           estimatedTime: body.estimatedTime === undefined ? undefined : body.estimatedTime,
           maxDeadline: body.maxDeadline === undefined ? undefined : body.maxDeadline ? new Date(body.maxDeadline) : null,
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,
@@ -1045,7 +1046,10 @@ export const updateTask: RequestHandler = async (req, res, next) => {
           dueOn: dateOnly(body.dueDate),
           estimatedDays: body.estimatedDays === undefined ? undefined : body.estimatedDays,
           platform: body.platform,
-          discipline: body.taskDiscipline ?? body.discipline,
+          discipline:
+            body.taskDiscipline !== undefined || body.discipline !== undefined
+              ? normalizeTaskDiscipline(body.taskDiscipline ?? body.discipline)
+              : undefined,
           estimatedTime: body.estimatedTime === undefined ? undefined : body.estimatedTime,
           maxDeadline: body.maxDeadline === undefined ? undefined : body.maxDeadline ? new Date(body.maxDeadline) : null,
           conclusionDays: body.conclusionDays === undefined ? undefined : body.conclusionDays,

@@ -120,7 +120,7 @@ Definidos em `apps/client/src/styles/globals.css`. **Nunca usar cores hardcoded 
 --disc-tel-bg:    rgba(20,184,166,0.15);   --disc-tel-text:   #2dd4bf;
 --disc-hid-bg:    rgba(14,165,233,0.15);   --disc-hid-text:   #38bdf8;
 --disc-ppci-bg:   rgba(239,68,68,0.15);    --disc-ppci-text:  #f87171;
---disc-hvac-bg:   rgba(34,197,94,0.15);    --disc-hvac-text:  #4ade80;
+--disc-cli-bg:    rgba(34,197,94,0.15);    --disc-cli-text:   #4ade80;
 --disc-coord-bg:  rgba(249,115,22,0.15);   --disc-coord-text: #fb923c;
 --disc-ep-bg:     rgba(234,179,8,0.15);    --disc-ep-text:    #facc15;
 --disc-none-bg:   rgba(71,85,105,0.15);    --disc-none-text:  #64748b;
@@ -186,7 +186,7 @@ padding-x: 8px | padding-y: 3px | border-radius: 4px | font-size: 11px | font-we
 | Campo Prisma | Label exibida | Tipo | Enum / Formato |
 |---|---|---|---|
 | `platform` | Plataforma | `String?` | `CAD`, `REVIT`, `COORD` |
-| `discipline` | Disciplina | `String?` | `ELE`, `SPDA`, `TEL`, `HID`, `PPCI`, `HVAC`, `COORD`, `EP` |
+| `discipline` | Disciplina | `String?` | `ELE`, `SPDA`, `TEL`, `HID`, `SAN`, `PPCI`, `SPK`, `AUT`, `GÁS`, `CLI`, `FUR`, `COORD`, `EP`, `Revisão` |
 | `estimatedTime` | Dias Estimados | `Float?` | decimal, ex: `2.5` |
 | `maxDeadline` | Prazo Máximo | `DateTime?` | datepicker compartilhado |
 | `conclusionDays` | Dias Conclusão | `Float?` | decimal |

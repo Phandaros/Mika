@@ -1080,7 +1080,7 @@ function disciplineColor(index: number): string {
     "var(--disc-tel-text)",
     "var(--disc-spda-text)",
     "var(--disc-gas-text)",
-    "var(--disc-hvac-text)",
+    "var(--disc-cli-text)",
     "var(--disc-sprinkler-text)",
     "var(--disc-auto-text)",
     "var(--disc-exhaust-text)"

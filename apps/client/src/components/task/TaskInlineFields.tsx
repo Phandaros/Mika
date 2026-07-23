@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { TaskStatus, type Task, type User } from "shared";
 import { cn } from "../../lib/utils";
+import { taskDisciplineOptions } from "../../lib/taskDisciplines";
 import { Avatar } from "../shared/Avatar";
 import {
   CompletionStatusChip,
@@ -24,23 +25,13 @@ import {
 } from "./TaskPanelPrimitives";
 
 export type TaskInlineFieldVariant = "detail" | "table";
+export type TaskInlineFieldContrast = "default" | "high";
 type TaskCustomField = NonNullable<Task["customFieldValues"]>[number];
 
 const platformOptions = [
   { value: "CAD", label: "CAD" },
   { value: "REVIT", label: "REVIT" },
   { value: "COORD", label: "COORD" }
-];
-
-const disciplineOptions = [
-  { value: "ELE", label: "ELE" },
-  { value: "SPDA", label: "SPDA" },
-  { value: "TEL", label: "TEL" },
-  { value: "HID", label: "HID" },
-  { value: "PPCI", label: "PPCI" },
-  { value: "HVAC", label: "HVAC" },
-  { value: "COORD", label: "COORD" },
-  { value: "EP", label: "EP" }
 ];
 
 function selectTriggerClass(variant: TaskInlineFieldVariant): string {
@@ -82,11 +73,13 @@ function popoverContentClass(variant: TaskInlineFieldVariant): string {
 export function EditableStatusField({
   task,
   onSave,
-  variant = "detail"
+  variant = "detail",
+  contrast = "default"
 }: {
   task: Task;
   onSave: (value: TaskStatus) => void;
   variant?: TaskInlineFieldVariant;
+  contrast?: TaskInlineFieldContrast;
 }) {
   return (
     <SearchableSelect
@@ -100,6 +93,7 @@ export function EditableStatusField({
       triggerClassName={selectTriggerClass(variant)}
       contentClassName={popoverContentClass(variant)}
       showSelectionIndicator={false}
+      contrast={contrast}
       onValueChange={(nextValue) => onSave(nextValue as TaskStatus)}
     />
   );
@@ -109,12 +103,14 @@ export function EditableAssigneeField({
   users,
   assigneeId,
   onSave,
-  variant = "detail"
+  variant = "detail",
+  contrast = "default"
 }: {
   users: User[];
   assigneeId: string | null;
   onSave: (value: string | null) => void;
   variant?: TaskInlineFieldVariant;
+  contrast?: TaskInlineFieldContrast;
 }) {
   const avatarClassName = variant === "table" ? "h-5 w-5 shrink-0" : "h-7 w-7 shrink-0";
 
@@ -133,6 +129,7 @@ export function EditableAssigneeField({
       searchPlaceholder="Buscar responsável..."
       triggerClassName={variant === "table" ? selectTriggerClass("table") : compactSelectTriggerClassName}
       contentClassName={popoverContentClass(variant)}
+      contrast={contrast}
       renderValue={(option) =>
         option.value === "none" ? (
           <span className="text-text-secondary">Sem responsável</span>
@@ -151,11 +148,13 @@ export function EditableAssigneeField({
 export function EditablePlatformField({
   value,
   onSave,
-  variant = "detail"
+  variant = "detail",
+  contrast = "default"
 }: {
   value: string | null | undefined;
   onSave: (value: string | null) => void;
   variant?: TaskInlineFieldVariant;
+  contrast?: TaskInlineFieldContrast;
 }) {
   return (
     <SearchableSelect
@@ -170,6 +169,7 @@ export function EditablePlatformField({
       searchPlaceholder="Buscar plataforma..."
       triggerClassName={selectTriggerClass(variant)}
       contentClassName={popoverContentClass(variant)}
+      contrast={contrast}
       onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
     />
   );
@@ -178,18 +178,20 @@ export function EditablePlatformField({
 export function EditableDisciplineField({
   value,
   onSave,
-  variant = "detail"
+  variant = "detail",
+  contrast = "default"
 }: {
   value: string | null | undefined;
   onSave: (value: string | null) => void;
   variant?: TaskInlineFieldVariant;
+  contrast?: TaskInlineFieldContrast;
 }) {
   return (
     <SearchableSelect
       value={value ?? "none"}
       options={[
         { value: "none", label: "Sem disciplina", render: <EmptyField /> },
-        ...disciplineOptions.map((option) => ({
+        ...taskDisciplineOptions.map((option) => ({
           ...option,
           render: <DisciplineChip discipline={option.value} />
         }))
@@ -197,6 +199,7 @@ export function EditableDisciplineField({
       searchPlaceholder="Buscar disciplina..."
       triggerClassName={selectTriggerClass(variant)}
       contentClassName={popoverContentClass(variant)}
+      contrast={contrast}
       onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
     />
   );
@@ -263,12 +266,14 @@ export function EditableStageField({
   value,
   stageField,
   onSave,
-  variant = "detail"
+  variant = "detail",
+  contrast = "default"
 }: {
   value: string | null | undefined;
   stageField: TaskCustomField | null;
   onSave: (value: string | null) => void;
   variant?: TaskInlineFieldVariant;
+  contrast?: TaskInlineFieldContrast;
 }) {
   const enumOptions = stageField?.enumOptions?.filter((option) => option.name) ?? [];
   const [draft, setDraft] = useState(value ?? "");
@@ -292,6 +297,7 @@ export function EditableStageField({
         searchPlaceholder="Buscar etapa..."
         triggerClassName={selectTriggerClass(variant)}
         contentClassName={popoverContentClass(variant)}
+        contrast={contrast}
         onValueChange={(nextValue) => onSave(nextValue === "none" ? null : nextValue)}
       />
     );
@@ -321,11 +327,13 @@ export function EditableStageField({
 export function EditableCompletionField({
   completed,
   onSave,
-  variant = "detail"
+  variant = "detail",
+  contrast = "default"
 }: {
   completed: boolean;
   onSave: (completed: boolean) => void;
   variant?: TaskInlineFieldVariant;
+  contrast?: TaskInlineFieldContrast;
 }) {
   return (
     <SearchableSelect
@@ -338,6 +346,7 @@ export function EditableCompletionField({
       triggerClassName={selectTriggerClass(variant)}
       contentClassName={popoverContentClass(variant)}
       showSelectionIndicator={false}
+      contrast={contrast}
       renderValue={(option) => <CompletionStatusChip completed={option.value === "completed"} />}
       onValueChange={(nextValue) => onSave(nextValue === "completed")}
     />

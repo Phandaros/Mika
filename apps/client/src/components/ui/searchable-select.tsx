@@ -31,6 +31,7 @@ interface SearchableSelectProps {
   showSelectionIndicator?: boolean;
   renderValue?: (option: SearchableSelectOption) => ReactNode;
   renderOption?: (option: SearchableSelectOption) => ReactNode;
+  contrast?: "default" | "high";
 }
 
 export function SearchableSelect({
@@ -47,7 +48,8 @@ export function SearchableSelect({
   contentClassName,
   showSelectionIndicator = true,
   renderValue,
-  renderOption
+  renderOption,
+  contrast = "default"
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -86,7 +88,12 @@ export function SearchableSelect({
       <PopoverTrigger asChild>
         <Button
           variant="secondary"
-          className={cn("h-10 w-full justify-between px-3 text-left", className, triggerClassName)}
+          className={cn(
+            "h-10 w-full justify-between px-3 text-left",
+            contrast === "high" && "project-task-accessible",
+            className,
+            triggerClassName
+          )}
           disabled={disabled}
           style={selected?.color ? coloredFieldStyle(selected.color) : undefined}
         >
@@ -101,6 +108,7 @@ export function SearchableSelect({
         onWheel={(event) => event.stopPropagation()}
         className={cn(
           "min-w-[var(--radix-popover-trigger-width)] w-[min(360px,calc(100vw-32px))] max-w-[min(420px,calc(100vw-32px))] overflow-x-hidden p-2",
+          contrast === "high" && "project-task-accessible",
           contentClassName
         )}
       >

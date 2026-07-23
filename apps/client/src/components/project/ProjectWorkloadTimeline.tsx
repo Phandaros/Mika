@@ -9,7 +9,6 @@ import {
   type DragEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type CSSProperties,
   type ReactNode
 } from "react";
 import {
@@ -21,15 +20,25 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Priority, Role, TaskStatus, type DisciplineType, type Task, type UpdateTaskRequest, type User } from "shared";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { Filter, Group, Hash, MoreHorizontal, Plus } from "lucide-react";
+import { Filter, Group, Hash, MoreHorizontal, Palette, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuth";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useGlobalWorkloadTaskChunks, useProjectWorkloadTaskChunks } from "../../hooks/useTasks";
 import { canManageTasks } from "../../lib/permissions";
 import { clampTaskDatesToMaxDeadline, TASK_DEADLINE_CLAMP_MESSAGE } from "../../lib/taskDeadlineRules";
+import {
+  projectTimelineAccentColor,
+  projectTimelineStyle,
+  statusTimelineStyle
+} from "../../lib/taskTimelineStyle";
 import { cn, toDateOnly } from "../../lib/utils";
-import { workloadTaskDisplayLabel, workloadTaskLabel, type WorkloadTaskDisplayLabel } from "../../lib/workloadTaskLabel";
+import {
+  workloadTaskDisplayLabel,
+  workloadTaskLabel,
+  workloadTaskProjectIdentity,
+  type WorkloadTaskDisplayLabel
+} from "../../lib/workloadTaskLabel";
 import { useUiStore } from "../../store/uiStore";
 import { Avatar } from "../shared/Avatar";
 import { taskStatusLabels } from "../shared/Chip";
@@ -118,6 +127,7 @@ type TaskMoveQueueEntry = {
 
 type WorkloadGrouping = "assignee" | "section";
 type CompletionFilter = "open" | "completed" | "all";
+type WorkloadColorMode = "status" | "project";
 
 type WorkloadRow = {
   id: string;
@@ -239,39 +249,6 @@ function statusColorVar(status: string): string {
     default:
       return "var(--color-status-todo)";
   }
-}
-
-function statusTimelineStyle(status: string): CSSProperties {
-  switch (status) {
-    case TaskStatus.BACKLOG:
-      return tokenTimelineStyle("--status-backlog-bg", "--status-backlog-text");
-    case TaskStatus.TODO:
-      return tokenTimelineStyle("--status-todo-bg", "--status-todo-text");
-    case TaskStatus.ON_SCHEDULE:
-      return tokenTimelineStyle("--status-scheduled-bg", "--status-scheduled-text");
-    case TaskStatus.OVERDUE:
-      return tokenTimelineStyle("--status-late-bg", "--status-late-text");
-    case TaskStatus.IN_PROGRESS:
-      return tokenTimelineStyle("--status-inprogress-bg", "--status-inprogress-text");
-    case TaskStatus.AWAITING_REVIEW:
-      return tokenTimelineStyle("--status-review-bg", "--status-review-text");
-    case TaskStatus.IN_ANALYSIS:
-      return tokenTimelineStyle("--status-analysis-bg", "--status-analysis-text");
-    case TaskStatus.AWAITING_DEFINITION:
-      return tokenTimelineStyle("--status-waiting-bg", "--status-waiting-text");
-    case TaskStatus.FINISHED:
-      return tokenTimelineStyle("--status-done-bg", "--status-done-text");
-    default:
-      return tokenTimelineStyle("--status-todo-bg", "--status-todo-text");
-  }
-}
-
-function tokenTimelineStyle(bg: string, text: string): CSSProperties {
-  return {
-    backgroundColor: `var(${bg})`,
-    color: `var(${text})`,
-    borderColor: `var(${bg})`
-  };
 }
 
 function roleLabel(role: User["role"]): string {
@@ -503,6 +480,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showEstimatedDays, setShowEstimatedDays] = useState(true);
   const [grouping, setGrouping] = useState<WorkloadGrouping>("assignee");
+  const [colorMode, setColorMode] = useState<WorkloadColorMode>("status");
   const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER_VALUE);
   const [priorityFilter, setPriorityFilter] = useState<string>(ALL_FILTER_VALUE);
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE);
@@ -1379,7 +1357,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           key={`${rowKey}-non-working-${day}`}
           className={cn(
             "pointer-events-none absolute top-0 z-[1] border-r border-border-subtle",
-            holidayName ? "bg-brand-orange/10" : "bg-[rgba(244,244,245,0.035)]"
+            holidayName ? "bg-calendar-holiday" : "bg-calendar-weekend"
           )}
           title={holidayName ?? "Final de semana"}
           style={{ left: index * DAY_W, width: DAY_W, height: rowHeight }}
@@ -1414,6 +1392,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           const left = startIdx * DAY_W + 2;
           const width = span * DAY_W - 4;
           const label = workloadTaskDisplayLabel(p.task, mode);
+          const projectIdentity = workloadTaskProjectIdentity(p.task);
+          const projectKey = projectIdentity?.id ?? projectIdentity?.name ?? null;
+          const usesProjectColor = mode === "global" && colorMode === "project";
           const labelWidth = readableLabelWidth(label, width);
           const labelFitsInside = labelWidth <= width;
           const labelLeft = labelFitsInside ? 0 : width + LABEL_OUTSIDE_GAP;
@@ -1474,7 +1455,9 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                     width,
                     top: barTop + lane * laneStride,
                     height: barHeight,
-                    ...statusTimelineStyle(p.task.status),
+                    ...(usesProjectColor
+                      ? projectTimelineStyle(projectKey)
+                      : statusTimelineStyle(p.task.status)),
                     opacity: p.task.completed && !activeDragPreview ? 0.45 : 1,
                     transform: activeDragPreview && isMovingTask
                       ? `translate3d(${activeDragPreview.pixelOffset}px, ${activeDragPreview.pixelOffsetY - 2}px, 0) scale(1.025)`
@@ -1526,7 +1509,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                       {label.taskTitle}
                     </span>
                     {label.projectName ? (
-                      <span className="mt-0.5 w-full truncate text-[9px] font-medium leading-none text-text-secondary/80">
+                      <span
+                        className={cn(
+                          "mt-0.5 w-full truncate text-[9px] font-medium leading-none",
+                          usesProjectColor ? "text-current opacity-75" : "text-text-secondary/80"
+                        )}
+                      >
                         {label.projectName}
                       </span>
                     ) : null}
@@ -1738,6 +1726,22 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
               onValueChange={(value) => setGrouping(value as WorkloadGrouping)}
             />
           </div>
+          {mode === "global" ? (
+            <div className="flex items-center gap-2 text-xs text-text-secondary">
+              <Palette size={14} />
+              <span className="whitespace-nowrap">Colorir por</span>
+              <SearchableSelect
+                value={colorMode}
+                options={[
+                  { value: "status", label: "Status" },
+                  { value: "project", label: "Projeto" }
+                ]}
+                triggerClassName="h-8 w-[140px] text-xs"
+                searchPlaceholder="Colorir por..."
+                onValueChange={(value) => setColorMode(value as WorkloadColorMode)}
+              />
+            </div>
+          ) : null}
           <Button
             type="button"
             variant={showEstimatedDays ? "primary" : "secondary"}
@@ -1815,9 +1819,10 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
                           title={holidayName ?? (isNonWorking ? "Final de semana" : undefined)}
                           className={cn(
                             "flex flex-col items-center justify-center border-r border-border-subtle text-[10px] text-text-muted",
-                            isNonWorking && "bg-[rgba(244,244,245,0.04)]",
-                            holidayName && "bg-brand-orange/10",
-                            isToday && "bg-bg-3 text-text-primary"
+                            isNonWorking && "bg-calendar-weekend",
+                            holidayName && "bg-calendar-holiday",
+                            isToday && !holidayName && "bg-bg-3",
+                            isToday && "text-text-primary"
                           )}
                         >
                           <span className="h-2.5 text-[9px] font-medium leading-none uppercase text-text-muted">
@@ -1944,7 +1949,14 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         onClose={() => setUndatedPanelOpen(false)}
         tasks={undatedTasks}
         labelForTask={(task) => workloadTaskLabel(task, mode)}
-        statusColorFor={statusColorVar}
+        accentColorForTask={(task) => {
+          if (mode !== "global" || colorMode === "status") {
+            return statusColorVar(task.status);
+          }
+
+          const projectIdentity = workloadTaskProjectIdentity(task);
+          return projectTimelineAccentColor(projectIdentity?.id ?? projectIdentity?.name ?? null);
+        }}
         canDrag={canManage}
         assigneeGrouping={grouping === "assignee"}
         onDragStart={handleUndatedDragStart}

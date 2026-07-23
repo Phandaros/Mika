@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-import { ArrowDownUp, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
+import { CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Priority, TaskStatus, type DisciplineType, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
@@ -14,30 +14,27 @@ import {
   DataTableHead,
   DataTableHeader,
   DataTableRow,
-  EmptyCell,
-  TruncatedCellValue
+  EmptyCell
 } from "../components/shared/DataTable";
 import { EmptyState } from "../components/shared/EmptyState";
 import { LoadingSpinner } from "../components/shared/LoadingSpinner";
 import { ViewTab } from "../components/shared/ViewTab";
 import { Avatar } from "../components/shared/Avatar";
-import { CompletionStatusChip, DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
+import { DisciplineChip, PlatformChip, taskStatusLabels } from "../components/shared/Chip";
 import { PriorityOptionPill, priorityColors, StatusOptionPill, taskStatusColors } from "../components/shared/statusVisuals";
 import { KanbanColumn } from "../components/task/KanbanColumn";
 import { KanbanTaskCard } from "../components/task/TaskCard";
-import { TaskCardSkeleton } from "../components/task/TaskCardSkeleton";
 import { TaskContextMenu } from "../components/task/TaskContextMenu";
 import { TaskDetail } from "../components/task/TaskDetail";
 import {
   EditableAssigneeField,
-  EditableCompletionField,
   EditableDecimalField,
   EditableDisciplineField,
   EditableMaxDeadlineField,
   EditablePlatformField,
-  EditableStageField,
   EditableStatusField
 } from "../components/task/TaskInlineFields";
+import { TaskCompletionButton } from "../components/task/TaskCompletionButton";
 import { TaskStatusBadge } from "../components/task/TaskStatusBadge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -55,13 +52,13 @@ import {
 } from "../lib/multiSelectFilter";
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
 import { isAfterMaxDeadline, MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE } from "../lib/taskDeadlineRules";
-import { cn, formatDateOnly } from "../lib/utils";
+import { compareTasksByDisciplineAndCreation } from "../lib/taskDisciplines";
+import { cn } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
 type ProjectTab = "list" | "kanban";
 type ProjectArea = "tasks" | "documents";
 type ProjectDocumentKind = "notes" | "meeting-minutes";
-type SortKey = "title" | "section" | "assignee" | "status" | "stage";
 type CompletionFilter = "open" | "completed" | "all";
 type TaskScope = "general" | "civil" | "electrical";
 
@@ -101,30 +98,10 @@ function tasksFromDisciplines(sections: Section[], projectName: string): TaskWit
   );
 }
 
-function taskSortValue(task: TaskWithDiscipline, key: SortKey): string {
-  if (key === "section") {
-    return task.discipline.name ?? "";
-  }
-
-  if (key === "stage") {
-    return task.stage ?? "";
-  }
-
-  if (key === "assignee") {
-    return task.assignee?.name ?? "";
-  }
-
-  if (key === "status") {
-    return task.status;
-  }
-
-  return task.title ?? "";
-}
-
 export function ProjectDetailPage() {
   const { projectId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: project, isLoading, isFetching } = useProject(projectId);
+  const { data: project, isLoading } = useProject(projectId);
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
   const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
@@ -139,7 +116,6 @@ export function ProjectDetailPage() {
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string[] | undefined>(undefined);
   const [priorityFilter, setPriorityFilter] = useState<string[]>(defaultPrioritySelection);
-  const [sortKey, setSortKey] = useState<SortKey>("title");
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpenVersion, setTaskDetailOpenVersion] = useState(0);
@@ -260,8 +236,8 @@ export function ProjectDetailPage() {
     void updateTask.mutateAsync({ id: task.id, payload });
   }
 
-  function patchTaskCompletion(task: TaskWithDiscipline, completed: boolean) {
-    void updateTaskCompletion.mutateAsync({ id: task.id, completed });
+  async function patchTaskCompletion(task: TaskWithDiscipline, completed: boolean): Promise<void> {
+    await updateTaskCompletion.mutateAsync({ id: task.id, completed });
   }
 
   const scopedDisciplineIds = useMemo(() => {
@@ -322,11 +298,7 @@ export function ProjectDetailPage() {
       });
   }, [assigneeFilter, completionFilter, disciplineFilteredTasks, effectiveAssigneeFilter, priorityFilter, search, statusFilter]);
 
-  const listTasks = useMemo(
-    () =>
-      [...visibleTasks].sort((a, b) => taskSortValue(a, sortKey).localeCompare(taskSortValue(b, sortKey), "pt-BR")),
-    [sortKey, visibleTasks]
-  );
+  const listTasks = useMemo(() => [...visibleTasks].sort(compareTasksByDisciplineAndCreation), [visibleTasks]);
 
   function handleDragEnd(result: DropResult) {
     if (!canManage) {
@@ -355,7 +327,6 @@ export function ProjectDetailPage() {
   }
 
   const taskFormDiscipline = visibleDisciplines[0] ?? disciplines[0] ?? null;
-  const isTasksLoading = isFetching && !isLoading;
 
   const statusOptions = Object.values(TaskStatus).map((status) => ({
     value: status,
@@ -374,14 +345,6 @@ export function ProjectDetailPage() {
     { value: "completed", label: "Concluídas" },
     { value: "all", label: "Todas" }
   ];
-  const sortOptions = [
-    { value: "title", label: "Nome" },
-    { value: "section", label: "Seção" },
-    { value: "assignee", label: "Responsável" },
-    { value: "status", label: "Status" },
-    { value: "stage", label: "Etapa" }
-  ];
-
   return (
     <div className="grid gap-0">
       <section>
@@ -522,16 +485,6 @@ export function ProjectDetailPage() {
             partialSelectedLabel={(count) => `${count} prioridades`}
             onValuesChange={setPriorityFilter}
           />
-          <label className="inline-flex items-center gap-1.5">
-            <ArrowDownUp size={15} />
-            <SearchableSelect
-              value={sortKey}
-              options={sortOptions}
-              triggerClassName="h-8 w-36"
-              searchPlaceholder="Buscar ordenação..."
-              onValueChange={(value) => setSortKey(value as SortKey)}
-            />
-          </label>
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2" />
             <Input value={search} onChange={(event) => setSearch(event.target.value)} className="h-8 w-52 pl-8" placeholder="Buscar" />
@@ -556,7 +509,6 @@ export function ProjectDetailPage() {
             projectId={projectId}
             disciplineId={taskFormDiscipline?.id ?? null}
             tasks={visibleTasks}
-            isLoading={isTasksLoading}
             onDragEnd={handleDragEnd}
             onOpenTask={openTaskDetail}
             canManage={canManage}
@@ -567,7 +519,6 @@ export function ProjectDetailPage() {
             disciplines={visibleDisciplines}
             tasks={listTasks}
             users={users}
-            isLoading={isTasksLoading}
             canManage={canManage}
             canComplete={canComplete}
             onOpenTask={openTaskDetail}
@@ -604,7 +555,6 @@ function KanbanView({
   projectId,
   disciplineId,
   tasks,
-  isLoading,
   onDragEnd,
   onOpenTask,
   canManage
@@ -612,14 +562,13 @@ function KanbanView({
   projectId: string;
   disciplineId: string | null;
   tasks: TaskWithDiscipline[];
-  isLoading: boolean;
   onDragEnd: (result: DropResult) => void;
   onOpenTask: (task: TaskWithDiscipline) => void;
   canManage: boolean;
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="overflow-x-auto pb-3">
+      <div className="project-task-accessible overflow-x-auto pb-3">
         <div className="flex min-w-max gap-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter((task) => task.status === column.status);
@@ -631,7 +580,6 @@ function KanbanView({
                 status={column.status}
                 label={column.label}
                 tasks={columnTasks}
-                isLoading={isLoading}
                 onOpenTask={onOpenTask}
                 canManage={canManage}
               />
@@ -664,7 +612,6 @@ function ProjectKanbanColumn({
   status,
   label,
   tasks,
-  isLoading,
   onOpenTask,
   canManage
 }: {
@@ -673,7 +620,6 @@ function ProjectKanbanColumn({
   status: TaskStatus;
   label: string;
   tasks: TaskWithDiscipline[];
-  isLoading: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
   canManage: boolean;
 }) {
@@ -742,35 +688,26 @@ function ProjectKanbanColumn({
             ) : null
           }
         >
-          {isLoading ? (
-            <>
-              <TaskCardSkeleton />
-              <TaskCardSkeleton />
-              <TaskCardSkeleton />
-            </>
-          ) : (
-            <>
-              {tasks.map((task, index) => (
-                <Draggable draggableId={task.id} index={index} key={task.id} isDragDisabled={!canManage}>
-                  {(dragProvided, dragSnapshot) => (
-                    <div
-                      ref={dragProvided.innerRef}
-                      {...dragProvided.draggableProps}
-                      {...dragProvided.dragHandleProps}
-                      className={cn(dragSnapshot.isDragging && "opacity-80")}
-                    >
-                      <KanbanTaskCard
-                        task={task}
-                        onOpen={onOpenTask}
-                        fallbackLinkPath={`/projects/${projectId}`}
-                      />
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {tasks.length === 0 ? <EmptyState icon={<Inbox size={28} />} title="Nenhuma tarefa aqui" /> : null}
-            </>
-          )}
+          {tasks.map((task, index) => (
+            <Draggable draggableId={task.id} index={index} key={task.id} isDragDisabled={!canManage}>
+              {(dragProvided, dragSnapshot) => (
+                <div
+                  ref={dragProvided.innerRef}
+                  {...dragProvided.draggableProps}
+                  {...dragProvided.dragHandleProps}
+                  className={cn(dragSnapshot.isDragging && "opacity-80")}
+                >
+                  <KanbanTaskCard
+                    task={task}
+                    onOpen={onOpenTask}
+                    fallbackLinkPath={`/projects/${projectId}`}
+                    appearance="project-accessible"
+                  />
+                </div>
+              )}
+            </Draggable>
+          ))}
+          {tasks.length === 0 ? <EmptyState icon={<Inbox size={28} />} title="Nenhuma tarefa aqui" /> : null}
           {provided.placeholder}
         </KanbanColumn>
       )}
@@ -782,7 +719,6 @@ function ListView({
   disciplines,
   tasks,
   users,
-  isLoading,
   canManage,
   canComplete,
   onOpenTask,
@@ -794,43 +730,51 @@ function ListView({
   disciplines: Section[];
   tasks: TaskWithDiscipline[];
   users: User[];
-  isLoading: boolean;
   canManage: boolean;
   canComplete: boolean;
   onOpenTask: (task: TaskWithDiscipline) => void;
   onPatchTask: (task: TaskWithDiscipline, payload: UpdateTaskRequest) => void;
-  onPatchCompletion: (task: TaskWithDiscipline, completed: boolean) => void;
+  onPatchCompletion: (task: TaskWithDiscipline, completed: boolean) => Promise<void>;
   onCreateTaskInSection: (sectionId: string) => void;
   projectId: string;
 }) {
   const groupedTasks = groupTasksByScope(tasks, disciplines);
-  const columnCount = canManage ? 10 : 9;
+  const [pendingCompletionTaskIds, setPendingCompletionTaskIds] = useState<Set<string>>(() => new Set());
+  const columnCount = canManage ? 8 : 7;
 
-  if (isLoading) {
-    return (
-      <div className="grid gap-3 md:grid-cols-3">
-        <TaskCardSkeleton />
-        <TaskCardSkeleton />
-        <TaskCardSkeleton />
-      </div>
-    );
+  async function handleCompletionToggle(task: TaskWithDiscipline) {
+    if (pendingCompletionTaskIds.has(task.id) || !canComplete) {
+      return;
+    }
+
+    setPendingCompletionTaskIds((current) => new Set(current).add(task.id));
+
+    try {
+      await onPatchCompletion(task, !task.completed);
+    } catch {
+      toast.error("Não foi possível atualizar a conclusão da tarefa.");
+    } finally {
+      setPendingCompletionTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(task.id);
+        return next;
+      });
+    }
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="project-task-accessible grid gap-4">
       <DataTableContainer>
         <DataTable minWidth={canManage ? "1100px" : "980px"} data-testid="project-list-table">
           <colgroup>
-            <col className="w-[320px]" />
+            <col className="w-[520px]" />
             <col className="w-[140px]" />
             <col className="w-[150px]" />
             <col className="w-[90px]" />
             <col className="w-[100px]" />
-            <col className="w-[120px]" />
             {canManage ? <col className="w-[120px]" /> : null}
             <col className="w-[90px]" />
             <col className="w-[90px]" />
-            <col className="w-[80px]" />
           </colgroup>
           <DataTableHead>
             <tr className="border-b border-[--color-border]">
@@ -839,11 +783,9 @@ function ListView({
               <DataTableHeader>Status</DataTableHeader>
               <DataTableHeader align="center">Plataforma</DataTableHeader>
               <DataTableHeader align="center">Disciplina</DataTableHeader>
-              <DataTableHeader align="center">Status Conclusão</DataTableHeader>
               {canManage ? <DataTableHeader>Prazo Máximo</DataTableHeader> : null}
               <DataTableHeader align="right">Dias Estimados</DataTableHeader>
               <DataTableHeader align="right">Dias Conclusão</DataTableHeader>
-              <DataTableHeader>Etapa</DataTableHeader>
             </tr>
           </DataTableHead>
           <tbody>
@@ -874,19 +816,24 @@ function ListView({
                       onOpen={onOpenTask}
                       fallbackLinkPath={`/projects/${projectId}`}
                     >
-                      <DataTableRow className={cn(task.completed ? "opacity-70" : "")}>
-                        <DataTableCell className="max-w-0 overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={() => onOpenTask(task)}
-                            title={task.title}
-                            className={cn(
-                              "block w-full truncate text-left font-medium hover:text-brand-orange",
-                              task.completed ? "text-text-muted" : "text-text-primary"
-                            )}
-                          >
-                            {task.title || <EmptyCell />}
-                          </button>
+                        <DataTableRow className={cn(task.completed && "project-task-completed-row")}>
+                          <DataTableCell className="max-w-0 overflow-hidden">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <TaskCompletionButton
+                                completed={task.completed}
+                                disabled={!canComplete}
+                                loading={pendingCompletionTaskIds.has(task.id)}
+                                onToggle={() => void handleCompletionToggle(task)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => onOpenTask(task)}
+                                title={task.title}
+                                className="block min-w-0 flex-1 truncate text-left font-medium text-text-primary hover:text-brand-orange"
+                              >
+                                {task.title || <EmptyCell />}
+                              </button>
+                            </div>
                         </DataTableCell>
                         <DataTableCell>
                           {canManage ? (
@@ -894,6 +841,7 @@ function ListView({
                               users={users}
                               assigneeId={task.assigneeId}
                               variant="table"
+                              contrast="high"
                               onSave={(assigneeId) => onPatchTask(task, { assigneeId })}
                             />
                           ) : task.assignee ? (
@@ -907,7 +855,7 @@ function ListView({
                         </DataTableCell>
                         <DataTableCell>
                           {canManage ? (
-                            <EditableStatusField task={task} variant="table" onSave={(status) => onPatchTask(task, { status })} />
+                            <EditableStatusField task={task} variant="table" contrast="high" onSave={(status) => onPatchTask(task, { status })} />
                           ) : (
                             <TaskStatusBadge status={task.status} />
                           )}
@@ -917,6 +865,7 @@ function ListView({
                             <EditablePlatformField
                               value={task.platform}
                               variant="table"
+                              contrast="high"
                               onSave={(platform) => onPatchTask(task, { platform })}
                             />
                           ) : task.platform ? (
@@ -930,23 +879,13 @@ function ListView({
                             <EditableDisciplineField
                               value={task.taskDiscipline}
                               variant="table"
+                              contrast="high"
                               onSave={(taskDiscipline) => onPatchTask(task, { taskDiscipline })}
                             />
                           ) : task.taskDiscipline ? (
                             <DisciplineChip discipline={task.taskDiscipline} />
                           ) : (
                             <EmptyCell />
-                          )}
-                        </DataTableCell>
-                        <DataTableCell align="center">
-                          {canManage || canComplete ? (
-                            <EditableCompletionField
-                              completed={task.completed}
-                              variant="table"
-                              onSave={(completed) => onPatchCompletion(task, completed)}
-                            />
-                          ) : (
-                            <CompletionStatusChip completed={task.completed} />
                           )}
                         </DataTableCell>
                         {canManage ? (
@@ -982,18 +921,6 @@ function ListView({
                             <EmptyCell />
                           ) : (
                             <span>{formatDecimalDisplay(task.conclusionDays)}</span>
-                          )}
-                        </DataTableCell>
-                        <DataTableCell>
-                          {canManage ? (
-                            <EditableStageField
-                              value={task.stage}
-                              stageField={null}
-                              variant="table"
-                              onSave={(stage) => onPatchTask(task, { stage })}
-                            />
-                          ) : (
-                            <TruncatedCellValue value={task.stage} />
                           )}
                         </DataTableCell>
                       </DataTableRow>

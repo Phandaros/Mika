@@ -4,7 +4,7 @@ import { type Task } from "shared";
 import { Avatar } from "../shared/Avatar";
 import { CompletionStatusChip, DisciplineChip } from "../shared/Chip";
 import { PriorityBadge } from "../shared/PriorityBadge";
-import { statusTimelineStyle } from "../../lib/taskTimelineStyle";
+import { statusAccentStyle, statusTimelineStyle } from "../../lib/taskTimelineStyle";
 import { cn, formatDateOnly } from "../../lib/utils";
 import { TaskContextMenu } from "./TaskContextMenu";
 
@@ -12,17 +12,20 @@ interface KanbanTaskCardProps<TTask extends Task> {
   task: TTask;
   onOpen: (task: TTask) => void;
   fallbackLinkPath: string;
+  appearance?: "default" | "project-accessible";
 }
 
 export function KanbanTaskCard<TTask extends Task>({
   task,
   onOpen,
-  fallbackLinkPath
+  fallbackLinkPath,
+  appearance = "default"
 }: KanbanTaskCardProps<TTask>) {
   const projectName = task.discipline?.projectName ?? task.projects?.[0]?.name ?? "Sem projeto";
   const sectionName = task.taskDiscipline ?? task.discipline?.name ?? task.projects?.[0]?.sectionName ?? "";
   const dateLabel = task.maxDeadline ?? task.dueDate;
   const projectId = task.discipline?.projectId ?? task.projects?.[0]?.id;
+  const isProjectAccessible = appearance === "project-accessible";
 
   return (
     <TaskContextMenu task={task} projectId={projectId} onOpen={onOpen} fallbackLinkPath={fallbackLinkPath}>
@@ -37,10 +40,11 @@ export function KanbanTaskCard<TTask extends Task>({
           }
         }}
         className={cn(
-          "cursor-pointer rounded-md border p-3 transition-[transform,box-shadow,opacity] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
-          task.completed ? "opacity-70" : ""
+          "cursor-pointer rounded-md border p-3 transition-[transform,box-shadow,opacity,background-color] duration-150 ease-out-expo hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-[--bg-2]",
+          isProjectAccessible ? "project-task-card" : task.completed ? "opacity-70" : ""
         )}
-        style={statusTimelineStyle(task.status)}
+        data-completed={isProjectAccessible ? String(task.completed) : undefined}
+        style={isProjectAccessible ? statusAccentStyle(task.status) : statusTimelineStyle(task.status)}
       >
         <div className="flex items-start justify-between gap-3">
           <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-5">{task.title}</h3>

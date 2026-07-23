@@ -6,6 +6,11 @@ type WorkloadLabelTask =
   | Pick<Task, "title" | "projects" | "discipline">
   | Pick<HomeDashboardTask, "title" | "projectName">;
 
+export type WorkloadTaskProjectIdentity = {
+  id: string | null;
+  name: string;
+};
+
 export type WorkloadTaskDisplayLabel = {
   taskTitle: string;
   projectName: string | null;
@@ -25,8 +30,8 @@ export function workloadTaskDisplayLabel(task: WorkloadLabelTask, mode: "project
     };
   }
 
-  const projectName = prefixedProjectName(task) ?? displayProjectName(task);
-  if (!projectName) {
+  const project = workloadTaskProjectIdentity(task);
+  if (!project) {
     return {
       taskTitle: task.title,
       projectName: null,
@@ -34,39 +39,33 @@ export function workloadTaskDisplayLabel(task: WorkloadLabelTask, mode: "project
     };
   }
 
-  const taskTitle = stripProjectPrefix(task.title, projectName);
+  const taskTitle = stripProjectPrefix(task.title, project.name);
   return {
     taskTitle,
-    projectName,
-    fullLabel: `[${projectName}] ${taskTitle}`
+    projectName: project.name,
+    fullLabel: `[${project.name}] ${taskTitle}`
   };
 }
 
-function prefixedProjectName(task: WorkloadLabelTask): string | null {
-  const linkedNames = [
-    ...("projects" in task ? task.projects?.map((project) => project.name) ?? [] : []),
-    "discipline" in task ? task.discipline?.projectName ?? null : null,
-    "projectName" in task ? task.projectName : null
+export function workloadTaskProjectIdentity(task: WorkloadLabelTask): WorkloadTaskProjectIdentity | null {
+  const linkedProjects: WorkloadTaskProjectIdentity[] = [
+    ...("projects" in task
+      ? task.projects?.map((project) => ({ id: project.id, name: project.name })) ?? []
+      : []),
+    ...("discipline" in task && task.discipline?.projectName
+      ? [{ id: task.discipline.projectId || null, name: task.discipline.projectName }]
+      : []),
+    ...("projectName" in task && task.projectName
+      ? [{ id: null, name: task.projectName }]
+      : [])
   ];
+  const visibleProjects = linkedProjects.filter((project) => !isIgnoredProjectName(project.name));
 
-  return linkedNames.find((name) => name && !isIgnoredProjectName(name) && titleAlreadyHasProjectPrefix(task.title, name)) ?? null;
-}
-
-function displayProjectName(task: WorkloadLabelTask): string | null {
-  const projectFromMemberships = "projects" in task
-    ? task.projects?.find((project) => !isIgnoredProjectName(project.name))
-    : null;
-  if (projectFromMemberships) {
-    return projectFromMemberships.name;
-  }
-
-  const projectFromDiscipline = "discipline" in task ? task.discipline?.projectName : null;
-  if (projectFromDiscipline && !isIgnoredProjectName(projectFromDiscipline)) {
-    return projectFromDiscipline;
-  }
-
-  const directProjectName = "projectName" in task ? task.projectName : null;
-  return directProjectName && !isIgnoredProjectName(directProjectName) ? directProjectName : null;
+  return (
+    visibleProjects.find((project) => titleAlreadyHasProjectPrefix(task.title, project.name)) ??
+    visibleProjects[0] ??
+    null
+  );
 }
 
 function titleAlreadyHasProjectPrefix(title: string, projectName: string): boolean {

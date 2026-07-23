@@ -23,10 +23,20 @@
   --color-border: rgba(255,255,255,0.08);
   --color-border-subtle: rgba(255,255,255,0.04);
   --color-border-focus: rgba(255,255,255,0.20);
+  --color-calendar-weekend-bg: rgba(244,244,245,0.035);
+  --color-calendar-holiday-bg: rgba(242,101,34,0.08);
   --color-text-primary: #e8e8ec;
   --color-text-secondary: #9999a8;
   --color-text-muted: #5a5a6e;
   --color-text-disabled: #3a3a4a;
+
+  --project-task-text-tertiary: #90909f;
+  --project-task-neutral-text: #94a3b8;
+  --project-task-card-bg: var(--bg-2);
+  --project-task-card-hover-bg: var(--bg-3);
+  --project-task-completed-bg: #192220;
+  --project-task-completed-hover-bg: #1e2b28;
+  --project-task-completed-accent: #348553;
 
   --status-backlog-bg: rgba(71,85,105,0.12);
   --status-backlog-text: #64748b;
@@ -68,8 +78,8 @@
   --disc-hid-text: #38bdf8;
   --disc-ppci-bg: rgba(239,68,68,0.15);
   --disc-ppci-text: #f87171;
-  --disc-hvac-bg: rgba(34,197,94,0.15);
-  --disc-hvac-text: #4ade80;
+  --disc-cli-bg: rgba(34,197,94,0.15);
+  --disc-cli-text: #4ade80;
   --disc-coord-bg: rgba(249,115,22,0.15);
   --disc-coord-text: #fb923c;
   --disc-ep-bg: rgba(234,179,8,0.15);
@@ -140,6 +150,46 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+}
+
+.project-task-accessible {
+  --color-text-muted: var(--project-task-text-tertiary);
+  --status-backlog-text: var(--project-task-neutral-text);
+  --priority-none-text: var(--project-task-neutral-text);
+  --disc-none-text: var(--project-task-neutral-text);
+  --plat-none-text: var(--project-task-neutral-text);
+}
+
+.project-task-card {
+  background-color: var(--project-task-card-bg);
+  border-color: var(--project-task-status-accent, var(--color-border));
+  box-shadow: inset 3px 0 0 var(--project-task-status-accent, var(--color-border));
+  color: var(--color-text-primary);
+}
+
+.project-task-card:hover {
+  background-color: var(--project-task-card-hover-bg);
+}
+
+.project-task-card[data-completed="true"] {
+  background-color: var(--project-task-completed-bg);
+  border-color: var(--project-task-completed-accent);
+}
+
+.project-task-card[data-completed="true"]:hover {
+  background-color: var(--project-task-completed-hover-bg);
+}
+
+.project-task-completed-row > td {
+  background-color: var(--project-task-completed-bg);
+}
+
+.project-task-completed-row > td:first-child {
+  box-shadow: inset 3px 0 0 var(--project-task-completed-accent);
+}
+
+.project-task-completed-row:hover > td {
+  background-color: var(--project-task-completed-hover-bg);
 }
 
 button,

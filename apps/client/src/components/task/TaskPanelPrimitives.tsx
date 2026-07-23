@@ -9,6 +9,8 @@ export const compactDatePickerClassName =
   "h-7 min-h-0 w-auto min-w-[112px] justify-between border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3]";
 export const compactInputClassName =
   "h-7 min-h-0 w-[112px] border-transparent bg-transparent px-1.5 text-[13px] hover:bg-[--bg-3] focus:bg-[--bg-3]";
+export const taskPanelTitleInputClassName =
+  "-mx-2 h-auto w-[calc(100%+1rem)] min-w-0 border-transparent bg-transparent px-2 py-1 text-[16px] font-semibold leading-tight text-text-primary focus:border-brand-orange focus:bg-[--bg-3]";
 
 interface TaskPanelShellProps {
   isOpen: boolean;

@@ -7,6 +7,7 @@ import { useProject, useProjectOptions } from "../../hooks/useProjects";
 import { useCreateTask } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
 import { isTargetInsidePanelPortal } from "../../lib/panelOutsideClick";
+import { taskDisciplineOptions } from "../../lib/taskDisciplines";
 import {
   isAfterMaxDeadline,
   MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE,
@@ -33,7 +34,8 @@ import {
   DetailRow,
   EmptyField,
   TaskFixedFieldGrid,
-  TaskPanelShell
+  TaskPanelShell,
+  taskPanelTitleInputClassName
 } from "./TaskPanelPrimitives";
 
 type CustomFieldDraft = Record<string, string>;
@@ -53,17 +55,6 @@ const platformOptions = [
   { value: "CAD", label: "CAD" },
   { value: "REVIT", label: "REVIT" },
   { value: "COORD", label: "COORD" }
-];
-
-const disciplineOptions = [
-  { value: "ELE", label: "ELE" },
-  { value: "SPDA", label: "SPDA" },
-  { value: "TEL", label: "TEL" },
-  { value: "HID", label: "HID" },
-  { value: "PPCI", label: "PPCI" },
-  { value: "HVAC", label: "HVAC" },
-  { value: "COORD", label: "COORD" },
-  { value: "EP", label: "EP" }
 ];
 
 const promotedTaskFieldKeys = new Set([
@@ -311,7 +302,7 @@ export function TaskCreateSheet({ onCreated }: TaskCreateSheetProps) {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Nome da tarefa"
-          className="h-auto min-w-0 border-transparent bg-transparent px-0 py-1 text-[16px] font-semibold leading-tight text-text-primary focus:border-brand-orange focus:bg-[--bg-3] focus:px-2"
+          className={taskPanelTitleInputClassName}
           autoFocus
         />
       }
@@ -382,7 +373,7 @@ export function TaskCreateSheet({ onCreated }: TaskCreateSheetProps) {
                   value={taskDiscipline || "none"}
                   options={[
                     { value: "none", label: "Sem disciplina", render: <EmptyField /> },
-                    ...disciplineOptions.map((option) => ({ ...option, render: <DisciplineChip discipline={option.value} /> }))
+                    ...taskDisciplineOptions.map((option) => ({ ...option, render: <DisciplineChip discipline={option.value} /> }))
                   ]}
                   searchPlaceholder="Buscar disciplina..."
                   triggerClassName={compactSelectTriggerClassName}

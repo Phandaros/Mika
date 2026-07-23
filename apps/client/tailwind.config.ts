@@ -26,6 +26,10 @@ export default {
           card: "var(--color-surface-card)",
           hover: "var(--color-surface-hover)"
         },
+        calendar: {
+          weekend: "var(--color-calendar-weekend-bg)",
+          holiday: "var(--color-calendar-holiday-bg)"
+        },
         border: "var(--color-border)",
         "border-subtle": "var(--color-border-subtle)",
         text: {

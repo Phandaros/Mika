@@ -25,7 +25,7 @@ export const DisciplineType = {
   ELECTRICAL: "ELECTRICAL",
   SPDA: "SPDA",
   TELECOM: "TELECOM",
-  HVAC: "HVAC",
+  CLI: "CLI",
   GAS: "GAS",
   AUTOMATION: "AUTOMATION",
   EXHAUST: "EXHAUST",

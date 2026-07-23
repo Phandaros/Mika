@@ -1,16 +1,17 @@
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
 interface TaskCompletionButtonProps {
   completed: boolean;
   disabled?: boolean;
+  loading?: boolean;
   onToggle: () => void;
   title?: string;
   className?: string;
 }
 
-export function TaskCompletionButton({ completed, disabled, onToggle, title, className }: TaskCompletionButtonProps) {
+export function TaskCompletionButton({ completed, disabled, loading = false, onToggle, title, className }: TaskCompletionButtonProps) {
   const [burst, setBurst] = useState(false);
   const prevCompleted = useRef(completed);
 
@@ -27,7 +28,9 @@ export function TaskCompletionButton({ completed, disabled, onToggle, title, cla
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || loading}
+      aria-busy={loading}
+      aria-label={loading ? "Salvando conclusão da tarefa" : title ?? (completed ? "Reabrir tarefa" : "Concluir tarefa")}
       onClick={(event) => {
         event.stopPropagation();
         onToggle();
@@ -36,9 +39,11 @@ export function TaskCompletionButton({ completed, disabled, onToggle, title, cla
         "flex h-5 w-5 flex-none items-center justify-center rounded-full text-text-secondary transition-colors hover:text-brand-orange disabled:pointer-events-none disabled:opacity-40",
         className
       )}
-      title={title ?? (completed ? "Reabrir tarefa" : "Concluir tarefa")}
+      title={loading ? "Salvando..." : title ?? (completed ? "Reabrir tarefa" : "Concluir tarefa")}
     >
-      {completed ? (
+      {loading ? (
+        <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+      ) : completed ? (
         <CheckCircle2
           size={16}
           className={cn("text-emerald-400", burst ? "animate-task-complete-pop" : "")}

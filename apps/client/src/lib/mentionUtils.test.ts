@@ -74,7 +74,7 @@ const projects: Project[] = [
       {
         id: "section-2",
         projectId: "project-a",
-        name: "HVAC",
+        name: "CLI",
         type: DisciplineType.OTHER,
         status: DisciplineStatus.IN_PROGRESS,
         responsibleId: null,

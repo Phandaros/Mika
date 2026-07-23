@@ -19,7 +19,7 @@ const disciplineColorByName: Record<string, string> = {
   preventivo: tokenPair("--disc-ppci-bg", "--disc-ppci-text"),
   gas: tokenPair("--disc-gas-bg", "--disc-gas-text"),
   sprinkler: tokenPair("--disc-sprinkler-bg", "--disc-sprinkler-text"),
-  climatizacao: tokenPair("--disc-hvac-bg", "--disc-hvac-text"),
+  climatizacao: tokenPair("--disc-cli-bg", "--disc-cli-text"),
   compatibilizacao: tokenPair("--disc-coord-bg", "--disc-coord-text"),
   drenagem: tokenPair("--disc-drain-bg", "--disc-drain-text"),
   exaustao: tokenPair("--disc-exhaust-bg", "--disc-exhaust-text"),
