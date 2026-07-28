@@ -106,6 +106,11 @@ type DragPreview = {
   clampedToMaxDeadline: boolean;
 };
 
+type MaxDeadlineDragIndicator = {
+  taskId: string;
+  targetRowOffset: number;
+};
+
 type UndatedDropPreview = {
   taskId: string;
   startDate: string;
@@ -487,6 +492,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
   const [sectionFilter, setSectionFilter] = useState<string>(ALL_FILTER_VALUE);
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const [maxDeadlineDragIndicator, setMaxDeadlineDragIndicator] = useState<MaxDeadlineDragIndicator | null>(null);
   const [draggingUndatedTaskId, setDraggingUndatedTaskId] = useState<string | null>(null);
   const [undatedDropPreview, setUndatedDropPreview] = useState<UndatedDropPreview | null>(null);
   const [pendingTaskMoves, setPendingTaskMoves] = useState<Record<string, PendingTaskMove>>({});
@@ -1230,6 +1236,15 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
     let moved = false;
     let clampedToMaxDeadline = false;
 
+    setMaxDeadlineDragIndicator(
+      toYmd(task.maxDeadline)
+        ? {
+            taskId: task.id,
+            targetRowOffset: 0
+          }
+        : null
+    );
+
     function onMove(e: PointerEvent) {
       if (e.pointerId !== pointerId) {
         return;
@@ -1248,6 +1263,11 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
         if (targetRow) {
           targetAssigneeId = targetRow.assigneeId;
           targetRowOffset = targetRow.rowTop - originRowTop;
+          setMaxDeadlineDragIndicator((current) =>
+            current?.taskId === task.id && current.targetRowOffset !== targetRowOffset
+              ? { ...current, targetRowOffset }
+              : current
+          );
         }
       }
 
@@ -1306,6 +1326,7 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", finish);
       window.removeEventListener("pointercancel", finish);
+      setMaxDeadlineDragIndicator(null);
 
       if (e.type === "pointercancel") {
         setDragPreview(null);
@@ -1408,6 +1429,12 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
           const previewLeft = previewClip ? previewClip.startIdx * DAY_W + 2 : left;
           const previewWidth = previewClip ? (previewClip.endIdx - previewClip.startIdx + 1) * DAY_W - 4 : width;
           const isMovingTask = activeDragPreview?.kind === "move";
+          const maxDeadline = toYmd(p.task.maxDeadline);
+          const maxDeadlineIdx = maxDeadline ? days.indexOf(maxDeadline) : -1;
+          const showMaxDeadlineIndicator =
+            maxDeadlineDragIndicator?.taskId === p.task.id &&
+            maxDeadlineIdx >= 0 &&
+            !activeDragPreview?.clampedToMaxDeadline;
 
           if (width <= 0 || left + width < 0 || left > timelineWidth) {
             return null;
@@ -1415,6 +1442,23 @@ export function ProjectWorkloadTimeline(props: ProjectWorkloadTimelineProps) {
 
           return (
             <Fragment key={`${rowKey}-${p.task.id}`}>
+              {showMaxDeadlineIndicator ? (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute z-[7] rounded-md border border-dashed border-amber-300 bg-amber-500/15 shadow-sm"
+                  style={{
+                    left: maxDeadlineIdx * DAY_W + 2,
+                    width: DAY_W - 4,
+                    top: barTop + lane * laneStride + maxDeadlineDragIndicator.targetRowOffset,
+                    height: barHeight,
+                    transition: "top 120ms var(--ease-out-expo), opacity 120ms var(--ease-out-expo)"
+                  }}
+                >
+                  <span className="absolute -top-5 right-0 whitespace-nowrap rounded border border-amber-300/70 bg-bg-2 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200 shadow">
+                    Limite do prazo máximo
+                  </span>
+                </div>
+              ) : null}
               {activeDragPreview && previewClip && (activeDragPreview.deltaDays !== 0 || previewAssigneeChanged) ? (
                 <div
                   aria-hidden="true"
