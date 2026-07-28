@@ -135,7 +135,7 @@ export function activitySentence(activity: TaskActivity): string {
   }
 
   if (activity.type === "REVIEW_REJECTED") {
-    return "recusou essa tarefa";
+    return "reprovou essa tarefa";
   }
 
   const field = activity.field ? fieldLabels[activity.field] ?? activity.field : "Campo";

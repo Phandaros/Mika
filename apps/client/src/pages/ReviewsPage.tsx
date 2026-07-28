@@ -29,7 +29,7 @@ import { cn, formatDateOnly } from "../lib/utils";
 const reviewStatusLabels: Record<TaskReviewStatus, string> = {
   [TaskReviewStatus.PENDING]: "Pendente",
   [TaskReviewStatus.APPROVED]: "Aprovada",
-  [TaskReviewStatus.REJECTED]: "Recusada"
+  [TaskReviewStatus.REJECTED]: "Reprovada"
 };
 
 const reviewStatusTokens: Record<TaskReviewStatus, { bg: string; text: string }> = {
@@ -421,7 +421,7 @@ function ReviewDetailPanel({
     }
 
     if (!canDecideReview) {
-      toast.error("Apenas o revisor atribuido pode recusar esta revisao.");
+      toast.error("Apenas o revisor atribuido pode reprovar esta revisao.");
       return;
     }
 
@@ -498,7 +498,7 @@ function ReviewDetailPanel({
                         onClick={() => void reject()}
                       >
                         <XCircle size={14} />
-                        Recusar
+                        Reprovar
                       </Button>
                       <Button className="h-8 px-3 text-xs" disabled={isBusy} onClick={() => void approve()}>
                         <CheckCircle2 size={14} />
@@ -509,7 +509,7 @@ function ReviewDetailPanel({
                 />
               ) : (
                 <div className="rounded-md border border-[--color-border-subtle] bg-[--bg-1] px-3 py-2 text-[13px] text-[--color-text-secondary]">
-                  Apenas o revisor atribuido pode aprovar ou recusar esta revisao.
+                  Apenas o revisor atribuido pode aprovar ou reprovar esta revisao.
                 </div>
               )}
             </div>

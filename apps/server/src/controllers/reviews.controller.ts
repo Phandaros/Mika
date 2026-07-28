@@ -421,7 +421,7 @@ export const rejectReview: RequestHandler = async (req, res, next) => {
       }
 
       if (existing.reviewerId !== authUser.id) {
-        throw new AppError(403, "Apenas o revisor atribuido pode recusar esta revisao");
+        throw new AppError(403, "Apenas o revisor atribuido pode reprovar esta revisao");
       }
 
       const adjustmentTaskId = await createAdjustmentTask(tx, reviewId);

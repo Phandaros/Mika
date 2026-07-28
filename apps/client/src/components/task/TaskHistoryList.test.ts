@@ -31,9 +31,9 @@ function reviewActivity(type: TaskActivity["type"]): TaskActivity {
 }
 
 describe("activitySentence", () => {
-  it("renderiza envio, aprovação e recusa de revisão", () => {
+  it("renderiza envio, aprovação e reprovação de revisão", () => {
     expect(activitySentence(reviewActivity("REVIEW_REQUESTED"))).toBe("enviou a tarefa para Revisão de Leonardo");
     expect(activitySentence(reviewActivity("REVIEW_APPROVED"))).toBe("aprovou essa tarefa");
-    expect(activitySentence(reviewActivity("REVIEW_REJECTED"))).toBe("recusou essa tarefa");
+    expect(activitySentence(reviewActivity("REVIEW_REJECTED"))).toBe("reprovou essa tarefa");
   });
 });

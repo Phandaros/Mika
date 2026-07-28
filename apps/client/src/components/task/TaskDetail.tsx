@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { useNavigate } from "react-router-dom";
+import { AxiosError } from "axios";
 import { format } from "date-fns";
-import { CalendarDays, Check, Flag, FolderKanban, UserRound } from "lucide-react";
+import { CalendarDays, Check, CheckCircle2, Flag, FolderKanban, Send, UserRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Priority, TaskStatus, type Project, type ProjectOption, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
@@ -9,6 +10,7 @@ import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { classifyFile, getFileRejectionMessage } from "../../lib/attachmentUtils";
 import { useProjectOptions } from "../../hooks/useProjects";
+import { useApproveReview, useRejectReview } from "../../hooks/useReviews";
 import { useTaskHistory } from "../../hooks/useTaskHistory";
 import { useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../../hooks/useTasks";
 import { useUsers } from "../../hooks/useUsers";
@@ -38,9 +40,11 @@ import { TaskCompletionButton } from "./TaskCompletionButton";
 import { TaskActivityTabs, type TaskActivityTab } from "./TaskActivityTabs";
 import { TaskActionsMenu } from "./TaskActionsMenu";
 import { TaskCommentEditor, type CommentEditorHandle, type PendingCommentFile } from "./TaskCommentEditor";
+import { canDecideTaskReview } from "./taskReviewDecision";
 import { Button } from "../ui/button";
 import { DatePicker, DateRangePicker } from "../ui/date-picker";
 import { DecimalInput, parseDecimalInput } from "../ui/decimal-input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { SearchableSelect } from "../ui/searchable-select";
@@ -62,6 +66,7 @@ interface TaskDetailProps {
 }
 
 type TaskCustomField = NonNullable<Task["customFieldValues"]>[number];
+type ReviewDecision = "approve" | "reject";
 
 const priorityOptions: Array<{ value: Priority; label: string }> = [
   { value: Priority.LOW, label: "Baixa" },
@@ -94,6 +99,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   const [comment, setComment] = useState("");
   const [pendingCommentFiles, setPendingCommentFiles] = useState<PendingCommentFile[]>([]);
   const [commentUploading, setCommentUploading] = useState(false);
+  const [pendingReviewDecision, setPendingReviewDecision] = useState<ReviewDecision | null>(null);
   const [activityTab, setActivityTab] = useState<TaskActivityTab>("comments");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const commentEditorRef = useRef<CommentEditorHandle | null>(null);
@@ -121,6 +127,8 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   const { data: comments = visibleTask?.comments ?? [] } = useComments(visibleTask?.id);
   const createComment = useCreateComment(visibleTask?.id);
   const uploadCommentAttachments = useUploadCommentAttachments(visibleTask?.id);
+  const approveReview = useApproveReview();
+  const rejectReview = useRejectReview();
   const { data: history = [], isLoading: historyLoading } = useTaskHistory(visibleTask?.id);
 
   const previousTaskIdRef = useRef<string | null>(null);
@@ -138,6 +146,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
     if (!task) {
       previousTaskIdRef.current = null;
       setIsOpen(false);
+      setPendingReviewDecision(null);
       if (closePanelTimeoutRef.current != null) {
         window.clearTimeout(closePanelTimeoutRef.current);
         closePanelTimeoutRef.current = null;
@@ -168,6 +177,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
     setComment("");
     setPendingCommentFiles([]);
     setCommentUploading(false);
+    setPendingReviewDecision(null);
     setActivityTab("comments");
     setIsOpen(false);
     const frame = window.requestAnimationFrame(() => {
@@ -258,7 +268,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   }
 
   useEffect(() => {
-    if (!visibleTask || !isOpen) {
+    if (!visibleTask || !isOpen || pendingReviewDecision) {
       return undefined;
     }
 
@@ -289,10 +299,10 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 
     document.addEventListener("keydown", handleTaskPanelEscape);
     return () => document.removeEventListener("keydown", handleTaskPanelEscape);
-  }, [isEditingDescription, isEditingTitle, isOpen, visibleTask]);
+  }, [isEditingDescription, isEditingTitle, isOpen, pendingReviewDecision, visibleTask]);
 
   useEffect(() => {
-    if (!visibleTask || !isOpen) {
+    if (!visibleTask || !isOpen || pendingReviewDecision) {
       return undefined;
     }
 
@@ -317,7 +327,30 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
 
     document.addEventListener("pointerdown", handlePointerDownCapture, true);
     return () => document.removeEventListener("pointerdown", handlePointerDownCapture, true);
-  }, [isOpen, visibleTask]);
+  }, [isOpen, pendingReviewDecision, visibleTask]);
+
+  const openTaskById = useCallback(
+    async (taskId: string, errorMessage: string) => {
+      try {
+        const response = await api.get<{ task: Task }>(`/tasks/${taskId}`);
+        const targetTask = response.data.task;
+
+        if (onOpenTaskRef.current) {
+          onOpenTaskRef.current(targetTask);
+          return;
+        }
+
+        const targetProjectId = targetTask.discipline?.projectId ?? targetTask.projects?.[0]?.id;
+
+        if (targetProjectId) {
+          navigate(`/projects/${targetProjectId}?task=${taskId}`);
+        }
+      } catch {
+        toast.error(errorMessage);
+      }
+    },
+    [navigate]
+  );
 
   const handleMentionTask = useCallback(
     (taskId: string) => {
@@ -325,28 +358,9 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
         return;
       }
 
-      void (async () => {
-        try {
-          const response = await api.get<{ task: Task }>(`/tasks/${taskId}`);
-          const mentionedTask = response.data.task;
-
-          if (onOpenTaskRef.current) {
-            onOpenTaskRef.current(mentionedTask);
-            return;
-          }
-
-          const targetProjectId =
-            mentionedTask.discipline?.projectId ?? mentionedTask.projects?.[0]?.id;
-
-          if (targetProjectId) {
-            navigate(`/projects/${targetProjectId}?task=${taskId}`);
-          }
-        } catch {
-          toast.error("Não foi possível abrir a tarefa mencionada.");
-        }
-      })();
+      void openTaskById(taskId, "Não foi possível abrir a tarefa mencionada.");
     },
-    [navigate, visibleTask?.id]
+    [openTaskById, visibleTask?.id]
   );
 
   if (!visibleTask) {
@@ -374,6 +388,14 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   const fixedEstimatedTime = visibleTask.estimatedTime ?? visibleTask.estimatedDays ?? fieldNumberValue(visibleCustomFields.find(isEstimatedTimeField));
   const fixedConclusionDays = visibleTask.conclusionDays ?? fieldNumberValue(completionDaysField);
   const fixedStage = visibleTask.stage ?? fieldDisplayValue(stageField);
+  const canDecideReview = canDecideTaskReview(visibleTask, user?.id);
+  const reviewDecisionPending = approveReview.isPending || rejectReview.isPending;
+  const footerBusy =
+    createComment.isPending ||
+    uploadCommentAttachments.isPending ||
+    commentUploading ||
+    reviewDecisionPending;
+
   function requestClose() {
     setIsOpen(false);
     if (closePanelTimeoutRef.current != null) {
@@ -427,8 +449,127 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
     setPendingCommentFiles([]);
   }
 
+  function decisionMessage(): string {
+    return commentEditorRef.current?.getSubmitContent().trim() ?? comment.trim();
+  }
+
+  function validDecisionFiles(): File[] {
+    const files: File[] = [];
+
+    for (const item of pendingCommentFiles) {
+      if (classifyFile(item.file) === "document") {
+        files.push(item.file);
+        continue;
+      }
+
+      toast.error(getFileRejectionMessage(item.file));
+    }
+
+    return files;
+  }
+
+  async function reconcileVisibleTask(taskId: string): Promise<void> {
+    const response = await api.get<{ task: Task }>(`/tasks/${taskId}`);
+    setVisibleTask((current) => (current?.id === taskId ? response.data.task : current));
+  }
+
+  async function confirmReviewDecision() {
+    const currentTask = visibleTask;
+    const decision = pendingReviewDecision;
+    const reviewId = currentTask?.pendingReview?.id;
+
+    if (!currentTask || !decision || !reviewId || !canDecideReview) {
+      setPendingReviewDecision(null);
+      return;
+    }
+
+    const message = decisionMessage();
+
+    if (decision === "reject" && !message) {
+      toast.error("Informe uma mensagem para o projetista.");
+      setPendingReviewDecision(null);
+      return;
+    }
+
+    const files = validDecisionFiles();
+
+    try {
+      let adjustmentTaskId: string | undefined;
+
+      if (decision === "approve") {
+        await approveReview.mutateAsync({
+          id: reviewId,
+          payload: {
+            message: message || undefined,
+            files: files.length > 0 ? files : undefined
+          }
+        });
+      } else {
+        const result = await rejectReview.mutateAsync({
+          id: reviewId,
+          payload: {
+            message,
+            files: files.length > 0 ? files : undefined
+          }
+        });
+        adjustmentTaskId = result.adjustmentTaskId;
+      }
+
+      setVisibleTask((current) =>
+        current?.id === currentTask.id
+          ? {
+              ...current,
+              status: TaskStatus.FINISHED,
+              completed: true,
+              pendingReview: null
+            }
+          : current
+      );
+      setComment("");
+      setPendingCommentFiles([]);
+      setPendingReviewDecision(null);
+
+      try {
+        await reconcileVisibleTask(currentTask.id);
+      } catch {
+        // O estado local já reflete a transição; as queries também são invalidadas pelos hooks.
+      }
+
+      if (decision === "approve") {
+        toast.success("Tarefa aprovada");
+        return;
+      }
+
+      toast.success("Tarefa reprovada", {
+        action: adjustmentTaskId
+          ? {
+              label: "Abrir ajuste",
+              onClick: () => {
+                void openTaskById(adjustmentTaskId, "Não foi possível abrir a tarefa de ajuste.");
+              }
+            }
+          : undefined
+      });
+    } catch (error) {
+      setPendingReviewDecision(null);
+      toast.error(
+        reviewDecisionErrorMessage(
+          error,
+          decision === "approve" ? "Não foi possível aprovar a tarefa." : "Não foi possível reprovar a tarefa."
+        )
+      );
+
+      try {
+        await reconcileVisibleTask(currentTask.id);
+      } catch {
+        // Mantém o rascunho para nova tentativa mesmo quando a reconciliação falha.
+      }
+    }
+  }
+
   return (
-    <TaskPanelShell
+    <>
+      <TaskPanelShell
       isOpen={isOpen}
       asideRef={asideRef}
       onClose={requestClose}
@@ -488,11 +629,43 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
               value={comment}
               onChange={setComment}
               onSubmit={() => void handleCommentSubmit()}
-              disabled={createComment.isPending || uploadCommentAttachments.isPending || commentUploading}
+              disabled={footerBusy}
               pendingFiles={pendingCommentFiles}
               onPendingFilesChange={setPendingCommentFiles}
               onUploadingChange={setCommentUploading}
               mentionContext={mentionContext}
+              footerActions={
+                canDecideReview ? (
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      className="h-8 px-3 text-xs"
+                      disabled={footerBusy || !comment.trim()}
+                      onClick={() => setPendingReviewDecision("reject")}
+                    >
+                      <XCircle size={14} data-icon="inline-start" />
+                      Reprovar
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="h-8 px-3 text-xs"
+                      disabled={footerBusy}
+                      onClick={() => setPendingReviewDecision("approve")}
+                    >
+                      <CheckCircle2 size={14} data-icon="inline-start" />
+                      Aprovar
+                    </Button>
+                    <Button
+                      className="h-8 px-3 text-xs"
+                      disabled={footerBusy || !comment.trim()}
+                      onClick={() => void handleCommentSubmit()}
+                    >
+                      <Send size={14} data-icon="inline-start" />
+                      Comentar
+                    </Button>
+                  </div>
+                ) : undefined
+              }
             />
           </div>
         </div>
@@ -773,8 +946,70 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
             </div>
           ) : null}
         </div>
-    </TaskPanelShell>
+      </TaskPanelShell>
+
+      <Dialog
+        open={pendingReviewDecision !== null}
+        onOpenChange={(open) => {
+          if (!open && !reviewDecisionPending) {
+            setPendingReviewDecision(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md" hideClose={reviewDecisionPending}>
+          <DialogHeader>
+            <DialogTitle>
+              {pendingReviewDecision === "reject" ? "Reprovar esta tarefa?" : "Aprovar esta tarefa?"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] leading-relaxed text-text-secondary">
+            {pendingReviewDecision === "reject"
+              ? "A tarefa original será concluída e uma nova tarefa de ajuste será criada para o projetista. A mensagem e os anexos atuais acompanharão a reprovação."
+              : "A tarefa será concluída. A mensagem e os anexos atuais serão enviados ao projetista, caso tenham sido preenchidos."}
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              variant="ghost"
+              disabled={reviewDecisionPending}
+              onClick={() => setPendingReviewDecision(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant={pendingReviewDecision === "reject" ? "danger" : "primary"}
+              disabled={reviewDecisionPending}
+              onClick={() => void confirmReviewDecision()}
+            >
+              {pendingReviewDecision === "reject" ? (
+                <XCircle size={16} data-icon="inline-start" />
+              ) : (
+                <CheckCircle2 size={16} data-icon="inline-start" />
+              )}
+              {reviewDecisionPending
+                ? "Confirmando..."
+                : pendingReviewDecision === "reject"
+                  ? "Confirmar reprovação"
+                  : "Confirmar aprovação"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
+}
+
+function reviewDecisionErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof AxiosError)) {
+    return fallback;
+  }
+
+  const data = error.response?.data;
+
+  if (typeof data === "object" && data !== null && "error" in data && typeof data.error === "string") {
+    return data.error;
+  }
+
+  return fallback;
 }
 
 function EditableProjectsField({
