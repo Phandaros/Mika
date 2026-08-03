@@ -41,15 +41,18 @@ import {
   userMatchesSearch
 } from "../lib/globalSearch.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { normalizeIndicatorDate } from "../lib/indicators.js";
 
 const advancedSearchTypeSchema = z.enum(["all", "tasks", "projects", "users"]);
 const advancedSearchCompletionSchema = z.enum(["open", "completed", "all"]);
 const indicatorSourceSchema = z.enum(["indicators"]);
 const deliveryStatusSchema = z.nativeEnum(DeliveryStatus);
 const indicatorMetricSchema = z.enum(["openTasks", "completedTasks", "overdueTasks", "dueTasks", "allTasks", "onTimeDeliveries", "lateDeliveries", "unclassifiedDeliveries"]);
-const indicatorPeriodSchema = z.enum(["month", "year", "all"]);
+const indicatorPeriodSchema = z.enum(["month", "year", "custom", "all"]);
 const indicatorScopeSchema = z.enum(["general", "civil", "electrical"]);
-const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const dateOnlySchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => Boolean(normalizeIndicatorDate(value)), "Data inválida");
 
 const advancedSearchQuerySchema = z.object({
   q: z.string().optional(),
@@ -67,7 +70,25 @@ const advancedSearchQuerySchema = z.object({
   source: indicatorSourceSchema.optional(),
   indicatorMetric: indicatorMetricSchema.optional(),
   indicatorPeriod: indicatorPeriodSchema.optional(),
-  indicatorScope: indicatorScopeSchema.optional()
+  indicatorScope: indicatorScopeSchema.optional(),
+  indicatorFrom: dateOnlySchema.optional(),
+  indicatorTo: dateOnlySchema.optional()
+}).superRefine((query, context) => {
+  if (query.indicatorPeriod === "custom" && (!query.indicatorFrom || !query.indicatorTo)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "O período personalizado exige data inicial e final",
+      path: [!query.indicatorFrom ? "indicatorFrom" : "indicatorTo"]
+    });
+  }
+
+  if (query.indicatorFrom && query.indicatorTo && query.indicatorFrom > query.indicatorTo) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A data inicial do indicador não pode ser posterior à data final",
+      path: ["indicatorFrom"]
+    });
+  }
 });
 
 export const globalSearch: RequestHandler = async (req, res, next) => {
@@ -180,6 +201,8 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
     const indicatorMetric: AdvancedSearchIndicatorMetric | undefined = parsed.data.source === "indicators" ? parsed.data.indicatorMetric : undefined;
     const indicatorPeriod: IndicatorPeriod | undefined = indicatorMetric ? parsed.data.indicatorPeriod : undefined;
     const indicatorScope: IndicatorScope | undefined = indicatorMetric ? parsed.data.indicatorScope : undefined;
+    const indicatorFrom = indicatorMetric ? parsed.data.indicatorFrom : undefined;
+    const indicatorTo = indicatorMetric ? parsed.data.indicatorTo : undefined;
 
     const [projects, tasks, users] = await Promise.all([
       shouldSearchBucket(type, "projects")
@@ -215,7 +238,9 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
               dueFrom: parsed.data.dueFrom,
               dueTo: parsed.data.dueTo,
               completion,
-              indicatorPeriod
+              indicatorPeriod,
+              indicatorFrom,
+              indicatorTo
             }),
             orderBy: [{ name: "asc" }, { updatedAt: "desc" }],
             include: taskSearchInclude
@@ -237,7 +262,13 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
 
     const tasksWithComments = await attachTaskSearchComments(tasks, q);
     const deliveryFilteredTasks = filterTasksByDeliveryStatus(tasksWithComments, deliveryStatuses);
-    const indicatorFilteredTasks = filterTasksByIndicator(deliveryFilteredTasks, { indicatorMetric, indicatorPeriod, indicatorScope });
+    const indicatorFilteredTasks = filterTasksByIndicator(deliveryFilteredTasks, {
+      indicatorMetric,
+      indicatorPeriod,
+      indicatorScope,
+      indicatorFrom,
+      indicatorTo
+    });
     const taskItems = indicatorFilteredTasks
       .filter((task) => taskMatchesSearch(task, q))
       .sort((left, right) => compareTasksBySearchRelevance(left, right, q))

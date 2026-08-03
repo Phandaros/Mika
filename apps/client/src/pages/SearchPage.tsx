@@ -432,6 +432,8 @@ function clearIndicatorParams(searchParams: URLSearchParams) {
   searchParams.delete("indicatorMetric");
   searchParams.delete("indicatorPeriod");
   searchParams.delete("indicatorScope");
+  searchParams.delete("indicatorFrom");
+  searchParams.delete("indicatorTo");
   searchParams.delete("deliveryStatus");
 }
 
@@ -440,7 +442,7 @@ function indicatorContextLabel(filters: AdvancedSearchFilters): string | null {
     return null;
   }
 
-  return `Indicador: ${indicatorMetricLabel(filters.indicatorMetric)} · ${indicatorPeriodLabel(filters.indicatorPeriod)} · ${indicatorScopeLabel(filters.indicatorScope)}`;
+  return `Indicador: ${indicatorMetricLabel(filters.indicatorMetric)} · ${indicatorPeriodLabel(filters.indicatorPeriod, filters.indicatorFrom, filters.indicatorTo)} · ${indicatorScopeLabel(filters.indicatorScope)}`;
 }
 
 function indicatorMetricLabel(metric: AdvancedSearchIndicatorMetric): string {
@@ -458,14 +460,32 @@ function indicatorMetricLabel(metric: AdvancedSearchIndicatorMetric): string {
   return labels[metric] ?? metric;
 }
 
-function indicatorPeriodLabel(period: IndicatorPeriod): string {
-  const labels: Record<IndicatorPeriod, string> = {
-    month: "Mês atual",
-    year: "Ano atual",
-    all: "Todos os tempos"
-  };
+function indicatorPeriodLabel(period: IndicatorPeriod, from?: string, to?: string): string {
+  if (period === "all") {
+    return "Todo o período";
+  }
 
-  return labels[period];
+  if (period === "custom") {
+    return from && to ? `${displayDateOnly(from)} a ${displayDateOnly(to)}` : "Período personalizado";
+  }
+
+  if (from) {
+    const [year, month] = from.split("-");
+    if (period === "year") {
+      return year ?? "Anual";
+    }
+
+    const date = new Date(Number(year), Number(month) - 1, 1);
+    const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(date);
+    return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+  }
+
+  return period === "year" ? "Ano atual" : "Mês atual";
+}
+
+function displayDateOnly(value: string): string {
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function indicatorScopeLabel(scope: IndicatorScope): string {

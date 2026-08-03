@@ -156,13 +156,15 @@ export function buildAdvancedTaskSearchWhere(filters: {
   dueTo?: string;
   completion: AdvancedSearchCompletion;
   indicatorPeriod?: import("shared").IndicatorPeriod;
+  indicatorFrom?: string;
+  indicatorTo?: string;
 }): Prisma.TaskWhereInput {
   const base = buildTaskSearchWhere(filters.term);
   const and: Prisma.TaskWhereInput[] = [base];
 
   if (filters.indicatorPeriod) {
     and.push(excludeBacklogWhere());
-    and.push(indicatorTaskPeriodWhere(filters.indicatorPeriod));
+    and.push(indicatorTaskPeriodWhere(filters.indicatorPeriod, filters.indicatorFrom, filters.indicatorTo));
   }
 
   if (filters.projectId) {
@@ -338,6 +340,8 @@ export function filterTasksByIndicator(
     indicatorMetric?: AdvancedSearchIndicatorMetric;
     indicatorPeriod?: import("shared").IndicatorPeriod;
     indicatorScope?: import("shared").IndicatorScope;
+    indicatorFrom?: string;
+    indicatorTo?: string;
   }
 ): TaskSearchRecord[] {
   if (!filters.indicatorMetric || !filters.indicatorPeriod || !filters.indicatorScope) {
@@ -347,7 +351,13 @@ export function filterTasksByIndicator(
   return tasks.filter((task) => {
     return (
       indicatorTaskMatchesScope(task, filters.indicatorScope!) &&
-      indicatorTaskMatchesMetric(task, filters.indicatorMetric!, filters.indicatorPeriod!)
+      indicatorTaskMatchesMetric(
+        task,
+        filters.indicatorMetric!,
+        filters.indicatorPeriod!,
+        filters.indicatorFrom,
+        filters.indicatorTo
+      )
     );
   });
 }

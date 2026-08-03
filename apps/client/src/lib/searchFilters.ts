@@ -30,7 +30,9 @@ export function parseSearchFilters(searchParams: URLSearchParams): AdvancedSearc
     source: searchParams.get("source") === "indicators" ? "indicators" : undefined,
     indicatorMetric: parseIndicatorMetric(searchParams.get("indicatorMetric")),
     indicatorPeriod: parseIndicatorPeriod(searchParams.get("indicatorPeriod")),
-    indicatorScope: parseIndicatorScope(searchParams.get("indicatorScope"))
+    indicatorScope: parseIndicatorScope(searchParams.get("indicatorScope")),
+    indicatorFrom: parseDateOnly(searchParams.get("indicatorFrom")),
+    indicatorTo: parseDateOnly(searchParams.get("indicatorTo"))
   };
 }
 
@@ -64,7 +66,11 @@ function parseIndicatorMetric(value: string | null): AdvancedSearchIndicatorMetr
 }
 
 function parseIndicatorPeriod(value: string | null): IndicatorPeriod | undefined {
-  return value === "month" || value === "year" || value === "all" ? value : undefined;
+  return value === "month" || value === "year" || value === "custom" || value === "all" ? value : undefined;
+}
+
+function parseDateOnly(value: string | null): string | undefined {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
 }
 
 function parseIndicatorScope(value: string | null): IndicatorScope | undefined {

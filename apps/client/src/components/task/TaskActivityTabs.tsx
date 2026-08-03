@@ -1,12 +1,11 @@
 import { format } from "date-fns";
 import { History, MessageSquare, Pencil, Trash2, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Role, type Comment, type TaskActivity, type User } from "shared";
 import { canManageTasks } from "../../lib/permissions";
 import type { MentionContext } from "../../lib/mentionUtils";
 import { useDeleteComment, useUpdateComment } from "../../hooks/useComments";
 import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
-import type { PendingCommentFile } from "../shared/CommentEditor";
 import { classifyFile, getFileRejectionMessage, isImageMimeType } from "../../lib/attachmentUtils";
 import { toast } from "sonner";
 import { Avatar } from "../shared/Avatar";
@@ -15,7 +14,7 @@ import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { AttachmentPreview } from "../shared/AttachmentPreview";
 import { MarkdownComment } from "./MarkdownComment";
-import { TaskCommentEditor } from "./TaskCommentEditor";
+import { TaskCommentEditor, type CommentEditorHandle, type PendingCommentFile } from "./TaskCommentEditor";
 import { TaskHistoryList } from "./TaskHistoryList";
 
 export type TaskActivityTab = "comments" | "history";
@@ -136,6 +135,7 @@ function CommentItem({
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(comment.content);
   const [pendingEditFiles, setPendingEditFiles] = useState<PendingCommentFile[]>([]);
+  const editorRef = useRef<CommentEditorHandle | null>(null);
   const updateComment = useUpdateComment(comment.taskId);
   const deleteComment = useDeleteComment(comment.taskId);
   const uploadCommentAttachments = useUploadCommentAttachments(comment.taskId);
@@ -144,7 +144,7 @@ function CommentItem({
   const documentAttachments = (comment.attachments ?? []).filter((attachment) => !isImageMimeType(attachment.mimeType));
 
   async function saveComment() {
-    const content = draft.trim();
+    const content = editorRef.current?.getSubmitContent().trim() ?? draft.trim();
 
     if (!content) {
       return;
@@ -239,6 +239,7 @@ function CommentItem({
               </div>
             ) : null}
             <TaskCommentEditor
+              ref={editorRef}
               value={draft}
               onChange={setDraft}
               onSubmit={() => void saveComment()}

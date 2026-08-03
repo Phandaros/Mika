@@ -26,6 +26,21 @@ describe("indicatorLinks", () => {
     expect(url).toBe("/search?type=tasks&completion=completed&source=indicators&indicatorMetric=onTimeDeliveries&indicatorPeriod=month&indicatorScope=civil&deliveryStatus=EARLY&deliveryStatus=ON_TIME");
   });
 
+  it("preserves a custom date range in drill-down links", () => {
+    const url = taskIndicatorLink({
+      period: "custom",
+      from: "2026-03-12",
+      to: "2026-04-02",
+      scope: "electrical",
+      completion: "completed",
+      metric: "lateDeliveries"
+    });
+
+    expect(url).toContain("indicatorPeriod=custom");
+    expect(url).toContain("indicatorFrom=2026-03-12");
+    expect(url).toContain("indicatorTo=2026-04-02");
+  });
+
   it("links portfolio indicators to project filters", () => {
     const url = projectIndicatorLink({
       period: "all",

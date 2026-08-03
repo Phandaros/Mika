@@ -6,6 +6,8 @@ export interface IndicatorsQuery {
   period: IndicatorPeriod;
   scope: IndicatorScope;
   portfolioYear: IndicatorPortfolioYear;
+  from?: string;
+  to?: string;
 }
 
 export function useIndicators(query: IndicatorsQuery) {

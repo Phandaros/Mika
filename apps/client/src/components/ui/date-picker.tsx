@@ -27,6 +27,7 @@ interface DatePickerProps {
   onValueChange?: (value: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
+  clearable?: boolean;
   className?: string;
   triggerClassName?: string;
   open?: boolean;
@@ -40,6 +41,7 @@ export function DatePicker({
   onValueChange,
   placeholder = "Selecionar data",
   disabled,
+  clearable = true,
   className,
   triggerClassName,
   open,
@@ -80,7 +82,7 @@ export function DatePicker({
           selectedDate={selectedDate}
           onSelect={(date) => changeValue(localDateToDateOnly(date))}
         />
-        {selectedDate ? (
+        {selectedDate && clearable ? (
           <div className="border-t border-border p-2">
             <Button variant="ghost" className="h-8 w-full" onClick={() => changeValue(null)}>
               Limpar

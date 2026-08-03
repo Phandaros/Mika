@@ -1,3 +1,5 @@
+import { endOfMonth, endOfYear, format, startOfMonth, startOfYear } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useCallback, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -24,7 +26,6 @@ import type {
   IndicatorPortfolioYear,
   IndicatorPortfolioSection,
   IndicatorScope,
-  IndicatorStatusPoint,
   IndicatorTasksSection,
   IndicatorTeamSection,
   IndicatorUserPoint,
@@ -33,21 +34,36 @@ import type {
 import { DeliveryStatus, TaskStatus } from "shared";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "../components/ui/chart";
 import { Button } from "../components/ui/button";
+import { DatePicker } from "../components/ui/date-picker";
 import { EmptyState } from "../components/shared/EmptyState";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { useIndicators } from "../hooks/useIndicators";
-import { cn } from "../lib/utils";
+import { cn, dateOnlyToLocalDate, localDateToDateOnly } from "../lib/utils";
 import { projectIndicatorLink, taskIndicatorLink, workloadIndicatorLink } from "../lib/indicatorLinks";
 
 type IndicatorTab = "tasks" | "portfolio" | "team";
+type IndicatorRange = { from: string | null; to: string | null };
 
 const periodOptions: Array<{ value: IndicatorPeriod; label: string }> = [
-  { value: "month", label: "Mês atual" },
-  { value: "year", label: "Ano atual" },
-  { value: "all", label: "Todos os tempos" }
+  { value: "month", label: "Mensal" },
+  { value: "year", label: "Anual" },
+  { value: "all", label: "Todo o período" },
+  { value: "custom", label: "Personalizado" }
 ];
+
+const monthOptions = Array.from({ length: 12 }, (_, index) => {
+  const date = new Date(2026, index, 1);
+  const label = format(date, "MMMM", { locale: ptBR });
+  return { value: String(index + 1).padStart(2, "0"), label: `${label.charAt(0).toUpperCase()}${label.slice(1)}` };
+});
+
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: currentYear - 1999 + 5 }, (_, index) => String(currentYear + 5 - index)).map((year) => ({
+  value: year,
+  label: year
+}));
 
 const scopeOptions: Array<{ value: IndicatorScope; label: string }> = [
   { value: "general", label: "Geral" },
@@ -83,10 +99,17 @@ export function IndicatorsPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const period = parseIndicatorPeriod(searchParams.get("period"));
+  const periodRange = resolveIndicatorRange(period, searchParams.get("from"), searchParams.get("to"));
   const scope = parseIndicatorScope(searchParams.get("scope"));
   const portfolioYear = parsePortfolioYear(searchParams.get("portfolioYear"));
   const tab = parseIndicatorTab(searchParams.get("tab"));
-  const { data, isLoading, isError, refetch } = useIndicators({ period, scope, portfolioYear });
+  const { data, isLoading, isError, refetch } = useIndicators({
+    period,
+    scope,
+    portfolioYear,
+    from: periodRange.from ?? undefined,
+    to: periodRange.to ?? undefined
+  });
 
   const scopedLabel = scopeOptions.find((option) => option.value === scope)?.label ?? "Geral";
   const portfolioYearOptions = useMemo(
@@ -109,6 +132,16 @@ export function IndicatorsPage() {
     mutator(next);
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+  const updatePeriod = useCallback((nextPeriod: IndicatorPeriod) => {
+    const nextRange = defaultIndicatorRange(nextPeriod);
+    updateParams((next) => {
+      next.set("period", nextPeriod);
+      setRangeParams(next, nextRange.from, nextRange.to);
+    });
+  }, [updateParams]);
+  const updatePeriodRange = useCallback((from: string, to: string) => {
+    updateParams((next) => setRangeParams(next, from, to));
+  }, [updateParams]);
 
   useEffect(() => {
     if (isLoading || !data) {
@@ -131,10 +164,13 @@ export function IndicatorsPage() {
         <PageHeader
           tab={tab}
           period={period}
+          from={periodRange.from}
+          to={periodRange.to}
           scope={scope}
           portfolioYear={portfolioYear}
           portfolioYearOptions={portfolioYearOptions}
-          onPeriodChange={(value) => updateParams((next) => next.set("period", value))}
+          onPeriodChange={updatePeriod}
+          onPeriodRangeChange={updatePeriodRange}
           onScopeChange={(value) => updateParams((next) => next.set("scope", value))}
           onPortfolioYearChange={(value) => updateParams((next) => next.set("portfolioYear", value))}
         />
@@ -154,10 +190,13 @@ export function IndicatorsPage() {
       <PageHeader
         tab={tab}
         period={period}
+        from={periodRange.from}
+        to={periodRange.to}
         scope={scope}
         portfolioYear={portfolioYear}
-          portfolioYearOptions={portfolioYearOptions}
-        onPeriodChange={(value) => updateParams((next) => next.set("period", value))}
+        portfolioYearOptions={portfolioYearOptions}
+        onPeriodChange={updatePeriod}
+        onPeriodRangeChange={updatePeriodRange}
         onScopeChange={(value) => updateParams((next) => next.set("scope", value))}
         onPortfolioYearChange={(value) => updateParams((next) => next.set("portfolioYear", value))}
       />
@@ -173,7 +212,7 @@ export function IndicatorsPage() {
           {isLoading || !data ? (
             <IndicatorsSkeleton />
           ) : (
-            <TasksTab period={period} scope={scope} scopedLabel={scopedLabel} data={data.tasks} onNavigate={navigateFromIndicator} rememberScroll={rememberScroll} />
+            <TasksTab period={period} from={periodRange.from} to={periodRange.to} scope={scope} scopedLabel={scopedLabel} data={data.tasks} onNavigate={navigateFromIndicator} rememberScroll={rememberScroll} />
           )}
         </TabsContent>
 
@@ -189,7 +228,7 @@ export function IndicatorsPage() {
           {isLoading || !data ? (
             <IndicatorsSkeleton />
           ) : (
-            <TeamTab data={data.team} period={period} scope={scope} onNavigate={navigateFromIndicator} rememberScroll={rememberScroll} />
+            <TeamTab data={data.team} period={period} from={periodRange.from} to={periodRange.to} scope={scope} onNavigate={navigateFromIndicator} rememberScroll={rememberScroll} />
           )}
         </TabsContent>
       </Tabs>
@@ -200,19 +239,25 @@ export function IndicatorsPage() {
 function PageHeader({
   tab,
   period,
+  from,
+  to,
   scope,
   portfolioYear,
   portfolioYearOptions,
   onPeriodChange,
+  onPeriodRangeChange,
   onScopeChange,
   onPortfolioYearChange
 }: {
   tab: IndicatorTab;
   period: IndicatorPeriod;
+  from: string | null;
+  to: string | null;
   scope: IndicatorScope;
   portfolioYear: IndicatorPortfolioYear;
   portfolioYearOptions: Array<{ value: string; label: string }>;
   onPeriodChange: (period: IndicatorPeriod) => void;
+  onPeriodRangeChange: (from: string, to: string) => void;
   onScopeChange: (scope: IndicatorScope) => void;
   onPortfolioYearChange: (year: IndicatorPortfolioYear) => void;
 }) {
@@ -226,7 +271,7 @@ function PageHeader({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:flex xl:items-end">
         {tab === "portfolio" ? (
           <FilterSelect
             label="Ano da carteira"
@@ -242,6 +287,44 @@ function PageHeader({
               options={periodOptions}
               onChange={(value) => onPeriodChange(value as IndicatorPeriod)}
             />
+            {period === "month" && from && to ? (
+              <>
+                <FilterSelect
+                  label="Mês"
+                  value={from.slice(5, 7)}
+                  options={monthOptions}
+                  onChange={(value) => onPeriodRangeChange(monthRange(from.slice(0, 4), value).from, monthRange(from.slice(0, 4), value).to)}
+                />
+                <FilterSelect
+                  label="Ano"
+                  value={from.slice(0, 4)}
+                  options={yearOptions}
+                  onChange={(value) => onPeriodRangeChange(monthRange(value, from.slice(5, 7)).from, monthRange(value, from.slice(5, 7)).to)}
+                />
+              </>
+            ) : null}
+            {period === "year" && from && to ? (
+              <FilterSelect
+                label="Ano"
+                value={from.slice(0, 4)}
+                options={yearOptions}
+                onChange={(value) => onPeriodRangeChange(yearRange(value).from, yearRange(value).to)}
+              />
+            ) : null}
+            {period === "custom" && from && to ? (
+              <>
+                <DateFilter
+                  label="Data inicial"
+                  value={from}
+                  onChange={(value) => onPeriodRangeChange(value, value > to ? value : to)}
+                />
+                <DateFilter
+                  label="Data final"
+                  value={to}
+                  onChange={(value) => onPeriodRangeChange(value < from ? value : from, value)}
+                />
+              </>
+            ) : null}
             <FilterSelect
               label="Escopo das tarefas"
               value={scope}
@@ -287,8 +370,28 @@ function FilterSelect({
   );
 }
 
+function DateFilter({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="grid min-w-44 gap-1.5">
+      <span className="text-[12px] font-medium text-[--color-text-secondary]">{label}</span>
+      <DatePicker
+        value={value}
+        clearable={false}
+        onChange={(nextValue) => {
+          if (nextValue) {
+            onChange(nextValue);
+          }
+        }}
+        className="h-9 min-w-44 justify-between bg-[--bg-3] px-3 text-[13px]"
+      />
+    </label>
+  );
+}
+
 function TasksTab({
   period,
+  from,
+  to,
   scope,
   scopedLabel,
   data,
@@ -296,6 +399,8 @@ function TasksTab({
   rememberScroll
 }: {
   period: IndicatorPeriod;
+  from: string | null;
+  to: string | null;
   scope: IndicatorScope;
   scopedLabel: string;
   data: IndicatorTasksSection;
@@ -318,14 +423,14 @@ function TasksTab({
           label="Entregues no prazo"
           value={data.kpis.onTimeDeliveries}
           icon={<CheckCircle2 size={16} />}
-          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "onTimeDeliveries", deliveryStatus: [DeliveryStatus.EARLY, DeliveryStatus.ON_TIME] })}
+          to={taskIndicatorLink({ period, from, to, scope, completion: "completed", metric: "onTimeDeliveries", deliveryStatus: [DeliveryStatus.EARLY, DeliveryStatus.ON_TIME] })}
           onNavigate={rememberScroll}
         />
         <MetricCard
           label="Concluídas"
           value={data.kpis.completedTasks}
           icon={<CheckCircle2 size={16} />}
-          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "completedTasks" })}
+          to={taskIndicatorLink({ period, from, to, scope, completion: "completed", metric: "completedTasks" })}
           onNavigate={rememberScroll}
         />
         <MetricCard
@@ -333,7 +438,7 @@ function TasksTab({
           value={data.kpis.lateDeliveries}
           icon={<AlertTriangle size={16} />}
           tone="danger"
-          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "lateDeliveries", deliveryStatus: DeliveryStatus.LATE })}
+          to={taskIndicatorLink({ period, from, to, scope, completion: "completed", metric: "lateDeliveries", deliveryStatus: DeliveryStatus.LATE })}
           onNavigate={rememberScroll}
         />
         <MetricCard
@@ -342,7 +447,7 @@ function TasksTab({
           icon={<BarChart3 size={16} />}
           helper={`${data.kpis.onTimeRate}% no prazo entre classificadas`}
           tone="muted"
-          to={taskIndicatorLink({ period, scope, completion: "completed", metric: "unclassifiedDeliveries", deliveryStatus: DeliveryStatus.UNCLASSIFIED })}
+          to={taskIndicatorLink({ period, from, to, scope, completion: "completed", metric: "unclassifiedDeliveries", deliveryStatus: DeliveryStatus.UNCLASSIFIED })}
           onNavigate={rememberScroll}
         />
       </div>
@@ -358,9 +463,9 @@ function TasksTab({
                 <XAxis dataKey="initials" tickLine={false} axisLine={false} />
                 <YAxis tickLine={false} axisLine={false} width={34} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="onTimeDeliveries" stackId="tasks" fill="var(--status-done-text)" radius={[0, 0, 4, 4]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "onTimeDeliveries", onNavigate)} />
-                <Bar dataKey="lateDeliveries" stackId="tasks" fill="var(--status-late-text)" isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "lateDeliveries", onNavigate)} />
-                <Bar dataKey="unclassifiedDeliveries" stackId="tasks" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, scope, "unclassifiedDeliveries", onNavigate)} />
+                <Bar dataKey="onTimeDeliveries" stackId="tasks" fill="var(--status-done-text)" radius={[0, 0, 4, 4]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "onTimeDeliveries", onNavigate)} />
+                <Bar dataKey="lateDeliveries" stackId="tasks" fill="var(--status-late-text)" isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "lateDeliveries", onNavigate)} />
+                <Bar dataKey="unclassifiedDeliveries" stackId="tasks" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "unclassifiedDeliveries", onNavigate)} />
               </BarChart>
             </ChartContainer>
           )}
@@ -371,7 +476,7 @@ function TasksTab({
             <EmptyState title="Sem entregas para classificar" />
           ) : (
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px] xl:grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_170px]">
-              <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, deliveryData, (point) => openDeliveryStatus(point, period, scope, onNavigate))}>
+              <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, deliveryData, (point) => openDeliveryStatus(point, period, from, to, scope, onNavigate))}>
                 <ChartContainer config={valueChartConfig} className="h-[260px] w-full aspect-auto [&_.recharts-pie-sector]:cursor-pointer">
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
@@ -385,7 +490,7 @@ function TasksTab({
               </div>
               <LegendList
                 items={deliveryData.map((item) => ({ key: item.key, label: item.label, value: item.value, color: item.fill }))}
-                linkFor={(item) => deliveryStatusLink(item.key as DeliveryStatus, period, scope)}
+                linkFor={(item) => deliveryStatusLink(item.key as DeliveryStatus, period, from, to, scope)}
                 onNavigate={rememberScroll}
               />
             </div>
@@ -397,7 +502,7 @@ function TasksTab({
         {data.lateByUser.length === 0 ? (
           <EmptyState title="Nenhuma entrega em atraso no recorte atual" />
         ) : (
-          <UserRanking rows={data.lateByUser} period={period} scope={scope} mode="late" rememberScroll={rememberScroll} />
+          <UserRanking rows={data.lateByUser} period={period} from={from} to={to} scope={scope} mode="late" rememberScroll={rememberScroll} />
         )}
       </ChartPanel>
 
@@ -406,7 +511,7 @@ function TasksTab({
           <EmptyState title="Sem status para mostrar" />
         ) : (
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
-            <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, statusData, (point) => openTaskStatus(point, period, scope, onNavigate))}>
+            <div className="cursor-pointer" onClick={(event) => openPieSegmentFromClick(event, statusData, (point) => openTaskStatus(point, period, from, to, scope, onNavigate))}>
               <ChartContainer config={valueChartConfig} className="h-[240px] w-full aspect-auto [&_.recharts-pie-sector]:cursor-pointer">
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
@@ -420,7 +525,7 @@ function TasksTab({
             </div>
             <LegendList
               items={statusData.map((item) => ({ key: item.status, label: item.label, value: item.value, color: item.fill }))}
-              linkFor={(item) => taskIndicatorLink({ period, scope, status: item.key as TaskStatus, completion: "all", metric: metricForTaskStatus(item.key as TaskStatus) })}
+              linkFor={(item) => taskIndicatorLink({ period, from, to, scope, status: item.key as TaskStatus, completion: "all", metric: metricForTaskStatus(item.key as TaskStatus) })}
               onNavigate={rememberScroll}
             />
           </div>
@@ -543,12 +648,16 @@ function PortfolioTab({
 function TeamTab({
   data,
   period,
+  from,
+  to,
   scope,
   onNavigate,
   rememberScroll
 }: {
   data: IndicatorTeamSection;
   period: IndicatorPeriod;
+  from: string | null;
+  to: string | null;
   scope: IndicatorScope;
   onNavigate: (to: string) => void;
   rememberScroll: () => void;
@@ -594,7 +703,7 @@ function TeamTab({
         {data.byUser.length === 0 ? (
           <EmptyState title="Sem tarefas para ranquear" />
         ) : (
-          <UserRanking rows={data.byUser} period={period} scope={scope} mode="team" rememberScroll={rememberScroll} />
+          <UserRanking rows={data.byUser} period={period} from={from} to={to} scope={scope} mode="team" rememberScroll={rememberScroll} />
         )}
       </ChartPanel>
     </>
@@ -651,12 +760,16 @@ function MetricCard({
 function UserRanking({
   rows,
   period,
+  from,
+  to,
   scope,
   mode,
   rememberScroll
 }: {
   rows: IndicatorUserPoint[];
   period: IndicatorPeriod;
+  from: string | null;
+  to: string | null;
   scope: IndicatorScope;
   mode: "late" | "team";
   rememberScroll: () => void;
@@ -676,6 +789,8 @@ function UserRanking({
             key={row.userId ?? "unassigned"}
             to={taskIndicatorLink({
               period,
+              from,
+              to,
               scope,
               assigneeId: row.userId,
               completion: "completed",
@@ -818,7 +933,83 @@ function parseIndicatorTab(value: string | null): IndicatorTab {
 }
 
 function parseIndicatorPeriod(value: string | null): IndicatorPeriod {
-  return value === "year" || value === "all" || value === "month" ? value : "month";
+  return value === "year" || value === "custom" || value === "all" || value === "month" ? value : "month";
+}
+
+function resolveIndicatorRange(period: IndicatorPeriod, from: string | null, to: string | null): IndicatorRange {
+  if (period === "all") {
+    return { from: null, to: null };
+  }
+
+  const validFrom = parseDateOnly(from);
+  const validTo = parseDateOnly(to);
+  if (period === "custom") {
+    if (validFrom && validTo) {
+      return validFrom <= validTo ? { from: validFrom, to: validTo } : { from: validTo, to: validFrom };
+    }
+
+    return defaultIndicatorRange("custom");
+  }
+
+  const reference = dateOnlyToLocalDate(validFrom) ?? new Date();
+  if (period === "year") {
+    return rangeFromDates(startOfYear(reference), endOfYear(reference));
+  }
+
+  return rangeFromDates(startOfMonth(reference), endOfMonth(reference));
+}
+
+function defaultIndicatorRange(period: IndicatorPeriod): IndicatorRange {
+  const today = new Date();
+  if (period === "all") {
+    return { from: null, to: null };
+  }
+
+  if (period === "custom") {
+    return rangeFromDates(startOfMonth(today), today);
+  }
+
+  if (period === "year") {
+    return rangeFromDates(startOfYear(today), endOfYear(today));
+  }
+
+  return rangeFromDates(startOfMonth(today), endOfMonth(today));
+}
+
+function monthRange(year: string, month: string): { from: string; to: string } {
+  const reference = new Date(Number(year), Number(month) - 1, 1);
+  return rangeFromDates(startOfMonth(reference), endOfMonth(reference));
+}
+
+function yearRange(year: string): { from: string; to: string } {
+  const reference = new Date(Number(year), 0, 1);
+  return rangeFromDates(startOfYear(reference), endOfYear(reference));
+}
+
+function rangeFromDates(from: Date, to: Date): { from: string; to: string } {
+  const normalizedFrom = localDateToDateOnly(from);
+  const normalizedTo = localDateToDateOnly(to);
+  if (!normalizedFrom || !normalizedTo) {
+    throw new Error("Não foi possível normalizar o período dos indicadores");
+  }
+
+  return { from: normalizedFrom, to: normalizedTo };
+}
+
+function parseDateOnly(value: string | null): string | null {
+  const date = value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? dateOnlyToLocalDate(value) : null;
+  return date && localDateToDateOnly(date) === value ? value : null;
+}
+
+function setRangeParams(searchParams: URLSearchParams, from: string | null, to: string | null) {
+  if (from && to) {
+    searchParams.set("from", from);
+    searchParams.set("to", to);
+    return;
+  }
+
+  searchParams.delete("from");
+  searchParams.delete("to");
 }
 
 function parseIndicatorScope(value: string | null): IndicatorScope {
@@ -832,6 +1023,8 @@ function parsePortfolioYear(value: string | null): IndicatorPortfolioYear {
 function openUserTaskMetric(
   payload: unknown,
   period: IndicatorPeriod,
+  from: string | null,
+  to: string | null,
   scope: IndicatorScope,
   metric: AdvancedSearchIndicatorMetric,
   onNavigate: (to: string) => void
@@ -843,6 +1036,8 @@ function openUserTaskMetric(
   const userId = typeof payload.userId === "string" ? payload.userId : null;
   onNavigate(taskIndicatorLink({
     period,
+    from,
+    to,
     scope,
     assigneeId: userId,
     completion: metric === "openTasks" ? "open" : metric === "allTasks" ? "all" : "completed",
@@ -856,6 +1051,8 @@ function openUserTaskMetric(
 function openDeliveryStatus(
   payload: unknown,
   period: IndicatorPeriod,
+  from: string | null,
+  to: string | null,
   scope: IndicatorScope,
   onNavigate: (to: string) => void
 ) {
@@ -864,12 +1061,20 @@ function openDeliveryStatus(
     return;
   }
 
-  onNavigate(deliveryStatusLink(point.key as DeliveryStatus, period, scope));
+  onNavigate(deliveryStatusLink(point.key as DeliveryStatus, period, from, to, scope));
 }
 
-function deliveryStatusLink(status: DeliveryStatus, period: IndicatorPeriod, scope: IndicatorScope): string {
+function deliveryStatusLink(
+  status: DeliveryStatus,
+  period: IndicatorPeriod,
+  from: string | null,
+  to: string | null,
+  scope: IndicatorScope
+): string {
   return taskIndicatorLink({
     period,
+    from,
+    to,
     scope,
     completion: "completed",
     deliveryStatus: status,
@@ -884,6 +1089,8 @@ function deliveryStatusLink(status: DeliveryStatus, period: IndicatorPeriod, sco
 function openTaskStatus(
   payload: unknown,
   period: IndicatorPeriod,
+  from: string | null,
+  to: string | null,
   scope: IndicatorScope,
   onNavigate: (to: string) => void
 ) {
@@ -895,6 +1102,8 @@ function openTaskStatus(
   const status = point.status as TaskStatus;
   onNavigate(taskIndicatorLink({
     period,
+    from,
+    to,
     scope,
     status,
     completion: "all",

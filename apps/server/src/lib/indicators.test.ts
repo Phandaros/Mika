@@ -12,7 +12,7 @@ const prismaMock = vi.hoisted(() => ({
 
 vi.mock("./prisma.js", () => ({ prisma: prismaMock }));
 
-import { buildIndicators, normalizeIndicatorPeriod, normalizeIndicatorScope } from "./indicators.js";
+import { buildIndicators, normalizeIndicatorPeriod, normalizeIndicatorScope, periodWindow } from "./indicators.js";
 
 type TestMembership = ReturnType<typeof membership>;
 
@@ -52,7 +52,26 @@ type TestProjectRecord = {
 describe("indicator filters", () => {
   it("normalizes unknown period and scope to the default dashboard view", () => {
     expect(normalizeIndicatorPeriod("invalid")).toBe("month");
+    expect(normalizeIndicatorPeriod("custom")).toBe("custom");
     expect(normalizeIndicatorScope("invalid")).toBe("general");
+  });
+
+  it("builds selected monthly, annual and custom windows", () => {
+    expect(periodWindow("month", "2025-02-14")).toMatchObject({
+      from: "2025-02-01",
+      to: "2025-02-28",
+      label: "Fevereiro de 2025"
+    });
+    expect(periodWindow("year", "2024-06-10")).toMatchObject({
+      from: "2024-01-01",
+      to: "2024-12-31",
+      label: "2024"
+    });
+    expect(periodWindow("custom", "2026-03-12", "2026-04-02")).toMatchObject({
+      from: "2026-03-12",
+      to: "2026-04-02",
+      label: "12/03/2026 a 02/04/2026"
+    });
   });
 });
 
@@ -121,6 +140,23 @@ describe("buildIndicators", () => {
           gte: expect.any(Date),
           lte: expect.any(Date)
         })
+      })
+    }));
+  });
+
+  it("uses the selected custom dates in the task query", async () => {
+    prismaMock.task.findMany.mockResolvedValue([]);
+    prismaMock.project.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    const data = await buildIndicators("custom", "general", "all", "2026-02-10", "2026-02-18");
+
+    expect(data).toMatchObject({ periodFrom: "2026-02-10", periodTo: "2026-02-18" });
+    expect(prismaMock.task.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        completedAtAsana: {
+          gte: new Date(2026, 1, 10, 0, 0, 0, 0),
+          lte: new Date(2026, 1, 18, 23, 59, 59, 999)
+        }
       })
     }));
   });

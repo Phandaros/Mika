@@ -1,5 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.js";
-import { endOfMonth, endOfYear, format, startOfMonth, startOfYear } from "date-fns";
+import { endOfDay, endOfMonth, endOfYear, format, isValid, parseISO, startOfDay, startOfMonth, startOfYear } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 import type {
   IndicatorPeriod,
   IndicatorPortfolioYear,
@@ -94,7 +95,16 @@ const projectInclude = {
 type IndicatorProjectRecord = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 
 export function normalizeIndicatorPeriod(value: unknown): IndicatorPeriod {
-  return value === "year" || value === "all" || value === "month" ? value : "month";
+  return value === "year" || value === "custom" || value === "all" || value === "month" ? value : "month";
+}
+
+export function normalizeIndicatorDate(value: unknown): string | undefined {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return undefined;
+  }
+
+  const date = parseISO(value);
+  return isValid(date) && format(date, "yyyy-MM-dd") === value ? value : undefined;
 }
 
 export function normalizeIndicatorScope(value: unknown): IndicatorScope {
@@ -112,16 +122,18 @@ export function normalizeIndicatorPortfolioYear(value: unknown): IndicatorPortfo
 export async function buildIndicators(
   period: IndicatorPeriod,
   scope: IndicatorScope,
-  portfolioYear: IndicatorPortfolioYear = "all"
+  portfolioYear: IndicatorPortfolioYear = "all",
+  from?: string,
+  to?: string
 ): Promise<IndicatorsResponse> {
-  const window = periodWindow(period);
+  const window = periodWindow(period, from, to);
   const [tasks, projects, portfolioYearRows] = await Promise.all([
     prisma.task.findMany({
       where: {
         ...activeTaskWhere(),
         parentId: null,
         ...excludeBacklogWhere(),
-        ...indicatorTaskPeriodWhere(period)
+        ...indicatorTaskPeriodWhere(period, window.from ?? undefined, window.to ?? undefined)
       },
       include: taskInclude
     }),
@@ -138,6 +150,8 @@ export async function buildIndicators(
 
   return {
     period,
+    periodFrom: window.from,
+    periodTo: window.to,
     scope,
     portfolioYear,
     availablePortfolioYears: availablePortfolioYears(portfolioYearRows),
@@ -152,25 +166,47 @@ export async function buildIndicators(
   };
 }
 
-function periodWindow(period: IndicatorPeriod, today = new Date()): PeriodWindow {
+export function periodWindow(period: IndicatorPeriod, from?: string, to?: string, today = new Date()): PeriodWindow {
   if (period === "all") {
-    return { from: null, to: null, fromDate: null, toDate: null, label: "Todos os tempos" };
+    return { from: null, to: null, fromDate: null, toDate: null, label: "Todo o período" };
   }
 
-  const fromDate = period === "year" ? startOfYear(today) : startOfMonth(today);
-  const toDate = period === "year" ? endOfYear(today) : endOfMonth(today);
+  if (period === "custom") {
+    const normalizedFrom = normalizeIndicatorDate(from);
+    const normalizedTo = normalizeIndicatorDate(to);
+    const parsedFrom = normalizedFrom ? parseISO(normalizedFrom) : startOfMonth(today);
+    const parsedTo = normalizedTo ? parseISO(normalizedTo) : today;
+    const firstDate = parsedFrom <= parsedTo ? parsedFrom : parsedTo;
+    const lastDate = parsedFrom <= parsedTo ? parsedTo : parsedFrom;
+    const fromDate = startOfDay(firstDate);
+    const toDate = endOfDay(lastDate);
+
+    return {
+      from: format(fromDate, "yyyy-MM-dd"),
+      to: format(toDate, "yyyy-MM-dd"),
+      fromDate,
+      toDate,
+      label: `${format(fromDate, "dd/MM/yyyy")} a ${format(toDate, "dd/MM/yyyy")}`
+    };
+  }
+
+  const normalizedFrom = normalizeIndicatorDate(from);
+  const referenceDate = normalizedFrom ? parseISO(normalizedFrom) : today;
+  const fromDate = period === "year" ? startOfYear(referenceDate) : startOfMonth(referenceDate);
+  const toDate = period === "year" ? endOfYear(referenceDate) : endOfMonth(referenceDate);
+  const monthLabel = format(fromDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   return {
     from: format(fromDate, "yyyy-MM-dd"),
     to: format(toDate, "yyyy-MM-dd"),
     fromDate,
     toDate,
-    label: period === "year" ? "Ano atual" : "Mês atual"
+    label: period === "year" ? format(fromDate, "yyyy") : `${monthLabel.charAt(0).toUpperCase()}${monthLabel.slice(1)}`
   };
 }
 
-export function indicatorTaskPeriodWhere(period: IndicatorPeriod): Prisma.TaskWhereInput {
-  const window = periodWindow(period);
+export function indicatorTaskPeriodWhere(period: IndicatorPeriod, from?: string, to?: string): Prisma.TaskWhereInput {
+  const window = periodWindow(period, from, to);
 
   if (!window.from || !window.to || !window.fromDate || !window.toDate) {
     return {};
@@ -239,7 +275,9 @@ export function indicatorTaskMatchesMetric(
     conclusionDays?: number | null;
   },
   metric: "openTasks" | "completedTasks" | "overdueTasks" | "dueTasks" | "allTasks" | "onTimeDeliveries" | "lateDeliveries" | "unclassifiedDeliveries",
-  period: IndicatorPeriod
+  period: IndicatorPeriod,
+  from?: string,
+  to?: string
 ): boolean {
   if (metric === "allTasks") {
     return true;
@@ -282,7 +320,7 @@ export function indicatorTaskMatchesMetric(
     }) === TaskStatus.OVERDUE;
   }
 
-  return dateInWindow(taskDueDate(task), periodWindow(period));
+  return dateInWindow(taskDueDate(task), periodWindow(period, from, to));
 }
 
 function buildTasksSection(tasks: IndicatorTaskRecord[]) {

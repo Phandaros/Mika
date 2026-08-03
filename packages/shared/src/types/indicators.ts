@@ -1,6 +1,6 @@
 import type { DeliveryStatus, TaskStatus } from "./enums.js";
 
-export type IndicatorPeriod = "month" | "year" | "all";
+export type IndicatorPeriod = "month" | "year" | "custom" | "all";
 export type IndicatorScope = "general" | "civil" | "electrical";
 export type IndicatorPortfolioYear = "all" | `${number}`;
 
@@ -82,6 +82,8 @@ export interface IndicatorTeamSection {
 
 export interface IndicatorsResponse {
   period: IndicatorPeriod;
+  periodFrom: string | null;
+  periodTo: string | null;
   scope: IndicatorScope;
   portfolioYear: IndicatorPortfolioYear;
   availablePortfolioYears: string[];

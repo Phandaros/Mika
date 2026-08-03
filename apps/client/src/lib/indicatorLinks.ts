@@ -3,6 +3,8 @@ import { DeliveryStatus, TaskStatus } from "shared";
 
 export function taskIndicatorLink(input: {
   period: IndicatorPeriod;
+  from?: string | null;
+  to?: string | null;
   scope: IndicatorScope;
   metric?: AdvancedSearchIndicatorMetric;
   status?: TaskStatus;
@@ -17,6 +19,14 @@ export function taskIndicatorLink(input: {
   params.set("indicatorMetric", input.metric ?? metricFromInput(input));
   params.set("indicatorPeriod", input.period);
   params.set("indicatorScope", input.scope);
+
+  if (input.from) {
+    params.set("indicatorFrom", input.from);
+  }
+
+  if (input.to) {
+    params.set("indicatorTo", input.to);
+  }
 
   if (input.status) {
     params.append("status", input.status);

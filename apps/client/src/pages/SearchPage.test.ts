@@ -25,4 +25,16 @@ describe("search page filters", () => {
       indicatorScope: "civil"
     });
   });
+
+  it("parses custom indicator ranges", () => {
+    const filters = parseSearchFilters(new URLSearchParams(
+      "source=indicators&indicatorMetric=completedTasks&indicatorPeriod=custom&indicatorScope=general&indicatorFrom=2026-03-12&indicatorTo=2026-04-02"
+    ));
+
+    expect(filters).toMatchObject({
+      indicatorPeriod: "custom",
+      indicatorFrom: "2026-03-12",
+      indicatorTo: "2026-04-02"
+    });
+  });
 });

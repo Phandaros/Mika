@@ -27,6 +27,8 @@ export interface AdvancedSearchFilters {
   indicatorMetric?: AdvancedSearchIndicatorMetric;
   indicatorPeriod?: IndicatorPeriod;
   indicatorScope?: IndicatorScope;
+  indicatorFrom?: string;
+  indicatorTo?: string;
 }
 
 const EMPTY_PAGE = {
@@ -65,7 +67,9 @@ export function useAdvancedSearch(filters: AdvancedSearchFilters) {
           source: filters.source,
           indicatorMetric: filters.indicatorMetric,
           indicatorPeriod: filters.indicatorPeriod,
-          indicatorScope: filters.indicatorScope
+          indicatorScope: filters.indicatorScope,
+          indicatorFrom: filters.indicatorFrom,
+          indicatorTo: filters.indicatorTo
         },
         paramsSerializer: {
           indexes: null
