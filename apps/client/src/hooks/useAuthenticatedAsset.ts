@@ -1,27 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
-import { getApiBaseUrl } from "../lib/runtimeConfig";
-
-function resolveAssetRequestUrl(src: string): string | null {
-  if (!src) {
-    return null;
-  }
-
-  if (src.startsWith("http://") || src.startsWith("https://")) {
-    const apiBase = getApiBaseUrl();
-    if (src.startsWith(apiBase)) {
-      return src.slice(apiBase.length);
-    }
-
-    return null;
-  }
-
-  if (src.startsWith("/api/v1/")) {
-    return src.slice("/api/v1".length);
-  }
-
-  return null;
-}
+import { authenticatedAssetRequestPath } from "../lib/attachmentUtils";
 
 export function useAuthenticatedAsset(src: string | undefined): {
   blobUrl: string | null;
@@ -33,7 +12,7 @@ export function useAuthenticatedAsset(src: string | undefined): {
   const [loading, setLoading] = useState(Boolean(src));
 
   useEffect(() => {
-    const requestPath = src ? resolveAssetRequestUrl(src) : null;
+    const requestPath = src ? authenticatedAssetRequestPath(src) : null;
 
     if (!requestPath) {
       setBlobUrl(null);
@@ -81,7 +60,7 @@ export function useAuthenticatedAsset(src: string | undefined): {
 }
 
 export async function openAuthenticatedAsset(src: string): Promise<void> {
-  const requestPath = resolveAssetRequestUrl(src);
+  const requestPath = authenticatedAssetRequestPath(src);
 
   if (!requestPath) {
     window.open(src, "_blank", "noopener,noreferrer");
@@ -95,7 +74,7 @@ export async function openAuthenticatedAsset(src: string): Promise<void> {
 }
 
 export async function downloadAuthenticatedAsset(src: string, filename: string): Promise<void> {
-  const requestPath = resolveAssetRequestUrl(src);
+  const requestPath = authenticatedAssetRequestPath(src);
 
   if (!requestPath) {
     const externalLink = document.createElement("a");

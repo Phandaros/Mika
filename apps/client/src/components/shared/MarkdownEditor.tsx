@@ -52,8 +52,8 @@ import {
   formatFileSize,
   getFileRejectionMessage,
   IMAGE_ACCEPT,
+  normalizeAuthenticatedAssetUrl,
   resolveCommentMarkdownForSubmit,
-  toAbsoluteApiUrl
 } from "../../lib/attachmentUtils";
 import { logCommentImageDebug } from "../../lib/commentImageDebug";
 import { cn, createUploadId } from "../../lib/utils";
@@ -334,7 +334,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       try {
         const result = await uploadInlineImage.mutateAsync(file);
-        const imageUrl = toAbsoluteApiUrl(result.url);
+        const imageUrl = normalizeAuthenticatedAssetUrl(result.url);
+
+        if (!imageUrl) {
+          throw new Error("O servidor retornou uma URL de imagem inválida");
+        }
+
         blobToApiUrlRef.current.set(blobUrl, imageUrl);
 
         logCommentImageDebug("handleImageFile:upload-ok", { id: result.id, imageUrl, blobUrl });

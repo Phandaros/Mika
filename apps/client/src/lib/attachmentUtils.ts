@@ -110,13 +110,33 @@ export function attachmentDownloadUrl(attachmentId: string): string {
   return `${getApiBaseUrl()}/attachments/${attachmentId}/download`;
 }
 
-export function toAbsoluteApiUrl(relativePath: string): string {
-  if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
-    return relativePath;
+const AUTHENTICATED_ASSET_PATH_PATTERN = /^\/api\/v1\/attachments\/[^/?#]+\/(?:file|download)\/?$/;
+
+export function normalizeAuthenticatedAssetUrl(src: string): string | null {
+  let pathname: string;
+
+  if (src.startsWith("/")) {
+    pathname = src;
+  } else {
+    try {
+      const parsedUrl = new URL(src);
+
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+        return null;
+      }
+
+      pathname = parsedUrl.pathname;
+    } catch {
+      return null;
+    }
   }
 
-  const origin = getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
-  return relativePath.startsWith("/") ? `${origin}${relativePath}` : `${origin}/${relativePath}`;
+  return AUTHENTICATED_ASSET_PATH_PATTERN.test(pathname) ? pathname : null;
+}
+
+export function authenticatedAssetRequestPath(src: string): string | null {
+  const normalizedUrl = normalizeAuthenticatedAssetUrl(src);
+  return normalizedUrl ? normalizedUrl.slice("/api/v1".length) : null;
 }
 
 export function formatFileSize(bytes: number): string {
