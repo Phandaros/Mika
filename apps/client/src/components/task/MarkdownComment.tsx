@@ -2,6 +2,7 @@ import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from "react-mar
 import { ImageOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedAsset, openAuthenticatedAsset } from "../../hooks/useAuthenticatedAsset";
+import { parseCommentImageSource } from "../../lib/attachmentUtils";
 import { normalizeMentionContentForRender, parseMentionHref, type MentionContext } from "../../lib/mentionUtils";
 import { cn } from "../../lib/utils";
 
@@ -21,20 +22,21 @@ interface MarkdownCommentProps {
 }
 
 function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
-  const { blobUrl, failed, loading } = useAuthenticatedAsset(src);
+  const parsedSource = parseCommentImageSource(src ?? "");
+  const { blobUrl, failed, loading } = useAuthenticatedAsset(parsedSource.src || undefined);
 
   if (failed) {
     return (
-      <div className="my-2 flex items-center gap-2 rounded-md border border-[--color-border] bg-[--bg-3] px-3 py-2 text-[--color-text-muted]">
+      <span className="my-2 flex items-center gap-2 rounded-md border border-[--color-border] bg-[--bg-3] px-3 py-2 text-[--color-text-muted]">
         <ImageOff size={16} />
         <span className="text-[12px]">Imagem não disponível</span>
-      </div>
+      </span>
     );
   }
 
   if (loading || !blobUrl) {
     return (
-      <div className="my-2 h-24 animate-pulse rounded-md border border-[--color-border] bg-[--bg-3]" aria-hidden />
+      <span className="my-2 block h-24 animate-pulse rounded-md border border-[--color-border] bg-[--bg-3]" aria-hidden />
     );
   }
 
@@ -43,10 +45,14 @@ function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
       src={blobUrl}
       alt={alt ?? ""}
       className="my-2 max-h-[480px] max-w-full cursor-pointer rounded-md object-contain"
-      style={{ background: "var(--bg-3)" }}
+      style={{
+        background: "var(--bg-3)",
+        height: "auto",
+        width: parsedSource.width ? `${parsedSource.width}px` : undefined
+      }}
       onClick={() => {
-        if (src) {
-          void openAuthenticatedAsset(src);
+        if (parsedSource.src) {
+          void openAuthenticatedAsset(parsedSource.src);
         }
       }}
     />

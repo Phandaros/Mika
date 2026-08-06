@@ -11,7 +11,6 @@ import {
 } from "react";
 import type { MentionProject } from "../../lib/mentionUtils";
 import type { User } from "shared";
-import Image from "@tiptap/extension-image";
 import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
@@ -59,6 +58,7 @@ import { logCommentImageDebug } from "../../lib/commentImageDebug";
 import { cn, createUploadId } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { ResizableMarkdownImage } from "./ResizableMarkdownImage";
 
 export type PendingMarkdownFile = {
   id: string;
@@ -398,10 +398,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image.configure({
-        inline: false,
-        allowBase64: false
-      }),
+      ResizableMarkdownImage,
       Markdown,
       Placeholder.configure({
         placeholder
@@ -465,7 +462,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }
     },
     onUpdate: ({ editor: nextEditor }) => {
-      if (isApplyingMarkdownRef.current) {
+      if (isApplyingMarkdownRef.current || !nextEditor.isInitialized) {
         return;
       }
 

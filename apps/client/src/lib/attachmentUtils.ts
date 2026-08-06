@@ -157,6 +157,46 @@ export const DOCUMENT_ACCEPT =
 export const IMAGE_ACCEPT = "image/jpeg,image/png,image/gif,image/webp";
 
 const LEGACY_PLACEHOLDER_URL_PATTERN = /!\[[^\]]*\]\(https:\/\/mika\.local\/[^)]+\)/g;
+const COMMENT_IMAGE_WIDTH_PATTERN = /(?:#|&)mika-width=(\d{1,4})$/;
+const MIN_COMMENT_IMAGE_WIDTH = 80;
+const MAX_COMMENT_IMAGE_WIDTH = 4096;
+
+export type ParsedCommentImageSource = {
+  src: string;
+  width: number | null;
+};
+
+export function parseCommentImageSource(src: string): ParsedCommentImageSource {
+  const match = COMMENT_IMAGE_WIDTH_PATTERN.exec(src);
+
+  if (!match) {
+    return { src, width: null };
+  }
+
+  const parsedWidth = Number.parseInt(match[1] ?? String(MIN_COMMENT_IMAGE_WIDTH), 10);
+  const width = Math.min(MAX_COMMENT_IMAGE_WIDTH, Math.max(MIN_COMMENT_IMAGE_WIDTH, parsedWidth));
+
+  return {
+    src: src.slice(0, match.index),
+    width
+  };
+}
+
+export function withCommentImageWidth(src: string, width: unknown): string {
+  const cleanSource = parseCommentImageSource(src).src;
+
+  if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) {
+    return cleanSource;
+  }
+
+  const normalizedWidth = Math.min(
+    MAX_COMMENT_IMAGE_WIDTH,
+    Math.max(MIN_COMMENT_IMAGE_WIDTH, Math.round(width))
+  );
+  const separator = cleanSource.includes("#") ? "&" : "#";
+
+  return `${cleanSource}${separator}mika-width=${normalizedWidth}`;
+}
 
 export function resolveCommentMarkdownForSubmit(
   markdown: string,
