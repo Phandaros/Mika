@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from "react-markdown";
 import { ImageOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -123,31 +124,43 @@ function MentionLink({
 
 export function MarkdownComment({ content, className, mentionContext = null, onMentionTask }: MarkdownCommentProps) {
   const normalizedContent = normalizeMentionContentForRender(content);
+  const components = useMemo(
+    () => ({
+      img: MarkdownImage,
+      p: ({ children }: { children?: React.ReactNode }) => (
+        <p className="mb-1 text-[13px] leading-relaxed text-[--color-text-primary]">{children}</p>
+      ),
+      strong: ({ children }: { children?: React.ReactNode }) => (
+        <strong className="font-semibold text-[--color-text-primary]">{children}</strong>
+      ),
+      em: ({ children }: { children?: React.ReactNode }) => <em className="italic">{children}</em>,
+      code: ({ children }: { children?: React.ReactNode }) => (
+        <code className="rounded bg-[--bg-3] px-1 py-0.5 text-[12px] text-[--color-text-primary]">{children}</code>
+      ),
+      ul: ({ children }: { children?: React.ReactNode }) => (
+        <ul className="my-1 list-disc pl-5 text-[13px] text-[--color-text-primary]">{children}</ul>
+      ),
+      ol: ({ children }: { children?: React.ReactNode }) => (
+        <ol className="my-1 list-decimal pl-5 text-[13px] text-[--color-text-primary]">{children}</ol>
+      ),
+      li: ({ children }: { children?: React.ReactNode }) => <li className="mb-0.5">{children}</li>,
+      blockquote: ({ children }: { children?: React.ReactNode }) => (
+        <blockquote className="my-2 border-l-2 border-[--color-border-focus] pl-3 text-[--color-text-secondary]">{children}</blockquote>
+      ),
+      a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+        <MentionLink href={href ?? ""} mentionContext={mentionContext} onMentionTask={onMentionTask}>
+          {children}
+        </MentionLink>
+      )
+    }),
+    [mentionContext, onMentionTask]
+  );
 
   return (
     <div className={cn("min-w-0", className)}>
       <ReactMarkdown
         urlTransform={mentionUrlTransform}
-        components={{
-          img: ({ src, alt }) => <MarkdownImage src={src} alt={alt} />,
-          p: ({ children }) => <p className="mb-1 text-[13px] leading-relaxed text-[--color-text-primary]">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-[--color-text-primary]">{children}</strong>,
-          em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="rounded bg-[--bg-3] px-1 py-0.5 text-[12px] text-[--color-text-primary]">{children}</code>
-          ),
-          ul: ({ children }) => <ul className="my-1 list-disc pl-5 text-[13px] text-[--color-text-primary]">{children}</ul>,
-          ol: ({ children }) => <ol className="my-1 list-decimal pl-5 text-[13px] text-[--color-text-primary]">{children}</ol>,
-          li: ({ children }) => <li className="mb-0.5">{children}</li>,
-          blockquote: ({ children }) => (
-            <blockquote className="my-2 border-l-2 border-[--color-border-focus] pl-3 text-[--color-text-secondary]">{children}</blockquote>
-          ),
-          a: ({ href, children }) => (
-            <MentionLink href={href ?? ""} mentionContext={mentionContext} onMentionTask={onMentionTask}>
-              {children}
-            </MentionLink>
-          )
-        }}
+        components={components}
         disallowedElements={["script", "iframe", "object", "embed"]}
         unwrapDisallowed
       >
