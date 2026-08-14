@@ -4,6 +4,7 @@ import type {
   AdvancedSearchDeliveryStatus,
   AdvancedSearchIndicatorMetric,
   AdvancedSearchResponse,
+  AdvancedSearchTaskSort,
   AdvancedSearchType,
   IndicatorPeriod,
   IndicatorScope
@@ -22,6 +23,7 @@ export interface AdvancedSearchFilters {
   dueFrom?: string;
   dueTo?: string;
   completion: AdvancedSearchCompletion;
+  sort: AdvancedSearchTaskSort;
   deliveryStatus: AdvancedSearchDeliveryStatus[];
   source?: "indicators";
   indicatorMetric?: AdvancedSearchIndicatorMetric;
@@ -63,6 +65,7 @@ export function useAdvancedSearch(filters: AdvancedSearchFilters) {
           dueFrom: filters.dueFrom,
           dueTo: filters.dueTo,
           completion: filters.completion,
+          sort: filters.sort,
           deliveryStatus: filters.deliveryStatus.length ? filters.deliveryStatus : undefined,
           source: filters.source,
           indicatorMetric: filters.indicatorMetric,

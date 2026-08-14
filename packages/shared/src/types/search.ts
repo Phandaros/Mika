@@ -33,6 +33,18 @@ export interface GlobalSearchResponse {
 export type AdvancedSearchType = "all" | "tasks" | "projects" | "users";
 
 export type AdvancedSearchCompletion = "open" | "completed" | "all";
+export type AdvancedSearchTaskSort =
+  | "relevance"
+  | "completedAt-desc"
+  | "completedAt-asc"
+  | "updatedAt-desc"
+  | "updatedAt-asc"
+  | "startDate-desc"
+  | "startDate-asc"
+  | "dueDate-asc"
+  | "dueDate-desc"
+  | "title-asc"
+  | "title-desc";
 export type AdvancedSearchDeliveryStatus = import("./enums.js").DeliveryStatus;
 export type AdvancedSearchIndicatorMetric =
   | "openTasks"
@@ -49,7 +61,9 @@ export interface AdvancedSearchTaskResult extends GlobalSearchTaskResult {
   priority: import("./enums.js").Priority;
   assigneeId: string | null;
   assigneeName: string | null;
+  startDate: string | null;
   dueDate: string | null;
+  completedAt: string | null;
   completed: boolean;
   updatedAt: string;
 }

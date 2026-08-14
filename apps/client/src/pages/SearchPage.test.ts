@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCompletion, parseSearchFilters } from "../lib/searchFilters";
+import { parseCompletion, parseSearchFilters, parseTaskSort } from "../lib/searchFilters";
 
 describe("search page filters", () => {
   it("defaults completion to all when the parameter is absent or invalid", () => {
@@ -36,5 +36,11 @@ describe("search page filters", () => {
       indicatorFrom: "2026-03-12",
       indicatorTo: "2026-04-02"
     });
+  });
+
+  it("parses task ordering and falls back to relevance", () => {
+    expect(parseTaskSort("completedAt-desc")).toBe("completedAt-desc");
+    expect(parseTaskSort("invalid")).toBe("relevance");
+    expect(parseSearchFilters(new URLSearchParams("sort=startDate-asc"))).toMatchObject({ sort: "startDate-asc" });
   });
 });

@@ -4,6 +4,7 @@ import type {
   AdvancedSearchDeliveryStatus,
   AdvancedSearchIndicatorMetric,
   AdvancedSearchResponse,
+  AdvancedSearchTaskSort,
   AdvancedSearchType,
   IndicatorPeriod,
   IndicatorScope,
@@ -21,6 +22,7 @@ import {
   buildUserSearchWhere,
   clampAdvancedSearchLimit,
   clampSearchLimit,
+  compareTasksByAdvancedSearchSort,
   compareTasksBySearchRelevance,
   filterTasksByIndicator,
   filterTasksByDeliveryStatus,
@@ -45,6 +47,19 @@ import { normalizeIndicatorDate } from "../lib/indicators.js";
 
 const advancedSearchTypeSchema = z.enum(["all", "tasks", "projects", "users"]);
 const advancedSearchCompletionSchema = z.enum(["open", "completed", "all"]);
+const advancedSearchTaskSortSchema = z.enum([
+  "relevance",
+  "completedAt-desc",
+  "completedAt-asc",
+  "updatedAt-desc",
+  "updatedAt-asc",
+  "startDate-desc",
+  "startDate-asc",
+  "dueDate-asc",
+  "dueDate-desc",
+  "title-asc",
+  "title-desc"
+]);
 const indicatorSourceSchema = z.enum(["indicators"]);
 const deliveryStatusSchema = z.nativeEnum(DeliveryStatus);
 const indicatorMetricSchema = z.enum(["openTasks", "completedTasks", "overdueTasks", "dueTasks", "allTasks", "onTimeDeliveries", "lateDeliveries", "unclassifiedDeliveries"]);
@@ -66,6 +81,7 @@ const advancedSearchQuerySchema = z.object({
   dueFrom: dateOnlySchema.optional(),
   dueTo: dateOnlySchema.optional(),
   completion: advancedSearchCompletionSchema.optional(),
+  sort: advancedSearchTaskSortSchema.optional(),
   deliveryStatus: z.union([deliveryStatusSchema, z.array(deliveryStatusSchema)]).optional(),
   source: indicatorSourceSchema.optional(),
   indicatorMetric: indicatorMetricSchema.optional(),
@@ -195,6 +211,7 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
       Object.values(Priority).includes(value as Priority)
     );
     const completion: AdvancedSearchCompletion = parsed.data.completion ?? "all";
+    const taskSort: AdvancedSearchTaskSort = parsed.data.sort ?? "relevance";
     const deliveryStatuses = queryStringArray(parsed.data.deliveryStatus).filter((value): value is AdvancedSearchDeliveryStatus =>
       Object.values(DeliveryStatus).includes(value as AdvancedSearchDeliveryStatus)
     );
@@ -271,7 +288,7 @@ export const advancedSearch: RequestHandler = async (req, res, next) => {
     });
     const taskItems = indicatorFilteredTasks
       .filter((task) => taskMatchesSearch(task, q))
-      .sort((left, right) => compareTasksBySearchRelevance(left, right, q))
+      .sort((left, right) => compareTasksByAdvancedSearchSort(left, right, taskSort, q))
       .map((task) => toAdvancedSearchTask(task, q))
       .filter((task): task is NonNullable<typeof task> => Boolean(task));
     const projectItems = projects

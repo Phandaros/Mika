@@ -9,6 +9,7 @@ import {
   type AdvancedSearchProjectResult,
   type AdvancedSearchResponse,
   type AdvancedSearchTaskResult,
+  type AdvancedSearchTaskSort,
   type AdvancedSearchType,
   type AdvancedSearchUserResult,
   type IndicatorPeriod,
@@ -44,6 +45,20 @@ const COMPLETION_OPTIONS: SearchableSelectOption[] = [
   { value: "all", label: "Todas" },
   { value: "open", label: "Abertas" },
   { value: "completed", label: "Concluídas" }
+];
+
+const TASK_SORT_OPTIONS: Array<SearchableSelectOption & { value: AdvancedSearchTaskSort }> = [
+  { value: "relevance", label: "Organizar: relevância" },
+  { value: "completedAt-desc", label: "Conclusão: mais recente" },
+  { value: "completedAt-asc", label: "Conclusão: mais antiga" },
+  { value: "updatedAt-desc", label: "Atualização: mais recente" },
+  { value: "updatedAt-asc", label: "Atualização: mais antiga" },
+  { value: "startDate-desc", label: "Início: mais recente" },
+  { value: "startDate-asc", label: "Início: mais antigo" },
+  { value: "dueDate-asc", label: "Entrega: mais próxima" },
+  { value: "dueDate-desc", label: "Entrega: mais distante" },
+  { value: "title-asc", label: "Nome: A–Z" },
+  { value: "title-desc", label: "Nome: Z–A" }
 ];
 
 export function SearchPage() {
@@ -250,6 +265,13 @@ export function SearchPage() {
           placeholder="Entrega até"
           className="h-9 w-full justify-between px-3"
         />
+        <SearchableSelect
+          value={filters.sort}
+          options={TASK_SORT_OPTIONS}
+          triggerClassName="h-9"
+          searchPlaceholder="Buscar ordenação..."
+          onValueChange={(value) => updateScalarFilter("sort", value === "relevance" ? null : value)}
+        />
         <Button
           type="button"
           variant="secondary"
@@ -284,7 +306,9 @@ export function SearchPage() {
 
       {!advancedSearch.isLoading && !advancedSearch.isError && data ? (
         <div className="flex flex-col gap-4">
-          {shouldShowSection(filters.type, "tasks") ? <TaskResults tasks={data.tasks.items} total={data.tasks.total} query={filters.q} /> : null}
+          {shouldShowSection(filters.type, "tasks") ? (
+            <TaskResults tasks={data.tasks.items} total={data.tasks.total} query={filters.q} sort={filters.sort} />
+          ) : null}
           {shouldShowSection(filters.type, "projects") ? <ProjectResults projects={data.projects.items} total={data.projects.total} /> : null}
           {shouldShowSection(filters.type, "users") ? <UserResults users={data.users.items} total={data.users.total} /> : null}
           {pageCount > 1 ? (
@@ -306,7 +330,17 @@ export function SearchPage() {
   );
 }
 
-function TaskResults({ tasks, total, query }: { tasks: AdvancedSearchTaskResult[]; total: number; query: string }) {
+function TaskResults({
+  tasks,
+  total,
+  query,
+  sort
+}: {
+  tasks: AdvancedSearchTaskResult[];
+  total: number;
+  query: string;
+  sort: AdvancedSearchTaskSort;
+}) {
   return (
     <ResultSection icon={<BriefcaseBusiness size={16} />} title="Tarefas" total={total}>
       {tasks.map((task) => (
@@ -330,13 +364,51 @@ function TaskResults({ tasks, total, query }: { tasks: AdvancedSearchTaskResult[
           </div>
           <div className="min-w-0 text-sm text-text-secondary">{task.assigneeName ?? "Sem responsável"}</div>
           <div className="flex items-center justify-between gap-2 text-sm text-text-muted">
-            <span>{formatDate(task.dueDate)}</span>
+            <TaskSortDate task={task} sort={sort} />
             <ArrowRight size={15} />
           </div>
         </Link>
       ))}
     </ResultSection>
   );
+}
+
+function TaskSortDate({ task, sort }: { task: AdvancedSearchTaskResult; sort: AdvancedSearchTaskSort }) {
+  const field = taskSortDateField(task, sort);
+
+  if (!field.label) {
+    return <span>{formatDate(field.value)}</span>;
+  }
+
+  return (
+    <span className="flex min-w-0 flex-col items-end leading-tight">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">{field.label}</span>
+      <span className="text-text-secondary">{formatDate(field.value)}</span>
+    </span>
+  );
+}
+
+function taskSortDateField(
+  task: AdvancedSearchTaskResult,
+  sort: AdvancedSearchTaskSort
+): { label: string | null; value: string | null } {
+  if (sort.startsWith("completedAt-")) {
+    return { label: "Conclusão", value: task.completedAt };
+  }
+
+  if (sort.startsWith("updatedAt-")) {
+    return { label: "Atualização", value: task.updatedAt };
+  }
+
+  if (sort.startsWith("startDate-")) {
+    return { label: "Início", value: task.startDate };
+  }
+
+  if (sort.startsWith("dueDate-")) {
+    return { label: "Entrega", value: task.dueDate };
+  }
+
+  return { label: null, value: task.dueDate };
 }
 
 function ProjectResults({ projects, total }: { projects: AdvancedSearchProjectResult[]; total: number }) {

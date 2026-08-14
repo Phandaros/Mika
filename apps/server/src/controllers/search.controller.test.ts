@@ -18,7 +18,14 @@ function responseMock() {
   } as unknown as Response;
 }
 
-function taskRecord(overrides: { id: string; name: string; notes?: string | null; comment?: string; completed?: boolean }) {
+function taskRecord(overrides: {
+  id: string;
+  name: string;
+  notes?: string | null;
+  comment?: string;
+  completed?: boolean;
+  completedAtAsana?: Date | null;
+}) {
   return {
     id: overrides.id,
     name: overrides.name,
@@ -29,7 +36,7 @@ function taskRecord(overrides: { id: string; name: string; notes?: string | null
     assigneeGid: null,
     dueOn: null,
     dueAt: null,
-    completedAtAsana: null,
+    completedAtAsana: overrides.completedAtAsana ?? null,
     estimatedDays: null,
     estimatedTime: null,
     conclusionDays: null,
@@ -127,6 +134,28 @@ describe("search controller", () => {
 
     expect(prismaMock.task.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ AND: expect.arrayContaining([{ completed: false }]) })
+    }));
+  });
+
+  it("sorts task results before pagination", async () => {
+    prismaMock.task.findMany.mockResolvedValue([
+      taskRecord({ id: "missing", name: "Sem conclusão" }),
+      taskRecord({ id: "older", name: "Conclusão antiga", completedAtAsana: new Date("2026-06-01T12:00:00.000Z") }),
+      taskRecord({ id: "newer", name: "Conclusão recente", completedAtAsana: new Date("2026-07-01T12:00:00.000Z") })
+    ]);
+    const res = responseMock();
+
+    await advancedSearch(
+      { query: { type: "tasks", sort: "completedAt-desc", page: "1", limit: "2" } } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      tasks: expect.objectContaining({
+        total: 3,
+        items: [expect.objectContaining({ id: "newer" }), expect.objectContaining({ id: "older" })]
+      })
     }));
   });
 

@@ -3,6 +3,7 @@ import {
   type AdvancedSearchCompletion,
   type AdvancedSearchDeliveryStatus,
   type AdvancedSearchIndicatorMetric,
+  type AdvancedSearchTaskSort,
   type AdvancedSearchType,
   type IndicatorPeriod,
   type IndicatorScope
@@ -24,6 +25,7 @@ export function parseSearchFilters(searchParams: URLSearchParams): AdvancedSearc
     dueFrom: searchParams.get("dueFrom") ?? undefined,
     dueTo: searchParams.get("dueTo") ?? undefined,
     completion: parseCompletion(searchParams.get("completion")),
+    sort: parseTaskSort(searchParams.get("sort")),
     deliveryStatus: searchParamArray(searchParams, "deliveryStatus").filter((value): value is AdvancedSearchDeliveryStatus =>
       Object.values(DeliveryStatus).includes(value as DeliveryStatus)
     ),
@@ -38,6 +40,24 @@ export function parseSearchFilters(searchParams: URLSearchParams): AdvancedSearc
 
 export function parseCompletion(value: string | null): AdvancedSearchCompletion {
   return value === "open" || value === "completed" ? value : "all";
+}
+
+export function parseTaskSort(value: string | null): AdvancedSearchTaskSort {
+  const allowed: AdvancedSearchTaskSort[] = [
+    "relevance",
+    "completedAt-desc",
+    "completedAt-asc",
+    "updatedAt-desc",
+    "updatedAt-asc",
+    "startDate-desc",
+    "startDate-asc",
+    "dueDate-asc",
+    "dueDate-desc",
+    "title-asc",
+    "title-desc"
+  ];
+
+  return allowed.includes(value as AdvancedSearchTaskSort) ? (value as AdvancedSearchTaskSort) : "relevance";
 }
 
 function searchParamArray(searchParams: URLSearchParams, key: string): string[] {

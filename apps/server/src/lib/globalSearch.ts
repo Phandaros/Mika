@@ -3,6 +3,7 @@ import type {
   AdvancedSearchCompletion,
   AdvancedSearchIndicatorMetric,
   AdvancedSearchProjectResult,
+  AdvancedSearchTaskSort,
   AdvancedSearchTaskResult,
   AdvancedSearchType,
   AdvancedSearchUserResult,
@@ -284,6 +285,7 @@ interface TaskSearchRecord {
   assigneeGid?: string | null;
   dueOn?: string | null;
   dueAt?: Date | null;
+  startOn?: string | null;
   completedAtAsana?: Date | null;
   estimatedDays?: number | null;
   estimatedTime?: number | null;
@@ -425,7 +427,9 @@ export function toAdvancedSearchTask(task: TaskSearchRecord, term = ""): Advance
     priority: priority as AdvancedSearchTaskResult["priority"],
     assigneeId: task.assignee?.id ?? null,
     assigneeName: task.assignee?.name ?? null,
+    startDate: task.startOn ?? null,
     dueDate: task.dueOn ?? task.dueAt?.toISOString().slice(0, 10) ?? null,
+    completedAt: task.completedAtAsana?.toISOString() ?? null,
     completed: task.completed ?? false,
     updatedAt: task.updatedAt?.toISOString() ?? ""
   };
@@ -479,6 +483,70 @@ export function compareTasksBySearchRelevance(left: TaskSearchRecord, right: Tas
   }
 
   return left.name.localeCompare(right.name, "pt-BR");
+}
+
+export function compareTasksByAdvancedSearchSort(
+  left: TaskSearchRecord,
+  right: TaskSearchRecord,
+  sort: AdvancedSearchTaskSort,
+  term: string
+): number {
+  if (sort === "relevance") {
+    return compareTasksBySearchRelevance(left, right, term);
+  }
+
+  if (sort === "title-asc" || sort === "title-desc") {
+    const titleDifference = left.name.localeCompare(right.name, "pt-BR");
+    return sort === "title-asc" ? titleDifference : -titleDifference;
+  }
+
+  const direction = sort.endsWith("-asc") ? "asc" : "desc";
+  const leftDate = taskSortDate(left, sort);
+  const rightDate = taskSortDate(right, sort);
+  const dateDifference = compareNullableIsoDates(leftDate, rightDate, direction);
+
+  if (dateDifference !== 0) {
+    return dateDifference;
+  }
+
+  return left.name.localeCompare(right.name, "pt-BR");
+}
+
+function taskSortDate(task: TaskSearchRecord, sort: AdvancedSearchTaskSort): string | null {
+  if (sort.startsWith("completedAt-")) {
+    return task.completedAtAsana?.toISOString() ?? null;
+  }
+
+  if (sort.startsWith("updatedAt-")) {
+    return task.updatedAt?.toISOString() ?? null;
+  }
+
+  if (sort.startsWith("startDate-")) {
+    return task.startOn ?? null;
+  }
+
+  if (sort.startsWith("dueDate-")) {
+    return task.dueOn ?? task.dueAt?.toISOString() ?? null;
+  }
+
+  return null;
+}
+
+function compareNullableIsoDates(left: string | null, right: string | null, direction: "asc" | "desc"): number {
+  if (!left && !right) {
+    return 0;
+  }
+
+  if (!left) {
+    return 1;
+  }
+
+  if (!right) {
+    return -1;
+  }
+
+  const difference = left.localeCompare(right);
+  return direction === "asc" ? difference : -difference;
 }
 
 export function taskSearchMatchContext(task: TaskSearchRecord, term: string): TaskSearchMatchContext | null {

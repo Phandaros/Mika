@@ -8,6 +8,7 @@ import {
   buildTaskSearchWhere,
   clampAdvancedSearchLimit,
   clampSearchLimit,
+  compareTasksByAdvancedSearchSort,
   compareTasksBySearchRelevance,
   createSearchExcerpt,
   paginateSearchResults,
@@ -222,6 +223,25 @@ describe("globalSearch helpers", () => {
       "membership",
       "description",
       "comment"
+    ]);
+  });
+
+  it("sorts advanced task dates in both directions and keeps missing dates last", () => {
+    const tasks: TaskSearchRecord[] = [
+      { ...taskWithMemberships(), id: "missing", name: "Sem conclusão", completedAtAsana: null },
+      { ...taskWithMemberships(), id: "older", name: "Conclusão antiga", completedAtAsana: new Date("2026-06-01T12:00:00.000Z") },
+      { ...taskWithMemberships(), id: "newer", name: "Conclusão recente", completedAtAsana: new Date("2026-07-01T12:00:00.000Z") }
+    ];
+
+    expect([...tasks].sort((left, right) => compareTasksByAdvancedSearchSort(left, right, "completedAt-desc", "")).map((task) => task.id)).toEqual([
+      "newer",
+      "older",
+      "missing"
+    ]);
+    expect([...tasks].sort((left, right) => compareTasksByAdvancedSearchSort(left, right, "completedAt-asc", "")).map((task) => task.id)).toEqual([
+      "older",
+      "newer",
+      "missing"
     ]);
   });
 
