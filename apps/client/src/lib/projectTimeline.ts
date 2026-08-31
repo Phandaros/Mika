@@ -135,6 +135,10 @@ export function anchoredTimelineScrollLeft(
   return Math.max(0, anchorDay * newScale - anchorX);
 }
 
+export function centeredTimelineScrollLeft(dayIndex: number, viewportWidth: number, pixelsPerDay: number): number {
+  return Math.max(0, (dayIndex + 0.5) * pixelsPerDay - viewportWidth / 2);
+}
+
 export function packTimelineLanes<T>(
   items: readonly T[],
   bounds: (item: T) => { startIndex: number; endIndex: number }
@@ -158,7 +162,7 @@ export function packTimelineLanes<T>(
 }
 
 export function timelineHeaderDensity(pixelsPerDay: number): "day" | "week" | "month" {
-  if (pixelsPerDay >= 18) {
+  if (pixelsPerDay >= 32) {
     return "day";
   }
   if (pixelsPerDay >= 6) {

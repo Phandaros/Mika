@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TaskStatus, type ProjectTimelineEventDto } from "shared";
 import {
   anchoredTimelineScrollLeft,
+  centeredTimelineScrollLeft,
   fitTimelineScale,
   nextTimelineScale,
   packTimelineLanes,
@@ -79,7 +80,9 @@ describe("projectTimeline", () => {
     expect(nextTimelineScale(8, "in", 8)).toBe(10);
     expect(nextTimelineScale(8, "out", 8)).toBe(8);
     expect(anchoredTimelineScrollLeft(300, 200, 10, 20)).toBe(800);
-    expect(timelineHeaderDensity(20)).toBe("day");
+    expect(centeredTimelineScrollLeft(30, 960, 44)).toBe(862);
+    expect(timelineHeaderDensity(44)).toBe("day");
+    expect(timelineHeaderDensity(20)).toBe("week");
     expect(timelineHeaderDensity(8)).toBe("week");
     expect(timelineHeaderDensity(4)).toBe("month");
   });

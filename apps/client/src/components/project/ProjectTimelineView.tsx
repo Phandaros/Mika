@@ -8,6 +8,7 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import {
   CalendarClock,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   FileQuestion,
@@ -22,14 +23,14 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
-  type WheelEvent
+  type CSSProperties
 } from "react";
 import type { ProjectTimelineEventDto, Section, Task } from "shared";
 import { useCompanyHolidays } from "../../hooks/useCompanyHolidays";
 import { useProjectTimelineEvents } from "../../hooks/useProjectDocuments";
 import {
   anchoredTimelineScrollLeft,
+  centeredTimelineScrollLeft,
   fitTimelineScale,
   nextTimelineScale,
   packTimelineLanes,
@@ -64,6 +65,10 @@ const LANE_GAP = 5;
 const ROW_PADDING = 8;
 const COLLAPSED_ROW_HEIGHT = 42;
 const EVENT_MARKER_SIZE = 24;
+const TODAY_ZOOM = 44;
+const MIN_TASK_LABEL_WIDTH = 132;
+const MAX_TASK_LABEL_WIDTH = 260;
+const TASK_LABEL_GAP = 6;
 
 type ProjectTimelineViewProps = {
   projectId: string;
@@ -118,6 +123,7 @@ export function ProjectTimelineView({
   );
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastFittedViewportRef = useRef<{ width: number; from: string; to: string } | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [pixelsPerDay, setPixelsPerDay] = useState(1);
@@ -141,12 +147,24 @@ export function ProjectTimelineView({
   }, []);
 
   useEffect(() => {
+    if (viewportWidth <= 0) {
+      return;
+    }
+
+    const previous = lastFittedViewportRef.current;
+    const rangeChanged = previous?.from !== range.from || previous?.to !== range.to;
+    const viewportResized = !previous || Math.abs(previous.width - viewportWidth) > 24;
+    if (!rangeChanged && !viewportResized) {
+      return;
+    }
+
+    lastFittedViewportRef.current = { width: viewportWidth, from: range.from, to: range.to };
     setPixelsPerDay(fitScale);
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = 0;
       setScrollLeft(0);
     }
-  }, [fitScale, range.from, range.to]);
+  }, [fitScale, range.from, range.to, viewportWidth]);
 
   useEffect(() => {
     const availableIds = new Set(sections.map((section) => section.id));
@@ -158,7 +176,7 @@ export function ProjectTimelineView({
     const sectionGeometries = geometries.filter((geometry) => geometry.task.disciplineId === section.id);
     const items = packTimelineLanes(sectionGeometries, (geometry) => ({
       startIndex: timelineDateIndex(geometry.startDate, range.from),
-      endIndex: timelineDateIndex(geometry.endDate, range.from)
+      endIndex: timelineTaskVisualEndIndex(geometry, range.from, pixelsPerDay)
     }));
     const laneCount = items.length ? Math.max(...items.map((item) => item.lane)) + 1 : 0;
     return {
@@ -168,7 +186,7 @@ export function ProjectTimelineView({
       collapsed,
       height: collapsed ? COLLAPSED_ROW_HEIGHT : Math.max(COLLAPSED_ROW_HEIGHT, laneCount * (LANE_HEIGHT + LANE_GAP) + ROW_PADDING * 2)
     };
-  }), [collapsedSections, geometries, range.from, sections]);
+  }), [collapsedSections, geometries, pixelsPerDay, range.from, sections]);
 
   const bodyHeight = EVENT_ROW_HEIGHT + rows.reduce((sum, row) => sum + row.height, 0);
   const density = timelineHeaderDensity(pixelsPerDay);
@@ -178,8 +196,8 @@ export function ProjectTimelineView({
     Math.ceil((scrollLeft + timelineViewportWidth) / pixelsPerDay) + 5
   );
   const visibleTicks = useMemo(
-    () => timelineTicks(range.from, visibleStartIndex, visibleEndIndex, density),
-    [density, range.from, visibleEndIndex, visibleStartIndex]
+    () => timelineTicks(range.from, visibleStartIndex, visibleEndIndex, density, pixelsPerDay),
+    [density, pixelsPerDay, range.from, visibleEndIndex, visibleStartIndex]
   );
   const nonWorkingBands = useMemo(() => {
     if (pixelsPerDay < 6) {
@@ -222,6 +240,7 @@ export function ProjectTimelineView({
   }
 
   function fitTimeline() {
+    lastFittedViewportRef.current = { width: viewportWidth, from: range.from, to: range.to };
     setPixelsPerDay(fitScale);
     requestAnimationFrame(() => {
       if (scrollRef.current) {
@@ -231,16 +250,48 @@ export function ProjectTimelineView({
     });
   }
 
-  function handleWheel(event: WheelEvent<HTMLDivElement>) {
-    if (!event.ctrlKey) {
+  function focusToday() {
+    const nextScale = Math.max(fitScale, TODAY_ZOOM);
+    const nextLeft = centeredTimelineScrollLeft(todayIndex, timelineViewportWidth, nextScale);
+    setPixelsPerDay(nextScale);
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = nextLeft;
+        setScrollLeft(scrollRef.current.scrollLeft);
+      }
+    });
+  }
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) {
       return;
     }
-    event.preventDefault();
-    const rect = event.currentTarget.getBoundingClientRect();
-    const anchorX = Math.max(0, event.clientX - rect.left - NAME_COLUMN_WIDTH);
-    const direction = event.deltaY < 0 ? "in" : "out";
-    setZoom(nextTimelineScale(pixelsPerDay, direction, fitScale), anchorX);
-  }
+
+    const handleTimelineWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = element.getBoundingClientRect();
+      const anchorX = Math.max(0, event.clientX - rect.left - NAME_COLUMN_WIDTH);
+      const direction = event.deltaY < 0 ? "in" : "out";
+      const nextScale = nextTimelineScale(pixelsPerDay, direction, fitScale);
+      const nextLeft = anchoredTimelineScrollLeft(element.scrollLeft, anchorX, pixelsPerDay, nextScale);
+      setPixelsPerDay(nextScale);
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollLeft = nextLeft;
+          setScrollLeft(scrollRef.current.scrollLeft);
+        }
+      });
+    };
+
+    element.addEventListener("wheel", handleTimelineWheel, { capture: true, passive: false });
+    return () => element.removeEventListener("wheel", handleTimelineWheel, { capture: true });
+  }, [fitScale, pixelsPerDay]);
 
   function toggleSection(sectionId: string) {
     setCollapsedSections((current) => {
@@ -278,6 +329,10 @@ export function ProjectTimelineView({
             {undatedTasks.length ? (
               <UndatedTasksSheet tasks={undatedTasks} onOpenTask={onOpenTask} />
             ) : null}
+            <Button variant="secondary" className="h-8 px-3 text-xs" onClick={focusToday}>
+              <CalendarDays data-icon="inline-start" aria-hidden="true" />
+              Hoje
+            </Button>
             <div className="flex items-center rounded-md border border-border bg-bg-2 p-0.5">
               <Button
                 variant="ghost"
@@ -313,7 +368,6 @@ export function ProjectTimelineView({
             data-testid="project-timeline-scroll"
             className="max-h-[calc(100dvh-258px)] min-h-[380px] min-w-0 overflow-auto overscroll-contain"
             onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
-            onWheel={handleWheel}
           >
             <div className="relative" style={{ width: contentWidth, minWidth: contentWidth }}>
               <TimelineHeader
@@ -358,6 +412,7 @@ export function ProjectTimelineView({
                       key={row.section.id}
                       row={row}
                       pixelsPerDay={pixelsPerDay}
+                      rangeFrom={range.from}
                       timelineWidth={timelineWidth}
                       tasksById={tasksById}
                       onOpenTask={onOpenTask}
@@ -404,14 +459,21 @@ function TimelineHeader({
           return (
             <div
               key={`${density}-${date}`}
-              className="absolute inset-y-0 border-l border-border-subtle px-1.5 pt-2 text-[10px] text-text-muted"
-              style={{ left: index * pixelsPerDay }}
+              className={cn(
+                "absolute inset-y-0 border-l border-border-subtle text-[10px] text-text-muted",
+                density === "day" ? "flex flex-col items-center justify-center" : "px-1.5 pt-2"
+              )}
+              style={{
+                left: index * pixelsPerDay,
+                width: density === "day" ? pixelsPerDay : undefined
+              }}
+              title={format(requiredDate(date), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             >
               <span className="whitespace-nowrap font-semibold text-text-secondary">
                 {formatTimelineTick(date, density)}
               </span>
               {density === "day" ? (
-                <span className="mt-0.5 block whitespace-nowrap text-[9px] uppercase">
+                <span className="mt-0.5 block max-w-full truncate whitespace-nowrap text-[9px] uppercase">
                   {format(requiredDate(date), "EEE", { locale: ptBR })}
                 </span>
               ) : null}
@@ -549,6 +611,7 @@ function TimelineEventMarker({
 function TimelineSectionRow({
   row,
   pixelsPerDay,
+  rangeFrom,
   timelineWidth,
   tasksById,
   onOpenTask,
@@ -556,6 +619,7 @@ function TimelineSectionRow({
 }: {
   row: SectionRow;
   pixelsPerDay: number;
+  rangeFrom: string;
   timelineWidth: number;
   tasksById: Map<string, Task>;
   onOpenTask: (task: Task) => void;
@@ -593,7 +657,7 @@ function TimelineSectionRow({
               geometry={positioned.item}
               lane={positioned.lane}
               startIndex={positioned.startIndex}
-              endIndex={positioned.endIndex}
+              endIndex={timelineDateIndex(positioned.item.endDate, rangeFrom)}
               pixelsPerDay={pixelsPerDay}
               onOpen={() => onOpenTask(task)}
             />
@@ -624,7 +688,11 @@ function TimelineTaskBar({
   const naturalWidth = (endIndex - startIndex + 1) * pixelsPerDay;
   const width = Math.max(marker ? 18 : 6, naturalWidth - 4);
   const top = ROW_PADDING + lane * (LANE_HEIGHT + LANE_GAP);
-  const labelVisible = !marker && pixelsPerDay >= 6 && width >= 72;
+  const desiredLabelWidth = timelineTaskLabelWidth(geometry.task.title);
+  const labelFitsInside = !marker && desiredLabelWidth <= width;
+  const labelLeft = labelFitsInside ? 0 : width + TASK_LABEL_GAP;
+  const labelWidth = labelFitsInside ? width : desiredLabelWidth;
+  const semanticStyle = statusTimelineStyle(geometry.task.status);
   const dateLabel = geometry.startDate === geometry.endDate
     ? formatDateOnly(geometry.startDate, "dd/MM/yyyy")
     : `${formatDateOnly(geometry.startDate, "dd/MM/yyyy")} – ${formatDateOnly(geometry.endDate, "dd/MM/yyyy")}`;
@@ -636,20 +704,37 @@ function TimelineTaskBar({
           type="button"
           data-testid={`timeline-task-${geometry.task.id}`}
           className={cn(
-            "absolute flex min-w-0 items-center border text-left shadow-sm transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange",
-            marker ? "size-[18px] rotate-45 rounded-[4px]" : "rounded-md px-2"
+            "group absolute min-w-0 overflow-visible text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange",
+            marker ? "size-[18px]" : "rounded-md border shadow-sm hover:brightness-125"
           )}
           style={{
-            ...statusTimelineStyle(geometry.task.status),
+            ...(marker ? {} : semanticStyle),
             left: left + (marker ? pixelsPerDay / 2 - 9 : 2),
             top,
             width: marker ? undefined : width,
-            height: marker ? undefined : LANE_HEIGHT
+            height: marker ? undefined : LANE_HEIGHT,
+            color: marker ? "var(--color-text-primary)" : semanticStyle.color
           } as CSSProperties}
           aria-label={`${geometry.task.title}, ${dateLabel}${geometry.warning ? `, ${geometry.warning}` : ""}`}
           onClick={onOpen}
         >
-          {labelVisible ? <span className="truncate text-[11px] font-semibold">{geometry.task.title}</span> : null}
+          {marker ? (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rotate-45 rounded-[4px] border shadow-sm transition group-hover:brightness-125"
+              style={semanticStyle}
+            />
+          ) : null}
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-y-0 flex min-w-0 items-center overflow-hidden rounded-md text-[11px] font-semibold",
+              labelFitsInside ? "px-2" : "px-0",
+              marker && "text-text-primary"
+            )}
+            style={{ left: labelLeft, width: labelWidth }}
+          >
+            <span className="w-full truncate">{geometry.task.title}</span>
+          </span>
         </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-80">
@@ -660,6 +745,28 @@ function TimelineTaskBar({
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function timelineTaskLabelWidth(title: string): number {
+  return Math.min(MAX_TASK_LABEL_WIDTH, Math.max(MIN_TASK_LABEL_WIDTH, Math.ceil(title.length * 6.4) + 28));
+}
+
+function timelineTaskVisualEndIndex(
+  geometry: TimelineTaskGeometry,
+  rangeFrom: string,
+  pixelsPerDay: number
+): number {
+  const startIndex = timelineDateIndex(geometry.startDate, rangeFrom);
+  const endIndex = timelineDateIndex(geometry.endDate, rangeFrom);
+  const marker = geometry.kind !== "bar";
+  const naturalWidth = Math.max(marker ? 18 : 6, (endIndex - startIndex + 1) * pixelsPerDay - 4);
+  const labelWidth = timelineTaskLabelWidth(geometry.task.title);
+  if (!marker && labelWidth <= naturalWidth) {
+    return endIndex;
+  }
+
+  const visualWidth = naturalWidth + TASK_LABEL_GAP + labelWidth;
+  return Math.max(endIndex, startIndex + Math.ceil(visualWidth / pixelsPerDay) - 1);
 }
 
 function UndatedTasksSheet({ tasks, onOpenTask }: { tasks: Task[]; onOpenTask: (task: Task) => void }) {
@@ -703,14 +810,17 @@ function timelineTicks(
   rangeFrom: string,
   startIndex: number,
   endIndex: number,
-  density: "day" | "week" | "month"
+  density: "day" | "week" | "month",
+  pixelsPerDay: number
 ): number[] {
   const ticks: number[] = [];
+  const monthStep = Math.max(1, Math.ceil(72 / (30.44 * pixelsPerDay)));
   for (let index = startIndex; index <= endIndex; index += 1) {
     const date = requiredDate(dateAtIndex(rangeFrom, index));
+    const absoluteMonth = date.getFullYear() * 12 + date.getMonth();
     const show = density === "day" ||
       (density === "week" && getDay(date) === 1) ||
-      (density === "month" && getDate(date) === 1) ||
+      (density === "month" && getDate(date) === 1 && absoluteMonth % monthStep === 0) ||
       index === 0;
     if (show) {
       ticks.push(index);
@@ -722,12 +832,12 @@ function timelineTicks(
 function formatTimelineTick(date: string, density: "day" | "week" | "month"): string {
   const localDate = requiredDate(date);
   if (density === "day") {
-    return format(localDate, "dd MMM", { locale: ptBR });
+    return format(localDate, "dd", { locale: ptBR });
   }
   if (density === "week") {
     return format(localDate, "dd MMM", { locale: ptBR });
   }
-  return format(localDate, "MMM yyyy", { locale: ptBR });
+  return format(localDate, "MMM yy", { locale: ptBR });
 }
 
 function groupTimelineEvents(
