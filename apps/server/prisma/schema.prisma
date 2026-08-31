@@ -380,6 +380,7 @@ model ProjectNote {
   projectId String
   title     String
   content   String?
+  noteDate  String
   authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -388,6 +389,7 @@ model ProjectNote {
   author      User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
   attachments Attachment[]
 
+  @@index([projectId, noteDate])
   @@index([projectId, updatedAt])
   @@index([authorId])
 }

@@ -37,7 +37,9 @@ vi.mock("../lib/attachmentCleanup.js", () => ({
 }));
 
 import {
+  createProjectNote,
   createMeetingMinute,
+  listProjectTimelineEvents,
   listProjectNotes,
   updateProjectNote
 } from "./projectDocuments.controller.js";
@@ -75,13 +77,14 @@ describe("project documents controller", () => {
     prismaMock.project.findUnique.mockResolvedValue({ id: "project-1" });
   });
 
-  it("pagina e busca anotações, ordenando pela atualização", async () => {
+  it("pagina e busca anotações, ordenando pela data da anotação", async () => {
     prismaMock.projectNote.count.mockResolvedValue(12);
     prismaMock.projectNote.findMany.mockResolvedValue([
       {
         id: "note-1",
         projectId: "project-1",
         title: "Decisões",
+        noteDate: "2026-06-01",
         content: "Texto",
         authorId: "user-1",
         author,
@@ -105,7 +108,7 @@ describe("project documents controller", () => {
       expect.objectContaining({
         skip: 5,
         take: 5,
-        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        orderBy: [{ noteDate: "desc" }, { createdAt: "desc" }, { id: "desc" }],
         where: {
           projectId: "project-1",
           OR: [
@@ -134,6 +137,7 @@ describe("project documents controller", () => {
         params: { id: "note-1" },
         body: {
           title: "Decisões",
+          noteDate: "2026-06-18",
           content: "Conteúdo",
           expectedUpdatedAt: "2026-06-18T11:00:00.000Z"
         }
@@ -145,6 +149,145 @@ describe("project documents controller", () => {
     expect(next).toHaveBeenCalledWith(
       expect.objectContaining({ statusCode: 409 })
     );
+  });
+
+  it("atualiza a data da anotação mantendo o controle de concorrência", async () => {
+    const updatedAt = new Date("2026-06-18T12:00:00.000Z");
+    transactionClient.projectNote.findUnique.mockResolvedValue({
+      id: "note-1",
+      updatedAt,
+      _count: { attachments: 0 }
+    });
+    transactionClient.projectNote.updateMany.mockResolvedValue({ count: 1 });
+    transactionClient.projectNote.findUniqueOrThrow.mockResolvedValue({
+      id: "note-1",
+      projectId: "project-1",
+      title: "Decisões atualizadas",
+      noteDate: "2026-07-01",
+      content: "Conteúdo",
+      authorId: "user-1",
+      author,
+      attachments: [],
+      createdAt: new Date("2026-06-01T12:00:00.000Z"),
+      updatedAt
+    });
+    const res = responseMock();
+
+    await updateProjectNote(
+      {
+        params: { id: "note-1" },
+        body: {
+          title: "Decisões atualizadas",
+          noteDate: "2026-07-01",
+          content: "Conteúdo",
+          expectedUpdatedAt: updatedAt.toISOString()
+        }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(transactionClient.projectNote.updateMany).toHaveBeenCalledWith({
+      where: { id: "note-1", updatedAt },
+      data: { title: "Decisões atualizadas", content: "Conteúdo", noteDate: "2026-07-01" }
+    });
+    expect(res.json).toHaveBeenCalledWith({ note: expect.objectContaining({ noteDate: "2026-07-01" }) });
+  });
+
+  it.each([
+    [undefined, "ausente"],
+    ["2026-02-30", "inválida"]
+  ])("rejeita criação com data %s (%s)", async (noteDate, _description) => {
+    const res = responseMock();
+
+    await createProjectNote(
+      {
+        params: { projectId: "project-1" },
+        body: { title: "Decisões", content: "Conteúdo", noteDate }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ name: "ZodError" }));
+    expect(prismaMock.projectNote.create).not.toHaveBeenCalled();
+  });
+
+  it("aceita data futura ao criar uma anotação", async () => {
+    prismaMock.projectNote.create.mockResolvedValue({
+      id: "note-future",
+      projectId: "project-1",
+      title: "Marco futuro",
+      noteDate: "2030-01-15",
+      content: "Conteúdo",
+      authorId: "user-1",
+      author,
+      attachments: [],
+      createdAt: new Date("2026-06-01T12:00:00.000Z"),
+      updatedAt: new Date("2026-06-01T12:00:00.000Z")
+    });
+    const res = responseMock();
+
+    await createProjectNote(
+      {
+        params: { projectId: "project-1" },
+        body: { title: "Marco futuro", content: "Conteúdo", noteDate: "2030-01-15" }
+      } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(prismaMock.projectNote.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ noteDate: "2030-01-15" })
+    }));
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("une anotações e atas na linha do tempo em ordem cronológica", async () => {
+    prismaMock.projectNote.findMany.mockResolvedValue([{
+      id: "note-1",
+      projectId: "project-1",
+      title: "Anotação",
+      noteDate: "2026-06-20",
+      author,
+      createdAt: new Date("2026-06-18T12:00:00.000Z"),
+      updatedAt: new Date("2026-06-18T12:00:00.000Z")
+    }]);
+    prismaMock.meetingMinute.findMany.mockResolvedValue([{
+      id: "minute-1",
+      projectId: "project-1",
+      title: "Ata",
+      meetingDate: "2026-06-19",
+      author,
+      createdAt: new Date("2026-06-19T12:00:00.000Z"),
+      updatedAt: new Date("2026-06-19T12:00:00.000Z")
+    }]);
+    const res = responseMock();
+
+    await listProjectTimelineEvents(
+      { params: { projectId: "project-1" } } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(res.json).toHaveBeenCalledWith({ events: [
+      expect.objectContaining({ id: "minute-1", type: "MEETING_MINUTE", eventDate: "2026-06-19" }),
+      expect.objectContaining({ id: "note-1", type: "NOTE", eventDate: "2026-06-20" })
+    ] });
+  });
+
+  it("rejeita a linha do tempo de um projeto inexistente", async () => {
+    prismaMock.project.findUnique.mockResolvedValue(null);
+    const res = responseMock();
+
+    await listProjectTimelineEvents(
+      { params: { projectId: "missing" } } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
+    expect(prismaMock.projectNote.findMany).not.toHaveBeenCalled();
   });
 
   it("remove participantes duplicados ao criar uma ata", async () => {

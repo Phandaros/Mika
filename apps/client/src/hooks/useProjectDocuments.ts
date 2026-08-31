@@ -3,7 +3,8 @@ import type {
   MeetingMinuteDto,
   MeetingMinutesResponse,
   ProjectNoteDto,
-  ProjectNotesResponse
+  ProjectNotesResponse,
+  ProjectTimelineEventsResponse
 } from "shared";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
@@ -26,13 +27,17 @@ interface MeetingMinuteResponse {
   meetingMinute: MeetingMinuteDto;
 }
 
-export interface ProjectNoteFormValues {
+interface BaseProjectDocumentFormValues {
   title: string;
   content: string;
   expectedUpdatedAt?: string;
 }
 
-export interface MeetingMinuteFormValues extends ProjectNoteFormValues {
+export interface ProjectNoteFormValues extends BaseProjectDocumentFormValues {
+  noteDate: string;
+}
+
+export interface MeetingMinuteFormValues extends BaseProjectDocumentFormValues {
   meetingDate: string;
   meetingTime: string | null;
   participantUserIds: string[];
@@ -45,7 +50,7 @@ function appendFiles(formData: FormData, files: PendingMarkdownFile[]) {
   }
 }
 
-function noteFormData(values: ProjectNoteFormValues, files: PendingMarkdownFile[]): FormData {
+function baseDocumentFormData(values: BaseProjectDocumentFormValues, files: PendingMarkdownFile[]): FormData {
   const formData = new FormData();
   formData.append("title", values.title);
   formData.append("content", values.content);
@@ -56,13 +61,30 @@ function noteFormData(values: ProjectNoteFormValues, files: PendingMarkdownFile[
   return formData;
 }
 
+function noteFormData(values: ProjectNoteFormValues, files: PendingMarkdownFile[]): FormData {
+  const formData = baseDocumentFormData(values, files);
+  formData.append("noteDate", values.noteDate);
+  return formData;
+}
+
 function meetingMinuteFormData(values: MeetingMinuteFormValues, files: PendingMarkdownFile[]): FormData {
-  const formData = noteFormData(values, files);
+  const formData = baseDocumentFormData(values, files);
   formData.append("meetingDate", values.meetingDate);
   formData.append("meetingTime", values.meetingTime ?? "");
   formData.append("participantUserIds", JSON.stringify(values.participantUserIds));
   formData.append("externalParticipants", JSON.stringify(values.externalParticipants));
   return formData;
+}
+
+export function useProjectTimelineEvents(projectId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["projects", projectId, "timeline-events"],
+    enabled: enabled && Boolean(projectId),
+    queryFn: async () => {
+      const response = await api.get<ProjectTimelineEventsResponse>(`/projects/${projectId}/timeline-events`);
+      return response.data.events;
+    }
+  });
 }
 
 export function useProjectNotes({ projectId, page, search }: Omit<DocumentListParams, "kind">) {
@@ -112,7 +134,10 @@ export function useMeetingMinute(minuteId: string | null) {
 }
 
 async function refreshDocumentQueries(projectId: string, kind: ProjectDocumentKind) {
-  await queryClient.invalidateQueries({ queryKey: ["projects", projectId, kind] });
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["projects", projectId, kind] }),
+    queryClient.invalidateQueries({ queryKey: ["projects", projectId, "timeline-events"] })
+  ]);
 }
 
 export function useSaveProjectNote(projectId: string) {
@@ -182,6 +207,7 @@ export function useDeleteProjectDocument(projectId: string, kind: ProjectDocumen
 export async function refreshProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["projects", projectId, kind] }),
+    queryClient.invalidateQueries({ queryKey: ["projects", projectId, "timeline-events"] }),
     queryClient.invalidateQueries({
       queryKey: [kind === "notes" ? "project-notes" : "meeting-minutes", id]
     })

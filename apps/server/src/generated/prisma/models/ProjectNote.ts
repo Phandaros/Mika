@@ -29,6 +29,7 @@ export type ProjectNoteMinAggregateOutputType = {
   projectId: string | null
   title: string | null
   content: string | null
+  noteDate: string | null
   authorId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -39,6 +40,7 @@ export type ProjectNoteMaxAggregateOutputType = {
   projectId: string | null
   title: string | null
   content: string | null
+  noteDate: string | null
   authorId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -49,6 +51,7 @@ export type ProjectNoteCountAggregateOutputType = {
   projectId: number
   title: number
   content: number
+  noteDate: number
   authorId: number
   createdAt: number
   updatedAt: number
@@ -61,6 +64,7 @@ export type ProjectNoteMinAggregateInputType = {
   projectId?: true
   title?: true
   content?: true
+  noteDate?: true
   authorId?: true
   createdAt?: true
   updatedAt?: true
@@ -71,6 +75,7 @@ export type ProjectNoteMaxAggregateInputType = {
   projectId?: true
   title?: true
   content?: true
+  noteDate?: true
   authorId?: true
   createdAt?: true
   updatedAt?: true
@@ -81,6 +86,7 @@ export type ProjectNoteCountAggregateInputType = {
   projectId?: true
   title?: true
   content?: true
+  noteDate?: true
   authorId?: true
   createdAt?: true
   updatedAt?: true
@@ -164,6 +170,7 @@ export type ProjectNoteGroupByOutputType = {
   projectId: string
   title: string
   content: string | null
+  noteDate: string
   authorId: string
   createdAt: Date
   updatedAt: Date
@@ -195,6 +202,7 @@ export type ProjectNoteWhereInput = {
   projectId?: Prisma.StringFilter<"ProjectNote"> | string
   title?: Prisma.StringFilter<"ProjectNote"> | string
   content?: Prisma.StringNullableFilter<"ProjectNote"> | string | null
+  noteDate?: Prisma.StringFilter<"ProjectNote"> | string
   authorId?: Prisma.StringFilter<"ProjectNote"> | string
   createdAt?: Prisma.DateTimeFilter<"ProjectNote"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProjectNote"> | Date | string
@@ -208,6 +216,7 @@ export type ProjectNoteOrderByWithRelationInput = {
   projectId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrderInput | Prisma.SortOrder
+  noteDate?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -224,6 +233,7 @@ export type ProjectNoteWhereUniqueInput = Prisma.AtLeast<{
   projectId?: Prisma.StringFilter<"ProjectNote"> | string
   title?: Prisma.StringFilter<"ProjectNote"> | string
   content?: Prisma.StringNullableFilter<"ProjectNote"> | string | null
+  noteDate?: Prisma.StringFilter<"ProjectNote"> | string
   authorId?: Prisma.StringFilter<"ProjectNote"> | string
   createdAt?: Prisma.DateTimeFilter<"ProjectNote"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProjectNote"> | Date | string
@@ -237,6 +247,7 @@ export type ProjectNoteOrderByWithAggregationInput = {
   projectId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrderInput | Prisma.SortOrder
+  noteDate?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -253,6 +264,7 @@ export type ProjectNoteScalarWhereWithAggregatesInput = {
   projectId?: Prisma.StringWithAggregatesFilter<"ProjectNote"> | string
   title?: Prisma.StringWithAggregatesFilter<"ProjectNote"> | string
   content?: Prisma.StringNullableWithAggregatesFilter<"ProjectNote"> | string | null
+  noteDate?: Prisma.StringWithAggregatesFilter<"ProjectNote"> | string
   authorId?: Prisma.StringWithAggregatesFilter<"ProjectNote"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ProjectNote"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ProjectNote"> | Date | string
@@ -262,6 +274,7 @@ export type ProjectNoteCreateInput = {
   id?: string
   title: string
   content?: string | null
+  noteDate: string
   createdAt?: Date | string
   updatedAt?: Date | string
   project: Prisma.ProjectCreateNestedOneWithoutProjectNotesInput
@@ -274,6 +287,7 @@ export type ProjectNoteUncheckedCreateInput = {
   projectId: string
   title: string
   content?: string | null
+  noteDate: string
   authorId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -284,6 +298,7 @@ export type ProjectNoteUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneRequiredWithoutProjectNotesNestedInput
@@ -296,6 +311,7 @@ export type ProjectNoteUncheckedUpdateInput = {
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -307,6 +323,7 @@ export type ProjectNoteCreateManyInput = {
   projectId: string
   title: string
   content?: string | null
+  noteDate: string
   authorId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -316,6 +333,7 @@ export type ProjectNoteUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -325,6 +343,7 @@ export type ProjectNoteUncheckedUpdateManyInput = {
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -350,6 +369,7 @@ export type ProjectNoteCountOrderByAggregateInput = {
   projectId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  noteDate?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -360,6 +380,7 @@ export type ProjectNoteMaxOrderByAggregateInput = {
   projectId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  noteDate?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -370,6 +391,7 @@ export type ProjectNoteMinOrderByAggregateInput = {
   projectId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  noteDate?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -479,6 +501,7 @@ export type ProjectNoteCreateWithoutAuthorInput = {
   id?: string
   title: string
   content?: string | null
+  noteDate: string
   createdAt?: Date | string
   updatedAt?: Date | string
   project: Prisma.ProjectCreateNestedOneWithoutProjectNotesInput
@@ -490,6 +513,7 @@ export type ProjectNoteUncheckedCreateWithoutAuthorInput = {
   projectId: string
   title: string
   content?: string | null
+  noteDate: string
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutProjectNoteInput
@@ -528,6 +552,7 @@ export type ProjectNoteScalarWhereInput = {
   projectId?: Prisma.StringFilter<"ProjectNote"> | string
   title?: Prisma.StringFilter<"ProjectNote"> | string
   content?: Prisma.StringNullableFilter<"ProjectNote"> | string | null
+  noteDate?: Prisma.StringFilter<"ProjectNote"> | string
   authorId?: Prisma.StringFilter<"ProjectNote"> | string
   createdAt?: Prisma.DateTimeFilter<"ProjectNote"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProjectNote"> | Date | string
@@ -537,6 +562,7 @@ export type ProjectNoteCreateWithoutProjectInput = {
   id?: string
   title: string
   content?: string | null
+  noteDate: string
   createdAt?: Date | string
   updatedAt?: Date | string
   author: Prisma.UserCreateNestedOneWithoutProjectNotesInput
@@ -547,6 +573,7 @@ export type ProjectNoteUncheckedCreateWithoutProjectInput = {
   id?: string
   title: string
   content?: string | null
+  noteDate: string
   authorId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -582,6 +609,7 @@ export type ProjectNoteCreateWithoutAttachmentsInput = {
   id?: string
   title: string
   content?: string | null
+  noteDate: string
   createdAt?: Date | string
   updatedAt?: Date | string
   project: Prisma.ProjectCreateNestedOneWithoutProjectNotesInput
@@ -593,6 +621,7 @@ export type ProjectNoteUncheckedCreateWithoutAttachmentsInput = {
   projectId: string
   title: string
   content?: string | null
+  noteDate: string
   authorId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -618,6 +647,7 @@ export type ProjectNoteUpdateWithoutAttachmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneRequiredWithoutProjectNotesNestedInput
@@ -629,6 +659,7 @@ export type ProjectNoteUncheckedUpdateWithoutAttachmentsInput = {
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -639,6 +670,7 @@ export type ProjectNoteCreateManyAuthorInput = {
   projectId: string
   title: string
   content?: string | null
+  noteDate: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -647,6 +679,7 @@ export type ProjectNoteUpdateWithoutAuthorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneRequiredWithoutProjectNotesNestedInput
@@ -658,6 +691,7 @@ export type ProjectNoteUncheckedUpdateWithoutAuthorInput = {
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutProjectNoteNestedInput
@@ -668,6 +702,7 @@ export type ProjectNoteUncheckedUpdateManyWithoutAuthorInput = {
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -676,6 +711,7 @@ export type ProjectNoteCreateManyProjectInput = {
   id?: string
   title: string
   content?: string | null
+  noteDate: string
   authorId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -685,6 +721,7 @@ export type ProjectNoteUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   author?: Prisma.UserUpdateOneRequiredWithoutProjectNotesNestedInput
@@ -695,6 +732,7 @@ export type ProjectNoteUncheckedUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -705,6 +743,7 @@ export type ProjectNoteUncheckedUpdateManyWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  noteDate?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -746,6 +785,7 @@ export type ProjectNoteSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   projectId?: boolean
   title?: boolean
   content?: boolean
+  noteDate?: boolean
   authorId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -760,6 +800,7 @@ export type ProjectNoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   projectId?: boolean
   title?: boolean
   content?: boolean
+  noteDate?: boolean
   authorId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -772,6 +813,7 @@ export type ProjectNoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   projectId?: boolean
   title?: boolean
   content?: boolean
+  noteDate?: boolean
   authorId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -784,12 +826,13 @@ export type ProjectNoteSelectScalar = {
   projectId?: boolean
   title?: boolean
   content?: boolean
+  noteDate?: boolean
   authorId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProjectNoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "title" | "content" | "authorId" | "createdAt" | "updatedAt", ExtArgs["result"]["projectNote"]>
+export type ProjectNoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "title" | "content" | "noteDate" | "authorId" | "createdAt" | "updatedAt", ExtArgs["result"]["projectNote"]>
 export type ProjectNoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   author?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -817,6 +860,7 @@ export type $ProjectNotePayload<ExtArgs extends runtime.Types.Extensions.Interna
     projectId: string
     title: string
     content: string | null
+    noteDate: string
     authorId: string
     createdAt: Date
     updatedAt: Date
@@ -1250,6 +1294,7 @@ export interface ProjectNoteFieldRefs {
   readonly projectId: Prisma.FieldRef<"ProjectNote", 'String'>
   readonly title: Prisma.FieldRef<"ProjectNote", 'String'>
   readonly content: Prisma.FieldRef<"ProjectNote", 'String'>
+  readonly noteDate: Prisma.FieldRef<"ProjectNote", 'String'>
   readonly authorId: Prisma.FieldRef<"ProjectNote", 'String'>
   readonly createdAt: Prisma.FieldRef<"ProjectNote", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"ProjectNote", 'DateTime'>

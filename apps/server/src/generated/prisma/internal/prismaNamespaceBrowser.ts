@@ -331,6 +331,7 @@ export const ProjectNoteScalarFieldEnum = {
   projectId: 'projectId',
   title: 'title',
   content: 'content',
+  noteDate: 'noteDate',
   authorId: 'authorId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

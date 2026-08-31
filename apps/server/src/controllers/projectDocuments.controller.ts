@@ -4,6 +4,7 @@ import type {
   AttachmentDto,
   MeetingMinuteDto,
   ProjectNoteDto,
+  ProjectTimelineEventDto,
   User
 } from "shared";
 import { z } from "zod";
@@ -20,13 +21,22 @@ const paginationSchema = z.object({
   search: z.string().trim().max(200).optional().default("")
 });
 
-const noteSchema = z.object({
+const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}, "Data inválida");
+
+const documentSchema = z.object({
   title: z.string().trim().min(2).max(200),
   content: z.string().trim().max(100_000).nullable().optional()
 });
 
-const meetingMinuteSchema = noteSchema.extend({
-  meetingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+const noteSchema = documentSchema.extend({
+  noteDate: dateOnlySchema
+});
+
+const meetingMinuteSchema = documentSchema.extend({
+  meetingDate: dateOnlySchema,
   meetingTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
   participantUserIds: z.array(z.string().min(1)).max(100).default([]),
   externalParticipants: z.array(z.string().trim().min(1).max(120)).max(100).default([])
@@ -89,6 +99,7 @@ function parseJsonArray(value: unknown, field: string): unknown[] {
 function parseNoteBody(body: Record<string, unknown>) {
   return noteSchema.parse({
     title: body.title,
+    noteDate: body.noteDate,
     content: body.content === "" ? null : body.content
   });
 }
@@ -141,6 +152,7 @@ function toProjectNoteDto(note: {
   projectId: string;
   title: string;
   content: string | null;
+  noteDate: string;
   authorId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -153,11 +165,39 @@ function toProjectNoteDto(note: {
     projectId: note.projectId,
     title: note.title,
     content: note.content,
+    noteDate: note.noteDate,
     authorId: note.authorId,
     author,
     attachments: note.attachments.map(toAttachmentDto),
     createdAt: note.createdAt.toISOString(),
     updatedAt: note.updatedAt.toISOString()
+  };
+}
+
+function toProjectTimelineEventDto(event: {
+  id: string;
+  projectId: string;
+  type: ProjectTimelineEventDto["type"];
+  title: string;
+  eventDate: string;
+  author: Parameters<typeof toPublicUser>[0];
+  createdAt: Date;
+  updatedAt: Date;
+}): ProjectTimelineEventDto {
+  const author = toDocumentUser(event.author);
+  return {
+    id: event.id,
+    projectId: event.projectId,
+    type: event.type,
+    title: event.title,
+    eventDate: event.eventDate,
+    author: {
+      id: author.id,
+      name: author.name,
+      avatarUrl: author.avatarUrl
+    },
+    createdAt: event.createdAt.toISOString(),
+    updatedAt: event.updatedAt.toISOString()
   };
 }
 
@@ -281,7 +321,7 @@ export const listProjectNotes: RequestHandler = async (req, res, next) => {
       prisma.projectNote.findMany({
         where,
         include: documentInclude,
-        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        orderBy: [{ noteDate: "desc" }, { createdAt: "desc" }, { id: "desc" }],
         skip: (query.page - 1) * query.limit,
         take: query.limit
       })
@@ -311,6 +351,59 @@ export const getProjectNote: RequestHandler = async (req, res, next) => {
   }
 };
 
+export const listProjectTimelineEvents: RequestHandler = async (req, res, next) => {
+  try {
+    const projectId = await requireProject(req.params.projectId);
+    const [notes, meetingMinutes] = await Promise.all([
+      prisma.projectNote.findMany({
+        where: { projectId },
+        select: {
+          id: true,
+          projectId: true,
+          title: true,
+          noteDate: true,
+          author: { select: userSelect },
+          createdAt: true,
+          updatedAt: true
+        }
+      }),
+      prisma.meetingMinute.findMany({
+        where: { projectId },
+        select: {
+          id: true,
+          projectId: true,
+          title: true,
+          meetingDate: true,
+          author: { select: userSelect },
+          createdAt: true,
+          updatedAt: true
+        }
+      })
+    ]);
+
+    const events = [
+      ...notes.map((note) => toProjectTimelineEventDto({
+        ...note,
+        type: "NOTE",
+        eventDate: note.noteDate
+      })),
+      ...meetingMinutes.map((minute) => toProjectTimelineEventDto({
+        ...minute,
+        type: "MEETING_MINUTE",
+        eventDate: minute.meetingDate
+      }))
+    ].sort((left, right) =>
+      left.eventDate.localeCompare(right.eventDate) ||
+      left.type.localeCompare(right.type) ||
+      left.id.localeCompare(right.id)
+    );
+
+    res.json({ events });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createProjectNote: RequestHandler = async (req, res, next) => {
   const files = uploadedFiles(req);
   try {
@@ -323,6 +416,7 @@ export const createProjectNote: RequestHandler = async (req, res, next) => {
         projectId,
         title: body.title,
         content: body.content || null,
+        noteDate: body.noteDate,
         authorId: authUser.id,
         attachments: {
           create: createAttachmentData(files, authUser.id, {})
@@ -354,7 +448,7 @@ export const updateProjectNote: RequestHandler = async (req, res, next) => {
       requireContent(body.content, existing._count.attachments + files.length);
       const updated = await tx.projectNote.updateMany({
         where: { id: existing.id, updatedAt: new Date(expectedUpdatedAt) },
-        data: { title: body.title, content: body.content || null }
+        data: { title: body.title, content: body.content || null, noteDate: body.noteDate }
       });
       if (updated.count === 0) {
         throw new AppError(409, "Esta anotação foi alterada por outra pessoa");

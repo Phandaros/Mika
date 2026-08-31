@@ -14,6 +14,7 @@ export interface ProjectNoteDto {
   projectId: string;
   title: string;
   content: string | null;
+  noteDate: string;
   authorId: string;
   author: User;
   attachments: AttachmentDto[];
@@ -45,6 +46,7 @@ export interface MeetingMinuteDto {
 
 export interface CreateProjectNoteRequest {
   title: string;
+  noteDate: string;
   content?: string | null;
 }
 
@@ -67,3 +69,20 @@ export interface UpdateMeetingMinuteRequest extends CreateMeetingMinuteRequest {
 
 export type ProjectNotesResponse = ProjectDocumentListResponse<ProjectNoteDto>;
 export type MeetingMinutesResponse = ProjectDocumentListResponse<MeetingMinuteDto>;
+
+export type ProjectTimelineEventType = "NOTE" | "MEETING_MINUTE";
+
+export interface ProjectTimelineEventDto {
+  id: string;
+  projectId: string;
+  type: ProjectTimelineEventType;
+  title: string;
+  eventDate: string;
+  author: Pick<User, "id" | "name" | "avatarUrl">;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectTimelineEventsResponse {
+  events: ProjectTimelineEventDto[];
+}

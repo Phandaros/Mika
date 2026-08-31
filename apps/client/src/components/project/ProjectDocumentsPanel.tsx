@@ -74,6 +74,7 @@ interface ProjectDocumentsPanelProps {
 interface DocumentDraft {
   title: string;
   content: string;
+  noteDate: string;
   meetingDate: string;
   meetingTime: string;
   participantUserIds: string[];
@@ -83,6 +84,7 @@ interface DocumentDraft {
 const emptyDraft: DocumentDraft = {
   title: "",
   content: "",
+  noteDate: format(new Date(), "yyyy-MM-dd"),
   meetingDate: format(new Date(), "yyyy-MM-dd"),
   meetingTime: "",
   participantUserIds: [],
@@ -95,11 +97,13 @@ function minuteParticipantsText(minute: MeetingMinuteDto): string {
 
 function draftFromDocument(document: ProjectDocument | null): DocumentDraft {
   if (!document) {
-    return { ...emptyDraft, meetingDate: format(new Date(), "yyyy-MM-dd") };
+    const today = format(new Date(), "yyyy-MM-dd");
+    return { ...emptyDraft, noteDate: today, meetingDate: today };
   }
 
   if (isMeetingMinute(document)) {
     return {
+      ...emptyDraft,
       title: document.title,
       content: document.content ?? "",
       meetingDate: document.meetingDate,
@@ -112,7 +116,8 @@ function draftFromDocument(document: ProjectDocument | null): DocumentDraft {
   return {
     ...emptyDraft,
     title: document.title,
-    content: document.content ?? ""
+    content: document.content ?? "",
+    noteDate: document.noteDate
   };
 }
 
@@ -126,7 +131,7 @@ function documentTimestamp(document: ProjectDocument): string {
     return `${format(parseISO(`${document.meetingDate}T12:00:00`), "dd/MM/yyyy")}${time}`;
   }
 
-  return `Atualizada em ${format(parseISO(document.updatedAt), "dd/MM/yyyy 'às' HH:mm")}`;
+  return format(parseISO(`${document.noteDate}T12:00:00`), "dd/MM/yyyy");
 }
 
 function documentLifecycle(document: ProjectDocument): string {
@@ -135,6 +140,14 @@ function documentLifecycle(document: ProjectDocument): string {
   const changed = document.createdAt !== document.updatedAt;
 
   return `Criado por ${document.author.name} em ${created}${changed ? ` · Atualizado em ${updated}` : ""}`;
+}
+
+function documentListLifecycle(document: ProjectDocument): string {
+  const created = format(parseISO(document.createdAt), "dd/MM/yyyy");
+  const updated = format(parseISO(document.updatedAt), "dd/MM/yyyy");
+  return document.createdAt === document.updatedAt
+    ? `Criado em ${created}`
+    : `Criado em ${created} · editado em ${updated}`;
 }
 
 export function ProjectDocumentsPanel({
@@ -290,6 +303,10 @@ export function ProjectDocumentsPanel({
       toast.error("Informe conteúdo markdown ou adicione pelo menos um anexo");
       return;
     }
+    if (kind === "notes" && !draft.noteDate) {
+      toast.error("Informe a data da anotação");
+      return;
+    }
 
     try {
       if (kind === "notes") {
@@ -298,6 +315,7 @@ export function ProjectDocumentsPanel({
           values: {
             title,
             content,
+            noteDate: draft.noteDate,
             expectedUpdatedAt: creating ? undefined : selectedDocument?.updatedAt
           },
           files: pendingFiles
@@ -423,6 +441,7 @@ export function ProjectDocumentsPanel({
                     <span className="block truncate text-[13px] font-semibold text-text-primary">{item.title}</span>
                     <span className="mt-1 block truncate text-[11px] text-text-muted">{documentTimestamp(item)}</span>
                     <span className="mt-1 block truncate text-[11px] text-text-secondary">por {item.author.name}</span>
+                    <span className="mt-1 block truncate text-[10px] text-text-muted">{documentListLifecycle(item)}</span>
                   </button>
                 ))}
               </div>
@@ -490,7 +509,12 @@ export function ProjectDocumentsPanel({
                             </span>
                           ) : null}
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="mt-2 flex items-center gap-1.5 text-[12px] text-text-secondary">
+                          <CalendarDays aria-hidden="true" />
+                          {format(parseISO(`${selectedDocument.noteDate}T12:00:00`), "dd/MM/yyyy")}
+                        </div>
+                      )}
                     </>
                   ) : null}
                 </div>
@@ -530,6 +554,19 @@ export function ProjectDocumentsPanel({
                         autoFocus
                       />
                     </label>
+
+                    {kind === "notes" ? (
+                      <label className="flex max-w-xs flex-col gap-1.5">
+                        <span className="text-[13px] text-text-secondary">Data da anotação</span>
+                        <DatePicker
+                          value={draft.noteDate}
+                          clearable={false}
+                          onChange={(noteDate) =>
+                            setDraft((current) => ({ ...current, noteDate: noteDate ?? "" }))
+                          }
+                        />
+                      </label>
+                    ) : null}
 
                     {kind === "meeting-minutes" ? (
                       <>

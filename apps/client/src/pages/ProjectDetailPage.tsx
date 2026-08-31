@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-import { CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
+import { CalendarRange, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Priority, TaskStatus, type DisciplineType, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
+import { Priority, TaskStatus, type DisciplineType, type ProjectTimelineEventDto, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
+import { ProjectTimelineView } from "../components/project/ProjectTimelineView";
 import {
   DataTable,
   DataTableCell,
@@ -56,7 +57,7 @@ import { compareTasksByDisciplineAndCreation } from "../lib/taskDisciplines";
 import { cn } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
-type ProjectTab = "list" | "kanban";
+type ProjectTab = "list" | "kanban" | "timeline";
 type ProjectArea = "tasks" | "documents";
 type ProjectDocumentKind = "notes" | "meeting-minutes";
 type CompletionFilter = "open" | "completed" | "all";
@@ -106,7 +107,8 @@ export function ProjectDetailPage() {
   const updateTask = useUpdateTask(projectId ?? "");
   const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
   const activeArea: ProjectArea = searchParams.get("area") === "documents" ? "documents" : "tasks";
-  const activeTab: ProjectTab = searchParams.get("view") === "kanban" ? "kanban" : "list";
+  const requestedView = searchParams.get("view");
+  const activeTab: ProjectTab = requestedView === "kanban" || requestedView === "timeline" ? requestedView : "list";
   const documentKind: ProjectDocumentKind =
     searchParams.get("docs") === "meeting-minutes" ? "meeting-minutes" : "notes";
   const selectedDocumentId =
@@ -223,6 +225,23 @@ export function ProjectDetailPage() {
       params.delete("meeting");
       if (id) {
         params.set(documentKind === "notes" ? "note" : "meeting", id);
+      }
+    });
+  }
+
+  function openTimelineEvent(event: ProjectTimelineEventDto) {
+    updatePageParams((params) => {
+      params.delete("task");
+      params.delete("note");
+      params.delete("meeting");
+      params.set("area", "documents");
+
+      if (event.type === "NOTE") {
+        params.delete("docs");
+        params.set("note", event.id);
+      } else {
+        params.set("docs", "meeting-minutes");
+        params.set("meeting", event.id);
       }
     });
   }
@@ -419,6 +438,7 @@ export function ProjectDetailPage() {
           <div className="flex items-center gap-5 text-sm font-bold text-text-secondary">
             <ViewTab active={activeTab === "list"} icon={<List size={15} />} label="Lista" onClick={() => setTaskView("list")} />
             <ViewTab active={activeTab === "kanban"} icon={<KanbanSquare size={15} />} label="Quadro" onClick={() => setTaskView("kanban")} />
+            <ViewTab active={activeTab === "timeline"} icon={<CalendarRange size={15} />} label="Linha do Tempo" onClick={() => setTaskView("timeline")} />
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-md border border-border px-3 py-1 text-sm font-semibold text-text-secondary">
@@ -526,6 +546,16 @@ export function ProjectDetailPage() {
             onPatchCompletion={patchTaskCompletion}
             onCreateTaskInSection={(sectionId) => openTaskCreate({ projectId, sectionId })}
             projectId={projectId}
+          />
+        ) : null}
+        {activeTab === "timeline" ? (
+          <ProjectTimelineView
+            projectId={projectId}
+            sections={visibleDisciplines}
+            tasks={visibleTasks}
+            search={search}
+            onOpenTask={openTaskDetail}
+            onOpenEvent={openTimelineEvent}
           />
         ) : null}
       </div>
