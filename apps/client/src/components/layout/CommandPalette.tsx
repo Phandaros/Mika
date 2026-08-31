@@ -1,6 +1,6 @@
 import { Command } from "cmdk";
 import { ArrowRight, FolderKanban, Home, LayoutList, Search, UserRound, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Role } from "shared";
 import { useAuth } from "../../hooks/useAuth";
@@ -24,6 +24,8 @@ export function CommandPalette() {
   const users = data?.users ?? [];
   const canUsers = user?.role === Role.ADMIN || user?.role === Role.COORDINATOR;
   const hasDynamicResults = projects.length > 0 || taskItems.length > 0 || users.length > 0;
+  const trimmedSearch = search.trim();
+  const searchPath = `/search?q=${encodeURIComponent(trimmedSearch)}`;
 
   useEffect(() => {
     if (!open) {
@@ -34,16 +36,6 @@ export function CommandPalette() {
   function go(path: string) {
     setOpen(false);
     navigate(path);
-  }
-
-  function goSearch() {
-    const q = search.trim();
-
-    if (!q) {
-      return;
-    }
-
-    go(`/search?q=${encodeURIComponent(q)}`);
   }
 
   function goProject(projectId: string, taskId?: string) {
@@ -70,49 +62,54 @@ export function CommandPalette() {
             <>
               <Command.Empty className="px-3 py-6 text-center text-sm text-text-secondary">Nenhum resultado.</Command.Empty>
 
-              {search.trim() ? (
+              {trimmedSearch ? (
                 <Command.Group heading="Pesquisar" className="px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-muted">
-                  <Command.Item
-                    value={`Buscar por ${search.trim()}`}
-                    onSelect={goSearch}
+                  <CommandLinkItem
+                    href={searchPath}
+                    value={`Buscar por ${trimmedSearch}`}
+                    onNavigate={() => go(searchPath)}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                   >
                     <Search size={16} className="text-brand-orange" />
-                    <span className="min-w-0 flex-1 truncate">Buscar por "{search.trim()}"</span>
+                    <span className="min-w-0 flex-1 truncate">Buscar por "{trimmedSearch}"</span>
                     <ArrowRight size={15} className="text-text-muted" />
-                  </Command.Item>
+                  </CommandLinkItem>
                 </Command.Group>
               ) : null}
 
               <Command.Group heading="Navegação" className="px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-muted">
-                <Command.Item
-                  onSelect={() => go("/")}
+                <CommandLinkItem
+                  href="/"
+                  onNavigate={() => go("/")}
                   className={cn(
                     "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm",
                     "aria-selected:bg-surface-hover aria-selected:text-text-primary"
                   )}
                 >
                   <Home size={16} /> Início
-                </Command.Item>
-                <Command.Item
-                  onSelect={() => go("/projects")}
+                </CommandLinkItem>
+                <CommandLinkItem
+                  href="/projects"
+                  onNavigate={() => go("/projects")}
                   className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                 >
                   <FolderKanban size={16} /> Projetos
-                </Command.Item>
-                <Command.Item
-                  onSelect={() => go("/my-tasks")}
+                </CommandLinkItem>
+                <CommandLinkItem
+                  href="/my-tasks"
+                  onNavigate={() => go("/my-tasks")}
                   className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                 >
                   <LayoutList size={16} /> Minhas tarefas
-                </Command.Item>
+                </CommandLinkItem>
                 {canUsers ? (
-                  <Command.Item
-                    onSelect={() => go("/users")}
+                  <CommandLinkItem
+                    href="/users"
+                    onNavigate={() => go("/users")}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                   >
                     <Users size={16} /> Usuários
-                  </Command.Item>
+                  </CommandLinkItem>
                 ) : null}
               </Command.Group>
 
@@ -121,16 +118,17 @@ export function CommandPalette() {
                 className="px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-muted"
               >
                 {projects.map((project) => (
-                  <Command.Item
+                  <CommandLinkItem
                     key={project.id}
+                    href={`/projects/${project.id}`}
                     value={project.name}
-                    onSelect={() => goProject(project.id)}
+                    onNavigate={() => goProject(project.id)}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                   >
                     <FolderKanban size={16} className="text-text-muted" />
                     <span className="min-w-0 flex-1 truncate">{project.name}</span>
                     {project.client ? <span className="max-w-36 truncate text-xs text-text-muted">{project.client}</span> : null}
-                  </Command.Item>
+                  </CommandLinkItem>
                 ))}
               </Command.Group>
 
@@ -140,18 +138,20 @@ export function CommandPalette() {
               >
                 {taskItems.map((task) => {
                   const subtitle = `${task.projectName} - ${task.sectionName}`;
+                  const taskPath = `/projects/${task.projectId}?task=${encodeURIComponent(task.id)}`;
 
                   return (
-                    <Command.Item
+                    <CommandLinkItem
                       key={task.id}
+                      href={taskPath}
                       value={`${task.title} ${subtitle}`}
-                      onSelect={() => goProject(task.projectId, task.id)}
+                      onNavigate={() => goProject(task.projectId, task.id)}
                       className="flex cursor-pointer flex-col gap-0.5 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                     >
                       <span className="truncate font-medium">{task.title}</span>
                       <span className="truncate text-xs text-text-muted">{subtitle}</span>
                       {task.matchContext ? <SearchMatchContext context={task.matchContext} query={debouncedSearch} compact /> : null}
-                    </Command.Item>
+                    </CommandLinkItem>
                   );
                 })}
               </Command.Group>
@@ -161,16 +161,17 @@ export function CommandPalette() {
                 className="px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-muted"
               >
                 {users.map((u) => (
-                  <Command.Item
+                  <CommandLinkItem
                     key={u.id}
+                    href={`/users/${u.id}`}
                     value={`${u.name} ${u.email}`}
-                    onSelect={() => go(`/users/${u.id}`)}
+                    onNavigate={() => go(`/users/${u.id}`)}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-surface-hover"
                   >
                     <UserRound size={16} className="text-text-muted" />
                     <span className="min-w-0 flex-1 truncate">{u.name}</span>
                     <span className="max-w-44 truncate text-xs text-text-muted">{u.email}</span>
-                  </Command.Item>
+                  </CommandLinkItem>
                 ))}
               </Command.Group>
 
@@ -192,6 +193,44 @@ export function CommandPalette() {
         </Command>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface CommandLinkItemProps {
+  children: ReactNode;
+  className?: string;
+  href: string;
+  onNavigate: () => void;
+  value?: string;
+}
+
+function CommandLinkItem({ children, className, href, onNavigate, value }: CommandLinkItemProps) {
+  const skipNextSelect = useRef(false);
+
+  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    const opensNewBrowsingContext = event.ctrlKey || event.metaKey || event.shiftKey || event.altKey;
+    skipNextSelect.current = opensNewBrowsingContext;
+
+    if (!opensNewBrowsingContext) {
+      event.preventDefault();
+    }
+  }
+
+  function handleSelect() {
+    if (skipNextSelect.current) {
+      skipNextSelect.current = false;
+      return;
+    }
+
+    onNavigate();
+  }
+
+  return (
+    <Command.Item asChild value={value} onSelect={handleSelect}>
+      <a href={href} onClick={handleClick} className={className}>
+        {children}
+      </a>
+    </Command.Item>
   );
 }
 
