@@ -28,6 +28,14 @@ export type TimelineLaneItem<T> = {
   endIndex: number;
 };
 
+export type TimelineMonthBand = {
+  id: string;
+  startIndex: number;
+  dayCount: number;
+  alternate: boolean;
+  startsAtBoundary: boolean;
+};
+
 export function taskTimelineGeometry(task: TimelineTask, today: string): TimelineTaskGeometry | null {
   const startDate = validTimelineDateOnly(task.startDate);
   if (!startDate) {
@@ -98,6 +106,51 @@ export function projectTimelineRange(
 
 export function timelineDateIndex(date: string, rangeFrom: string): number {
   return differenceInCalendarDays(requiredLocalDate(date), requiredLocalDate(rangeFrom));
+}
+
+export function timelineMonthBands(rangeFrom: string, dayCount: number): TimelineMonthBand[] {
+  if (dayCount <= 0) {
+    return [];
+  }
+
+  const bands: TimelineMonthBand[] = [];
+  let startIndex = 0;
+  let startDate = requiredLocalDate(rangeFrom);
+  let currentMonth = startDate.getFullYear() * 12 + startDate.getMonth();
+
+  for (let index = 1; index <= dayCount; index += 1) {
+    const nextDate = index < dayCount ? addDays(requiredLocalDate(rangeFrom), index) : null;
+    const nextMonth = nextDate ? nextDate.getFullYear() * 12 + nextDate.getMonth() : null;
+    if (nextMonth === currentMonth) {
+      continue;
+    }
+
+    bands.push({
+      id: `month-${currentMonth}`,
+      startIndex,
+      dayCount: index - startIndex,
+      alternate: currentMonth % 2 === 0,
+      startsAtBoundary: startDate.getDate() === 1
+    });
+    startIndex = index;
+    if (nextDate && nextMonth !== null) {
+      startDate = nextDate;
+      currentMonth = nextMonth;
+    }
+  }
+
+  return bands;
+}
+
+export function timelineWeekBoundaries(rangeFrom: string, dayCount: number): number[] {
+  const from = requiredLocalDate(rangeFrom);
+  const boundaries: number[] = [];
+  for (let index = 0; index < dayCount; index += 1) {
+    if (addDays(from, index).getDay() === 1) {
+      boundaries.push(index);
+    }
+  }
+  return boundaries;
 }
 
 export function fitTimelineScale(viewportWidth: number, dayCount: number): number {

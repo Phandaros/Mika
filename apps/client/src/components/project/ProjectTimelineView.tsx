@@ -38,8 +38,11 @@ import {
   taskTimelineGeometry,
   timelineDateIndex,
   timelineHeaderDensity,
+  timelineMonthBands,
+  timelineWeekBoundaries,
   validTimelineDateOnly,
   type TimelineLaneItem,
+  type TimelineMonthBand,
   type TimelineTaskGeometry
 } from "../../lib/projectTimeline";
 import { statusTimelineStyle } from "../../lib/taskTimelineStyle";
@@ -202,6 +205,13 @@ export function ProjectTimelineView({
     () => timelineTicks(range.from, visibleStartIndex, visibleEndIndex, density, pixelsPerDay),
     [density, pixelsPerDay, range.from, visibleEndIndex, visibleStartIndex]
   );
+  const monthBands = useMemo(() => timelineMonthBands(range.from, range.dayCount), [range.dayCount, range.from]);
+  const weekBoundaries = useMemo(
+    () => timelineWeekBoundaries(range.from, range.dayCount),
+    [range.dayCount, range.from]
+  );
+  const showCalendarGuides = density !== "day";
+  const showWeekGuides = showCalendarGuides && pixelsPerDay * 7 >= 8;
   const nonWorkingBands = useMemo(() => {
     if (pixelsPerDay < 6) {
       return [];
@@ -380,9 +390,22 @@ export function ProjectTimelineView({
                 pixelsPerDay={pixelsPerDay}
                 rangeFrom={range.from}
                 density={density}
+                monthBands={monthBands}
+                weekBoundaries={weekBoundaries}
+                showCalendarGuides={showCalendarGuides}
+                showWeekGuides={showWeekGuides}
               />
 
               <div className="relative" style={{ height: bodyHeight }}>
+                <TimelineCalendarGuides
+                  left={NAME_COLUMN_WIDTH}
+                  height={bodyHeight}
+                  pixelsPerDay={pixelsPerDay}
+                  monthBands={monthBands}
+                  weekBoundaries={weekBoundaries}
+                  showCalendarGuides={showCalendarGuides}
+                  showWeekGuides={showWeekGuides}
+                />
                 {nonWorkingBands.map((band) => (
                   <div
                     key={band.date}
@@ -396,7 +419,7 @@ export function ProjectTimelineView({
                 ))}
                 {todayIndex >= 0 && todayIndex < range.dayCount ? (
                   <div
-                    className="pointer-events-none absolute top-0 h-full w-px bg-brand-orange/80"
+                    className="pointer-events-none absolute top-0 z-[4] h-full w-px bg-[var(--color-brand-orange)] opacity-60"
                     style={{ left: NAME_COLUMN_WIDTH + todayIndex * pixelsPerDay + pixelsPerDay / 2 }}
                   />
                 ) : null}
@@ -439,7 +462,11 @@ function TimelineHeader({
   ticks,
   pixelsPerDay,
   rangeFrom,
-  density
+  density,
+  monthBands,
+  weekBoundaries,
+  showCalendarGuides,
+  showWeekGuides
 }: {
   width: number;
   timelineWidth: number;
@@ -447,6 +474,10 @@ function TimelineHeader({
   pixelsPerDay: number;
   rangeFrom: string;
   density: "day" | "week" | "month";
+  monthBands: TimelineMonthBand[];
+  weekBoundaries: number[];
+  showCalendarGuides: boolean;
+  showWeekGuides: boolean;
 }) {
   return (
     <div className="sticky top-0 z-30 flex border-b border-border bg-bg-2" style={{ width, height: HEADER_HEIGHT }}>
@@ -457,6 +488,15 @@ function TimelineHeader({
         Seções
       </div>
       <div className="relative shrink-0" style={{ width: timelineWidth }}>
+        <TimelineCalendarGuides
+          left={0}
+          height={HEADER_HEIGHT}
+          pixelsPerDay={pixelsPerDay}
+          monthBands={monthBands}
+          weekBoundaries={weekBoundaries}
+          showCalendarGuides={showCalendarGuides}
+          showWeekGuides={showWeekGuides}
+        />
         {ticks.map((index) => {
           const date = dateAtIndex(rangeFrom, index);
           return (
@@ -484,6 +524,58 @@ function TimelineHeader({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function TimelineCalendarGuides({
+  left,
+  height,
+  pixelsPerDay,
+  monthBands,
+  weekBoundaries,
+  showCalendarGuides,
+  showWeekGuides
+}: {
+  left: number;
+  height: number;
+  pixelsPerDay: number;
+  monthBands: TimelineMonthBand[];
+  weekBoundaries: number[];
+  showCalendarGuides: boolean;
+  showWeekGuides: boolean;
+}) {
+  if (!showCalendarGuides) {
+    return null;
+  }
+
+  return (
+    <div className="pointer-events-none absolute top-0" aria-hidden="true" style={{ left, height }}>
+      {monthBands.map((band) => (
+        <span
+          key={band.id}
+          className="absolute inset-y-0"
+          style={{
+            left: band.startIndex * pixelsPerDay,
+            width: band.dayCount * pixelsPerDay,
+            backgroundColor: band.alternate ? "var(--color-calendar-month-stripe-bg)" : undefined
+          }}
+        />
+      ))}
+      {showWeekGuides ? weekBoundaries.map((index) => (
+        <span
+          key={`week-${index}`}
+          className="absolute inset-y-0 w-px"
+          style={{ left: index * pixelsPerDay, backgroundColor: "var(--color-calendar-week-boundary)" }}
+        />
+      )) : null}
+      {monthBands.filter((band) => band.startsAtBoundary).map((band) => (
+        <span
+          key={`${band.id}-boundary`}
+          className="absolute inset-y-0 w-px"
+          style={{ left: band.startIndex * pixelsPerDay, backgroundColor: "var(--color-calendar-month-boundary)" }}
+        />
+      ))}
     </div>
   );
 }

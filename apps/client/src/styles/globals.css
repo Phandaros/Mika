@@ -25,6 +25,9 @@
   --color-border-focus: rgba(255,255,255,0.20);
   --color-calendar-weekend-bg: rgba(244,244,245,0.035);
   --color-calendar-holiday-bg: rgba(242,101,34,0.08);
+  --color-calendar-month-stripe-bg: rgba(244,244,245,0.018);
+  --color-calendar-month-boundary: rgba(244,244,245,0.11);
+  --color-calendar-week-boundary: rgba(244,244,245,0.035);
   --color-text-primary: #e8e8ec;
   --color-text-secondary: #9999a8;
   --color-text-muted: #5a5a6e;

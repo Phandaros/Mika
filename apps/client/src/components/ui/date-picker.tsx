@@ -16,6 +16,7 @@ import {
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { formatDateInput, maskDateInput, parseDateInput } from "../../lib/dateInput";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly } from "../../lib/utils";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
@@ -157,6 +158,8 @@ export function DateRangePicker({
   const [open, setOpen] = useState(false);
   const [draftStart, setDraftStart] = useState<Date | null>(null);
   const [draftEnd, setDraftEnd] = useState<Date | null>(null);
+  const [draftStartInput, setDraftStartInput] = useState("");
+  const [draftEndInput, setDraftEndInput] = useState("");
   const [saving, setSaving] = useState(false);
 
   const displayedStartDate = open ? localDateToDateOnly(draftStart) : startDate ?? null;
@@ -164,8 +167,12 @@ export function DateRangePicker({
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
-      setDraftStart(dateOnlyToLocalDate(startDate));
-      setDraftEnd(dateOnlyToLocalDate(endDate));
+      const nextStart = dateOnlyToLocalDate(startDate);
+      const nextEnd = dateOnlyToLocalDate(endDate);
+      setDraftStart(nextStart);
+      setDraftEnd(nextEnd);
+      setDraftStartInput(formatDateInput(nextStart));
+      setDraftEndInput(formatDateInput(nextEnd));
       setOpen(true);
       return;
     }
@@ -176,7 +183,13 @@ export function DateRangePicker({
   }
 
   async function handleSave() {
-    const normalized = normalizeDateDraft(draftStart, draftEnd);
+    const parsedStart = parseDateInput(draftStartInput);
+    const parsedEnd = parseDateInput(draftEndInput);
+    if ((draftStartInput && !parsedStart) || (draftEndInput && !parsedEnd)) {
+      return;
+    }
+
+    const normalized = normalizeDateDraft(parsedStart, parsedEnd);
     const nextValue = {
       startDate: localDateToDateOnly(normalized.startDate),
       endDate: localDateToDateOnly(normalized.endDate)
@@ -196,6 +209,8 @@ export function DateRangePicker({
   async function handleClear() {
     setDraftStart(null);
     setDraftEnd(null);
+    setDraftStartInput("");
+    setDraftEndInput("");
     setSaving(true);
     try {
       onStartDateChange(null);
@@ -204,6 +219,34 @@ export function DateRangePicker({
       setOpen(false);
     } finally {
       setSaving(false);
+    }
+  }
+
+  function handleDraftDateChange(kind: "start" | "end", date: Date | null) {
+    if (kind === "start") {
+      setDraftStart(date);
+      setDraftStartInput(formatDateInput(date));
+      return;
+    }
+
+    setDraftEnd(date);
+    setDraftEndInput(formatDateInput(date));
+  }
+
+  function handleDraftInputChange(kind: "start" | "end", value: string) {
+    const masked = maskDateInput(value);
+    const parsed = parseDateInput(masked);
+    if (kind === "start") {
+      setDraftStartInput(masked);
+      if (!masked || parsed) {
+        setDraftStart(parsed);
+      }
+      return;
+    }
+
+    setDraftEndInput(masked);
+    if (!masked || parsed) {
+      setDraftEnd(parsed);
     }
   }
 
@@ -225,8 +268,12 @@ export function DateRangePicker({
         <DateRangeCalendarPanel
           startDate={draftStart}
           endDate={draftEnd}
-          onStartDateChange={setDraftStart}
-          onEndDateChange={setDraftEnd}
+          startDateInput={draftStartInput}
+          endDateInput={draftEndInput}
+          onStartDateChange={(date) => handleDraftDateChange("start", date)}
+          onEndDateChange={(date) => handleDraftDateChange("end", date)}
+          onStartDateInputChange={(value) => handleDraftInputChange("start", value)}
+          onEndDateInputChange={(value) => handleDraftInputChange("end", value)}
           onSave={() => void handleSave()}
           onClear={() => void handleClear()}
           clearLabel={clearLabel}
@@ -241,8 +288,12 @@ export function DateRangePicker({
 function DateRangeCalendarPanel({
   startDate,
   endDate,
+  startDateInput,
+  endDateInput,
   onStartDateChange,
   onEndDateChange,
+  onStartDateInputChange,
+  onEndDateInputChange,
   onSave,
   onClear,
   clearLabel,
@@ -251,8 +302,12 @@ function DateRangeCalendarPanel({
 }: {
   startDate: Date | null;
   endDate: Date | null;
+  startDateInput: string;
+  endDateInput: string;
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
+  onStartDateInputChange: (value: string) => void;
+  onEndDateInputChange: (value: string) => void;
   onSave: () => void;
   onClear: () => void;
   clearLabel: string;
@@ -260,6 +315,9 @@ function DateRangeCalendarPanel({
   saving: boolean;
 }) {
   const anchorDate = startDate ?? endDate ?? new Date();
+  const startDateInvalid = Boolean(startDateInput && !parseDateInput(startDateInput));
+  const endDateInvalid = Boolean(endDateInput && !parseDateInput(endDateInput));
+  const hasInvalidDate = startDateInvalid || endDateInvalid;
 
   function handleDaySelect(day: Date) {
     if (!startDate || (startDate && endDate)) {
@@ -281,9 +339,22 @@ function DateRangeCalendarPanel({
     <div className="overflow-hidden rounded-md border border-border bg-surface-card shadow-2xl">
       <div className="grid gap-3 border-b border-border p-3">
         <div className="grid grid-cols-2 gap-2">
-          <DateSummaryChip label="Inicio" date={startDate} active={Boolean(startDate && !endDate)} />
-          <DateSummaryChip label="Entrega" date={endDate} active={Boolean(endDate)} />
+          <DateSummaryInput
+            label="Início"
+            value={startDateInput}
+            active={Boolean(startDate && !endDate)}
+            invalid={startDateInvalid}
+            onChange={onStartDateInputChange}
+          />
+          <DateSummaryInput
+            label="Entrega"
+            value={endDateInput}
+            active={Boolean(endDate)}
+            invalid={endDateInvalid}
+            onChange={onEndDateInputChange}
+          />
         </div>
+        {hasInvalidDate ? <p className="text-[11px] font-medium text-[--status-late-text]">Use uma data válida no formato dd/mm/aaaa.</p> : null}
       </div>
       <ScrollableCalendarMonths anchorDate={anchorDate}>
         {(month, todayDate) => (
@@ -294,7 +365,7 @@ function DateRangeCalendarPanel({
         <Button variant="ghost" onClick={onClear} disabled={saving}>
           {clearLabel}
         </Button>
-        <Button onClick={onSave} disabled={saving}>
+        <Button onClick={onSave} disabled={saving || hasInvalidDate}>
           {saveLabel}
         </Button>
       </div>
@@ -423,19 +494,41 @@ function MonthGrid({
   );
 }
 
-function DateSummaryChip({ label, date, active }: { label: string; date: Date | null; active: boolean }) {
+function DateSummaryInput({
+  label,
+  value,
+  active,
+  invalid,
+  onChange
+}: {
+  label: string;
+  value: string;
+  active: boolean;
+  invalid: boolean;
+  onChange: (value: string) => void;
+}) {
   return (
-    <div
+    <label
       className={cn(
-        "min-w-0 rounded-md border border-border bg-bg-2 px-3 py-2",
-        active && "border-brand-orange bg-brand-orange/10"
+        "min-w-0 rounded-md border border-border bg-bg-2 px-3 py-2 transition focus-within:border-brand-orange focus-within:ring-1 focus-within:ring-brand-orange",
+        active && "border-brand-orange bg-brand-orange/10",
+        invalid && "border-[--status-late-text] bg-[--status-late-bg] focus-within:border-[--status-late-text] focus-within:ring-[--status-late-text]"
       )}
     >
       <span className="block text-[11px] font-semibold uppercase text-text-muted">{label}</span>
-      <span className={cn("mt-0.5 block truncate text-sm font-semibold", date ? "text-text-primary" : "text-text-muted")}>
-        {date ? format(date, "dd/MM/yyyy") : "--"}
-      </span>
-    </div>
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={10}
+        aria-label={`Data de ${label.toLocaleLowerCase("pt-BR")}`}
+        aria-invalid={invalid}
+        value={value}
+        placeholder="--/--/----"
+        className="mt-0.5 block w-full min-w-0 bg-transparent text-sm font-semibold text-text-primary outline-none placeholder:text-text-muted"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
   );
 }
 

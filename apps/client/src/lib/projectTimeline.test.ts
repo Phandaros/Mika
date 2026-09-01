@@ -8,7 +8,9 @@ import {
   packTimelineLanes,
   projectTimelineRange,
   taskTimelineGeometry,
+  timelineMonthBands,
   timelineHeaderDensity,
+  timelineWeekBoundaries,
   validTimelineDateOnly,
   type TimelineTask
 } from "./projectTimeline";
@@ -94,5 +96,25 @@ describe("projectTimeline", () => {
     expect(timelineHeaderDensity(20)).toBe("week");
     expect(timelineHeaderDensity(8)).toBe("week");
     expect(timelineHeaderDensity(4)).toBe("month");
+  });
+
+  it("divide o calendário em meses e limites semanais reais", () => {
+    expect(timelineMonthBands("2026-01-29", 10)).toEqual([
+      {
+        id: "month-24312",
+        startIndex: 0,
+        dayCount: 3,
+        alternate: true,
+        startsAtBoundary: false
+      },
+      {
+        id: "month-24313",
+        startIndex: 3,
+        dayCount: 7,
+        alternate: false,
+        startsAtBoundary: true
+      }
+    ]);
+    expect(timelineWeekBoundaries("2026-01-29", 10)).toEqual([4]);
   });
 });
