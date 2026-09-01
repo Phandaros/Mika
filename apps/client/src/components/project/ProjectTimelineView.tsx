@@ -114,7 +114,10 @@ export function ProjectTimelineView({
     () => uniqueTasks.map((task) => taskTimelineGeometry(task, today)).filter((item): item is TimelineTaskGeometry => Boolean(item)),
     [today, uniqueTasks]
   );
-  const undatedTasks = useMemo(() => uniqueTasks.filter((task) => !validTimelineDateOnly(task.startDate)), [uniqueTasks]);
+  const undatedTasks = useMemo(
+    () => uniqueTasks.filter((task) => !validTimelineDateOnly(task.startDate) && !validTimelineDateOnly(task.dueDate)),
+    [uniqueTasks]
+  );
   const range = useMemo(() => projectTimelineRange(geometries, events, today), [events, geometries, today]);
   const holidaysQuery = useCompanyHolidays(range.from, range.to);
   const holidayMap = useMemo(
@@ -780,8 +783,8 @@ function UndatedTasksSheet({ tasks, onOpenTask }: { tasks: Task[]; onOpenTask: (
       </SheetTrigger>
       <SheetContent className="flex w-[min(440px,92vw)] max-w-none flex-col gap-0 border-border p-0">
         <SheetHeader className="border-b border-border px-5 py-4">
-          <SheetTitle>Tarefas sem data de início</SheetTitle>
-          <SheetDescription>Estas tarefas não receberam uma data inventada na linha do tempo.</SheetDescription>
+          <SheetTitle>Tarefas sem data</SheetTitle>
+          <SheetDescription>Estas tarefas não possuem data válida de início nem de entrega.</SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden p-3">
           {tasks.map((task) => (
@@ -795,6 +798,7 @@ function UndatedTasksSheet({ tasks, onOpenTask }: { tasks: Task[]; onOpenTask: (
               <span className="truncate text-[10px] text-text-muted">
                 {task.discipline?.name ?? "Sem seção"}
                 {task.startDate && !validTimelineDateOnly(task.startDate) ? " · início inválido" : ""}
+                {task.dueDate && !validTimelineDateOnly(task.dueDate) ? " · entrega inválida" : ""}
                 {validTimelineDateOnly(task.completedAt) ? ` · concluída em ${formatDateOnly(task.completedAt, "dd/MM/yyyy")}` : ""}
                 {task.completedAt && !validTimelineDateOnly(task.completedAt) ? " · conclusão inválida" : ""}
               </span>

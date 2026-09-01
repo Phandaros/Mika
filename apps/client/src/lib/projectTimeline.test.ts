@@ -19,6 +19,7 @@ function task(overrides: Partial<TimelineTask> = {}): TimelineTask {
     title: "Projeto executivo",
     disciplineId: "section-1",
     startDate: "2026-08-01",
+    dueDate: null,
     completedAt: null,
     completed: false,
     status: TaskStatus.IN_PROGRESS,
@@ -37,8 +38,16 @@ describe("projectTimeline", () => {
       .toMatchObject({ kind: "bar", endDate: "2026-08-20" });
   });
 
-  it("separa tarefas sem início e cria marcadores futuros ou defensivos", () => {
-    expect(taskTimelineGeometry(task({ startDate: null }), "2026-08-31")).toBeNull();
+  it("usa a entrega como tarefa de um dia quando não há início", () => {
+    expect(taskTimelineGeometry(task({ startDate: null, dueDate: "2026-09-10" }), "2026-08-31"))
+      .toMatchObject({ kind: "bar", startDate: "2026-09-10", endDate: "2026-09-10" });
+    expect(taskTimelineGeometry(task({ startDate: "2026-02-30", dueDate: "2026-09-10" }), "2026-08-31"))
+      .toMatchObject({ kind: "bar", startDate: "2026-09-10" });
+    expect(taskTimelineGeometry(task({ startDate: null, dueDate: null }), "2026-08-31")).toBeNull();
+    expect(taskTimelineGeometry(task({ startDate: null, dueDate: "2026-02-30" }), "2026-08-31")).toBeNull();
+  });
+
+  it("cria marcadores futuros ou defensivos para tarefas com início", () => {
     expect(taskTimelineGeometry(task({ startDate: "2026-09-10" }), "2026-08-31"))
       .toMatchObject({ kind: "future-marker", startDate: "2026-09-10" });
     expect(taskTimelineGeometry(task({ completed: true, completedAt: null }), "2026-08-31"))

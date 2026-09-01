@@ -4,7 +4,7 @@ import { dateOnlyToLocalDate, toDateOnly } from "./utils";
 
 export type TimelineTask = Pick<
   Task,
-  "id" | "title" | "startDate" | "completedAt" | "completed" | "status"
+  "id" | "title" | "startDate" | "dueDate" | "completedAt" | "completed" | "status"
 > & { disciplineId: string };
 
 export type TimelineTaskGeometry = {
@@ -31,7 +31,10 @@ export type TimelineLaneItem<T> = {
 export function taskTimelineGeometry(task: TimelineTask, today: string): TimelineTaskGeometry | null {
   const startDate = validTimelineDateOnly(task.startDate);
   if (!startDate) {
-    return null;
+    const dueDate = validTimelineDateOnly(task.dueDate);
+    return dueDate
+      ? { task, kind: "bar", startDate: dueDate, endDate: dueDate, warning: null }
+      : null;
   }
 
   if (task.completed) {
