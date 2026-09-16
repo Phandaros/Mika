@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
 import { CalendarRange, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Priority, TaskStatus, type DisciplineType, type ProjectTimelineEventDto, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
@@ -43,7 +43,7 @@ import { SearchableMultiSelect } from "../components/ui/searchable-multi-select"
 import { SearchableSelect } from "../components/ui/searchable-select";
 import { useAuth } from "../hooks/useAuth";
 import { usePortfolioFacets, useProject } from "../hooks/useProjects";
-import { useCreateTask, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
+import { useCreateTask, useTaskById, useUpdateTask, useUpdateTaskCompletion, useUpdateTaskStatus } from "../hooks/useTasks";
 import { useUsers } from "../hooks/useUsers";
 import {
   defaultPrioritySelection,
@@ -54,6 +54,7 @@ import {
 import { canCompleteTasks, canManageTasks } from "../lib/permissions";
 import { isAfterMaxDeadline, MAX_DEADLINE_BEFORE_DUE_DATE_MESSAGE } from "../lib/taskDeadlineRules";
 import { compareTasksByDisciplineAndCreation } from "../lib/taskDisciplines";
+import { resolveTaskProjectId } from "../lib/taskLink";
 import { cn } from "../lib/utils";
 import { useUiStore } from "../store/uiStore";
 
@@ -101,8 +102,11 @@ function tasksFromDisciplines(sections: Section[], projectName: string): TaskWit
 
 export function ProjectDetailPage() {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: project, isLoading } = useProject(projectId);
+  const taskId = searchParams.get("task");
+  const { data: project, isError: isProjectError, isLoading } = useProject(projectId);
+  const { data: fallbackTask, isLoading: isFallbackTaskLoading } = useTaskById(isProjectError ? taskId : null);
   const updateTaskStatus = useUpdateTaskStatus(projectId ?? "");
   const updateTask = useUpdateTask(projectId ?? "");
   const updateTaskCompletion = useUpdateTaskCompletion(projectId ?? "");
@@ -131,6 +135,25 @@ export function ProjectDetailPage() {
   const { data: users = [] } = useUsers();
   const { data: portfolioBuilders = [] } = usePortfolioFacets();
 
+  useEffect(() => {
+    if (!isProjectError || !fallbackTask) {
+      return;
+    }
+
+    const fallbackProjectId = resolveTaskProjectId(fallbackTask);
+    if (!fallbackProjectId || fallbackProjectId === projectId) {
+      return;
+    }
+
+    navigate(
+      {
+        pathname: `/projects/${fallbackProjectId}`,
+        search: searchParams.toString()
+      },
+      { replace: true }
+    );
+  }, [fallbackTask, isProjectError, navigate, projectId, searchParams]);
+
   const disciplines = project?.sections ?? project?.disciplines ?? [];
   const allTasks = useMemo(() => tasksFromDisciplines(disciplines, project?.name ?? ""), [disciplines, project?.name]);
 
@@ -157,7 +180,6 @@ export function ProjectDetailPage() {
   }
 
   useEffect(() => {
-    const taskId = searchParams.get("task");
     if (!taskId || allTasks.length === 0) {
       return;
     }
@@ -165,7 +187,7 @@ export function ProjectDetailPage() {
     if (match) {
       setSelectedTask(match);
     }
-  }, [searchParams, allTasks]);
+  }, [taskId, allTasks]);
 
   function closeTaskDetail() {
     setSelectedTask(null);
@@ -337,7 +359,7 @@ export function ProjectDetailPage() {
     void updateTaskStatus.mutateAsync({ id: result.draggableId, status: nextStatus });
   }
 
-  if (isLoading) {
+  if (isLoading || (isProjectError && taskId && isFallbackTaskLoading)) {
     return <LoadingSpinner />;
   }
 

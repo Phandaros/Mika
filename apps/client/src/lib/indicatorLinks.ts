@@ -1,6 +1,8 @@
 import type { AdvancedSearchIndicatorMetric, IndicatorPeriod, IndicatorScope } from "shared";
 import { DeliveryStatus, TaskStatus } from "shared";
 
+export const UNASSIGNED_ASSIGNEE_FILTER = "none";
+
 export function taskIndicatorLink(input: {
   period: IndicatorPeriod;
   from?: string | null;
@@ -32,8 +34,8 @@ export function taskIndicatorLink(input: {
     params.append("status", input.status);
   }
 
-  if (input.assigneeId) {
-    params.set("assigneeId", input.assigneeId);
+  if (input.assigneeId !== undefined) {
+    params.set("assigneeId", input.assigneeId ?? UNASSIGNED_ASSIGNEE_FILTER);
   }
 
   if (input.deliveryStatus) {

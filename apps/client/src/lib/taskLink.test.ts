@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildAbsoluteAppUrl, buildTaskPath, openTaskInNewContext } from "./taskLink";
+import { buildAbsoluteAppUrl, buildTaskPath, openTaskInNewContext, resolveTaskProjectId } from "./taskLink";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -49,6 +49,20 @@ describe("buildTaskPath", () => {
     expect(buildTaskPath({ id: "task-1" }, { fallbackPath: "/my-tasks?view=list" })).toBe(
       "/my-tasks?view=list&task=task-1"
     );
+  });
+
+  it("prefers a portfolio project over an operational sprint board", () => {
+    const taskWithMultipleProjects = {
+      id: "task-1",
+      discipline: { projectId: "sprint-board", projectName: "Civil - Sprint Board" },
+      projects: [
+        { id: "sprint-board", name: "Civil - Sprint Board" },
+        { id: "werk-lugano", name: "Werk Lugano" }
+      ]
+    };
+
+    expect(resolveTaskProjectId(taskWithMultipleProjects)).toBe("werk-lugano");
+    expect(buildTaskPath(taskWithMultipleProjects)).toBe("/projects/werk-lugano?task=task-1");
   });
 });
 

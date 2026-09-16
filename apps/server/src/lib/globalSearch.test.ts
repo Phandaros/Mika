@@ -143,6 +143,20 @@ describe("globalSearch helpers", () => {
     }));
   });
 
+  it("filters advanced task search to unassigned tasks", () => {
+    const where = buildAdvancedTaskSearchWhere({
+      term: "",
+      taskStatuses: [],
+      priorities: [],
+      assigneeId: "none",
+      completion: "all"
+    });
+
+    expect(where).toEqual(expect.objectContaining({
+      AND: expect.arrayContaining([{ assigneeGid: null }])
+    }));
+  });
+
   it("matches advanced project status from archived state", () => {
     expect(projectMatchesAdvancedStatus({ archived: false }, [ProjectStatus.ACTIVE])).toBe(true);
     expect(projectMatchesAdvancedStatus({ archived: true }, [ProjectStatus.COMPLETED])).toBe(true);
@@ -194,6 +208,46 @@ describe("globalSearch helpers", () => {
       projectId: "project-remote",
       projectName: "Projeto remoto",
       sectionName: "Geral"
+    });
+  });
+
+  it("prefers a real project membership over an operational sprint board", () => {
+    const task: TaskSearchRecord = {
+      ...taskWithMemberships(),
+      memberships: [
+        {
+          sectionName: "Civil",
+          projectName: "Civil - Sprint Board",
+          section: {
+            name: "Civil",
+            project: {
+              id: "civil-sprint-board",
+              name: "Civil - Sprint Board",
+              archived: false
+            }
+          },
+          project: null
+        },
+        {
+          sectionName: "Civil",
+          projectName: "Werk Lugano",
+          section: {
+            name: "Civil",
+            project: {
+              id: "werk-lugano",
+              name: "Werk Lugano",
+              archived: false
+            }
+          },
+          project: null
+        }
+      ]
+    };
+
+    expect(toGlobalSearchTask(task)).toMatchObject({
+      projectId: "werk-lugano",
+      projectName: "Werk Lugano",
+      sectionName: "Civil"
     });
   });
 

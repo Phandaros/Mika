@@ -30,6 +30,7 @@ import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { useAdvancedSearch, type AdvancedSearchFilters } from "../hooks/useAdvancedSearch";
 import { useProjectOptions } from "../hooks/useProjects";
 import { useUsers } from "../hooks/useUsers";
+import { UNASSIGNED_ASSIGNEE_FILTER } from "../lib/indicatorLinks";
 import { projectStatusLabels } from "../lib/projectLabels";
 import { parseSearchFilters } from "../lib/searchFilters";
 import { cn } from "../lib/utils";
@@ -91,6 +92,11 @@ export function SearchPage() {
     const users = usersQuery.data ?? [];
     return [
       { value: "", label: "Qualquer responsável" },
+      {
+        value: UNASSIGNED_ASSIGNEE_FILTER,
+        label: "Sem responsável",
+        description: "Tarefas sem pessoa atribuída"
+      },
       ...users.map((user) => ({
         value: user.id,
         label: user.name,

@@ -1,8 +1,8 @@
 import type { Task } from "shared";
 
 export type TaskLinkSource = Pick<Task, "id"> & {
-  discipline?: { projectId?: string } | null;
-  projects?: Array<{ id: string }> | null;
+  discipline?: { projectId?: string; projectName?: string | null } | null;
+  projects?: Array<{ id: string; name?: string | null }> | null;
 };
 
 export interface BuildTaskLinkOptions {
@@ -10,8 +10,30 @@ export interface BuildTaskLinkOptions {
   projectId?: string;
 }
 
+function isOperationalSprintBoard(name: string | null | undefined): boolean {
+  if (!name) {
+    return false;
+  }
+
+  const normalizedName = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
+
+  return normalizedName.includes("sprint") && normalizedName.includes("board");
+}
+
 function resolveProjectId(task: TaskLinkSource): string | undefined {
-  return task.discipline?.projectId ?? task.projects?.[0]?.id;
+  const disciplineProjectId = task.discipline?.projectId;
+  const disciplineProject = task.projects?.find((project) => project.id === disciplineProjectId);
+  const disciplineProjectName = task.discipline?.projectName ?? disciplineProject?.name;
+
+  if (disciplineProjectId && !isOperationalSprintBoard(disciplineProjectName)) {
+    return disciplineProjectId;
+  }
+
+  const portfolioProject = task.projects?.find((project) => !isOperationalSprintBoard(project.name));
+  return portfolioProject?.id ?? disciplineProjectId ?? task.projects?.[0]?.id;
 }
 
 export function buildTaskPath(task: TaskLinkSource, options?: BuildTaskLinkOptions): string {

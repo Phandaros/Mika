@@ -42,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { useIndicators } from "../hooks/useIndicators";
 import { cn, dateOnlyToLocalDate, localDateToDateOnly } from "../lib/utils";
 import { projectIndicatorLink, taskIndicatorLink, workloadIndicatorLink } from "../lib/indicatorLinks";
+import { portfolioStatusColor } from "../lib/portfolioStatusColor";
 
 type IndicatorTab = "tasks" | "portfolio" | "team";
 type IndicatorRange = { from: string | null; to: string | null };
@@ -415,6 +416,7 @@ function TasksTab({
     () => data.deliveryDistribution.map((point) => ({ ...point, fill: deliveryStatusColor(point.key) })),
     [data.deliveryDistribution]
   );
+  const userDeliveryChartHeight = Math.max(320, data.byUser.length * 38);
 
   return (
     <>
@@ -457,15 +459,27 @@ function TasksTab({
           {data.byUser.length === 0 ? (
             <EmptyState title="Sem entregas para o período" />
           ) : (
-            <ChartContainer config={userChartConfig} className="h-[320px] w-full aspect-auto [&_.recharts-bar-rectangle]:cursor-pointer">
-              <BarChart data={userBarData(data.byUser)} margin={{ left: 0, right: 12, top: 12, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="initials" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} width={34} />
+            <ChartContainer
+              config={userChartConfig}
+              className="min-h-[320px] w-full aspect-auto [&_.recharts-bar-rectangle]:cursor-pointer"
+              style={{ height: userDeliveryChartHeight }}
+            >
+              <BarChart accessibilityLayer layout="vertical" data={data.byUser} margin={{ left: 8, right: 28, top: 12, bottom: 0 }}>
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="userName"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={10}
+                  tickFormatter={compactUserName}
+                  width={148}
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="onTimeDeliveries" stackId="tasks" fill="var(--status-done-text)" radius={[0, 0, 4, 4]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "onTimeDeliveries", onNavigate)} />
+                <Bar dataKey="onTimeDeliveries" stackId="tasks" fill="var(--status-done-text)" radius={[4, 0, 0, 4]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "onTimeDeliveries", onNavigate)} />
                 <Bar dataKey="lateDeliveries" stackId="tasks" fill="var(--status-late-text)" isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "lateDeliveries", onNavigate)} />
-                <Bar dataKey="unclassifiedDeliveries" stackId="tasks" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "unclassifiedDeliveries", onNavigate)} />
+                <Bar dataKey="unclassifiedDeliveries" stackId="tasks" fill="var(--color-text-muted)" radius={[0, 4, 4, 0]} isAnimationActive={false} onClick={(entry) => openUserTaskMetric(entry.payload, period, from, to, scope, "unclassifiedDeliveries", onNavigate)} />
               </BarChart>
             </ChartContainer>
           )}
@@ -878,14 +892,14 @@ function CompactDistribution({
 
   return (
     <div className="grid gap-2">
-      {values.map((value, index) => (
+      {values.map((value) => (
         <Link key={value.key} to={linkFor(value)} onClick={onNavigate} className="grid cursor-pointer gap-1 rounded-md px-2 py-1.5 transition-colors hover:bg-[--bg-3]">
           <div className="flex min-w-0 items-center justify-between gap-3 text-[12px]">
             <span className="truncate font-medium text-[--color-text-primary]">{value.label}</span>
             <span className="font-mono text-[--color-text-secondary]">{numberFormatter.format(value.value)}</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-[--bg-4]">
-            <div className="h-full rounded-full" style={{ width: `${(value.value / max) * 100}%`, backgroundColor: disciplineColor(index) }} />
+            <div className="h-full rounded-full" style={{ width: `${(value.value / max) * 100}%`, backgroundColor: portfolioStatusColor(value.label) }} />
           </div>
         </Link>
       ))}
@@ -920,12 +934,13 @@ function IndicatorsSkeleton() {
   );
 }
 
-function userBarData(rows: IndicatorUserPoint[]) {
-  return rows.map((row) => ({
-    ...row,
-    initials: row.initials,
-    label: row.userName
-  }));
+function compactUserName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 2) {
+    return parts.join(" ");
+  }
+
+  return `${parts[0]} ${parts[parts.length - 1]}`;
 }
 
 function parseIndicatorTab(value: string | null): IndicatorTab {

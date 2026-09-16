@@ -28,6 +28,7 @@ export const GLOBAL_SEARCH_MAX_LIMIT = 25;
 export const ADVANCED_SEARCH_DEFAULT_LIMIT = 25;
 export const ADVANCED_SEARCH_MAX_LIMIT = 50;
 export const TASK_SEARCH_EXCERPT_MAX_LENGTH = 180;
+export const UNASSIGNED_ASSIGNEE_FILTER = "none";
 
 export function normalizeSearchTerm(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -189,7 +190,9 @@ export function buildAdvancedTaskSearchWhere(filters: {
     and.push({ priority: { in: filters.priorities } });
   }
 
-  if (filters.assigneeId) {
+  if (filters.assigneeId === UNASSIGNED_ASSIGNEE_FILTER) {
+    and.push({ assigneeGid: null });
+  } else if (filters.assigneeId) {
     and.push({ assignee: { id: filters.assigneeId } });
   }
 
@@ -368,6 +371,20 @@ function membershipProjectId(membership: TaskSearchRecord["memberships"][number]
   return membership.section?.project.id ?? membership.project?.id ?? null;
 }
 
+function membershipProjectName(membership: TaskSearchRecord["memberships"][number]): string | null {
+  return membership.section?.project.name ?? membership.project?.name ?? membership.projectName ?? null;
+}
+
+function isSprintBoardMembership(membership: TaskSearchRecord["memberships"][number]): boolean {
+  const projectName = membershipProjectName(membership);
+  if (!projectName) {
+    return false;
+  }
+
+  const normalizedName = normalizeSearchText(projectName);
+  return normalizedName.includes("sprint") && normalizedName.includes("board");
+}
+
 function preferredTaskMembership(task: TaskSearchRecord, preferredProjectId?: string): TaskSearchRecord["memberships"][number] | null {
   if (preferredProjectId) {
     const preferred = task.memberships.find((membership) => membershipProjectId(membership) === preferredProjectId);
@@ -377,7 +394,11 @@ function preferredTaskMembership(task: TaskSearchRecord, preferredProjectId?: st
     }
   }
 
-  return task.memberships.find((membership) => Boolean(membershipProjectId(membership))) ?? null;
+  return (
+    task.memberships.find((membership) => Boolean(membershipProjectId(membership)) && !isSprintBoardMembership(membership)) ??
+    task.memberships.find((membership) => Boolean(membershipProjectId(membership))) ??
+    null
+  );
 }
 
 export function toGlobalSearchTask(task: TaskSearchRecord, preferredProjectId?: string, term = ""): GlobalSearchTaskResult | null {

@@ -26,6 +26,18 @@ describe("indicatorLinks", () => {
     expect(url).toBe("/search?type=tasks&completion=completed&source=indicators&indicatorMetric=onTimeDeliveries&indicatorPeriod=month&indicatorScope=civil&deliveryStatus=EARLY&deliveryStatus=ON_TIME");
   });
 
+  it("preserves the unassigned filter in task indicator links", () => {
+    const url = taskIndicatorLink({
+      period: "all",
+      scope: "general",
+      completion: "completed",
+      metric: "unclassifiedDeliveries",
+      assigneeId: null
+    });
+
+    expect(url).toContain("assigneeId=none");
+  });
+
   it("preserves a custom date range in drill-down links", () => {
     const url = taskIndicatorLink({
       period: "custom",
