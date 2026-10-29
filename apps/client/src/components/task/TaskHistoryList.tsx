@@ -152,7 +152,7 @@ function reviewerName(activity: TaskActivity): string {
   return activity.toValue ?? "revisor";
 }
 
-function formatActivityValue(field: string | null, value: string | null): string {
+export function formatActivityValue(field: string | null, value: string | null): string {
   if (!value) {
     return "—";
   }
@@ -174,4 +174,8 @@ function isTaskStatus(value: string): value is TaskStatus {
 
 function isPriority(value: string): value is Priority {
   return Object.values(Priority).includes(value as Priority);
+}
+
+export function activityFieldLabel(field: string | null): string {
+  return field ? fieldLabels[field] ?? field : "Campo";
 }

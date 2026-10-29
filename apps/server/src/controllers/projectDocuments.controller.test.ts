@@ -13,7 +13,10 @@ const transactionClient = vi.hoisted(() => ({
 }));
 
 const prismaMock = vi.hoisted(() => ({
-  project: { findUnique: vi.fn() },
+  project: { findUnique: vi.fn(), findUniqueOrThrow: vi.fn() },
+  taskActivity: { findMany: vi.fn() },
+  task: { findMany: vi.fn() },
+  comment: { findMany: vi.fn() },
   projectNote: {
     count: vi.fn(),
     findMany: vi.fn(),
@@ -39,6 +42,7 @@ vi.mock("../lib/attachmentCleanup.js", () => ({
 import {
   createProjectNote,
   createMeetingMinute,
+  listProjectLog,
   listProjectTimelineEvents,
   listProjectNotes,
   updateProjectNote
@@ -274,6 +278,149 @@ describe("project documents controller", () => {
       expect.objectContaining({ id: "minute-1", type: "MEETING_MINUTE", eventDate: "2026-06-19" }),
       expect.objectContaining({ id: "note-1", type: "NOTE", eventDate: "2026-06-20" })
     ] });
+  });
+
+  it("mescla histórico de tarefas, comentários e entradas manuais no log com cursor", async () => {
+    const task = { id: "task-1", name: "Planta baixa", deletedAt: null };
+    prismaMock.project.findUniqueOrThrow.mockResolvedValue({ asanaGid: "gid-1" });
+    prismaMock.taskActivity.findMany.mockResolvedValue([
+      {
+        id: "act-1",
+        taskId: "task-1",
+        actorId: "user-1",
+        type: "COMPLETED",
+        field: "completed",
+        fromValue: "false",
+        toValue: "true",
+        metadataJson: null,
+        createdAt: new Date("2026-06-10T15:00:00.000Z"),
+        actor: author,
+        task
+      }
+    ]);
+    prismaMock.task.findMany.mockImplementation(async (args: { where: Record<string, unknown> }) =>
+      "asanaCreatedAt" in args.where && args.where.asanaCreatedAt !== null
+        ? [{ ...task, asanaCreatedAt: new Date("2026-06-01T09:00:00.000Z"), createdAt: new Date(), creator: null }]
+        : []
+    );
+    prismaMock.comment.findMany.mockImplementation(async (args: { where: Record<string, unknown> }) =>
+      args.where.asanaCreatedAt === null
+        ? [
+            {
+              id: "comment-1",
+              content: "Revisar cotas",
+              createdAt: new Date("2026-06-05T10:00:00.000Z"),
+              asanaCreatedAt: null,
+              author,
+              task
+            }
+          ]
+        : []
+    );
+    prismaMock.projectNote.findMany.mockResolvedValue([
+      {
+        id: "note-1",
+        projectId: "project-1",
+        title: "Visita à obra",
+        noteDate: "2026-06-08",
+        content: "Fotos",
+        authorId: "user-1",
+        author,
+        attachments: [],
+        createdAt: new Date("2026-06-08T18:00:00.000Z"),
+        updatedAt: new Date("2026-06-08T18:00:00.000Z")
+      }
+    ]);
+    prismaMock.meetingMinute.findMany.mockResolvedValue([]);
+    const res = responseMock();
+
+    await listProjectLog(
+      { params: { projectId: "project-1" }, query: { limit: "3" } } as unknown as Request,
+      res,
+      next
+    );
+
+    const payload = vi.mocked(res.json).mock.calls[0]?.[0] as {
+      entries: Array<{ id: string; type: string; derived: boolean }>;
+      nextCursor: string | null;
+    };
+    expect(payload.entries.map((entry) => [entry.type, entry.id])).toEqual([
+      ["TASK_COMPLETED", "activity:act-1"],
+      ["NOTE", "note:note-1"],
+      ["TASK_COMMENT", "comment:comment-1"]
+    ]);
+    expect(payload.nextCursor).toBe("2026-06-05T10:00:00.000Z|comment:comment-1");
+    expect(prismaMock.taskActivity.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ task: { memberships: { some: { projectGid: "gid-1" } } } })
+      })
+    );
+
+    vi.mocked(res.json).mockClear();
+    await listProjectLog(
+      { params: { projectId: "project-1" }, query: { limit: "3", cursor: payload.nextCursor } } as unknown as Request,
+      res,
+      next
+    );
+
+    const secondPage = vi.mocked(res.json).mock.calls[0]?.[0] as typeof payload;
+    expect(secondPage.entries).toEqual([
+      expect.objectContaining({ id: "task-created:task-1", type: "TASK_CREATED", derived: true })
+    ]);
+    expect(secondPage.nextCursor).toBeNull();
+  });
+
+  it("trata status Finalizado como conclusão e não duplica a conclusão pelo botão", async () => {
+    const task = { id: "task-1", name: "Planta baixa", deletedAt: null };
+    const activity = (id: string, type: string, field: string, fromValue: string, toValue: string, at: string) => ({
+      id,
+      taskId: "task-1",
+      actorId: "user-1",
+      type,
+      field,
+      fromValue,
+      toValue,
+      metadataJson: null,
+      createdAt: new Date(at),
+      actor: author,
+      task
+    });
+    prismaMock.project.findUniqueOrThrow.mockResolvedValue({ asanaGid: "gid-1" });
+    prismaMock.taskActivity.findMany.mockResolvedValue([
+      activity("act-3", "UPDATED", "status", "IN_ANALYSIS", "FINISHED", "2026-06-10T15:00:00.400Z"),
+      activity("act-2", "COMPLETED", "completed", "false", "true", "2026-06-10T15:00:00.300Z"),
+      activity("act-1", "UPDATED", "status", "FINISHED", "IN_PROGRESS", "2026-06-09T12:00:00.000Z")
+    ]);
+    prismaMock.task.findMany.mockResolvedValue([]);
+    prismaMock.comment.findMany.mockResolvedValue([]);
+    prismaMock.projectNote.findMany.mockResolvedValue([]);
+    prismaMock.meetingMinute.findMany.mockResolvedValue([]);
+    const res = responseMock();
+
+    await listProjectLog({ params: { projectId: "project-1" }, query: {} } as unknown as Request, res, next);
+
+    const payload = vi.mocked(res.json).mock.calls[0]?.[0] as { entries: Array<{ id: string; type: string }> };
+    expect(payload.entries.map((entry) => [entry.type, entry.id])).toEqual([
+      ["TASK_COMPLETED", "activity:act-3"],
+      ["TASK_REOPENED", "activity:act-1"]
+    ]);
+  });
+
+  it("consulta apenas as fontes dos tipos filtrados no log", async () => {
+    prismaMock.project.findUniqueOrThrow.mockResolvedValue({ asanaGid: "gid-1" });
+    prismaMock.projectNote.findMany.mockResolvedValue([]);
+    const res = responseMock();
+
+    await listProjectLog(
+      { params: { projectId: "project-1" }, query: { types: "NOTE" } } as unknown as Request,
+      res,
+      next
+    );
+
+    expect(prismaMock.taskActivity.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.task.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.comment.findMany).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ entries: [], nextCursor: null });
   });
 
   it("rejeita a linha do tempo de um projeto inexistente", async () => {

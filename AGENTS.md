@@ -342,6 +342,9 @@ ATTACHMENTS
   GET    /attachments/:id/download
   DELETE /attachments/:id
 
+PROJECT LOG
+  GET    /projects/:projectId/log         (cursor, limit, types; mescla historico de tarefas, comentarios, anotacoes e atas)
+
 PROJECT NOTES
   GET    /projects/:projectId/notes
   POST   /projects/:projectId/notes
@@ -594,8 +597,11 @@ A página de detalhe de projeto separa duas áreas principais: **Tarefas** e **A
 - Barra de progresso visual por usuário
 - Clique no usuário abre suas tarefas filtradas
 
-### Anotações e Reuniões
-- Subabas independentes: `Anotações | Atas de reunião`.
+### Log do projeto e Atas de reunião
+- Subabas independentes: `Log do projeto | Atas de reunião`.
+- O Log do projeto é uma lista vertical por dia (sem scroll horizontal) com data/hora, tipo, autor e descrição de cada evento: tarefas criadas, concluídas/reabertas, alteradas, revisadas, excluídas, comentários, atas e entradas manuais.
+- Entradas manuais são as `ProjectNote` (título obrigatório, data de referência, markdown e/ou anexos/imagens).
+- Tarefas importadas sem `TaskActivity` têm criação/conclusão reconstruídas a partir de `asanaCreatedAt`/`completedAtAsana` (marcadas como `derived`).
 - Anotações têm título obrigatório e conteúdo markdown ou anexos.
 - Atas têm título, data obrigatória, horário opcional, participantes internos/externos e conteúdo markdown ou anexos.
 - Todos os usuários autenticados podem criar, editar e excluir os registros.

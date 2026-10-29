@@ -86,3 +86,38 @@ export interface ProjectTimelineEventDto {
 export interface ProjectTimelineEventsResponse {
   events: ProjectTimelineEventDto[];
 }
+
+export type ProjectLogEntryType =
+  | "NOTE"
+  | "MEETING_MINUTE"
+  | "TASK_CREATED"
+  | "TASK_COMPLETED"
+  | "TASK_REOPENED"
+  | "TASK_UPDATED"
+  | "TASK_REVIEW"
+  | "TASK_DELETED"
+  | "TASK_COMMENT";
+
+export interface ProjectLogEntryDto {
+  id: string;
+  type: ProjectLogEntryType;
+  occurredAt: string;
+  actor: Pick<User, "id" | "name" | "avatarUrl"> | null;
+  task: { id: string; name: string; deleted: boolean } | null;
+  /** Tipo bruto de TaskActivity (ex.: REVIEW_APPROVED), quando a entrada vem do histórico da tarefa. */
+  activityType: string | null;
+  field: string | null;
+  fromValue: string | null;
+  toValue: string | null;
+  metadata: Record<string, unknown> | null;
+  note: ProjectNoteDto | null;
+  meetingMinute: Pick<MeetingMinuteDto, "id" | "title" | "meetingDate" | "meetingTime"> | null;
+  comment: { id: string; content: string } | null;
+  /** Evento reconstruído a partir das datas da tarefa (ex.: import do Asana), sem registro de atividade. */
+  derived: boolean;
+}
+
+export interface ProjectLogResponse {
+  entries: ProjectLogEntryDto[];
+  nextCursor: string | null;
+}

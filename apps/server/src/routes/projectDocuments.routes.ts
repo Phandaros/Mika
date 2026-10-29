@@ -7,6 +7,7 @@ import {
   getMeetingMinute,
   getProjectNote,
   listMeetingMinutes,
+  listProjectLog,
   listProjectNotes,
   listProjectTimelineEvents,
   updateMeetingMinute,
@@ -18,6 +19,7 @@ import { auth } from "../middleware/auth.js";
 const router = Router();
 
 router.get("/projects/:projectId/timeline-events", auth, listProjectTimelineEvents);
+router.get("/projects/:projectId/log", auth, listProjectLog);
 router.get("/projects/:projectId/notes", auth, listProjectNotes);
 router.post("/projects/:projectId/notes", auth, upload.array("files", 5), createProjectNote);
 router.get("/project-notes/:id", auth, getProjectNote);

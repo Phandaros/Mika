@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-import { CalendarRange, CheckCircle2, Edit3, ExternalLink, Filter, Inbox, KanbanSquare, List, ListTodo, NotebookPen, Plus, Search, UsersRound, X } from "lucide-react";
+import { CalendarRange, CheckCircle2, Edit3, ExternalLink, Filter, History, Inbox, KanbanSquare, List, ListTodo, Plus, Search, UsersRound, X } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Priority, TaskStatus, type DisciplineType, type ProjectTimelineEventDto, type Section, type Task, type UpdateTaskRequest, type User } from "shared";
 import { ProjectForm } from "../components/project/ProjectForm";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
+import { ProjectLogPanel } from "../components/project/ProjectLogPanel";
 import { ProjectTimelineView } from "../components/project/ProjectTimelineView";
 import {
   DataTable,
@@ -251,6 +252,27 @@ export function ProjectDetailPage() {
     });
   }
 
+  function openLogTask(logTaskId: string) {
+    setTaskDetailOpenVersion((version) => version + 1);
+    updatePageParams((params) => {
+      params.delete("area");
+      params.delete("docs");
+      params.delete("note");
+      params.delete("meeting");
+      params.set("task", logTaskId);
+    });
+  }
+
+  function openLogMeetingMinute(meetingMinuteId: string) {
+    updatePageParams((params) => {
+      params.delete("task");
+      params.delete("note");
+      params.set("area", "documents");
+      params.set("docs", "meeting-minutes");
+      params.set("meeting", meetingMinuteId);
+    });
+  }
+
   function openTimelineEvent(event: ProjectTimelineEventDto) {
     updatePageParams((params) => {
       params.delete("task");
@@ -424,8 +446,8 @@ export function ProjectDetailPage() {
           />
           <ViewTab
             active={activeArea === "documents" && documentKind === "notes"}
-            icon={<NotebookPen size={15} />}
-            label="Anotações"
+            icon={<History size={15} />}
+            label="Log do projeto"
             onClick={() => setProjectArea("documents", "notes")}
           />
           <ViewTab
@@ -448,7 +470,7 @@ export function ProjectDetailPage() {
         ) : (
           <Button className="mb-2 h-8 px-3" onClick={() => setDocumentCreateVersion((version) => version + 1)}>
             <Plus size={15} />
-            {documentKind === "notes" ? "Nova anotação" : "Nova ata"}
+            {documentKind === "notes" ? "Nova entrada" : "Nova ata"}
           </Button>
         )}
       </section>
@@ -590,13 +612,24 @@ export function ProjectDetailPage() {
         </>
       ) : (
         <div className="pt-3">
-          <ProjectDocumentsPanel
-            projectId={projectId}
-            kind={documentKind}
-            selectedId={selectedDocumentId}
-            onSelectedIdChange={setSelectedDocumentId}
-            createRequestVersion={documentCreateVersion}
-          />
+          {documentKind === "notes" ? (
+            <ProjectLogPanel
+              projectId={projectId}
+              selectedNoteId={selectedDocumentId}
+              onSelectedNoteIdChange={setSelectedDocumentId}
+              onOpenTask={openLogTask}
+              onOpenMeetingMinute={openLogMeetingMinute}
+              createRequestVersion={documentCreateVersion}
+            />
+          ) : (
+            <ProjectDocumentsPanel
+              projectId={projectId}
+              kind={documentKind}
+              selectedId={selectedDocumentId}
+              onSelectedIdChange={setSelectedDocumentId}
+              createRequestVersion={documentCreateVersion}
+            />
+          )}
         </div>
       )}
     </div>

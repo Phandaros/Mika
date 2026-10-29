@@ -1,7 +1,9 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import type {
   MeetingMinuteDto,
   MeetingMinutesResponse,
+  ProjectLogEntryType,
+  ProjectLogResponse,
   ProjectNoteDto,
   ProjectNotesResponse,
   ProjectTimelineEventsResponse
@@ -87,6 +89,24 @@ export function useProjectTimelineEvents(projectId: string, enabled = true) {
   });
 }
 
+export function useProjectLog(projectId: string, types: ProjectLogEntryType[]) {
+  return useInfiniteQuery({
+    queryKey: ["projects", projectId, "log", types],
+    enabled: Boolean(projectId) && types.length > 0,
+    initialPageParam: undefined as string | undefined,
+    // Tarefas mudam em outras áreas da página; o log sempre recarrega ao ser aberto.
+    refetchOnMount: "always",
+    queryFn: async ({ pageParam }) => {
+      const response = await api.get<ProjectLogResponse>(`/projects/${projectId}/log`, {
+        params: { limit: 40, cursor: pageParam, types: types.join(",") }
+      });
+      return response.data;
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    placeholderData: keepPreviousData
+  });
+}
+
 export function useProjectNotes({ projectId, page, search }: Omit<DocumentListParams, "kind">) {
   return useQuery({
     queryKey: ["projects", projectId, "notes", page, search],
@@ -136,6 +156,7 @@ export function useMeetingMinute(minuteId: string | null) {
 async function refreshDocumentQueries(projectId: string, kind: ProjectDocumentKind) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["projects", projectId, kind] }),
+    queryClient.invalidateQueries({ queryKey: ["projects", projectId, "log"] }),
     queryClient.invalidateQueries({ queryKey: ["projects", projectId, "timeline-events"] })
   ]);
 }
@@ -207,6 +228,7 @@ export function useDeleteProjectDocument(projectId: string, kind: ProjectDocumen
 export async function refreshProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["projects", projectId, kind] }),
+    queryClient.invalidateQueries({ queryKey: ["projects", projectId, "log"] }),
     queryClient.invalidateQueries({ queryKey: ["projects", projectId, "timeline-events"] }),
     queryClient.invalidateQueries({
       queryKey: [kind === "notes" ? "project-notes" : "meeting-minutes", id]

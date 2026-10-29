@@ -3,15 +3,20 @@ import type { RequestHandler } from "express";
 import type {
   AttachmentDto,
   MeetingMinuteDto,
+  ProjectLogEntryDto,
+  ProjectLogEntryType,
   ProjectNoteDto,
   ProjectTimelineEventDto,
   User
 } from "shared";
 import { z } from "zod";
+import type { Prisma } from "../generated/prisma/client.js";
+import { TaskStatus } from "../lib/enums.js";
 import { prisma } from "../lib/prisma.js";
 import { toPublicUser, userSelect } from "../lib/asanaDto.js";
 import { deleteAttachmentsFromDisk } from "../lib/attachmentCleanup.js";
 import { normalizeAttachmentFilename } from "../lib/attachmentFilename.js";
+import { taskActivityTypes } from "../lib/taskActivity.js";
 import { getAuthUser } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 
@@ -258,6 +263,11 @@ function toDocumentUser(user: Parameters<typeof toPublicUser>[0]): User {
     createdAt: publicUser.createdAt.toISOString(),
     updatedAt: publicUser.updatedAt.toISOString()
   };
+}
+
+function toLogActor(user: Parameters<typeof toPublicUser>[0] | undefined): ProjectLogEntryDto["actor"] {
+  const publicUser = toPublicUser(user);
+  return publicUser ? { id: publicUser.id, name: publicUser.name, avatarUrl: publicUser.avatarUrl } : null;
 }
 
 async function requireProject(projectId: string | undefined): Promise<string> {
@@ -625,6 +635,441 @@ export const deleteMeetingMinute: RequestHandler = async (req, res, next) => {
     await deleteAttachmentsFromDisk(minute.attachments);
     await prisma.meetingMinute.delete({ where: { id: minute.id } });
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const projectLogEntryTypes = [
+  "NOTE",
+  "MEETING_MINUTE",
+  "TASK_CREATED",
+  "TASK_COMPLETED",
+  "TASK_REOPENED",
+  "TASK_UPDATED",
+  "TASK_REVIEW",
+  "TASK_DELETED",
+  "TASK_COMMENT"
+] as const satisfies readonly ProjectLogEntryType[];
+
+const projectLogQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(40),
+  cursor: z.string().max(200).optional(),
+  types: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value.split(",").map((item) => item.trim()).filter(Boolean) : []))
+    .pipe(z.array(z.enum(projectLogEntryTypes)))
+});
+
+/** Folga para itens com o mesmo timestamp do cursor, descartados em memória após a consulta. */
+const PROJECT_LOG_TIE_BUFFER = 50;
+
+interface ProjectLogCursor {
+  at: Date;
+  id: string;
+}
+
+interface ProjectLogCandidate {
+  at: Date;
+  entry: ProjectLogEntryDto;
+}
+
+function parseProjectLogCursor(value: string | undefined): ProjectLogCursor | null {
+  if (!value) {
+    return null;
+  }
+  const separator = value.indexOf("|");
+  const at = new Date(separator > 0 ? value.slice(0, separator) : "");
+  const id = separator > 0 ? value.slice(separator + 1) : "";
+  if (Number.isNaN(at.getTime()) || !id) {
+    throw new AppError(400, "Cursor inválido");
+  }
+  return { at, id };
+}
+
+function compareLogCandidates(left: ProjectLogCandidate, right: ProjectLogCandidate): number {
+  return right.at.getTime() - left.at.getTime() || right.entry.id.localeCompare(left.entry.id);
+}
+
+function isAfterCursor(candidate: ProjectLogCandidate, cursor: ProjectLogCursor | null): boolean {
+  if (!cursor) {
+    return true;
+  }
+  const delta = candidate.at.getTime() - cursor.at.getTime();
+  return delta < 0 || (delta === 0 && candidate.entry.id.localeCompare(cursor.id) < 0);
+}
+
+function parseActivityMetadata(value: string | null): Record<string, unknown> | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+const FINISHED_STATUS: string = TaskStatus.FINISHED;
+
+/** Mudanças de status para/de Finalizado contam como conclusão/reabertura no log. */
+const statusFinishedWhere = { type: taskActivityTypes.UPDATED, field: "status", toValue: FINISHED_STATUS };
+const statusReopenedWhere = { type: taskActivityTypes.UPDATED, field: "status", fromValue: FINISHED_STATUS };
+
+function activityLogType(activity: { type: string; field: string | null; fromValue: string | null; toValue: string | null }): ProjectLogEntryType {
+  switch (activity.type) {
+    case taskActivityTypes.CREATED:
+      return "TASK_CREATED";
+    case taskActivityTypes.COMPLETED:
+      return "TASK_COMPLETED";
+    case taskActivityTypes.REOPENED:
+      return "TASK_REOPENED";
+    case taskActivityTypes.REVIEW_REQUESTED:
+    case taskActivityTypes.REVIEW_APPROVED:
+    case taskActivityTypes.REVIEW_REJECTED:
+      return "TASK_REVIEW";
+    default:
+      if (activity.field === "status" && activity.toValue === FINISHED_STATUS) {
+        return "TASK_COMPLETED";
+      }
+      if (activity.field === "status" && activity.fromValue === FINISHED_STATUS) {
+        return "TASK_REOPENED";
+      }
+      return "TASK_UPDATED";
+  }
+}
+
+function activityWhereFor(types: Set<ProjectLogEntryType>): Prisma.TaskActivityWhereInput[] {
+  const conditions: Prisma.TaskActivityWhereInput[] = [];
+  if (types.has("TASK_CREATED")) {
+    conditions.push({ type: taskActivityTypes.CREATED });
+  }
+  if (types.has("TASK_COMPLETED")) {
+    conditions.push({ type: taskActivityTypes.COMPLETED }, statusFinishedWhere);
+  }
+  if (types.has("TASK_REOPENED")) {
+    conditions.push({ type: taskActivityTypes.REOPENED }, statusReopenedWhere);
+  }
+  if (types.has("TASK_REVIEW")) {
+    conditions.push({
+      type: {
+        in: [
+          taskActivityTypes.REVIEW_REQUESTED,
+          taskActivityTypes.REVIEW_APPROVED,
+          taskActivityTypes.REVIEW_REJECTED
+        ]
+      }
+    });
+  }
+  if (types.has("TASK_UPDATED")) {
+    // Forma positiva (sem NOT): em SQL, NOT sobre colunas nulas descartaria a linha.
+    conditions.push({
+      type: taskActivityTypes.UPDATED,
+      OR: [
+        { field: null },
+        { field: { not: "status" } },
+        {
+          field: "status",
+          AND: [
+            { OR: [{ toValue: null }, { toValue: { not: FINISHED_STATUS } }] },
+            { OR: [{ fromValue: null }, { fromValue: { not: FINISHED_STATUS } }] }
+          ]
+        }
+      ]
+    });
+  }
+  return conditions;
+}
+
+/** Concluir pelo botão grava COMPLETED + mudança de status no mesmo instante: mantém só um registro. */
+const COMPLETION_DEDUPE_WINDOW_MS = 5_000;
+
+function dedupeCompletionEntries(ordered: ProjectLogCandidate[]): ProjectLogCandidate[] {
+  const lastKept = new Map<string, number>();
+  return ordered.filter((candidate) => {
+    const { entry } = candidate;
+    if ((entry.type !== "TASK_COMPLETED" && entry.type !== "TASK_REOPENED") || !entry.task || entry.derived) {
+      return true;
+    }
+    const key = `${entry.task.id}:${entry.type}`;
+    const previous = lastKept.get(key);
+    if (previous !== undefined && previous - candidate.at.getTime() <= COMPLETION_DEDUPE_WINDOW_MS) {
+      return false;
+    }
+    lastKept.set(key, candidate.at.getTime());
+    return true;
+  });
+}
+
+function emptyLogEntry(id: string, type: ProjectLogEntryType, at: Date): ProjectLogEntryDto {
+  return {
+    id,
+    type,
+    occurredAt: at.toISOString(),
+    actor: null,
+    task: null,
+    activityType: null,
+    field: null,
+    fromValue: null,
+    toValue: null,
+    metadata: null,
+    note: null,
+    meetingMinute: null,
+    comment: null,
+    derived: false
+  };
+}
+
+function logTask(task: { id: string; name: string; deletedAt: Date | null }): ProjectLogEntryDto["task"] {
+  return { id: task.id, name: task.name, deleted: Boolean(task.deletedAt) };
+}
+
+const logTaskSelect = { id: true, name: true, deletedAt: true } as const;
+
+const logCommentSelect = {
+  id: true,
+  content: true,
+  createdAt: true,
+  asanaCreatedAt: true,
+  author: { select: userSelect },
+  task: { select: logTaskSelect }
+} as const;
+
+export const listProjectLog: RequestHandler = async (req, res, next) => {
+  try {
+    const projectId = await requireProject(req.params.projectId);
+    const query = projectLogQuerySchema.parse(req.query);
+    const cursor = parseProjectLogCursor(query.cursor);
+    const types = new Set<ProjectLogEntryType>(query.types.length ? query.types : projectLogEntryTypes);
+    const project = await prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { asanaGid: true } });
+    const take = query.limit + PROJECT_LOG_TIE_BUFFER;
+    const upTo = cursor ? { lte: cursor.at } : undefined;
+    const taskWhere = { memberships: { some: { projectGid: project.asanaGid } } };
+    const activityConditions = activityWhereFor(types);
+    const createdTaskSelect = {
+      ...logTaskSelect,
+      asanaCreatedAt: true,
+      createdAt: true,
+      creator: { select: userSelect }
+    } as const;
+
+    // Tarefas importadas (ou anteriores ao histórico) não têm TaskActivity: o log reconstrói
+    // criação/conclusão a partir das datas da própria tarefa, sem duplicar eventos já registrados.
+    const [
+      activities,
+      importedCreatedTasks,
+      localCreatedTasks,
+      derivedCompletedTasks,
+      deletedTasks,
+      importedComments,
+      localComments,
+      notes,
+      meetingMinutes
+    ] = await Promise.all([
+      activityConditions.length
+        ? prisma.taskActivity.findMany({
+            where: { task: taskWhere, OR: activityConditions, createdAt: upTo },
+            include: { actor: { select: userSelect }, task: { select: logTaskSelect } },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("TASK_CREATED")
+        ? prisma.task.findMany({
+            where: {
+              ...taskWhere,
+              activities: { none: { type: taskActivityTypes.CREATED } },
+              asanaCreatedAt: upTo ?? { not: null }
+            },
+            select: createdTaskSelect,
+            orderBy: [{ asanaCreatedAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("TASK_CREATED")
+        ? prisma.task.findMany({
+            where: {
+              ...taskWhere,
+              activities: { none: { type: taskActivityTypes.CREATED } },
+              asanaCreatedAt: null,
+              createdAt: upTo
+            },
+            select: createdTaskSelect,
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("TASK_COMPLETED")
+        ? prisma.task.findMany({
+            where: {
+              ...taskWhere,
+              completed: true,
+              activities: { none: { OR: [{ type: taskActivityTypes.COMPLETED }, statusFinishedWhere] } },
+              completedAtAsana: upTo ?? { not: null }
+            },
+            select: { ...logTaskSelect, completedAtAsana: true },
+            orderBy: [{ completedAtAsana: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("TASK_DELETED")
+        ? prisma.task.findMany({
+            where: { ...taskWhere, deletedAt: upTo ?? { not: null } },
+            select: { ...logTaskSelect, deletedByUserId: true },
+            orderBy: [{ deletedAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("TASK_COMMENT")
+        ? prisma.comment.findMany({
+            where: { task: taskWhere, asanaCreatedAt: upTo ?? { not: null } },
+            select: logCommentSelect,
+            orderBy: [{ asanaCreatedAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("TASK_COMMENT")
+        ? prisma.comment.findMany({
+            where: { task: taskWhere, asanaCreatedAt: null, createdAt: upTo },
+            select: logCommentSelect,
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("NOTE")
+        ? prisma.projectNote.findMany({
+            where: { projectId, createdAt: upTo },
+            include: documentInclude,
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : [],
+      types.has("MEETING_MINUTE")
+        ? prisma.meetingMinute.findMany({
+            where: { projectId, createdAt: upTo },
+            select: {
+              id: true,
+              title: true,
+              meetingDate: true,
+              meetingTime: true,
+              createdAt: true,
+              author: { select: userSelect }
+            },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take
+          })
+        : []
+    ]);
+
+    const deleterIds = [
+      ...new Set(deletedTasks.map((task) => task.deletedByUserId).filter((id): id is string => Boolean(id)))
+    ];
+    const deleters = deleterIds.length
+      ? await prisma.user.findMany({ where: { id: { in: deleterIds } }, select: userSelect })
+      : [];
+    const deletersById = new Map(deleters.map((user) => [user.id, user]));
+
+    const candidates: ProjectLogCandidate[] = [
+      ...activities.map((activity) => ({
+        at: activity.createdAt,
+        entry: {
+          ...emptyLogEntry(`activity:${activity.id}`, activityLogType(activity), activity.createdAt),
+          actor: toLogActor(activity.actor),
+          task: logTask(activity.task),
+          activityType: activity.type,
+          field: activity.field,
+          fromValue: activity.fromValue,
+          toValue: activity.toValue,
+          metadata: parseActivityMetadata(activity.metadataJson)
+        }
+      })),
+      ...[...importedCreatedTasks, ...localCreatedTasks].map((task) => {
+        const at = task.asanaCreatedAt ?? task.createdAt;
+        return {
+          at,
+          entry: {
+            ...emptyLogEntry(`task-created:${task.id}`, "TASK_CREATED", at),
+            actor: toLogActor(task.creator),
+            task: logTask(task),
+            derived: true
+          }
+        };
+      }),
+      ...derivedCompletedTasks.flatMap((task) =>
+        task.completedAtAsana
+          ? [
+              {
+                at: task.completedAtAsana,
+                entry: {
+                  ...emptyLogEntry(`task-completed:${task.id}`, "TASK_COMPLETED", task.completedAtAsana),
+                  task: logTask(task),
+                  derived: true
+                }
+              }
+            ]
+          : []
+      ),
+      ...deletedTasks.flatMap((task) =>
+        task.deletedAt
+          ? [
+              {
+                at: task.deletedAt,
+                entry: {
+                  ...emptyLogEntry(`task-deleted:${task.id}`, "TASK_DELETED", task.deletedAt),
+                  actor: toLogActor(task.deletedByUserId ? deletersById.get(task.deletedByUserId) : null),
+                  task: logTask(task)
+                }
+              }
+            ]
+          : []
+      ),
+      ...[...importedComments, ...localComments].map((comment) => {
+        const at = comment.asanaCreatedAt ?? comment.createdAt;
+        return {
+          at,
+          entry: {
+            ...emptyLogEntry(`comment:${comment.id}`, "TASK_COMMENT", at),
+            actor: toLogActor(comment.author),
+            task: logTask(comment.task),
+            comment: { id: comment.id, content: comment.content }
+          }
+        };
+      }),
+      ...notes.map((note) => ({
+        at: note.createdAt,
+        entry: {
+          ...emptyLogEntry(`note:${note.id}`, "NOTE", note.createdAt),
+          actor: toLogActor(note.author),
+          note: toProjectNoteDto(note)
+        }
+      })),
+      ...meetingMinutes.map((minute) => ({
+        at: minute.createdAt,
+        entry: {
+          ...emptyLogEntry(`meeting-minute:${minute.id}`, "MEETING_MINUTE", minute.createdAt),
+          actor: toLogActor(minute.author),
+          meetingMinute: {
+            id: minute.id,
+            title: minute.title,
+            meetingDate: minute.meetingDate,
+            meetingTime: minute.meetingTime
+          }
+        }
+      }))
+    ];
+
+    const ordered = dedupeCompletionEntries(
+      candidates.filter((candidate) => isAfterCursor(candidate, cursor)).sort(compareLogCandidates)
+    );
+    const page = ordered.slice(0, query.limit);
+    const last = page.at(-1);
+
+    res.json({
+      entries: page.map((candidate) => candidate.entry),
+      nextCursor: ordered.length > query.limit && last ? `${last.at.toISOString()}|${last.entry.id}` : null
+    });
   } catch (error) {
     next(error);
   }
