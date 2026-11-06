@@ -103,6 +103,12 @@ export type TaskReview = Prisma.TaskReviewModel
  */
 export type Comment = Prisma.CommentModel
 /**
+ * Model CommentRevision
+ * Registro imutável de comentários: conteúdo anterior a uma edição, comentário apagado
+ * ou anexo removido. `commentId` não tem FK porque o comentário pode deixar de existir.
+ */
+export type CommentRevision = Prisma.CommentRevisionModel
+/**
  * Model Attachment
  * 
  */

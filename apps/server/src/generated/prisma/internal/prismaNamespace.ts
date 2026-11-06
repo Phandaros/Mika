@@ -396,6 +396,7 @@ export const ModelName = {
   Task: 'Task',
   TaskReview: 'TaskReview',
   Comment: 'Comment',
+  CommentRevision: 'CommentRevision',
   Attachment: 'Attachment',
   ProjectNote: 'ProjectNote',
   MeetingMinute: 'MeetingMinute',
@@ -427,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "attachment" | "projectNote" | "meetingMinute" | "meetingMinuteParticipant" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
+    modelProps: "user" | "companyHoliday" | "notification" | "asanaWorkspace" | "team" | "project" | "projectFollower" | "projectMember" | "section" | "task" | "taskReview" | "comment" | "commentRevision" | "attachment" | "projectNote" | "meetingMinute" | "meetingMinuteParticipant" | "taskActivity" | "taskMembership" | "taskFollower" | "taskLike" | "tag" | "taskTag" | "asanaCustomField" | "asanaCustomFieldEnumOption" | "projectCustomFieldValue" | "taskCustomFieldValue" | "weeklyReport" | "weeklyReportItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1316,6 +1317,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.CommentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.CommentCountAggregateOutputType> | number
+        }
+      }
+    }
+    CommentRevision: {
+      payload: Prisma.$CommentRevisionPayload<ExtArgs>
+      fields: Prisma.CommentRevisionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CommentRevisionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CommentRevisionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>
+        }
+        findFirst: {
+          args: Prisma.CommentRevisionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CommentRevisionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>
+        }
+        findMany: {
+          args: Prisma.CommentRevisionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>[]
+        }
+        create: {
+          args: Prisma.CommentRevisionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>
+        }
+        createMany: {
+          args: Prisma.CommentRevisionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CommentRevisionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>[]
+        }
+        delete: {
+          args: Prisma.CommentRevisionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>
+        }
+        update: {
+          args: Prisma.CommentRevisionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>
+        }
+        deleteMany: {
+          args: Prisma.CommentRevisionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CommentRevisionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CommentRevisionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>[]
+        }
+        upsert: {
+          args: Prisma.CommentRevisionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommentRevisionPayload>
+        }
+        aggregate: {
+          args: Prisma.CommentRevisionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCommentRevision>
+        }
+        groupBy: {
+          args: Prisma.CommentRevisionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommentRevisionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CommentRevisionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommentRevisionCountAggregateOutputType> | number
         }
       }
     }
@@ -2748,6 +2823,8 @@ export const CommentScalarFieldEnum = {
   asanaGid: 'asanaGid',
   authorAsanaGid: 'authorAsanaGid',
   asanaCreatedAt: 'asanaCreatedAt',
+  editedAt: 'editedAt',
+  editedById: 'editedById',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2755,9 +2832,25 @@ export const CommentScalarFieldEnum = {
 export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeof CommentScalarFieldEnum]
 
 
+export const CommentRevisionScalarFieldEnum = {
+  id: 'id',
+  taskId: 'taskId',
+  commentId: 'commentId',
+  type: 'type',
+  content: 'content',
+  authorId: 'authorId',
+  actorId: 'actorId',
+  commentCreatedAt: 'commentCreatedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type CommentRevisionScalarFieldEnum = (typeof CommentRevisionScalarFieldEnum)[keyof typeof CommentRevisionScalarFieldEnum]
+
+
 export const AttachmentScalarFieldEnum = {
   id: 'id',
   commentId: 'commentId',
+  commentRevisionId: 'commentRevisionId',
   projectNoteId: 'projectNoteId',
   meetingMinuteId: 'meetingMinuteId',
   filename: 'filename',
@@ -3205,6 +3298,7 @@ export type GlobalOmitConfig = {
   task?: Prisma.TaskOmit
   taskReview?: Prisma.TaskReviewOmit
   comment?: Prisma.CommentOmit
+  commentRevision?: Prisma.CommentRevisionOmit
   attachment?: Prisma.AttachmentOmit
   projectNote?: Prisma.ProjectNoteOmit
   meetingMinute?: Prisma.MeetingMinuteOmit

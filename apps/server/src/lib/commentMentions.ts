@@ -13,3 +13,10 @@ export function extractUserMentionIds(content: string): string[] {
 
   return [...ids];
 }
+
+/** Usuários citados em `nextContent` que ainda não estavam citados em `previousContent`. */
+export function findNewUserMentionIds(previousContent: string, nextContent: string): string[] {
+  const previousIds = new Set(extractUserMentionIds(previousContent));
+
+  return extractUserMentionIds(nextContent).filter((userId) => !previousIds.has(userId));
+}

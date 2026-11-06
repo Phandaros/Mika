@@ -32,6 +32,8 @@ export type CommentMinAggregateOutputType = {
   asanaGid: string | null
   authorAsanaGid: string | null
   asanaCreatedAt: Date | null
+  editedAt: Date | null
+  editedById: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +46,8 @@ export type CommentMaxAggregateOutputType = {
   asanaGid: string | null
   authorAsanaGid: string | null
   asanaCreatedAt: Date | null
+  editedAt: Date | null
+  editedById: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +60,8 @@ export type CommentCountAggregateOutputType = {
   asanaGid: number
   authorAsanaGid: number
   asanaCreatedAt: number
+  editedAt: number
+  editedById: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -70,6 +76,8 @@ export type CommentMinAggregateInputType = {
   asanaGid?: true
   authorAsanaGid?: true
   asanaCreatedAt?: true
+  editedAt?: true
+  editedById?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +90,8 @@ export type CommentMaxAggregateInputType = {
   asanaGid?: true
   authorAsanaGid?: true
   asanaCreatedAt?: true
+  editedAt?: true
+  editedById?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,6 +104,8 @@ export type CommentCountAggregateInputType = {
   asanaGid?: true
   authorAsanaGid?: true
   asanaCreatedAt?: true
+  editedAt?: true
+  editedById?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -179,6 +191,8 @@ export type CommentGroupByOutputType = {
   asanaGid: string | null
   authorAsanaGid: string | null
   asanaCreatedAt: Date | null
+  editedAt: Date | null
+  editedById: string | null
   createdAt: Date
   updatedAt: Date
   _count: CommentCountAggregateOutputType | null
@@ -212,10 +226,13 @@ export type CommentWhereInput = {
   asanaGid?: Prisma.StringNullableFilter<"Comment"> | string | null
   authorAsanaGid?: Prisma.StringNullableFilter<"Comment"> | string | null
   asanaCreatedAt?: Prisma.DateTimeNullableFilter<"Comment"> | Date | string | null
+  editedAt?: Prisma.DateTimeNullableFilter<"Comment"> | Date | string | null
+  editedById?: Prisma.StringNullableFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   task?: Prisma.XOR<Prisma.TaskScalarRelationFilter, Prisma.TaskWhereInput>
   author?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  editedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   attachments?: Prisma.AttachmentListRelationFilter
 }
 
@@ -227,10 +244,13 @@ export type CommentOrderByWithRelationInput = {
   asanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   authorAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   asanaCreatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  editedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  editedById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   task?: Prisma.TaskOrderByWithRelationInput
   author?: Prisma.UserOrderByWithRelationInput
+  editedBy?: Prisma.UserOrderByWithRelationInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
 }
 
@@ -245,10 +265,13 @@ export type CommentWhereUniqueInput = Prisma.AtLeast<{
   content?: Prisma.StringFilter<"Comment"> | string
   authorAsanaGid?: Prisma.StringNullableFilter<"Comment"> | string | null
   asanaCreatedAt?: Prisma.DateTimeNullableFilter<"Comment"> | Date | string | null
+  editedAt?: Prisma.DateTimeNullableFilter<"Comment"> | Date | string | null
+  editedById?: Prisma.StringNullableFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   task?: Prisma.XOR<Prisma.TaskScalarRelationFilter, Prisma.TaskWhereInput>
   author?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  editedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   attachments?: Prisma.AttachmentListRelationFilter
 }, "id" | "asanaGid">
 
@@ -260,6 +283,8 @@ export type CommentOrderByWithAggregationInput = {
   asanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   authorAsanaGid?: Prisma.SortOrderInput | Prisma.SortOrder
   asanaCreatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  editedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  editedById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CommentCountOrderByAggregateInput
@@ -278,6 +303,8 @@ export type CommentScalarWhereWithAggregatesInput = {
   asanaGid?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
   authorAsanaGid?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
   asanaCreatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Comment"> | Date | string | null
+  editedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Comment"> | Date | string | null
+  editedById?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Comment"> | Date | string
 }
@@ -288,10 +315,12 @@ export type CommentCreateInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutCommentsInput
   author?: Prisma.UserCreateNestedOneWithoutCommentsInput
+  editedBy?: Prisma.UserCreateNestedOneWithoutEditedCommentsInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutCommentInput
 }
 
@@ -303,6 +332,8 @@ export type CommentUncheckedCreateInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutCommentInput
@@ -314,10 +345,12 @@ export type CommentUpdateInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutCommentsNestedInput
   author?: Prisma.UserUpdateOneWithoutCommentsNestedInput
+  editedBy?: Prisma.UserUpdateOneWithoutEditedCommentsNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutCommentNestedInput
 }
 
@@ -329,6 +362,8 @@ export type CommentUncheckedUpdateInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutCommentNestedInput
@@ -342,6 +377,8 @@ export type CommentCreateManyInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -352,6 +389,7 @@ export type CommentUpdateManyMutationInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -364,6 +402,8 @@ export type CommentUncheckedUpdateManyInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -386,6 +426,8 @@ export type CommentCountOrderByAggregateInput = {
   asanaGid?: Prisma.SortOrder
   authorAsanaGid?: Prisma.SortOrder
   asanaCreatedAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrder
+  editedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -398,6 +440,8 @@ export type CommentMaxOrderByAggregateInput = {
   asanaGid?: Prisma.SortOrder
   authorAsanaGid?: Prisma.SortOrder
   asanaCreatedAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrder
+  editedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -410,6 +454,8 @@ export type CommentMinOrderByAggregateInput = {
   asanaGid?: Prisma.SortOrder
   authorAsanaGid?: Prisma.SortOrder
   asanaCreatedAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrder
+  editedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -426,10 +472,24 @@ export type CommentCreateNestedManyWithoutAuthorInput = {
   connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
 }
 
+export type CommentCreateNestedManyWithoutEditedByInput = {
+  create?: Prisma.XOR<Prisma.CommentCreateWithoutEditedByInput, Prisma.CommentUncheckedCreateWithoutEditedByInput> | Prisma.CommentCreateWithoutEditedByInput[] | Prisma.CommentUncheckedCreateWithoutEditedByInput[]
+  connectOrCreate?: Prisma.CommentCreateOrConnectWithoutEditedByInput | Prisma.CommentCreateOrConnectWithoutEditedByInput[]
+  createMany?: Prisma.CommentCreateManyEditedByInputEnvelope
+  connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+}
+
 export type CommentUncheckedCreateNestedManyWithoutAuthorInput = {
   create?: Prisma.XOR<Prisma.CommentCreateWithoutAuthorInput, Prisma.CommentUncheckedCreateWithoutAuthorInput> | Prisma.CommentCreateWithoutAuthorInput[] | Prisma.CommentUncheckedCreateWithoutAuthorInput[]
   connectOrCreate?: Prisma.CommentCreateOrConnectWithoutAuthorInput | Prisma.CommentCreateOrConnectWithoutAuthorInput[]
   createMany?: Prisma.CommentCreateManyAuthorInputEnvelope
+  connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+}
+
+export type CommentUncheckedCreateNestedManyWithoutEditedByInput = {
+  create?: Prisma.XOR<Prisma.CommentCreateWithoutEditedByInput, Prisma.CommentUncheckedCreateWithoutEditedByInput> | Prisma.CommentCreateWithoutEditedByInput[] | Prisma.CommentUncheckedCreateWithoutEditedByInput[]
+  connectOrCreate?: Prisma.CommentCreateOrConnectWithoutEditedByInput | Prisma.CommentCreateOrConnectWithoutEditedByInput[]
+  createMany?: Prisma.CommentCreateManyEditedByInputEnvelope
   connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
 }
 
@@ -447,6 +507,20 @@ export type CommentUpdateManyWithoutAuthorNestedInput = {
   deleteMany?: Prisma.CommentScalarWhereInput | Prisma.CommentScalarWhereInput[]
 }
 
+export type CommentUpdateManyWithoutEditedByNestedInput = {
+  create?: Prisma.XOR<Prisma.CommentCreateWithoutEditedByInput, Prisma.CommentUncheckedCreateWithoutEditedByInput> | Prisma.CommentCreateWithoutEditedByInput[] | Prisma.CommentUncheckedCreateWithoutEditedByInput[]
+  connectOrCreate?: Prisma.CommentCreateOrConnectWithoutEditedByInput | Prisma.CommentCreateOrConnectWithoutEditedByInput[]
+  upsert?: Prisma.CommentUpsertWithWhereUniqueWithoutEditedByInput | Prisma.CommentUpsertWithWhereUniqueWithoutEditedByInput[]
+  createMany?: Prisma.CommentCreateManyEditedByInputEnvelope
+  set?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  disconnect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  delete?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  update?: Prisma.CommentUpdateWithWhereUniqueWithoutEditedByInput | Prisma.CommentUpdateWithWhereUniqueWithoutEditedByInput[]
+  updateMany?: Prisma.CommentUpdateManyWithWhereWithoutEditedByInput | Prisma.CommentUpdateManyWithWhereWithoutEditedByInput[]
+  deleteMany?: Prisma.CommentScalarWhereInput | Prisma.CommentScalarWhereInput[]
+}
+
 export type CommentUncheckedUpdateManyWithoutAuthorNestedInput = {
   create?: Prisma.XOR<Prisma.CommentCreateWithoutAuthorInput, Prisma.CommentUncheckedCreateWithoutAuthorInput> | Prisma.CommentCreateWithoutAuthorInput[] | Prisma.CommentUncheckedCreateWithoutAuthorInput[]
   connectOrCreate?: Prisma.CommentCreateOrConnectWithoutAuthorInput | Prisma.CommentCreateOrConnectWithoutAuthorInput[]
@@ -458,6 +532,20 @@ export type CommentUncheckedUpdateManyWithoutAuthorNestedInput = {
   connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
   update?: Prisma.CommentUpdateWithWhereUniqueWithoutAuthorInput | Prisma.CommentUpdateWithWhereUniqueWithoutAuthorInput[]
   updateMany?: Prisma.CommentUpdateManyWithWhereWithoutAuthorInput | Prisma.CommentUpdateManyWithWhereWithoutAuthorInput[]
+  deleteMany?: Prisma.CommentScalarWhereInput | Prisma.CommentScalarWhereInput[]
+}
+
+export type CommentUncheckedUpdateManyWithoutEditedByNestedInput = {
+  create?: Prisma.XOR<Prisma.CommentCreateWithoutEditedByInput, Prisma.CommentUncheckedCreateWithoutEditedByInput> | Prisma.CommentCreateWithoutEditedByInput[] | Prisma.CommentUncheckedCreateWithoutEditedByInput[]
+  connectOrCreate?: Prisma.CommentCreateOrConnectWithoutEditedByInput | Prisma.CommentCreateOrConnectWithoutEditedByInput[]
+  upsert?: Prisma.CommentUpsertWithWhereUniqueWithoutEditedByInput | Prisma.CommentUpsertWithWhereUniqueWithoutEditedByInput[]
+  createMany?: Prisma.CommentCreateManyEditedByInputEnvelope
+  set?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  disconnect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  delete?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  connect?: Prisma.CommentWhereUniqueInput | Prisma.CommentWhereUniqueInput[]
+  update?: Prisma.CommentUpdateWithWhereUniqueWithoutEditedByInput | Prisma.CommentUpdateWithWhereUniqueWithoutEditedByInput[]
+  updateMany?: Prisma.CommentUpdateManyWithWhereWithoutEditedByInput | Prisma.CommentUpdateManyWithWhereWithoutEditedByInput[]
   deleteMany?: Prisma.CommentScalarWhereInput | Prisma.CommentScalarWhereInput[]
 }
 
@@ -525,9 +613,11 @@ export type CommentCreateWithoutAuthorInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutCommentsInput
+  editedBy?: Prisma.UserCreateNestedOneWithoutEditedCommentsInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutCommentInput
 }
 
@@ -538,6 +628,8 @@ export type CommentUncheckedCreateWithoutAuthorInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutCommentInput
@@ -550,6 +642,43 @@ export type CommentCreateOrConnectWithoutAuthorInput = {
 
 export type CommentCreateManyAuthorInputEnvelope = {
   data: Prisma.CommentCreateManyAuthorInput | Prisma.CommentCreateManyAuthorInput[]
+}
+
+export type CommentCreateWithoutEditedByInput = {
+  id?: string
+  content: string
+  asanaGid?: string | null
+  authorAsanaGid?: string | null
+  asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  task: Prisma.TaskCreateNestedOneWithoutCommentsInput
+  author?: Prisma.UserCreateNestedOneWithoutCommentsInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutCommentInput
+}
+
+export type CommentUncheckedCreateWithoutEditedByInput = {
+  id?: string
+  taskId: string
+  authorId?: string | null
+  content: string
+  asanaGid?: string | null
+  authorAsanaGid?: string | null
+  asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutCommentInput
+}
+
+export type CommentCreateOrConnectWithoutEditedByInput = {
+  where: Prisma.CommentWhereUniqueInput
+  create: Prisma.XOR<Prisma.CommentCreateWithoutEditedByInput, Prisma.CommentUncheckedCreateWithoutEditedByInput>
+}
+
+export type CommentCreateManyEditedByInputEnvelope = {
+  data: Prisma.CommentCreateManyEditedByInput | Prisma.CommentCreateManyEditedByInput[]
 }
 
 export type CommentUpsertWithWhereUniqueWithoutAuthorInput = {
@@ -579,8 +708,26 @@ export type CommentScalarWhereInput = {
   asanaGid?: Prisma.StringNullableFilter<"Comment"> | string | null
   authorAsanaGid?: Prisma.StringNullableFilter<"Comment"> | string | null
   asanaCreatedAt?: Prisma.DateTimeNullableFilter<"Comment"> | Date | string | null
+  editedAt?: Prisma.DateTimeNullableFilter<"Comment"> | Date | string | null
+  editedById?: Prisma.StringNullableFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
+}
+
+export type CommentUpsertWithWhereUniqueWithoutEditedByInput = {
+  where: Prisma.CommentWhereUniqueInput
+  update: Prisma.XOR<Prisma.CommentUpdateWithoutEditedByInput, Prisma.CommentUncheckedUpdateWithoutEditedByInput>
+  create: Prisma.XOR<Prisma.CommentCreateWithoutEditedByInput, Prisma.CommentUncheckedCreateWithoutEditedByInput>
+}
+
+export type CommentUpdateWithWhereUniqueWithoutEditedByInput = {
+  where: Prisma.CommentWhereUniqueInput
+  data: Prisma.XOR<Prisma.CommentUpdateWithoutEditedByInput, Prisma.CommentUncheckedUpdateWithoutEditedByInput>
+}
+
+export type CommentUpdateManyWithWhereWithoutEditedByInput = {
+  where: Prisma.CommentScalarWhereInput
+  data: Prisma.XOR<Prisma.CommentUpdateManyMutationInput, Prisma.CommentUncheckedUpdateManyWithoutEditedByInput>
 }
 
 export type CommentCreateWithoutTaskInput = {
@@ -589,9 +736,11 @@ export type CommentCreateWithoutTaskInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   author?: Prisma.UserCreateNestedOneWithoutCommentsInput
+  editedBy?: Prisma.UserCreateNestedOneWithoutEditedCommentsInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutCommentInput
 }
 
@@ -602,6 +751,8 @@ export type CommentUncheckedCreateWithoutTaskInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutCommentInput
@@ -638,10 +789,12 @@ export type CommentCreateWithoutAttachmentsInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutCommentsInput
   author?: Prisma.UserCreateNestedOneWithoutCommentsInput
+  editedBy?: Prisma.UserCreateNestedOneWithoutEditedCommentsInput
 }
 
 export type CommentUncheckedCreateWithoutAttachmentsInput = {
@@ -652,6 +805,8 @@ export type CommentUncheckedCreateWithoutAttachmentsInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -678,10 +833,12 @@ export type CommentUpdateWithoutAttachmentsInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutCommentsNestedInput
   author?: Prisma.UserUpdateOneWithoutCommentsNestedInput
+  editedBy?: Prisma.UserUpdateOneWithoutEditedCommentsNestedInput
 }
 
 export type CommentUncheckedUpdateWithoutAttachmentsInput = {
@@ -692,6 +849,8 @@ export type CommentUncheckedUpdateWithoutAttachmentsInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -703,6 +862,21 @@ export type CommentCreateManyAuthorInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CommentCreateManyEditedByInput = {
+  id?: string
+  taskId: string
+  authorId?: string | null
+  content: string
+  asanaGid?: string | null
+  authorAsanaGid?: string | null
+  asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -713,9 +887,11 @@ export type CommentUpdateWithoutAuthorInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutCommentsNestedInput
+  editedBy?: Prisma.UserUpdateOneWithoutEditedCommentsNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutCommentNestedInput
 }
 
@@ -726,6 +902,8 @@ export type CommentUncheckedUpdateWithoutAuthorInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutCommentNestedInput
@@ -738,6 +916,49 @@ export type CommentUncheckedUpdateManyWithoutAuthorInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CommentUpdateWithoutEditedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  task?: Prisma.TaskUpdateOneRequiredWithoutCommentsNestedInput
+  author?: Prisma.UserUpdateOneWithoutCommentsNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutCommentNestedInput
+}
+
+export type CommentUncheckedUpdateWithoutEditedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutCommentNestedInput
+}
+
+export type CommentUncheckedUpdateManyWithoutEditedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -749,6 +970,8 @@ export type CommentCreateManyTaskInput = {
   asanaGid?: string | null
   authorAsanaGid?: string | null
   asanaCreatedAt?: Date | string | null
+  editedAt?: Date | string | null
+  editedById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -759,9 +982,11 @@ export type CommentUpdateWithoutTaskInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   author?: Prisma.UserUpdateOneWithoutCommentsNestedInput
+  editedBy?: Prisma.UserUpdateOneWithoutEditedCommentsNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutCommentNestedInput
 }
 
@@ -772,6 +997,8 @@ export type CommentUncheckedUpdateWithoutTaskInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutCommentNestedInput
@@ -784,6 +1011,8 @@ export type CommentUncheckedUpdateManyWithoutTaskInput = {
   asanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorAsanaGid?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   asanaCreatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  editedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -827,10 +1056,13 @@ export type CommentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   asanaGid?: boolean
   authorAsanaGid?: boolean
   asanaCreatedAt?: boolean
+  editedAt?: boolean
+  editedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   author?: boolean | Prisma.Comment$authorArgs<ExtArgs>
+  editedBy?: boolean | Prisma.Comment$editedByArgs<ExtArgs>
   attachments?: boolean | Prisma.Comment$attachmentsArgs<ExtArgs>
   _count?: boolean | Prisma.CommentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["comment"]>
@@ -843,10 +1075,13 @@ export type CommentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   asanaGid?: boolean
   authorAsanaGid?: boolean
   asanaCreatedAt?: boolean
+  editedAt?: boolean
+  editedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   author?: boolean | Prisma.Comment$authorArgs<ExtArgs>
+  editedBy?: boolean | Prisma.Comment$editedByArgs<ExtArgs>
 }, ExtArgs["result"]["comment"]>
 
 export type CommentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -857,10 +1092,13 @@ export type CommentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   asanaGid?: boolean
   authorAsanaGid?: boolean
   asanaCreatedAt?: boolean
+  editedAt?: boolean
+  editedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   author?: boolean | Prisma.Comment$authorArgs<ExtArgs>
+  editedBy?: boolean | Prisma.Comment$editedByArgs<ExtArgs>
 }, ExtArgs["result"]["comment"]>
 
 export type CommentSelectScalar = {
@@ -871,24 +1109,29 @@ export type CommentSelectScalar = {
   asanaGid?: boolean
   authorAsanaGid?: boolean
   asanaCreatedAt?: boolean
+  editedAt?: boolean
+  editedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskId" | "authorId" | "content" | "asanaGid" | "authorAsanaGid" | "asanaCreatedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["comment"]>
+export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskId" | "authorId" | "content" | "asanaGid" | "authorAsanaGid" | "asanaCreatedAt" | "editedAt" | "editedById" | "createdAt" | "updatedAt", ExtArgs["result"]["comment"]>
 export type CommentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   author?: boolean | Prisma.Comment$authorArgs<ExtArgs>
+  editedBy?: boolean | Prisma.Comment$editedByArgs<ExtArgs>
   attachments?: boolean | Prisma.Comment$attachmentsArgs<ExtArgs>
   _count?: boolean | Prisma.CommentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CommentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   author?: boolean | Prisma.Comment$authorArgs<ExtArgs>
+  editedBy?: boolean | Prisma.Comment$editedByArgs<ExtArgs>
 }
 export type CommentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   author?: boolean | Prisma.Comment$authorArgs<ExtArgs>
+  editedBy?: boolean | Prisma.Comment$editedByArgs<ExtArgs>
 }
 
 export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -896,6 +1139,7 @@ export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     task: Prisma.$TaskPayload<ExtArgs>
     author: Prisma.$UserPayload<ExtArgs> | null
+    editedBy: Prisma.$UserPayload<ExtArgs> | null
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -909,6 +1153,11 @@ export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     asanaGid: string | null
     authorAsanaGid: string | null
     asanaCreatedAt: Date | null
+    /**
+     * Preenchidos apenas por edições reais de conteúdo feitas no app.
+     */
+    editedAt: Date | null
+    editedById: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["comment"]>
@@ -1307,6 +1556,7 @@ export interface Prisma__CommentClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   task<T extends Prisma.TaskDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskDefaultArgs<ExtArgs>>): Prisma.Prisma__TaskClient<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   author<T extends Prisma.Comment$authorArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Comment$authorArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  editedBy<T extends Prisma.Comment$editedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Comment$editedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   attachments<T extends Prisma.Comment$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Comment$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1344,6 +1594,8 @@ export interface CommentFieldRefs {
   readonly asanaGid: Prisma.FieldRef<"Comment", 'String'>
   readonly authorAsanaGid: Prisma.FieldRef<"Comment", 'String'>
   readonly asanaCreatedAt: Prisma.FieldRef<"Comment", 'DateTime'>
+  readonly editedAt: Prisma.FieldRef<"Comment", 'DateTime'>
+  readonly editedById: Prisma.FieldRef<"Comment", 'String'>
   readonly createdAt: Prisma.FieldRef<"Comment", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Comment", 'DateTime'>
 }
@@ -1748,6 +2000,25 @@ export type CommentDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
  * Comment.author
  */
 export type Comment$authorArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
+ * Comment.editedBy
+ */
+export type Comment$editedByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the User
    */

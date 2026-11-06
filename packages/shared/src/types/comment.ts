@@ -12,6 +12,8 @@ export interface Comment {
   asanaCreatedAt?: string | null;
   author?: User | null;
   attachments?: AttachmentDto[];
+  editedAt?: string | null;
+  editedBy?: Pick<User, "id" | "name"> | null;
 }
 
 export interface CreateCommentRequest {
@@ -20,4 +22,21 @@ export interface CreateCommentRequest {
 
 export interface UpdateCommentRequest {
   content: string;
+  /** Quando informado, o servidor responde 409 se o comentário mudou depois dessa data. */
+  expectedUpdatedAt?: string;
+}
+
+export type CommentRevisionType = "EDITED" | "DELETED" | "ATTACHMENT_REMOVED";
+
+export interface CommentRevision {
+  id: string;
+  taskId: string;
+  commentId: string;
+  type: CommentRevisionType;
+  content: string;
+  commentCreatedAt: string;
+  createdAt: string;
+  author: Pick<User, "id" | "name"> | null;
+  actor: Pick<User, "id" | "name"> | null;
+  attachments: AttachmentDto[];
 }

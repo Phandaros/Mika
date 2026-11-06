@@ -37,6 +37,7 @@ export type AttachmentSumAggregateOutputType = {
 export type AttachmentMinAggregateOutputType = {
   id: string | null
   commentId: string | null
+  commentRevisionId: string | null
   projectNoteId: string | null
   meetingMinuteId: string | null
   filename: string | null
@@ -50,6 +51,7 @@ export type AttachmentMinAggregateOutputType = {
 export type AttachmentMaxAggregateOutputType = {
   id: string | null
   commentId: string | null
+  commentRevisionId: string | null
   projectNoteId: string | null
   meetingMinuteId: string | null
   filename: string | null
@@ -63,6 +65,7 @@ export type AttachmentMaxAggregateOutputType = {
 export type AttachmentCountAggregateOutputType = {
   id: number
   commentId: number
+  commentRevisionId: number
   projectNoteId: number
   meetingMinuteId: number
   filename: number
@@ -86,6 +89,7 @@ export type AttachmentSumAggregateInputType = {
 export type AttachmentMinAggregateInputType = {
   id?: true
   commentId?: true
+  commentRevisionId?: true
   projectNoteId?: true
   meetingMinuteId?: true
   filename?: true
@@ -99,6 +103,7 @@ export type AttachmentMinAggregateInputType = {
 export type AttachmentMaxAggregateInputType = {
   id?: true
   commentId?: true
+  commentRevisionId?: true
   projectNoteId?: true
   meetingMinuteId?: true
   filename?: true
@@ -112,6 +117,7 @@ export type AttachmentMaxAggregateInputType = {
 export type AttachmentCountAggregateInputType = {
   id?: true
   commentId?: true
+  commentRevisionId?: true
   projectNoteId?: true
   meetingMinuteId?: true
   filename?: true
@@ -212,6 +218,7 @@ export type AttachmentGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 export type AttachmentGroupByOutputType = {
   id: string
   commentId: string | null
+  commentRevisionId: string | null
   projectNoteId: string | null
   meetingMinuteId: string | null
   filename: string
@@ -248,6 +255,7 @@ export type AttachmentWhereInput = {
   NOT?: Prisma.AttachmentWhereInput | Prisma.AttachmentWhereInput[]
   id?: Prisma.StringFilter<"Attachment"> | string
   commentId?: Prisma.StringNullableFilter<"Attachment"> | string | null
+  commentRevisionId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   projectNoteId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   meetingMinuteId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   filename?: Prisma.StringFilter<"Attachment"> | string
@@ -257,6 +265,7 @@ export type AttachmentWhereInput = {
   uploadedById?: Prisma.StringFilter<"Attachment"> | string
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
   comment?: Prisma.XOR<Prisma.CommentNullableScalarRelationFilter, Prisma.CommentWhereInput> | null
+  commentRevision?: Prisma.XOR<Prisma.CommentRevisionNullableScalarRelationFilter, Prisma.CommentRevisionWhereInput> | null
   projectNote?: Prisma.XOR<Prisma.ProjectNoteNullableScalarRelationFilter, Prisma.ProjectNoteWhereInput> | null
   meetingMinute?: Prisma.XOR<Prisma.MeetingMinuteNullableScalarRelationFilter, Prisma.MeetingMinuteWhereInput> | null
   uploadedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -265,6 +274,7 @@ export type AttachmentWhereInput = {
 export type AttachmentOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   commentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  commentRevisionId?: Prisma.SortOrderInput | Prisma.SortOrder
   projectNoteId?: Prisma.SortOrderInput | Prisma.SortOrder
   meetingMinuteId?: Prisma.SortOrderInput | Prisma.SortOrder
   filename?: Prisma.SortOrder
@@ -274,6 +284,7 @@ export type AttachmentOrderByWithRelationInput = {
   uploadedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   comment?: Prisma.CommentOrderByWithRelationInput
+  commentRevision?: Prisma.CommentRevisionOrderByWithRelationInput
   projectNote?: Prisma.ProjectNoteOrderByWithRelationInput
   meetingMinute?: Prisma.MeetingMinuteOrderByWithRelationInput
   uploadedBy?: Prisma.UserOrderByWithRelationInput
@@ -285,6 +296,7 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.AttachmentWhereInput[]
   NOT?: Prisma.AttachmentWhereInput | Prisma.AttachmentWhereInput[]
   commentId?: Prisma.StringNullableFilter<"Attachment"> | string | null
+  commentRevisionId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   projectNoteId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   meetingMinuteId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   filename?: Prisma.StringFilter<"Attachment"> | string
@@ -294,6 +306,7 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   uploadedById?: Prisma.StringFilter<"Attachment"> | string
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
   comment?: Prisma.XOR<Prisma.CommentNullableScalarRelationFilter, Prisma.CommentWhereInput> | null
+  commentRevision?: Prisma.XOR<Prisma.CommentRevisionNullableScalarRelationFilter, Prisma.CommentRevisionWhereInput> | null
   projectNote?: Prisma.XOR<Prisma.ProjectNoteNullableScalarRelationFilter, Prisma.ProjectNoteWhereInput> | null
   meetingMinute?: Prisma.XOR<Prisma.MeetingMinuteNullableScalarRelationFilter, Prisma.MeetingMinuteWhereInput> | null
   uploadedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -302,6 +315,7 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
 export type AttachmentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   commentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  commentRevisionId?: Prisma.SortOrderInput | Prisma.SortOrder
   projectNoteId?: Prisma.SortOrderInput | Prisma.SortOrder
   meetingMinuteId?: Prisma.SortOrderInput | Prisma.SortOrder
   filename?: Prisma.SortOrder
@@ -323,6 +337,7 @@ export type AttachmentScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AttachmentScalarWhereWithAggregatesInput | Prisma.AttachmentScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
   commentId?: Prisma.StringNullableWithAggregatesFilter<"Attachment"> | string | null
+  commentRevisionId?: Prisma.StringNullableWithAggregatesFilter<"Attachment"> | string | null
   projectNoteId?: Prisma.StringNullableWithAggregatesFilter<"Attachment"> | string | null
   meetingMinuteId?: Prisma.StringNullableWithAggregatesFilter<"Attachment"> | string | null
   filename?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
@@ -341,6 +356,7 @@ export type AttachmentCreateInput = {
   sizeBytes: number
   createdAt?: Date | string
   comment?: Prisma.CommentCreateNestedOneWithoutAttachmentsInput
+  commentRevision?: Prisma.CommentRevisionCreateNestedOneWithoutAttachmentsInput
   projectNote?: Prisma.ProjectNoteCreateNestedOneWithoutAttachmentsInput
   meetingMinute?: Prisma.MeetingMinuteCreateNestedOneWithoutAttachmentsInput
   uploadedBy: Prisma.UserCreateNestedOneWithoutUploadedAttachmentsInput
@@ -349,6 +365,7 @@ export type AttachmentCreateInput = {
 export type AttachmentUncheckedCreateInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   meetingMinuteId?: string | null
   filename: string
@@ -367,6 +384,7 @@ export type AttachmentUpdateInput = {
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comment?: Prisma.CommentUpdateOneWithoutAttachmentsNestedInput
+  commentRevision?: Prisma.CommentRevisionUpdateOneWithoutAttachmentsNestedInput
   projectNote?: Prisma.ProjectNoteUpdateOneWithoutAttachmentsNestedInput
   meetingMinute?: Prisma.MeetingMinuteUpdateOneWithoutAttachmentsNestedInput
   uploadedBy?: Prisma.UserUpdateOneRequiredWithoutUploadedAttachmentsNestedInput
@@ -375,6 +393,7 @@ export type AttachmentUpdateInput = {
 export type AttachmentUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
@@ -388,6 +407,7 @@ export type AttachmentUncheckedUpdateInput = {
 export type AttachmentCreateManyInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   meetingMinuteId?: string | null
   filename: string
@@ -410,6 +430,7 @@ export type AttachmentUpdateManyMutationInput = {
 export type AttachmentUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
@@ -433,6 +454,7 @@ export type AttachmentOrderByRelationAggregateInput = {
 export type AttachmentCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   commentId?: Prisma.SortOrder
+  commentRevisionId?: Prisma.SortOrder
   projectNoteId?: Prisma.SortOrder
   meetingMinuteId?: Prisma.SortOrder
   filename?: Prisma.SortOrder
@@ -450,6 +472,7 @@ export type AttachmentAvgOrderByAggregateInput = {
 export type AttachmentMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   commentId?: Prisma.SortOrder
+  commentRevisionId?: Prisma.SortOrder
   projectNoteId?: Prisma.SortOrder
   meetingMinuteId?: Prisma.SortOrder
   filename?: Prisma.SortOrder
@@ -463,6 +486,7 @@ export type AttachmentMaxOrderByAggregateInput = {
 export type AttachmentMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   commentId?: Prisma.SortOrder
+  commentRevisionId?: Prisma.SortOrder
   projectNoteId?: Prisma.SortOrder
   meetingMinuteId?: Prisma.SortOrder
   filename?: Prisma.SortOrder
@@ -561,6 +585,48 @@ export type AttachmentUncheckedUpdateManyWithoutCommentNestedInput = {
   deleteMany?: Prisma.AttachmentScalarWhereInput | Prisma.AttachmentScalarWhereInput[]
 }
 
+export type AttachmentCreateNestedManyWithoutCommentRevisionInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput> | Prisma.AttachmentCreateWithoutCommentRevisionInput[] | Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput[]
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput | Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput[]
+  createMany?: Prisma.AttachmentCreateManyCommentRevisionInputEnvelope
+  connect?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+}
+
+export type AttachmentUncheckedCreateNestedManyWithoutCommentRevisionInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput> | Prisma.AttachmentCreateWithoutCommentRevisionInput[] | Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput[]
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput | Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput[]
+  createMany?: Prisma.AttachmentCreateManyCommentRevisionInputEnvelope
+  connect?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+}
+
+export type AttachmentUpdateManyWithoutCommentRevisionNestedInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput> | Prisma.AttachmentCreateWithoutCommentRevisionInput[] | Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput[]
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput | Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput[]
+  upsert?: Prisma.AttachmentUpsertWithWhereUniqueWithoutCommentRevisionInput | Prisma.AttachmentUpsertWithWhereUniqueWithoutCommentRevisionInput[]
+  createMany?: Prisma.AttachmentCreateManyCommentRevisionInputEnvelope
+  set?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  disconnect?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  delete?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  connect?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  update?: Prisma.AttachmentUpdateWithWhereUniqueWithoutCommentRevisionInput | Prisma.AttachmentUpdateWithWhereUniqueWithoutCommentRevisionInput[]
+  updateMany?: Prisma.AttachmentUpdateManyWithWhereWithoutCommentRevisionInput | Prisma.AttachmentUpdateManyWithWhereWithoutCommentRevisionInput[]
+  deleteMany?: Prisma.AttachmentScalarWhereInput | Prisma.AttachmentScalarWhereInput[]
+}
+
+export type AttachmentUncheckedUpdateManyWithoutCommentRevisionNestedInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput> | Prisma.AttachmentCreateWithoutCommentRevisionInput[] | Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput[]
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput | Prisma.AttachmentCreateOrConnectWithoutCommentRevisionInput[]
+  upsert?: Prisma.AttachmentUpsertWithWhereUniqueWithoutCommentRevisionInput | Prisma.AttachmentUpsertWithWhereUniqueWithoutCommentRevisionInput[]
+  createMany?: Prisma.AttachmentCreateManyCommentRevisionInputEnvelope
+  set?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  disconnect?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  delete?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  connect?: Prisma.AttachmentWhereUniqueInput | Prisma.AttachmentWhereUniqueInput[]
+  update?: Prisma.AttachmentUpdateWithWhereUniqueWithoutCommentRevisionInput | Prisma.AttachmentUpdateWithWhereUniqueWithoutCommentRevisionInput[]
+  updateMany?: Prisma.AttachmentUpdateManyWithWhereWithoutCommentRevisionInput | Prisma.AttachmentUpdateManyWithWhereWithoutCommentRevisionInput[]
+  deleteMany?: Prisma.AttachmentScalarWhereInput | Prisma.AttachmentScalarWhereInput[]
+}
+
 export type AttachmentCreateNestedManyWithoutProjectNoteInput = {
   create?: Prisma.XOR<Prisma.AttachmentCreateWithoutProjectNoteInput, Prisma.AttachmentUncheckedCreateWithoutProjectNoteInput> | Prisma.AttachmentCreateWithoutProjectNoteInput[] | Prisma.AttachmentUncheckedCreateWithoutProjectNoteInput[]
   connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutProjectNoteInput | Prisma.AttachmentCreateOrConnectWithoutProjectNoteInput[]
@@ -653,6 +719,7 @@ export type AttachmentCreateWithoutUploadedByInput = {
   sizeBytes: number
   createdAt?: Date | string
   comment?: Prisma.CommentCreateNestedOneWithoutAttachmentsInput
+  commentRevision?: Prisma.CommentRevisionCreateNestedOneWithoutAttachmentsInput
   projectNote?: Prisma.ProjectNoteCreateNestedOneWithoutAttachmentsInput
   meetingMinute?: Prisma.MeetingMinuteCreateNestedOneWithoutAttachmentsInput
 }
@@ -660,6 +727,7 @@ export type AttachmentCreateWithoutUploadedByInput = {
 export type AttachmentUncheckedCreateWithoutUploadedByInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   meetingMinuteId?: string | null
   filename: string
@@ -700,6 +768,7 @@ export type AttachmentScalarWhereInput = {
   NOT?: Prisma.AttachmentScalarWhereInput | Prisma.AttachmentScalarWhereInput[]
   id?: Prisma.StringFilter<"Attachment"> | string
   commentId?: Prisma.StringNullableFilter<"Attachment"> | string | null
+  commentRevisionId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   projectNoteId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   meetingMinuteId?: Prisma.StringNullableFilter<"Attachment"> | string | null
   filename?: Prisma.StringFilter<"Attachment"> | string
@@ -717,6 +786,7 @@ export type AttachmentCreateWithoutCommentInput = {
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  commentRevision?: Prisma.CommentRevisionCreateNestedOneWithoutAttachmentsInput
   projectNote?: Prisma.ProjectNoteCreateNestedOneWithoutAttachmentsInput
   meetingMinute?: Prisma.MeetingMinuteCreateNestedOneWithoutAttachmentsInput
   uploadedBy: Prisma.UserCreateNestedOneWithoutUploadedAttachmentsInput
@@ -724,6 +794,7 @@ export type AttachmentCreateWithoutCommentInput = {
 
 export type AttachmentUncheckedCreateWithoutCommentInput = {
   id?: string
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   meetingMinuteId?: string | null
   filename: string
@@ -759,6 +830,57 @@ export type AttachmentUpdateManyWithWhereWithoutCommentInput = {
   data: Prisma.XOR<Prisma.AttachmentUpdateManyMutationInput, Prisma.AttachmentUncheckedUpdateManyWithoutCommentInput>
 }
 
+export type AttachmentCreateWithoutCommentRevisionInput = {
+  id?: string
+  filename: string
+  storedAs: string
+  mimeType: string
+  sizeBytes: number
+  createdAt?: Date | string
+  comment?: Prisma.CommentCreateNestedOneWithoutAttachmentsInput
+  projectNote?: Prisma.ProjectNoteCreateNestedOneWithoutAttachmentsInput
+  meetingMinute?: Prisma.MeetingMinuteCreateNestedOneWithoutAttachmentsInput
+  uploadedBy: Prisma.UserCreateNestedOneWithoutUploadedAttachmentsInput
+}
+
+export type AttachmentUncheckedCreateWithoutCommentRevisionInput = {
+  id?: string
+  commentId?: string | null
+  projectNoteId?: string | null
+  meetingMinuteId?: string | null
+  filename: string
+  storedAs: string
+  mimeType: string
+  sizeBytes: number
+  uploadedById: string
+  createdAt?: Date | string
+}
+
+export type AttachmentCreateOrConnectWithoutCommentRevisionInput = {
+  where: Prisma.AttachmentWhereUniqueInput
+  create: Prisma.XOR<Prisma.AttachmentCreateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput>
+}
+
+export type AttachmentCreateManyCommentRevisionInputEnvelope = {
+  data: Prisma.AttachmentCreateManyCommentRevisionInput | Prisma.AttachmentCreateManyCommentRevisionInput[]
+}
+
+export type AttachmentUpsertWithWhereUniqueWithoutCommentRevisionInput = {
+  where: Prisma.AttachmentWhereUniqueInput
+  update: Prisma.XOR<Prisma.AttachmentUpdateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedUpdateWithoutCommentRevisionInput>
+  create: Prisma.XOR<Prisma.AttachmentCreateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedCreateWithoutCommentRevisionInput>
+}
+
+export type AttachmentUpdateWithWhereUniqueWithoutCommentRevisionInput = {
+  where: Prisma.AttachmentWhereUniqueInput
+  data: Prisma.XOR<Prisma.AttachmentUpdateWithoutCommentRevisionInput, Prisma.AttachmentUncheckedUpdateWithoutCommentRevisionInput>
+}
+
+export type AttachmentUpdateManyWithWhereWithoutCommentRevisionInput = {
+  where: Prisma.AttachmentScalarWhereInput
+  data: Prisma.XOR<Prisma.AttachmentUpdateManyMutationInput, Prisma.AttachmentUncheckedUpdateManyWithoutCommentRevisionInput>
+}
+
 export type AttachmentCreateWithoutProjectNoteInput = {
   id?: string
   filename: string
@@ -767,6 +889,7 @@ export type AttachmentCreateWithoutProjectNoteInput = {
   sizeBytes: number
   createdAt?: Date | string
   comment?: Prisma.CommentCreateNestedOneWithoutAttachmentsInput
+  commentRevision?: Prisma.CommentRevisionCreateNestedOneWithoutAttachmentsInput
   meetingMinute?: Prisma.MeetingMinuteCreateNestedOneWithoutAttachmentsInput
   uploadedBy: Prisma.UserCreateNestedOneWithoutUploadedAttachmentsInput
 }
@@ -774,6 +897,7 @@ export type AttachmentCreateWithoutProjectNoteInput = {
 export type AttachmentUncheckedCreateWithoutProjectNoteInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   meetingMinuteId?: string | null
   filename: string
   storedAs: string
@@ -816,6 +940,7 @@ export type AttachmentCreateWithoutMeetingMinuteInput = {
   sizeBytes: number
   createdAt?: Date | string
   comment?: Prisma.CommentCreateNestedOneWithoutAttachmentsInput
+  commentRevision?: Prisma.CommentRevisionCreateNestedOneWithoutAttachmentsInput
   projectNote?: Prisma.ProjectNoteCreateNestedOneWithoutAttachmentsInput
   uploadedBy: Prisma.UserCreateNestedOneWithoutUploadedAttachmentsInput
 }
@@ -823,6 +948,7 @@ export type AttachmentCreateWithoutMeetingMinuteInput = {
 export type AttachmentUncheckedCreateWithoutMeetingMinuteInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   filename: string
   storedAs: string
@@ -860,6 +986,7 @@ export type AttachmentUpdateManyWithWhereWithoutMeetingMinuteInput = {
 export type AttachmentCreateManyUploadedByInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   meetingMinuteId?: string | null
   filename: string
@@ -877,6 +1004,7 @@ export type AttachmentUpdateWithoutUploadedByInput = {
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comment?: Prisma.CommentUpdateOneWithoutAttachmentsNestedInput
+  commentRevision?: Prisma.CommentRevisionUpdateOneWithoutAttachmentsNestedInput
   projectNote?: Prisma.ProjectNoteUpdateOneWithoutAttachmentsNestedInput
   meetingMinute?: Prisma.MeetingMinuteUpdateOneWithoutAttachmentsNestedInput
 }
@@ -884,6 +1012,7 @@ export type AttachmentUpdateWithoutUploadedByInput = {
 export type AttachmentUncheckedUpdateWithoutUploadedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
@@ -896,6 +1025,7 @@ export type AttachmentUncheckedUpdateWithoutUploadedByInput = {
 export type AttachmentUncheckedUpdateManyWithoutUploadedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
@@ -907,6 +1037,7 @@ export type AttachmentUncheckedUpdateManyWithoutUploadedByInput = {
 
 export type AttachmentCreateManyCommentInput = {
   id?: string
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   meetingMinuteId?: string | null
   filename: string
@@ -924,6 +1055,7 @@ export type AttachmentUpdateWithoutCommentInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  commentRevision?: Prisma.CommentRevisionUpdateOneWithoutAttachmentsNestedInput
   projectNote?: Prisma.ProjectNoteUpdateOneWithoutAttachmentsNestedInput
   meetingMinute?: Prisma.MeetingMinuteUpdateOneWithoutAttachmentsNestedInput
   uploadedBy?: Prisma.UserUpdateOneRequiredWithoutUploadedAttachmentsNestedInput
@@ -931,6 +1063,7 @@ export type AttachmentUpdateWithoutCommentInput = {
 
 export type AttachmentUncheckedUpdateWithoutCommentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
@@ -943,6 +1076,59 @@ export type AttachmentUncheckedUpdateWithoutCommentInput = {
 
 export type AttachmentUncheckedUpdateManyWithoutCommentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  filename?: Prisma.StringFieldUpdateOperationsInput | string
+  storedAs?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type AttachmentCreateManyCommentRevisionInput = {
+  id?: string
+  commentId?: string | null
+  projectNoteId?: string | null
+  meetingMinuteId?: string | null
+  filename: string
+  storedAs: string
+  mimeType: string
+  sizeBytes: number
+  uploadedById: string
+  createdAt?: Date | string
+}
+
+export type AttachmentUpdateWithoutCommentRevisionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  filename?: Prisma.StringFieldUpdateOperationsInput | string
+  storedAs?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  comment?: Prisma.CommentUpdateOneWithoutAttachmentsNestedInput
+  projectNote?: Prisma.ProjectNoteUpdateOneWithoutAttachmentsNestedInput
+  meetingMinute?: Prisma.MeetingMinuteUpdateOneWithoutAttachmentsNestedInput
+  uploadedBy?: Prisma.UserUpdateOneRequiredWithoutUploadedAttachmentsNestedInput
+}
+
+export type AttachmentUncheckedUpdateWithoutCommentRevisionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  filename?: Prisma.StringFieldUpdateOperationsInput | string
+  storedAs?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type AttachmentUncheckedUpdateManyWithoutCommentRevisionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
@@ -956,6 +1142,7 @@ export type AttachmentUncheckedUpdateManyWithoutCommentInput = {
 export type AttachmentCreateManyProjectNoteInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   meetingMinuteId?: string | null
   filename: string
   storedAs: string
@@ -973,6 +1160,7 @@ export type AttachmentUpdateWithoutProjectNoteInput = {
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comment?: Prisma.CommentUpdateOneWithoutAttachmentsNestedInput
+  commentRevision?: Prisma.CommentRevisionUpdateOneWithoutAttachmentsNestedInput
   meetingMinute?: Prisma.MeetingMinuteUpdateOneWithoutAttachmentsNestedInput
   uploadedBy?: Prisma.UserUpdateOneRequiredWithoutUploadedAttachmentsNestedInput
 }
@@ -980,6 +1168,7 @@ export type AttachmentUpdateWithoutProjectNoteInput = {
 export type AttachmentUncheckedUpdateWithoutProjectNoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   storedAs?: Prisma.StringFieldUpdateOperationsInput | string
@@ -992,6 +1181,7 @@ export type AttachmentUncheckedUpdateWithoutProjectNoteInput = {
 export type AttachmentUncheckedUpdateManyWithoutProjectNoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meetingMinuteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   storedAs?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1004,6 +1194,7 @@ export type AttachmentUncheckedUpdateManyWithoutProjectNoteInput = {
 export type AttachmentCreateManyMeetingMinuteInput = {
   id?: string
   commentId?: string | null
+  commentRevisionId?: string | null
   projectNoteId?: string | null
   filename: string
   storedAs: string
@@ -1021,6 +1212,7 @@ export type AttachmentUpdateWithoutMeetingMinuteInput = {
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comment?: Prisma.CommentUpdateOneWithoutAttachmentsNestedInput
+  commentRevision?: Prisma.CommentRevisionUpdateOneWithoutAttachmentsNestedInput
   projectNote?: Prisma.ProjectNoteUpdateOneWithoutAttachmentsNestedInput
   uploadedBy?: Prisma.UserUpdateOneRequiredWithoutUploadedAttachmentsNestedInput
 }
@@ -1028,6 +1220,7 @@ export type AttachmentUpdateWithoutMeetingMinuteInput = {
 export type AttachmentUncheckedUpdateWithoutMeetingMinuteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   storedAs?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1040,6 +1233,7 @@ export type AttachmentUncheckedUpdateWithoutMeetingMinuteInput = {
 export type AttachmentUncheckedUpdateManyWithoutMeetingMinuteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  commentRevisionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   projectNoteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   storedAs?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1054,6 +1248,7 @@ export type AttachmentUncheckedUpdateManyWithoutMeetingMinuteInput = {
 export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   commentId?: boolean
+  commentRevisionId?: boolean
   projectNoteId?: boolean
   meetingMinuteId?: boolean
   filename?: boolean
@@ -1063,6 +1258,7 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   uploadedById?: boolean
   createdAt?: boolean
   comment?: boolean | Prisma.Attachment$commentArgs<ExtArgs>
+  commentRevision?: boolean | Prisma.Attachment$commentRevisionArgs<ExtArgs>
   projectNote?: boolean | Prisma.Attachment$projectNoteArgs<ExtArgs>
   meetingMinute?: boolean | Prisma.Attachment$meetingMinuteArgs<ExtArgs>
   uploadedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1071,6 +1267,7 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   commentId?: boolean
+  commentRevisionId?: boolean
   projectNoteId?: boolean
   meetingMinuteId?: boolean
   filename?: boolean
@@ -1080,6 +1277,7 @@ export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   uploadedById?: boolean
   createdAt?: boolean
   comment?: boolean | Prisma.Attachment$commentArgs<ExtArgs>
+  commentRevision?: boolean | Prisma.Attachment$commentRevisionArgs<ExtArgs>
   projectNote?: boolean | Prisma.Attachment$projectNoteArgs<ExtArgs>
   meetingMinute?: boolean | Prisma.Attachment$meetingMinuteArgs<ExtArgs>
   uploadedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1088,6 +1286,7 @@ export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
 export type AttachmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   commentId?: boolean
+  commentRevisionId?: boolean
   projectNoteId?: boolean
   meetingMinuteId?: boolean
   filename?: boolean
@@ -1097,6 +1296,7 @@ export type AttachmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   uploadedById?: boolean
   createdAt?: boolean
   comment?: boolean | Prisma.Attachment$commentArgs<ExtArgs>
+  commentRevision?: boolean | Prisma.Attachment$commentRevisionArgs<ExtArgs>
   projectNote?: boolean | Prisma.Attachment$projectNoteArgs<ExtArgs>
   meetingMinute?: boolean | Prisma.Attachment$meetingMinuteArgs<ExtArgs>
   uploadedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1105,6 +1305,7 @@ export type AttachmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
 export type AttachmentSelectScalar = {
   id?: boolean
   commentId?: boolean
+  commentRevisionId?: boolean
   projectNoteId?: boolean
   meetingMinuteId?: boolean
   filename?: boolean
@@ -1115,21 +1316,24 @@ export type AttachmentSelectScalar = {
   createdAt?: boolean
 }
 
-export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "commentId" | "projectNoteId" | "meetingMinuteId" | "filename" | "storedAs" | "mimeType" | "sizeBytes" | "uploadedById" | "createdAt", ExtArgs["result"]["attachment"]>
+export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "commentId" | "commentRevisionId" | "projectNoteId" | "meetingMinuteId" | "filename" | "storedAs" | "mimeType" | "sizeBytes" | "uploadedById" | "createdAt", ExtArgs["result"]["attachment"]>
 export type AttachmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   comment?: boolean | Prisma.Attachment$commentArgs<ExtArgs>
+  commentRevision?: boolean | Prisma.Attachment$commentRevisionArgs<ExtArgs>
   projectNote?: boolean | Prisma.Attachment$projectNoteArgs<ExtArgs>
   meetingMinute?: boolean | Prisma.Attachment$meetingMinuteArgs<ExtArgs>
   uploadedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type AttachmentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   comment?: boolean | Prisma.Attachment$commentArgs<ExtArgs>
+  commentRevision?: boolean | Prisma.Attachment$commentRevisionArgs<ExtArgs>
   projectNote?: boolean | Prisma.Attachment$projectNoteArgs<ExtArgs>
   meetingMinute?: boolean | Prisma.Attachment$meetingMinuteArgs<ExtArgs>
   uploadedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type AttachmentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   comment?: boolean | Prisma.Attachment$commentArgs<ExtArgs>
+  commentRevision?: boolean | Prisma.Attachment$commentRevisionArgs<ExtArgs>
   projectNote?: boolean | Prisma.Attachment$projectNoteArgs<ExtArgs>
   meetingMinute?: boolean | Prisma.Attachment$meetingMinuteArgs<ExtArgs>
   uploadedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1139,6 +1343,7 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
   name: "Attachment"
   objects: {
     comment: Prisma.$CommentPayload<ExtArgs> | null
+    commentRevision: Prisma.$CommentRevisionPayload<ExtArgs> | null
     projectNote: Prisma.$ProjectNotePayload<ExtArgs> | null
     meetingMinute: Prisma.$MeetingMinutePayload<ExtArgs> | null
     uploadedBy: Prisma.$UserPayload<ExtArgs>
@@ -1146,6 +1351,10 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     commentId: string | null
+    /**
+     * Anexo preservado no histórico; visível apenas para coordinator+.
+     */
+    commentRevisionId: string | null
     projectNoteId: string | null
     meetingMinuteId: string | null
     filename: string
@@ -1549,6 +1758,7 @@ readonly fields: AttachmentFieldRefs;
 export interface Prisma__AttachmentClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   comment<T extends Prisma.Attachment$commentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$commentArgs<ExtArgs>>): Prisma.Prisma__CommentClient<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  commentRevision<T extends Prisma.Attachment$commentRevisionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$commentRevisionArgs<ExtArgs>>): Prisma.Prisma__CommentRevisionClient<runtime.Types.Result.GetResult<Prisma.$CommentRevisionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   projectNote<T extends Prisma.Attachment$projectNoteArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$projectNoteArgs<ExtArgs>>): Prisma.Prisma__ProjectNoteClient<runtime.Types.Result.GetResult<Prisma.$ProjectNotePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   meetingMinute<T extends Prisma.Attachment$meetingMinuteArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$meetingMinuteArgs<ExtArgs>>): Prisma.Prisma__MeetingMinuteClient<runtime.Types.Result.GetResult<Prisma.$MeetingMinutePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   uploadedBy<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
@@ -1583,6 +1793,7 @@ export interface Prisma__AttachmentClient<T, Null = never, ExtArgs extends runti
 export interface AttachmentFieldRefs {
   readonly id: Prisma.FieldRef<"Attachment", 'String'>
   readonly commentId: Prisma.FieldRef<"Attachment", 'String'>
+  readonly commentRevisionId: Prisma.FieldRef<"Attachment", 'String'>
   readonly projectNoteId: Prisma.FieldRef<"Attachment", 'String'>
   readonly meetingMinuteId: Prisma.FieldRef<"Attachment", 'String'>
   readonly filename: Prisma.FieldRef<"Attachment", 'String'>
@@ -2006,6 +2217,25 @@ export type Attachment$commentArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   include?: Prisma.CommentInclude<ExtArgs> | null
   where?: Prisma.CommentWhereInput
+}
+
+/**
+ * Attachment.commentRevision
+ */
+export type Attachment$commentRevisionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CommentRevision
+   */
+  select?: Prisma.CommentRevisionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CommentRevision
+   */
+  omit?: Prisma.CommentRevisionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CommentRevisionInclude<ExtArgs> | null
+  where?: Prisma.CommentRevisionWhereInput
 }
 
 /**

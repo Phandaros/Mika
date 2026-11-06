@@ -28,26 +28,29 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownedProjects         Project[]                  @relation("ProjectOwner")
-  assignedTasks         Task[]                     @relation("TaskAssignee")
-  createdCustomFields   AsanaCustomField[]         @relation("CustomFieldCreatedBy")
-  projectFollowers      ProjectFollower[]
-  projectMembers        ProjectMember[]
-  taskFollowers         TaskFollower[]
-  taskLikes             TaskLike[]
-  comments              Comment[]
-  taskActivities        TaskActivity[]
-  notifications         Notification[]
-  authoredNotifications Notification[]             @relation("NotificationActor")
-  createdHolidays       CompanyHoliday[]           @relation("HolidayCreator")
-  createdTasks          Task[]                     @relation("TaskCreator")
-  requestedReviews      TaskReview[]               @relation("TaskReviewRequester")
-  assignedReviews       TaskReview[]               @relation("TaskReviewReviewer")
-  uploadedAttachments   Attachment[]               @relation("AttachmentUploader")
-  projectNotes          ProjectNote[]
-  meetingMinutes        MeetingMinute[]
-  meetingParticipations MeetingMinuteParticipant[]
-  weeklyReports         WeeklyReport[]
+  ownedProjects            Project[]                  @relation("ProjectOwner")
+  assignedTasks            Task[]                     @relation("TaskAssignee")
+  createdCustomFields      AsanaCustomField[]         @relation("CustomFieldCreatedBy")
+  projectFollowers         ProjectFollower[]
+  projectMembers           ProjectMember[]
+  taskFollowers            TaskFollower[]
+  taskLikes                TaskLike[]
+  comments                 Comment[]
+  editedComments           Comment[]                  @relation("CommentEditor")
+  commentRevisionsAuthored CommentRevision[]          @relation("CommentRevisionAuthor")
+  commentRevisionsActed    CommentRevision[]          @relation("CommentRevisionActor")
+  taskActivities           TaskActivity[]
+  notifications            Notification[]
+  authoredNotifications    Notification[]             @relation("NotificationActor")
+  createdHolidays          CompanyHoliday[]           @relation("HolidayCreator")
+  createdTasks             Task[]                     @relation("TaskCreator")
+  requestedReviews         TaskReview[]               @relation("TaskReviewRequester")
+  assignedReviews          TaskReview[]               @relation("TaskReviewReviewer")
+  uploadedAttachments      Attachment[]               @relation("AttachmentUploader")
+  projectNotes             ProjectNote[]
+  meetingMinutes           MeetingMinute[]
+  meetingParticipations    MeetingMinuteParticipant[]
+  weeklyReports            WeeklyReport[]
 
   @@index([asanaGid])
   @@index([email])
@@ -263,10 +266,10 @@ model Task {
   splitPartTotal     Int?
 
   /// `parentAsanaGid`/`parentName` preservam o vínculo mesmo se o parent não estiver no dump.
-  parentAsanaGid String?
-  parentName     String?
-  parentId       String?
-  deletedAt      DateTime?
+  parentAsanaGid  String?
+  parentName      String?
+  parentId        String?
+  deletedAt       DateTime?
   deletedByUserId String?
 
   createdAt DateTime @default(now())
@@ -285,6 +288,7 @@ model Task {
   tags              TaskTag[]
   customFieldValues TaskCustomFieldValue[]
   comments          Comment[]
+  commentRevisions  CommentRevision[]
   activities        TaskActivity[]
   requestedReviews  TaskReview[]           @relation("TaskReviewSource")
   rootReviews       TaskReview[]           @relation("TaskReviewRoot")
@@ -340,36 +344,70 @@ model Comment {
   authorAsanaGid String?
   asanaCreatedAt DateTime?
 
+  /// Preenchidos apenas por edições reais de conteúdo feitas no app.
+  editedAt   DateTime?
+  editedById String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author      User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  editedBy    User?        @relation("CommentEditor", fields: [editedById], references: [id], onDelete: SetNull)
   attachments Attachment[]
 
   @@index([taskId])
   @@index([authorId])
+  @@index([editedById])
   @@index([asanaGid])
   @@index([authorAsanaGid])
 }
 
+/// Registro imutável de comentários: conteúdo anterior a uma edição, comentário apagado
+/// ou anexo removido. `commentId` não tem FK porque o comentário pode deixar de existir.
+model CommentRevision {
+  id               String   @id @default(cuid())
+  taskId           String
+  commentId        String
+  type             String
+  content          String
+  authorId         String?
+  actorId          String?
+  commentCreatedAt DateTime
+  createdAt        DateTime @default(now())
+
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      User?        @relation("CommentRevisionAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  actor       User?        @relation("CommentRevisionActor", fields: [actorId], references: [id], onDelete: SetNull)
+  attachments Attachment[]
+
+  @@index([taskId, createdAt])
+  @@index([commentId])
+  @@index([authorId])
+  @@index([actorId])
+}
+
 model Attachment {
-  id              String         @id @default(cuid())
-  commentId       String?
-  comment         Comment?       @relation(fields: [commentId], references: [id], onDelete: SetNull)
-  projectNoteId   String?
-  projectNote     ProjectNote?   @relation(fields: [projectNoteId], references: [id], onDelete: SetNull)
-  meetingMinuteId String?
-  meetingMinute   MeetingMinute? @relation(fields: [meetingMinuteId], references: [id], onDelete: SetNull)
-  filename        String
-  storedAs        String
-  mimeType        String
-  sizeBytes       Int
-  uploadedById    String
-  uploadedBy      User           @relation("AttachmentUploader", fields: [uploadedById], references: [id])
-  createdAt       DateTime       @default(now())
+  id                String           @id @default(cuid())
+  commentId         String?
+  comment           Comment?         @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  /// Anexo preservado no histórico; visível apenas para coordinator+.
+  commentRevisionId String?
+  commentRevision   CommentRevision? @relation(fields: [commentRevisionId], references: [id], onDelete: SetNull)
+  projectNoteId     String?
+  projectNote       ProjectNote?     @relation(fields: [projectNoteId], references: [id], onDelete: SetNull)
+  meetingMinuteId   String?
+  meetingMinute     MeetingMinute?   @relation(fields: [meetingMinuteId], references: [id], onDelete: SetNull)
+  filename          String
+  storedAs          String
+  mimeType          String
+  sizeBytes         Int
+  uploadedById      String
+  uploadedBy        User             @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+  createdAt         DateTime         @default(now())
 
   @@index([commentId])
+  @@index([commentRevisionId])
   @@index([projectNoteId])
   @@index([meetingMinuteId])
   @@index([uploadedById])

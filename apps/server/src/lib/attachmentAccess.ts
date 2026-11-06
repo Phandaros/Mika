@@ -1,3 +1,4 @@
+import { Role } from "./enums.js";
 import { prisma } from "./prisma.js";
 
 export async function findAttachmentWithComment(attachmentId: string) {
@@ -31,11 +32,16 @@ export async function findCommentWithTask(commentId: string) {
   });
 }
 
-export async function canAccessAttachment(attachmentId: string): Promise<boolean> {
+export async function canAccessAttachment(attachmentId: string, userRole?: string): Promise<boolean> {
   const attachment = await findAttachmentWithComment(attachmentId);
 
   if (!attachment) {
     return false;
+  }
+
+  // Anexos de comentários apagados ou removidos só existem no histórico.
+  if (attachment.commentRevisionId) {
+    return userRole === Role.ADMIN || userRole === Role.COORDINATOR;
   }
 
   if (attachment.comment?.taskId) {

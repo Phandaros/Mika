@@ -159,7 +159,7 @@ async function sendAttachment(
       throw new AppError(404, "Anexo não encontrado");
     }
 
-    const canAccess = await canAccessAttachment(attachmentId);
+    const canAccess = await canAccessAttachment(attachmentId, getAuthUser(req).role);
 
     if (!canAccess) {
       throw new AppError(403, "Você não tem permissão para acessar este anexo");
@@ -204,6 +204,9 @@ export const deleteAttachment: RequestHandler = async (req, res, next) => {
     const attachment = await prisma.attachment.findUnique({
       where: { id: attachmentId },
       include: {
+        comment: {
+          select: { id: true, taskId: true, authorId: true, content: true, createdAt: true }
+        },
         projectNote: {
           select: {
             content: true,
@@ -221,6 +224,10 @@ export const deleteAttachment: RequestHandler = async (req, res, next) => {
 
     if (!attachment) {
       throw new AppError(404, "Anexo não encontrado");
+    }
+
+    if (attachment.commentRevisionId) {
+      throw new AppError(403, "Este anexo faz parte do histórico e não pode ser removido");
     }
 
     const isOwner = attachment.uploadedById === authUser.id;
@@ -246,6 +253,32 @@ export const deleteAttachment: RequestHandler = async (req, res, next) => {
       attachment.meetingMinute._count.attachments <= 1
     ) {
       throw new AppError(400, "A ata precisa manter conteúdo markdown ou pelo menos um anexo");
+    }
+
+    const { comment } = attachment;
+
+    if (comment) {
+      await prisma.$transaction(async (tx) => {
+        const revision = await tx.commentRevision.create({
+          data: {
+            taskId: comment.taskId,
+            commentId: comment.id,
+            type: "ATTACHMENT_REMOVED",
+            content: comment.content,
+            authorId: comment.authorId,
+            actorId: authUser.id,
+            commentCreatedAt: comment.createdAt
+          }
+        });
+
+        await tx.attachment.update({
+          where: { id: attachment.id },
+          data: { commentId: null, commentRevisionId: revision.id }
+        });
+      });
+
+      res.status(204).send();
+      return;
     }
 
     const absolutePath = path.resolve(env.UPLOAD_DIR, attachment.storedAs);

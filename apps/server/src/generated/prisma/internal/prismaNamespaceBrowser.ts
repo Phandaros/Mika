@@ -63,6 +63,7 @@ export const ModelName = {
   Task: 'Task',
   TaskReview: 'TaskReview',
   Comment: 'Comment',
+  CommentRevision: 'CommentRevision',
   Attachment: 'Attachment',
   ProjectNote: 'ProjectNote',
   MeetingMinute: 'MeetingMinute',
@@ -303,6 +304,8 @@ export const CommentScalarFieldEnum = {
   asanaGid: 'asanaGid',
   authorAsanaGid: 'authorAsanaGid',
   asanaCreatedAt: 'asanaCreatedAt',
+  editedAt: 'editedAt',
+  editedById: 'editedById',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -310,9 +313,25 @@ export const CommentScalarFieldEnum = {
 export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeof CommentScalarFieldEnum]
 
 
+export const CommentRevisionScalarFieldEnum = {
+  id: 'id',
+  taskId: 'taskId',
+  commentId: 'commentId',
+  type: 'type',
+  content: 'content',
+  authorId: 'authorId',
+  actorId: 'actorId',
+  commentCreatedAt: 'commentCreatedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type CommentRevisionScalarFieldEnum = (typeof CommentRevisionScalarFieldEnum)[keyof typeof CommentRevisionScalarFieldEnum]
+
+
 export const AttachmentScalarFieldEnum = {
   id: 'id',
   commentId: 'commentId',
+  commentRevisionId: 'commentRevisionId',
   projectNoteId: 'projectNoteId',
   meetingMinuteId: 'meetingMinuteId',
   filename: 'filename',
