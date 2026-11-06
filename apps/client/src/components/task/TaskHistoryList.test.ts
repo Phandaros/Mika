@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Role, type TaskActivity } from "shared";
-import { activitySentence } from "./TaskHistoryList";
+import { activitySentence } from "../../lib/taskActivityLabels";
 
 function reviewActivity(type: TaskActivity["type"]): TaskActivity {
   return {

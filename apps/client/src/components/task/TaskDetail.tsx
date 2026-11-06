@@ -4,11 +4,12 @@ import { AxiosError } from "axios";
 import { format } from "date-fns";
 import { CalendarDays, Check, CheckCircle2, Flag, FolderKanban, Send, UserRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Priority, TaskStatus, type Project, type ProjectOption, type Task, type UpdateTaskRequest } from "shared";
+import { Priority, TaskStatus, type Comment, type Project, type ProjectOption, type Task, type UpdateTaskRequest } from "shared";
 import { useAuth } from "../../hooks/useAuth";
 import { useUploadCommentAttachments } from "../../hooks/useCommentAttachments";
 import { useComments, useCreateComment } from "../../hooks/useComments";
 import { classifyFile, getFileRejectionMessage } from "../../lib/attachmentUtils";
+import { commentErrorMessage } from "../../lib/commentContent";
 import { useProjectOptions } from "../../hooks/useProjects";
 import { useApproveReview, useRejectReview } from "../../hooks/useReviews";
 import { useTaskHistory } from "../../hooks/useTaskHistory";
@@ -101,6 +102,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
   const [commentUploading, setCommentUploading] = useState(false);
   const [pendingReviewDecision, setPendingReviewDecision] = useState<ReviewDecision | null>(null);
   const [activityTab, setActivityTab] = useState<TaskActivityTab>("comments");
+  const [isEditingComment, setIsEditingComment] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const commentEditorRef = useRef<CommentEditorHandle | null>(null);
   const asideRef = useRef<HTMLElement>(null);
@@ -116,9 +118,10 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
     () => (visibleTask ? resolveTaskProjectMemberships(visibleTask, projects) : []),
     [visibleTask, projects]
   );
+  const mentionProjectId = projectId || visibleTask?.projects?.[0]?.id || null;
   const mentionContext = useMemo(
-    () => (projectId && visibleTask?.id ? { projectId, taskId: visibleTask.id } : null),
-    [projectId, visibleTask?.id]
+    () => (visibleTask?.id ? { projectId: mentionProjectId, taskId: visibleTask.id } : null),
+    [mentionProjectId, visibleTask?.id]
   );
   const { data: users = [] } = useUsers();
   const updateTask = useUpdateTask(projectId);
@@ -436,13 +439,24 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
       toast.error(getFileRejectionMessage(item.file));
     }
 
-    const createdComment = await createComment.mutateAsync({ content: submitContent });
+    let createdComment: Comment;
+
+    try {
+      createdComment = await createComment.mutateAsync({ content: submitContent });
+    } catch (error) {
+      toast.error(commentErrorMessage(error, "Não foi possível publicar. Seu texto continua no editor."));
+      return;
+    }
 
     if (validFiles.length > 0) {
-      await uploadCommentAttachments.mutateAsync({
-        commentId: createdComment.id,
-        files: validFiles
-      });
+      try {
+        await uploadCommentAttachments.mutateAsync({
+          commentId: createdComment.id,
+          files: validFiles
+        });
+      } catch (error) {
+        toast.error(commentErrorMessage(error, "O comentário foi publicado, mas os anexos não foram enviados."));
+      }
     }
 
     setComment("");
@@ -620,8 +634,18 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
         </div>
       }
       footer={
-        activityTab === "comments" ? (
-        <div className="flex items-start gap-3 border-t border-[--color-border] bg-[--bg-2] p-5">
+        <>
+        {activityTab === "comments" && isEditingComment ? (
+          <p className="border-t border-[--color-border] bg-[--bg-2] px-5 py-3 text-[12px] text-[--color-text-muted]">
+            Termine a edição para escrever um novo comentário.
+          </p>
+        ) : null}
+        <div
+          className={cn(
+            "flex items-start gap-3 border-t border-[--color-border] bg-[--bg-2] p-5",
+            (activityTab !== "comments" || isEditingComment) && "hidden"
+          )}
+        >
           {user ? <Avatar name={user.name} imageUrl={user.avatarUrl} className="mt-1.5 h-9 w-9 shrink-0" /> : null}
           <div className="min-w-0 flex-1">
             <TaskCommentEditor
@@ -669,7 +693,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
             />
           </div>
         </div>
-        ) : null
+        </>
       }
     >
         <div className="relative min-h-0 flex-1 overflow-y-auto">
@@ -903,6 +927,8 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
           </section>
 
           <TaskActivityTabs
+            key={visibleTask.id}
+            taskId={visibleTask.id}
             comments={comments}
             history={history}
             historyLoading={historyLoading}
@@ -910,6 +936,7 @@ export function TaskDetail({ task, onClose, openVersion = 0, onOpenTask }: TaskD
             onValueChange={setActivityTab}
             currentUser={user}
             mentionContext={mentionContext}
+            onEditingChange={setIsEditingComment}
             onMentionTask={handleMentionTask}
           />
           </div>

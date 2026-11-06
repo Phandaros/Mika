@@ -37,7 +37,7 @@ import {
   type PendingMarkdownFile
 } from "../shared/MarkdownEditor";
 import { MarkdownComment } from "../task/MarkdownComment";
-import { activityFieldLabel, formatActivityValue } from "../task/TaskHistoryList";
+import { activityFieldLabel, formatActivityValue } from "../../lib/taskActivityLabels";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { DatePicker } from "../ui/date-picker";
@@ -602,6 +602,7 @@ function LogNoteEditorDialog({
             submitLabel="Salvar"
             placeholder="Registre decisões, observações, fotos de obra, referências..."
             minHeightClassName="min-h-[200px]"
+            maxHeightClassName="max-h-[55vh]"
             allowAttachmentOnly
             disabled={isSaving}
             footerActions={

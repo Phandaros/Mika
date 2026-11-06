@@ -271,7 +271,8 @@ Resumo das entidades principais:
 - **AsanaWorkspace**, **Team**, **Project**, **Section**: hierarquia de projeto; `Section` e a unidade entre projeto e tarefa no backend canonico.
 - **Task** + **TaskMembership**: tarefas Asana e colocacao em secao; campos locais (`localStatus`, etc.) para o Kanban.
 - **User**: usuarios do app e importados (`asanaGid`); `passwordHash` pode ser nulo para usuarios importados.
-- **Comment**: comentarios com campos opcionais de import (`asanaGid`, `authorAsanaGid`, `asanaCreatedAt`).
+- **Comment**: comentarios com campos opcionais de import (`asanaGid`, `authorAsanaGid`, `asanaCreatedAt`) e registro da ultima edicao (`editedAt`, `editedById`).
+- **CommentRevision**: historico de comentarios (`EDITED`, `DELETED`, `ATTACHMENT_REMOVED`), visivel apenas para Coordinator+. Anexos de comentarios apagados ou removidos passam para a revisao (`Attachment.commentRevisionId`) e o arquivo e mantido.
 - **Notification**: notificacoes in-app persistidas, com `actorId` opcional para identificar quem originou o evento; emissao em tempo real via Socket.io (`lib/notify.ts`). Tipo `WEEKLY_REPORT_DUE` dispara na sexta-feira via `weeklyReportJob`.
 - **WeeklyReport** + **WeeklyReportItem**: relatorio semanal por usuario (`@@unique([userId, weekStart])`). Status `PENDING | SUBMITTED | LATE`. Items pre-populados com tarefas da semana; `taskSnapshot` (JSON) gravado no envio.
 - **ProjectNote**: anotacao colaborativa vinculada ao projeto, com titulo, markdown opcional, autor e anexos.
@@ -332,6 +333,8 @@ TASKS
 COMMENTS
   GET    /tasks/:taskId/comments
   POST   /tasks/:taskId/comments
+  GET    /tasks/:taskId/comment-revisions (Coordinator+; versoes anteriores e comentarios apagados)
+  PATCH  /comments/:id                    (expectedUpdatedAt opcional; conflito retorna 409)
   DELETE /comments/:id
 
 ACTIVITY

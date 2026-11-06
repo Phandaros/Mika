@@ -1,44 +1,43 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { CheckCircle2, Clock3, History, RotateCcw, Send, UserRoundPen, XCircle } from "lucide-react";
-import { Priority, TaskStatus, type TaskActivity } from "shared";
+import { useMemo } from "react";
+import { MessageSquareDiff, Paperclip, Trash2 } from "lucide-react";
+import type { CommentRevision, TaskActivity, User } from "shared";
+import { activitySentence } from "../../lib/taskActivityLabels";
 import { cn } from "../../lib/utils";
+import { AttachmentPreview } from "../shared/AttachmentPreview";
 import { EmptyState } from "../shared/EmptyState";
-import { taskStatusLabels } from "../shared/Chip";
+import { MarkdownComment } from "./MarkdownComment";
 
 interface TaskHistoryListProps {
   activities: TaskActivity[];
+  commentRevisions?: CommentRevision[];
   isLoading?: boolean;
+  currentUser?: User | null;
+  taskId?: string;
 }
 
-const fieldLabels: Record<string, string> = {
-  task: "Tarefa",
-  title: "Título",
-  description: "Descrição",
-  status: "Status",
-  priority: "Prioridade",
-  assignee: "Responsável",
-  startDate: "Início",
-  dueDate: "Entrega",
-  estimatedDays: "Dias Estimados",
-  platform: "Plataforma",
-  discipline: "Disciplina",
-  estimatedTime: "Dias Estimados",
-  maxDeadline: "Prazo Máximo",
-  conclusionDays: "Dias Conclusão",
-  stage: "Etapa",
-  projectMemberships: "Projetos"
-};
+type HistoryEntry =
+  | { kind: "activity"; id: string; createdAt: string; activity: TaskActivity }
+  | { kind: "revision"; id: string; createdAt: string; revision: CommentRevision };
 
-const priorityLabels: Record<Priority, string> = {
-  [Priority.LOW]: "Baixa",
-  [Priority.MEDIUM]: "Média",
-  [Priority.HIGH]: "Alta",
-  [Priority.URGENT]: "Urgente"
-};
-
-export function TaskHistoryList({ activities, isLoading }: TaskHistoryListProps) {
-  const visibleActivities = activities.filter((activity) => activity.type !== "COMMENTED");
+export function TaskHistoryList({ activities, commentRevisions = [], isLoading, currentUser, taskId }: TaskHistoryListProps) {
+  const entries = useMemo<HistoryEntry[]>(
+    () =>
+      [
+        ...activities
+          .filter((activity) => activity.type !== "COMMENTED")
+          .map((activity) => ({ kind: "activity" as const, id: activity.id, createdAt: activity.createdAt, activity })),
+        ...commentRevisions.map((revision) => ({
+          kind: "revision" as const,
+          id: revision.id,
+          createdAt: revision.createdAt,
+          revision
+        }))
+      ].sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()),
+    [activities, commentRevisions]
+  );
 
   if (isLoading) {
     return (
@@ -50,7 +49,7 @@ export function TaskHistoryList({ activities, isLoading }: TaskHistoryListProps)
     );
   }
 
-  if (visibleActivities.length === 0) {
+  if (entries.length === 0) {
     return (
       <EmptyState title="Nenhuma movimentação ainda" icon={<History size={40} />}>
         As próximas alterações feitas nesta tarefa aparecerão aqui.
@@ -60,26 +59,104 @@ export function TaskHistoryList({ activities, isLoading }: TaskHistoryListProps)
 
   return (
     <div className="grid gap-0">
-      {visibleActivities.map((activity, index) => (
-        <div key={activity.id} className="grid grid-cols-[28px_1fr] gap-3">
+      {entries.map((entry, index) => (
+        <div key={entry.id} className="grid grid-cols-[28px_1fr] gap-3">
           <div className="relative flex justify-center">
             <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full border border-[--color-border] bg-[--bg-2] text-[--color-text-secondary]">
-              <ActivityIcon activity={activity} />
+              {entry.kind === "activity" ? <ActivityIcon activity={entry.activity} /> : <RevisionIcon revision={entry.revision} />}
             </span>
-            {index < visibleActivities.length - 1 ? <span className="absolute top-9 h-[calc(100%-20px)] w-px bg-[--color-border-subtle]" /> : null}
+            {index < entries.length - 1 ? <span className="absolute top-9 h-[calc(100%-20px)] w-px bg-[--color-border-subtle]" /> : null}
           </div>
           <div className="min-w-0 border-b border-[--color-border-subtle] pb-4">
             <p className="text-[13px] leading-5 text-[--color-text-secondary]">
-              <span className="font-semibold text-[--color-text-primary]">{activity.actor?.name ?? "Sistema"}</span>{" "}
-              {activitySentence(activity)}
+              <span className="font-semibold text-[--color-text-primary]">
+                {(entry.kind === "activity" ? entry.activity.actor?.name : entry.revision.actor?.name) ?? "Sistema"}
+              </span>{" "}
+              {entry.kind === "activity" ? activitySentence(entry.activity) : revisionSentence(entry.revision)}
             </p>
             <time className="mt-1 block text-[12px] tabular-nums text-[--color-text-muted]">
-              {format(new Date(activity.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+              {format(new Date(entry.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
             </time>
+            {entry.kind === "revision" ? (
+              <RevisionDetails revision={entry.revision} currentUser={currentUser} taskId={taskId} />
+            ) : null}
           </div>
         </div>
       ))}
     </div>
+  );
+}
+
+function RevisionIcon({ revision }: { revision: CommentRevision }) {
+  if (revision.type === "DELETED") {
+    return <Trash2 className="h-4 w-4 text-[--color-priority-urgent]" />;
+  }
+
+  if (revision.type === "ATTACHMENT_REMOVED") {
+    return <Paperclip className="h-4 w-4" />;
+  }
+
+  return <MessageSquareDiff className="h-4 w-4" />;
+}
+
+function revisionSentence(revision: CommentRevision): string {
+  const author = revision.author?.name ?? "usuário removido";
+
+  if (revision.type === "DELETED") {
+    return `apagou um comentário de ${author}`;
+  }
+
+  if (revision.type === "ATTACHMENT_REMOVED") {
+    return `removeu um anexo de um comentário de ${author}`;
+  }
+
+  return `editou um comentário de ${author}`;
+}
+
+function revisionDetailsLabel(revision: CommentRevision): string {
+  if (revision.type === "DELETED") {
+    return "Ver comentário apagado";
+  }
+
+  if (revision.type === "ATTACHMENT_REMOVED") {
+    return "Ver anexo removido";
+  }
+
+  return "Ver versão anterior";
+}
+
+function RevisionDetails({
+  revision,
+  currentUser,
+  taskId
+}: {
+  revision: CommentRevision;
+  currentUser?: User | null;
+  taskId?: string;
+}) {
+  return (
+    <details className="group/revision mt-2">
+      <summary className="w-fit cursor-pointer text-[12px] font-medium text-[--color-text-secondary] outline-none hover:text-[--color-text-primary] focus-visible:ring-2 focus-visible:ring-[--color-brand-orange]">
+        {revisionDetailsLabel(revision)}
+      </summary>
+      <div className="mt-2 rounded-md border border-[--color-border] bg-[--bg-1] px-3 py-2">
+        {revision.type === "ATTACHMENT_REMOVED" ? null : <MarkdownComment content={revision.content} />}
+        {revision.attachments.length > 0 ? (
+          <div className={cn("flex flex-wrap gap-2", revision.type !== "ATTACHMENT_REMOVED" && "mt-2")}>
+            {revision.attachments.map((attachment) => (
+              <AttachmentPreview
+                key={attachment.id}
+                attachment={attachment}
+                taskId={taskId}
+                currentUserId={currentUser?.id}
+                currentUserRole={currentUser?.role}
+                canDeleteOverride={false}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </details>
   );
 }
 
@@ -111,71 +188,4 @@ function ActivityIcon({ activity }: { activity: TaskActivity }) {
   }
 
   return <UserRoundPen className={className} />;
-}
-
-export function activitySentence(activity: TaskActivity): string {
-  if (activity.type === "CREATED") {
-    return `criou esta tarefa${activity.toValue ? `: ${activity.toValue}` : ""}`;
-  }
-
-  if (activity.type === "COMPLETED") {
-    return "concluiu esta tarefa";
-  }
-
-  if (activity.type === "REOPENED") {
-    return "reabriu esta tarefa";
-  }
-
-  if (activity.type === "REVIEW_REQUESTED") {
-    return `enviou a tarefa para Revisão de ${reviewerName(activity)}`;
-  }
-
-  if (activity.type === "REVIEW_APPROVED") {
-    return "aprovou essa tarefa";
-  }
-
-  if (activity.type === "REVIEW_REJECTED") {
-    return "reprovou essa tarefa";
-  }
-
-  const field = activity.field ? fieldLabels[activity.field] ?? activity.field : "Campo";
-  return `alterou ${field} de ${formatActivityValue(activity.field, activity.fromValue)} para ${formatActivityValue(activity.field, activity.toValue)}`;
-}
-
-function reviewerName(activity: TaskActivity): string {
-  const name = activity.metadata?.reviewerName;
-
-  if (typeof name === "string" && name.trim()) {
-    return name;
-  }
-
-  return activity.toValue ?? "revisor";
-}
-
-export function formatActivityValue(field: string | null, value: string | null): string {
-  if (!value) {
-    return "—";
-  }
-
-  if (field === "status" && isTaskStatus(value)) {
-    return taskStatusLabels[value];
-  }
-
-  if (field === "priority" && isPriority(value)) {
-    return priorityLabels[value];
-  }
-
-  return value;
-}
-
-function isTaskStatus(value: string): value is TaskStatus {
-  return Object.values(TaskStatus).includes(value as TaskStatus);
-}
-
-function isPriority(value: string): value is Priority {
-  return Object.values(Priority).includes(value as Priority);
-}
-
-export function activityFieldLabel(field: string | null): string {
-  return field ? fieldLabels[field] ?? field : "Campo";
 }

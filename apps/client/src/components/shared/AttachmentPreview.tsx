@@ -21,6 +21,8 @@ interface AttachmentPreviewProps {
   className?: string;
   canDeleteOverride?: boolean;
   onDeleted?: () => void | Promise<void>;
+  /** Substitui a exclusão imediata; quem chama decide quando remover de fato. */
+  onRemove?: () => void;
 }
 
 function attachmentIcon(mimeType: string) {
@@ -42,7 +44,8 @@ export function AttachmentPreview({
   currentUserRole,
   className,
   canDeleteOverride,
-  onDeleted
+  onDeleted,
+  onRemove
 }: AttachmentPreviewProps) {
   const deleteAttachment = useDeleteAttachment(taskId);
   const canDelete =
@@ -64,6 +67,11 @@ export function AttachmentPreview({
 
   async function handleDelete(event: React.MouseEvent) {
     event.stopPropagation();
+
+    if (onRemove) {
+      onRemove();
+      return;
+    }
 
     const confirmed = window.confirm(`Remover o anexo "${attachment.filename}"?`);
 
@@ -112,7 +120,10 @@ export function AttachmentPreview({
           title="Remover anexo"
           disabled={deleteAttachment.isPending}
           onClick={(event) => void handleDelete(event)}
-          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[--color-border] bg-[--bg-2] text-[--color-text-muted] opacity-0 transition-opacity hover:text-[--status-late-text] group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className={cn(
+            "absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[--color-border] bg-[--bg-2] text-[--color-text-muted] outline-none transition-opacity hover:text-[--status-late-text] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[--color-brand-orange] group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50",
+            onRemove ? "opacity-100" : "opacity-0"
+          )}
         >
           <X size={12} />
         </button>

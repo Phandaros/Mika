@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Comment, CreateCommentRequest, UpdateCommentRequest } from "shared";
+import { isAxiosError } from "axios";
+import type { Comment, CommentRevision, CreateCommentRequest, UpdateCommentRequest } from "shared";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
 import { invalidateTeamBoardQueries } from "./useTeamBoard";
@@ -10,6 +11,30 @@ interface CommentsResponse {
 
 interface CommentResponse {
   comment: Comment;
+}
+
+interface CommentRevisionsResponse {
+  revisions: CommentRevision[];
+}
+
+function invalidateCommentAudit(taskId: string | undefined) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comment-revisions"] }),
+    queryClient.invalidateQueries({
+      predicate: (query) => query.queryKey[0] === "projects" && query.queryKey[2] === "log"
+    })
+  ]);
+}
+
+export function useCommentRevisions(taskId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["tasks", taskId, "comment-revisions"],
+    enabled: Boolean(taskId) && enabled,
+    queryFn: async () => {
+      const response = await api.get<CommentRevisionsResponse>(`/tasks/${taskId}/comment-revisions`);
+      return response.data.revisions;
+    }
+  });
 }
 
 export function useComments(taskId: string | undefined) {
@@ -46,7 +71,15 @@ export function useUpdateComment(taskId: string | undefined) {
       return response.data.comment;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] }),
+        invalidateCommentAudit(taskId)
+      ]);
+    },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] });
+      }
     }
   });
 }
@@ -61,7 +94,8 @@ export function useDeleteComment(taskId: string | undefined) {
       invalidateTeamBoardQueries();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "comments"] }),
-        queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "history"] })
+        queryClient.invalidateQueries({ queryKey: ["tasks", taskId, "history"] }),
+        invalidateCommentAudit(taskId)
       ]);
     }
   });
