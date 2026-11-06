@@ -24,6 +24,7 @@ type MentionDataSource = {
 const POPUP_GAP = 4;
 const POPUP_MAX_HEIGHT = 256;
 const POPUP_WIDTH = 320;
+const REMOTE_SEARCH_DELAY_MS = 200;
 
 function updatePopupPosition(element: HTMLElement, props: SuggestionProps<MentionSuggestionItem>) {
   let rect = props.clientRect?.();
@@ -64,8 +65,12 @@ function schedulePopupPosition(element: HTMLElement, props: SuggestionProps<Ment
   window.requestAnimationFrame(() => updatePopupPosition(element, props));
 }
 
-async function listMeetingMinuteSuggestions(query: string, context: MentionContext) {
-  const response = await api.get<MeetingMinutesResponse>(`/projects/${context.projectId}/meeting-minutes`, {
+async function listMeetingMinuteSuggestions(query: string, projectId: string | null) {
+  if (!projectId) {
+    return [];
+  }
+
+  const response = await api.get<MeetingMinutesResponse>(`/projects/${projectId}/meeting-minutes`, {
     params: { page: 1, limit: 12, search: query.trim() || undefined }
   });
 
@@ -77,9 +82,13 @@ async function listMeetingMinuteSuggestions(query: string, context: MentionConte
   }));
 }
 
-async function listTaskSuggestions(query: string, context: MentionContext): Promise<MentionSearchTask[]> {
+async function listTaskSuggestions(query: string, projectId: string | null): Promise<MentionSearchTask[]> {
+  if (!query.trim()) {
+    return [];
+  }
+
   const response = await api.get<GlobalSearchResponse>("/search", {
-    params: { q: query.trim(), limit: 25, projectId: context.projectId }
+    params: { q: query.trim(), limit: 25, projectId: projectId ?? undefined }
   });
 
   return response.data.tasks.map((task) => ({
@@ -92,41 +101,42 @@ async function listTaskSuggestions(query: string, context: MentionContext): Prom
 }
 
 export function createMentionSuggestionExtension(dataSource: MentionDataSource) {
+  // Consulta sem resultado que já tem espaço: é texto comum, não uma menção em andamento.
+  let abandonedQuery: string | null = null;
+
+  function currentContext(): MentionContext {
+    return dataSource.contextRef.current ?? { projectId: null, taskId: null };
+  }
+
+  function buildItems(query: string, meetingMinutes: MentionMeetingMinute[] = [], searchTasks: MentionSearchTask[] = []) {
+    return buildMentionSuggestions(
+      query,
+      currentContext(),
+      dataSource.usersRef.current ?? [],
+      dataSource.projectsRef.current ?? [],
+      meetingMinutes,
+      searchTasks
+    );
+  }
+
   const suggestionOptions: Omit<SuggestionOptions<MentionSuggestionItem>, "editor"> = {
     char: "@",
     allowSpaces: true,
-    items: async ({ query }: { query: string }) => {
-      const context = dataSource.contextRef.current;
-
-      if (!context) {
-        return [];
+    allow: ({ state, range }) => {
+      if (abandonedQuery === null) {
+        return true;
       }
 
-      let meetingMinutes: MentionMeetingMinute[] = [];
-      let searchTasks: MentionSearchTask[] = [];
+      const query = state.doc.textBetween(range.from + 1, range.to, " ");
 
-      const [meetingMinuteResult, taskResult] = await Promise.allSettled([
-        listMeetingMinuteSuggestions(query, context),
-        listTaskSuggestions(query, context)
-      ]);
-
-      if (meetingMinuteResult.status === "fulfilled") {
-        meetingMinutes = meetingMinuteResult.value;
+      if (query.startsWith(abandonedQuery)) {
+        return false;
       }
 
-      if (taskResult.status === "fulfilled") {
-        searchTasks = taskResult.value;
-      }
-
-      return buildMentionSuggestions(
-        query,
-        context,
-        dataSource.usersRef.current ?? [],
-        dataSource.projectsRef.current ?? [],
-        meetingMinutes,
-        searchTasks
-      );
+      abandonedQuery = null;
+      return true;
     },
+    items: ({ query }: { query: string }) => buildItems(query),
     command: ({
       editor,
       range,
@@ -155,11 +165,46 @@ export function createMentionSuggestionExtension(dataSource: MentionDataSource) 
     render: () => {
       let component: ReactRenderer<MentionListHandle> | null = null;
       let element: HTMLElement | null = null;
+      let searchTimer: number | undefined;
+      let searchId = 0;
+
+      function searchRemote(query: string) {
+        const id = ++searchId;
+        window.clearTimeout(searchTimer);
+        component?.updateProps({ loading: true });
+
+        searchTimer = window.setTimeout(() => {
+          void (async () => {
+            const { projectId } = currentContext();
+            const [meetingMinuteResult, taskResult] = await Promise.allSettled([
+              listMeetingMinuteSuggestions(query, projectId),
+              listTaskSuggestions(query, projectId)
+            ]);
+
+            if (id !== searchId) {
+              return;
+            }
+
+            const items = buildItems(
+              query,
+              meetingMinuteResult.status === "fulfilled" ? meetingMinuteResult.value : [],
+              taskResult.status === "fulfilled" ? taskResult.value : []
+            );
+
+            if (items.length === 0 && query.includes(" ")) {
+              abandonedQuery = query;
+            }
+
+            component?.updateProps({ items, loading: false });
+          })();
+        }, REMOTE_SEARCH_DELAY_MS);
+      }
 
       return {
         onStart: (props: SuggestionProps<MentionSuggestionItem>) => {
+          abandonedQuery = null;
           component = new ReactRenderer(MentionList, {
-            props,
+            props: { ...props, loading: true },
             editor: props.editor
           });
 
@@ -168,15 +213,20 @@ export function createMentionSuggestionExtension(dataSource: MentionDataSource) 
           element.style.pointerEvents = "auto";
           document.body.appendChild(element);
           schedulePopupPosition(element, props);
+          searchRemote(props.query);
         },
         onUpdate: (props: SuggestionProps<MentionSuggestionItem>) => {
           component?.updateProps(props);
           if (element) {
             schedulePopupPosition(element, props);
           }
+          searchRemote(props.query);
         },
         onKeyDown: (props: SuggestionKeyDownProps) => component?.ref?.onKeyDown(props.event) ?? false,
         onExit: () => {
+          searchId += 1;
+          window.clearTimeout(searchTimer);
+
           if (element?.parentNode) {
             element.parentNode.removeChild(element);
           }

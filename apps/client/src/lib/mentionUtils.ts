@@ -31,8 +31,8 @@ export interface MentionSuggestionItem {
 }
 
 export interface MentionContext {
-  projectId: string;
-  taskId: string;
+  projectId: string | null;
+  taskId: string | null;
 }
 
 function sectionsOf(project: MentionProject) {

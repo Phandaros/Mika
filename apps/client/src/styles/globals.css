@@ -351,6 +351,13 @@ input::-webkit-outer-spin-button {
   user-select: all;
 }
 
+.mika-rich-text-editor .suggestion {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-brand-orange) 15%, transparent);
+  padding: 0 0.125rem;
+  color: var(--color-brand-orange);
+}
+
 .mika-rich-text img {
   display: block;
   height: auto;

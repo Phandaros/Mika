@@ -632,6 +632,7 @@ export function ProjectDocumentsPanel({
                         submitLabel="Salvar"
                         placeholder="Registre decisões, observações e referências..."
                         minHeightClassName="min-h-[280px]"
+                        maxHeightClassName="max-h-[55vh]"
                         allowAttachmentOnly
                         disabled={isSaving}
                         footerActions={

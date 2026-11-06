@@ -7,13 +7,16 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type KeyboardEvent,
   type ReactNode
 } from "react";
 import type { MentionProject } from "../../lib/mentionUtils";
 import type { User } from "shared";
 import { Markdown } from "@tiptap/markdown";
+import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
+import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
   Bold,
@@ -55,6 +58,7 @@ import {
   resolveCommentMarkdownForSubmit,
 } from "../../lib/attachmentUtils";
 import { logCommentImageDebug } from "../../lib/commentImageDebug";
+import { normalizeLinkHref } from "../../lib/linkUtils";
 import { cn, createUploadId } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -76,9 +80,18 @@ interface MarkdownEditorProps {
   pendingFiles?: PendingMarkdownFile[];
   onPendingFilesChange?: (files: PendingMarkdownFile[]) => void;
   onUploadingChange?: (uploading: boolean) => void;
+  /** `undefined` desliga as menções; `null` liga sem tarefa/projeto de referência. */
   mentionContext?: MentionContext | null;
   footerActions?: ReactNode;
   allowAttachmentOnly?: boolean;
+  maxHeightClassName?: string;
+  autoFocus?: boolean;
+  onEscape?: () => void;
+  secondaryAction?: ReactNode;
+  submitIcon?: ReactNode;
+  submitting?: boolean;
+  submittingLabel?: string;
+  emptyHint?: string;
 }
 
 export interface MarkdownEditorHandle {
@@ -94,7 +107,14 @@ type MarkdownEditor = Editor & {
 };
 
 const toolbarButtonClass =
-  "flex h-7 w-7 items-center justify-center rounded text-[--color-text-secondary] transition-colors hover:bg-[--bg-4] hover:text-[--color-text-primary] disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-7 w-7 items-center justify-center rounded text-[--color-text-secondary] outline-none transition-colors hover:bg-[--bg-2] hover:text-[--color-text-primary] focus-visible:ring-2 focus-visible:ring-[--color-brand-orange] disabled:cursor-not-allowed disabled:opacity-50";
+const toolbarButtonActiveClass = "bg-[--bg-1] text-[--color-brand-orange] hover:text-[--color-brand-orange]";
+
+const EditorLink = Link.extend({ inclusive: false }).configure({
+  autolink: true,
+  linkOnPaste: true,
+  openOnClick: false
+});
 
 const MAX_PENDING_FILES = 5;
 
@@ -124,9 +144,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     pendingFiles = [],
     onPendingFilesChange,
     onUploadingChange,
-    mentionContext = null,
+    mentionContext,
     footerActions,
-    allowAttachmentOnly = false
+    allowAttachmentOnly = false,
+    maxHeightClassName = "max-h-[35vh]",
+    autoFocus = false,
+    onEscape,
+    secondaryAction,
+    submitIcon,
+    submitting = false,
+    submittingLabel,
+    emptyHint
   },
   ref
 ) {
@@ -134,10 +162,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   const { data: projects = [] } = useProjectOptions();
   const usersRef = useRef<User[]>(users);
   const projectsRef = useRef<MentionProject[]>(projects);
-  const mentionContextRef = useRef<MentionContext | null>(mentionContext);
+  const mentionContextRef = useRef<MentionContext | null>(mentionContext ?? null);
   usersRef.current = users;
   projectsRef.current = projects;
-  mentionContextRef.current = mentionContext;
+  mentionContextRef.current = mentionContext ?? null;
 
   const mentionExtension = useMemo(
     () =>
@@ -149,6 +177,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     []
   );
   const [linkDraft, setLinkDraft] = useState("");
+  const [linkTextDraft, setLinkTextDraft] = useState("");
+  const [linkNeedsText, setLinkNeedsText] = useState(false);
+  const [linkOnExisting, setLinkOnExisting] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [imageUploads, setImageUploads] = useState(0);
@@ -161,6 +192,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   const isApplyingMarkdownRef = useRef(false);
   const blobToApiUrlRef = useRef<Map<string, string>>(new Map());
   const submitRef = useRef<() => void>(() => undefined);
+  const onEscapeRef = useRef(onEscape);
+  onEscapeRef.current = onEscape;
   const uploadInlineImage = useUploadInlineImage();
 
   valueRef.current = value;
@@ -232,7 +265,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         return;
       }
 
-      const inserted = editor.chain().focus().insertContent(markdownSnippet, { contentType: "markdown" }).run();
+      // Uma imagem recém-inserida fica selecionada; inserir por cima a substituiria.
+      const { selection } = editor.state;
+      const inserted =
+        selection instanceof NodeSelection
+          ? editor.chain().focus().insertContentAt(selection.to, markdownSnippet, { contentType: "markdown" }).scrollIntoView().run()
+          : editor.chain().focus().insertContent(markdownSnippet, { contentType: "markdown" }).scrollIntoView().run();
       const fromEditor = getEditorMarkdown(editor);
       const hasSnippet =
         fromEditor.includes(markdownSnippet) ||
@@ -397,16 +435,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: false }),
+      EditorLink,
       ResizableMarkdownImage,
       Markdown,
       Placeholder.configure({
         placeholder
       }),
-      ...(mentionContext ? [mentionExtension] : [])
+      ...(mentionContext === undefined ? [] : [mentionExtension])
     ],
     content: markdownMentionsToEditorContent(value),
     contentType: "markdown",
+    autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
         class: "mika-rich-text mika-rich-text-editor"
@@ -458,6 +498,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           return true;
         }
 
+        if (event.key === "Escape" && onEscapeRef.current && !document.querySelector("[data-mika-mention-suggestion]")) {
+          event.preventDefault();
+          onEscapeRef.current();
+          return true;
+        }
+
         return false;
       }
     },
@@ -473,6 +519,21 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   });
 
   editorRef.current = editor ?? null;
+
+  const activeFormats = useEditorState({
+    editor,
+    selector: ({ editor: current }) => ({
+      paragraph: current?.isActive("paragraph") ?? false,
+      heading: current?.isActive("heading", { level: 1 }) ?? false,
+      bold: current?.isActive("bold") ?? false,
+      italic: current?.isActive("italic") ?? false,
+      bulletList: current?.isActive("bulletList") ?? false,
+      orderedList: current?.isActive("orderedList") ?? false,
+      blockquote: current?.isActive("blockquote") ?? false,
+      codeBlock: current?.isActive("codeBlock") ?? false,
+      link: current?.isActive("link") ?? false
+    })
+  });
 
   useEffect(() => {
     if (!editor || value) {
@@ -495,21 +556,80 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
   submitRef.current = submitMarkdown;
 
+  function closeLinkForm() {
+    setLinkOpen(false);
+    setLinkDraft("");
+    setLinkTextDraft("");
+    editor?.commands.focus();
+  }
+
+  function toggleLinkForm() {
+    if (!editor) {
+      return;
+    }
+
+    if (linkOpen) {
+      closeLinkForm();
+      return;
+    }
+
+    const onExisting = editor.isActive("link");
+
+    if (onExisting) {
+      editor.chain().extendMarkRange("link").run();
+    }
+
+    setLinkOnExisting(onExisting);
+    setLinkNeedsText(editor.state.selection.empty);
+    setLinkTextDraft("");
+    setLinkDraft(onExisting ? String(editor.getAttributes("link").href ?? "") : "");
+    setLinkOpen(true);
+  }
+
+  function removeLink() {
+    editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+    closeLinkForm();
+  }
+
   function applyLink() {
     if (!editor) {
       return;
     }
 
-    const href = linkDraft.trim();
+    const href = normalizeLinkHref(linkDraft);
+
     if (!href) {
-      editor.chain().focus().unsetLink().run();
-      setLinkOpen(false);
+      toast.error("Informe um endereço válido, como https://exemplo.com");
       return;
     }
 
-    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
-    setLinkDraft("");
-    setLinkOpen(false);
+    if (linkNeedsText) {
+      const text = linkTextDraft.trim() || href;
+
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: "text", text, marks: [{ type: "link", attrs: { href } }] })
+        .unsetMark("link")
+        .run();
+    } else {
+      editor.chain().focus().setLink({ href }).run();
+    }
+
+    closeLinkForm();
+  }
+
+  function handleLinkKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyLink();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeLinkForm();
+    }
   }
 
   function handleCardDragOver(event: DragEvent<HTMLDivElement>) {
@@ -575,28 +695,28 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       onDrop={handleCardDrop}
     >
       <div className="flex min-h-9 flex-wrap items-center gap-1 border-b border-[--color-border-subtle] bg-[--bg-4] px-2 py-1">
-        <ToolbarButton editor={editor} label="Parágrafo" active={editor?.isActive("paragraph")} onClick={() => editor?.chain().focus().setParagraph().run()}>
+        <ToolbarButton editor={editor} label="Parágrafo" active={activeFormats?.paragraph} onClick={() => editor?.chain().focus().setParagraph().run()}>
           <Pilcrow size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Título" active={editor?.isActive("heading", { level: 1 })} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>
+        <ToolbarButton editor={editor} label="Título" active={activeFormats?.heading} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>
           <Heading1 size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Negrito" active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()}>
+        <ToolbarButton editor={editor} label="Negrito" active={activeFormats?.bold} onClick={() => editor?.chain().focus().toggleBold().run()}>
           <Bold size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Itálico" active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()}>
+        <ToolbarButton editor={editor} label="Itálico" active={activeFormats?.italic} onClick={() => editor?.chain().focus().toggleItalic().run()}>
           <Italic size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Lista com marcadores" active={editor?.isActive("bulletList")} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
+        <ToolbarButton editor={editor} label="Lista com marcadores" active={activeFormats?.bulletList} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
           <List size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Lista numerada" active={editor?.isActive("orderedList")} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
+        <ToolbarButton editor={editor} label="Lista numerada" active={activeFormats?.orderedList} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
           <ListOrdered size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Citação" active={editor?.isActive("blockquote")} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
+        <ToolbarButton editor={editor} label="Citação" active={activeFormats?.blockquote} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
           <Quote size={14} />
         </ToolbarButton>
-        <ToolbarButton editor={editor} label="Código" active={editor?.isActive("codeBlock")} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
+        <ToolbarButton editor={editor} label="Código" active={activeFormats?.codeBlock} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
           <Code size={14} />
         </ToolbarButton>
         <ToolbarButton editor={editor} label="Quebra de seção" onClick={() => editor?.chain().focus().setHorizontalRule().run()}>
@@ -604,13 +724,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         </ToolbarButton>
         <button
           type="button"
-          className={cn(toolbarButtonClass, editor?.isActive("link") && "bg-[--bg-4] text-[--color-text-primary]")}
-          onClick={() => {
-            setLinkOpen((current) => !current);
-            setLinkDraft(editor?.getAttributes("link").href ?? "");
-          }}
+          className={cn(toolbarButtonClass, (activeFormats?.link || linkOpen) && toolbarButtonActiveClass)}
+          onClick={toggleLinkForm}
           disabled={!editor}
           aria-label="Link"
+          aria-expanded={linkOpen}
+          aria-pressed={activeFormats?.link ?? false}
           title="Link"
         >
           <LinkIcon size={14} />
@@ -667,26 +786,52 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       </div>
 
       {linkOpen ? (
-        <div className="flex items-center gap-2 border-b border-[--color-border-subtle] px-2 py-2">
-          <Input
-            value={linkDraft}
-            onChange={(event) => setLinkDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                applyLink();
-              }
-            }}
-            placeholder="https://..."
-            className="h-8 bg-[--bg-3] text-[13px]"
-          />
-          <Button type="button" className="h-8 px-3 text-xs" onClick={applyLink}>
-            Aplicar
-          </Button>
+        <div className="grid gap-2 border-b border-[--color-border-subtle] px-2 py-2">
+          {linkNeedsText ? (
+            <Input
+              value={linkTextDraft}
+              onChange={(event) => setLinkTextDraft(event.target.value)}
+              onKeyDown={handleLinkKeyDown}
+              placeholder="Texto do link (opcional)"
+              aria-label="Texto do link"
+              autoFocus
+              className="h-8 bg-[--bg-3] text-[13px]"
+            />
+          ) : null}
+          <div className="flex items-center gap-2">
+            <Input
+              value={linkDraft}
+              onChange={(event) => setLinkDraft(event.target.value)}
+              onKeyDown={handleLinkKeyDown}
+              placeholder="https://..."
+              aria-label="Endereço do link"
+              autoFocus={!linkNeedsText}
+              className="h-8 bg-[--bg-3] text-[13px]"
+            />
+            {linkOnExisting ? (
+              <Button type="button" variant="ghost" className="h-8 px-3 text-xs" onClick={removeLink}>
+                Remover
+              </Button>
+            ) : null}
+            <Button type="button" variant="ghost" className="h-8 px-3 text-xs" onClick={closeLinkForm}>
+              Cancelar
+            </Button>
+            <Button type="button" className="h-8 px-3 text-xs" onClick={applyLink}>
+              Aplicar
+            </Button>
+          </div>
         </div>
       ) : null}
 
-      <EditorContent editor={editor} className={cn(minHeightClassName, "px-3 py-2")} />
+      <EditorContent
+        editor={editor}
+        className={cn(minHeightClassName, maxHeightClassName, "cursor-text overflow-y-auto overscroll-contain px-3 py-2")}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            editor?.commands.focus("end");
+          }
+        }}
+      />
 
       {pendingFiles.length > 0 ? (
         <div className="flex flex-wrap gap-2 border-t border-[--color-border-subtle] px-3 py-2">
@@ -713,17 +858,23 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         </div>
       ) : null}
 
-      <div className="flex items-center justify-end border-t border-[--color-border-subtle] px-3 py-2">
+      <div className="flex items-center justify-end gap-2 border-t border-[--color-border-subtle] px-3 py-2">
+        {emptyHint && !value.trim() ? (
+          <p className="mr-auto min-w-0 truncate text-[12px] text-[--color-text-muted]">{emptyHint}</p>
+        ) : null}
         {footerActions ?? (
-          <Button
-            type="button"
-            className="h-8 px-3 text-xs"
-            disabled={disabled || (!value.trim() && !(allowAttachmentOnly && pendingFiles.length > 0)) || isUploading}
-            onClick={submitMarkdown}
-          >
-            <Send size={14} />
-            {submitLabel}
-          </Button>
+          <>
+            {secondaryAction}
+            <Button
+              type="button"
+              className="h-8 px-3 text-xs"
+              disabled={disabled || (!value.trim() && !(allowAttachmentOnly && pendingFiles.length > 0)) || isUploading}
+              onClick={submitMarkdown}
+            >
+              {submitting ? <Loader2 size={14} className="animate-spin" /> : submitIcon ?? <Send size={14} />}
+              {submitting ? submittingLabel ?? submitLabel : submitLabel}
+            </Button>
+          </>
         )}
       </div>
     </div>
@@ -746,10 +897,11 @@ function ToolbarButton({
   return (
     <button
       type="button"
-      className={cn(toolbarButtonClass, active && "bg-[--bg-4] text-[--color-text-primary]")}
+      className={cn(toolbarButtonClass, active && toolbarButtonActiveClass)}
       onClick={onClick}
       disabled={!editor}
       aria-label={label}
+      aria-pressed={active ?? false}
       title={label}
     >
       {children}

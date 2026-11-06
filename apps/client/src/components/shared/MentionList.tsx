@@ -10,6 +10,8 @@ export interface MentionListHandle {
 interface MentionListProps {
   items: MentionSuggestionItem[];
   command: (item: MentionSuggestionItem) => void;
+  query: string;
+  loading?: boolean;
 }
 
 function MentionIcon({ type }: { type: MentionEntityType }) {
@@ -44,12 +46,16 @@ function groupLabel(type: MentionEntityType): string {
   return "Projetos";
 }
 
-export const MentionList = forwardRef<MentionListHandle, MentionListProps>(function MentionList({ items, command }, ref) {
+export const MentionList = forwardRef<MentionListHandle, MentionListProps>(function MentionList({ items, command, query, loading = false }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [items]);
+  }, [query]);
+
+  useEffect(() => {
+    setSelectedIndex((index) => Math.min(index, Math.max(items.length - 1, 0)));
+  }, [items.length]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: (event: KeyboardEvent) => {
@@ -65,14 +71,15 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(funct
         return true;
       }
 
-      if (event.key === "Enter") {
-        event.preventDefault();
+      if (event.key === "Enter" || event.key === "Tab") {
         const item = items[selectedIndex];
 
-        if (item) {
-          command(item);
+        if (!item) {
+          return false;
         }
 
+        event.preventDefault();
+        command(item);
         return true;
       }
 
@@ -83,7 +90,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(funct
   if (items.length === 0) {
     return (
       <div className="w-72 rounded-md border border-border bg-bg-2 p-3 text-[13px] text-text-muted shadow-lg">
-        Nenhum resultado.
+        {loading ? "Buscando..." : "Nenhum resultado."}
       </div>
     );
   }
@@ -123,6 +130,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(funct
           </div>
         );
       })}
+      {loading ? <p className="px-3 py-2 text-[12px] text-text-muted">Buscando tarefas e atas...</p> : null}
     </div>
   );
 });

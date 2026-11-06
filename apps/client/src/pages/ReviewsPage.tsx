@@ -276,8 +276,8 @@ function ReviewDetailPanel({
   const canDecideReview = Boolean(isPending && user && currentReview?.reviewerId === user.id);
   const isBusy = updateReview.isPending || approveReview.isPending || rejectReview.isPending || commentUploading;
   const mentionContext = useMemo(
-    () => (sourceTask?.discipline?.projectId && sourceTask.id ? { projectId: sourceTask.discipline.projectId, taskId: sourceTask.id } : null),
-    [sourceTask?.discipline?.projectId, sourceTask?.id]
+    () => (sourceTask?.id ? { projectId: sourceTask.discipline?.projectId ?? sourceTask.projects?.[0]?.id ?? null, taskId: sourceTask.id } : null),
+    [sourceTask?.discipline?.projectId, sourceTask?.id, sourceTask?.projects]
   );
   const coordinatorOptions = useMemo(
     () =>
